@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Crown, SlidersHorizontal, Bell, MessageCircleQuestionMark, ChevronLeft } from 'lucide-react';
+import { SlidersHorizontal, Bell, MessageCircleQuestionMark, ChevronLeft } from 'lucide-react';
 
 // GuestDetailPage component
 type GuestDetailPageProps = { onBack: () => void; avatarFilename: string };
@@ -296,7 +296,7 @@ const CastSearchPage: React.FC = () => {
                 <button className="flex items-center bg-purple-500 text-white rounded-full px-4 py-1 font-bold text-base"><span className="mr-2">
                     <SlidersHorizontal /></span>絞り込み中</button>
                 <span className="text-2xl text-gray-400 cursor-pointer" onClick={() => setShowRanking(true)}>
-                    <img src="/assets/icons/crown.png" />
+                    <img src="/assets/icons/crown.png" alt="crown" />
                 </span>
             </div>
             {/* Repeat guests */}

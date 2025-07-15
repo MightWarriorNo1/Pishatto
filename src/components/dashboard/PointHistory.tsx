@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import PaymentInfoRegisterPage from './PaymentInfoRegisterPage';
 
+interface PointHistoryItem {
+    avatar: string;
+    date: string;
+    desc: string;
+}
 const pointHistory = [
     {
         avatar: 'https://placehold.co/40x40',
@@ -61,7 +66,8 @@ function formatDate(dateStr: string) {
 
 const sortedPointHistory = [...pointHistory].sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
 
-function groupByDate(items: any[]) {
+function groupByDate(items: PointHistoryItem[]) 
+{
     return items.reduce((acc, item) => {
         const dateKey = formatDate(item.date);
         if (!acc[dateKey]) acc[dateKey] = [];
@@ -72,39 +78,6 @@ function groupByDate(items: any[]) {
 
 const groupedHistory = groupByDate(sortedPointHistory);
 const dateKeys = Object.keys(groupedHistory).sort((a, b) => b.localeCompare(a));
-
-function ReceiptDetail({ onClose, data }: { onClose: () => void, data: any }) {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black opacity-30" onClick={onClose}></div>
-            <div className="relative bg-white w-full max-w-md mx-auto min-h-[60vh] rounded-lg shadow-lg">
-                {/* Top bar */}
-                <div className="flex items-center justify-between px-4 py-3 border-b">
-                    <button onClick={onClose} className="text-2xl text-gray-500">&#8963;</button>
-                    <span className="font-bold">領収書を発行する</span>
-                    <button className="text-orange-500 font-bold">発行</button>
-                </div>
-                <div className="px-4 py-6">
-                    <div className="flex items-center mb-6">
-                        <span className="w-24 text-gray-500">宛名</span>
-                        <span className="flex-1 text-right font-bold text-lg">株式会社テストて</span>
-                    </div>
-                    <div className="flex items-center mb-6">
-                        <span className="w-24 text-gray-500">但し書き</span>
-                        <span className="flex-1 text-right font-bold">pishatto利用料</span>
-                    </div>
-                    <div className="flex items-center mb-6">
-                        <span className="w-24 text-gray-500">メールアドレス</span>
-                        <span className="flex-1 text-right font-bold">test@jp</span>
-                    </div>
-                    <div className="bg-gray-100 rounded-lg p-4 text-xs text-gray-500 mt-8">
-                        領収書はポイント利用毎に発行ができます。<br />メールアドレスを入力すると領収書のリンクが届きます。
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
 
 const PointHistory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [showPaymentInfo, setShowPaymentInfo] = useState(false);

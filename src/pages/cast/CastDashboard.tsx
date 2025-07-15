@@ -11,6 +11,16 @@ import CastTimelinePage from './CastTimelinePage';
 import CastProfilePage from './CastProfilePage';
 import MessageProposalPage from '../../components/cast/dashboard/MessageProposalPage';
 
+interface Call {
+    title: string;
+    time: string;
+    type: string;
+    people: number;
+    points: string;
+    extra?: string;
+    closed?: boolean;
+}
+    
 const sampleCalls = [
     {
         title: '心斎橋・なんば (大阪)',
@@ -49,7 +59,7 @@ const sampleCalls = [
 ];
 
 // Modal component for call details (unchanged)
-const CallDetailModal = ({ call, onClose }: { call: any, onClose: () => void }) => {
+const CallDetailModal = ({ call, onClose }: { call: Call, onClose: () => void }) => {
     if (!call) return null;
     return (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black bg-opacity-40">

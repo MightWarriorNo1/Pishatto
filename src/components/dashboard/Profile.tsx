@@ -1,4 +1,4 @@
-import React, { Component, useState } from 'react';
+import React, {useState } from 'react';
 import { Bell, CreditCard, FileUser, HelpCircle, Link, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User } from 'lucide-react';
 import PointHistory from './PointHistory';
 import GradeDetail from './GradeDetail';

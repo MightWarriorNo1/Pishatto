@@ -59,7 +59,7 @@ const CastProfilePage: React.FC = () => {
                     </span>
                     <span className="text-xs text-gray-700">WhiteDayイベントはアイテムを活用してギフトゲット！？</span>
                 </div>
-                <img src="/assets/icons/profile_number.png" />
+                <img src="/assets/icons/profile_number.png" alt='profile_number' />
             </div>
             {/* Top row: avatar, name, pencil */}
             <div className="flex items-center justify-between px-4 pt-6">
@@ -134,19 +134,19 @@ const CastProfilePage: React.FC = () => {
                 <div className="font-bold text-base mb-2">pishattoパスポート</div>
                 <div className="flex space-x-2 overflow-x-auto overflow-y-auto">
                     <div className="w-60 h-24 bg-gray-200 rounded-lg flex justify-center text-xs">
-                        <img src="/assets/avatar/AdobeStock_1095142160_Preview.jpeg" />
+                        <img src="/assets/avatar/AdobeStock_1095142160_Preview.jpeg" alt="パスポート" />
                     </div>
                     <div className="w-60 h-24 bg-gray-200 rounded-lg flex justify-center text-xs">
-                        <img src="/assets/avatar/AdobeStock_1067731649_Preview.jpeg" />
+                        <img src="/assets/avatar/AdobeStock_1067731649_Preview.jpeg" alt='パスポート1' />
                     </div>
                     <div className="w-60 h-24 bg-gray-200 rounded-lg flex justify-center text-xs">
-                        <img src="/assets/avatar/AdobeStock_1190678828_Preview.jpeg" />
+                        <img src="/assets/avatar/AdobeStock_1190678828_Preview.jpeg" alt='パスポート2'/>
                     </div>
                     <div className="w-60 h-24 bg-gray-200 rounded-lg flex justify-center text-xs">
-                        <img src="/assets/avatar/AdobeStock_1537463438_Preview.jpeg" />
+                        <img src="/assets/avatar/AdobeStock_1537463438_Preview.jpeg" alt='パスポート3' />
                     </div>
                     <div className="w-60 h-24 bg-gray-200 rounded-lg flex justify-center text-xs">
-                        <img src="/assets/avatar/AdobeStock_1537463446_Preview.jpeg" />
+                        <img src="/assets/avatar/AdobeStock_1537463446_Preview.jpeg"  alt='パスポート4' />
                     </div>
                 </div>
             </div >
