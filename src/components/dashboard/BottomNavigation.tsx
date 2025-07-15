@@ -1,8 +1,5 @@
 import React from 'react';
 import { Search, MessageSquareMore, Hand, Clock4, User } from 'lucide-react'
-import { FiSearch, FiMessageSquare, FiClock } from 'react-icons/fi';
-import { BsHandIndex } from "react-icons/bs";
-import { FiUser } from 'react-icons/fi';
 
 interface BottomNavigationProps {
   activeTab: 'search' | 'message' | 'call' | 'tweet' | 'mypage';

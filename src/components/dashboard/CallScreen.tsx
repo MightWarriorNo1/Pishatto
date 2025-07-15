@@ -33,7 +33,7 @@ const castSkillOptions = [
 
 function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: () => void }) {
     const [selectedTime, setSelectedTime] = useState('30分後');
-    const [selectedArea, setSelectedArea] = useState('東京 / 六本木');
+    const [selectedArea] = useState('東京 / 六本木');
     const [counts, setCounts] = useState([1, 1, 0]);
     const [selectedDuration, setSelectedDuration] = useState('1時間');
     const total = counts.reduce((a, b) => a + b, 0);

@@ -9,7 +9,7 @@ interface CastSMSCodeInputProps {
 
 const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone }) => {
     const [code, setCode] = useState(['', '', '', '', '', '']);
-    const [timeLeft, setTimeLeft] = useState(30);
+    const [timeLeft] = useState(30);
     const isActive = code.length === 6 && /^[a-zA-Z0-9]{6}$/.test(code.join(''));
     const navigate = useNavigate();
 

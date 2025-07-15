@@ -21,3 +21,16 @@ node_modules/
 .env.development.local
 .env.test.local
 .env.production.local 
+
+# Ignore all files in the build directory except build/index.js
+/build/*
+!/build/index.js
+
+# Ignore all node_modules
+node_modules/
+
+# Ignore all minified JavaScript files
+*.min.js
+
+# Ignore log files
+*.log
