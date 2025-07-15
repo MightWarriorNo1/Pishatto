@@ -1,0 +1,23 @@
+# Build output
+build/
+dist/
+out/
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.d.ts
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local 
