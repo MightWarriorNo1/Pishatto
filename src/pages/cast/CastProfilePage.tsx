@@ -128,19 +128,19 @@ const CastProfilePage: React.FC = () => {
                 <div className="font-bold text-base mb-2 text-white">pishattoパスポート</div>
                 <div className="flex space-x-2 overflow-x-auto overflow-y-auto">
                     <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1095142160_Preview.jpeg" />
+                        <img src="/assets/avatar/AdobeStock_1095142160_Preview.jpeg" alt="pic1"/>
                     </div>
                     <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1067731649_Preview.jpeg" />
+                        <img src="/assets/avatar/AdobeStock_1067731649_Preview.jpeg" alt="pic1" />
                     </div>
                     <div className="w-60 h-24 bg-gray-900 rounded-lg  min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1190678828_Preview.jpeg" />
+                        <img src="/assets/avatar/AdobeStock_1190678828_Preview.jpeg" alt="pic1" />
                     </div>
                     <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1537463438_Preview.jpeg" />
+                        <img src="/assets/avatar/AdobeStock_1537463438_Preview.jpeg"  alt="pic1"/>
                     </div>
                     <div className="w-60 h-24 bg-gray-900 rounded-lg flex min-w-[120px] justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1537463446_Preview.jpeg" />
+                        <img src="/assets/avatar/AdobeStock_1537463446_Preview.jpeg" alt="pic1"/>
                     </div>
                 </div>
             </div>

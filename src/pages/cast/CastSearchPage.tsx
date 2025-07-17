@@ -296,7 +296,7 @@ const CastSearchPage: React.FC = () => {
                 <button className="flex items-center bg-secondary text-white rounded-full px-4 py-1 font-bold text-base"><span className="mr-2">
                     <SlidersHorizontal /></span>絞り込み中</button>
                 <span className="text-2xl text-white cursor-pointer" onClick={() => setShowRanking(true)}>
-                    <img src="/assets/icons/crown.png" />
+                    <img src="/assets/icons/crown.png" alt="pic1"/>
                 </span>
             </div>
             {/* Repeat guests */}

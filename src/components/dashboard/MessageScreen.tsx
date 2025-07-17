@@ -24,7 +24,7 @@ const MessageScreen: React.FC<MessageScreenProps> = ({ showChat, setShowChat }) 
             {/* Campaign banner */}
             <div className="bg-primary px-4 py-2 border-b border-secondary">
                 <div className="bg-primary rounded-lg shadow-sm flex items-center p-2">
-                    <img src="/assets/icons/logo_call.png" />
+                    <img src="/assets/icons/logo_call.png" alt="logo_call"/>
                 </div>
             </div>
             {/* Tabs */}
