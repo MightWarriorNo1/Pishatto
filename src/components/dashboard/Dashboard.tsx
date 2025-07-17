@@ -71,7 +71,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-gray-50">
+    <div className="max-w-md mx-auto min-h-screen bg-primary">
       {/* Show TopNavigation and search tabs only when in search mode */}
       {activeBottomTab === 'search' && (
         <>

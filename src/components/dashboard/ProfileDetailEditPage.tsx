@@ -51,46 +51,46 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
     };
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-white relative">
+        <div className="max-w-md mx-auto min-h-screen bg-primary relative">
             {/* Top bar */}
-            <div className="flex items-center px-4 py-3 border-b bg-white">
-                <button onClick={onBack} className="mr-2 text-2xl text-gray-500">&#60;</button>
-                <span className="text-lg font-bold flex-1 text-center">基本情報</span>
-                <button className="text-blue-500 font-bold">保存</button>
+            <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
+                <button onClick={onBack} className="mr-2 text-2xl text-white">&#60;</button>
+                <span className="text-lg font-bold flex-1 text-center text-white">基本情報</span>
+                <button className="text-white font-bold">保存</button>
             </div>
             {/* Profile fields */}
-            <div className="divide-y">
+            <div className="divide-y divide-red-600">
                 {fields.map((label) => (
                     <div
                         key={label}
-                        className="flex items-center justify-between px-4 py-4 bg-white cursor-pointer"
+                        className="flex items-center justify-between px-4 py-4 bg-primary cursor-pointer"
                         onClick={() => openPicker(label)}
                     >
-                        <span>{label}</span>
+                        <span className="text-white">{label}</span>
                         <div className="flex items-center gap-2">
-                            <span className={values[label] !== '未選択' ? '' : 'text-gray-400'}>{values[label]}</span>
-                            <span className="text-gray-400 text-xl">&gt;</span>
+                            <span className={values[label] !== '未選択' ? 'text-white' : 'text-white'}>{values[label]}</span>
+                            <span className="text-white text-xl">&gt;</span>
                         </div>
                     </div>
                 ))}
             </div>
             {/* Picker Modal */}
             {picker && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-                    <div className="bg-white rounded-xl w-80 max-w-full shadow-lg flex flex-col overflow-hidden">
-                        <div className="text-center font-bold py-3 border-b text-lg">{picker.field}</div>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary bg-opacity-30">
+                    <div className="bg-primary rounded-xl w-80 max-w-full shadow-lg flex flex-col overflow-hidden border border-secondary">
+                        <div className="text-center font-bold py-3 border-b text-lg text-white border-secondary">{picker.field}</div>
                         <div className="flex-1 overflow-y-auto max-h-72">
                             {fieldOptions[picker.field]?.map(option => (
                                 <div
                                     key={option}
-                                    className={`px-6 py-2 text-center cursor-pointer ${tempValue === option ? 'text-blue-600 font-bold' : ''}`}
+                                    className={`px-6 py-2 text-center cursor-pointer ${tempValue === option ? 'text-white font-bold' : 'text-white'}`}
                                     onClick={() => setTempValue(option)}
                                 >
                                     {option} {tempValue === option && <span className="ml-2">✓</span>}
                                 </div>
                             ))}
                         </div>
-                        <div className="flex border-t text-blue-500 text-lg font-bold divide-x">
+                        <div className="flex border-t text-white text-lg font-bold divide-x border-secondary">
                             <button className="flex-1 py-3" onClick={closePicker}>Cancel</button>
                             <button className="flex-1 py-3" onClick={confirmPicker}>OK</button>
                         </div>

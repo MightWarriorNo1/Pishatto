@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { X } from 'lucide-react';
 
 interface PostCreatePageProps {
     onClose: () => void;
@@ -8,13 +9,15 @@ interface PostCreatePageProps {
 const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit }) => {
     const [content, setContent] = useState('');
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-white flex flex-col">
+        <div className="max-w-md mx-auto min-h-screen bg-primary flex flex-col">
             {/* Top bar */}
-            <div className="flex items-center justify-between px-4 py-4 border-b">
-                <button onClick={onClose} className="text-3xl text-gray-500 font-bold">&#10005;</button>
-                <span className="flex-1 text-center text-lg font-bold">つぶやきを投稿</span>
+            <div className="flex items-center justify-between px-4 py-4 border-b border-secondary bg-primary">
+                <button onClick={onClose} className="text-3xl text-white font-bold">
+                    <X />
+                </button>
+                <span className="flex-1 text-center text-lg font-bold text-white">つぶやきを投稿</span>
                 <button
-                    className="text-orange-400 font-bold text-base"
+                    className="text-white font-bold text-base"
                     disabled={!content.trim()}
                     onClick={() => { if (content.trim()) onSubmit(content); }}
                 >
@@ -23,12 +26,12 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit }) =>
             </div>
             {/* User info */}
             <div className="flex items-center gap-2 px-4 mt-4">
-                <img src="/public/assets/avatar/avatar-1.png" alt="avatar" className="w-8 h-8 rounded-full object-cover" />
-                <span className="font-bold">まこちゃん</span>
+                <img src="/assets/avatar/2.jpg" alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+                <span className="font-bold text-white">まこちゃん</span>
             </div>
             {/* Textarea */}
             <textarea
-                className="w-full px-4 py-6 text-lg text-gray-600 border-none outline-none resize-none bg-transparent"
+                className="w-full px-4 py-6 text-lg text-white border-none outline-none resize-none bg-primary"
                 style={{ minHeight: 120 }}
                 placeholder="今なにしてる？"
                 value={content}

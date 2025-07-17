@@ -61,91 +61,91 @@ const MessageProposalPage: React.FC = () => {
     const totalPoints = calcPoints(people, duration);
 
     return (
-        <div className="min-h-screen bg-white flex flex-col items-center pb-24">
+        <div className="min-h-screen bg-primary flex flex-col items-center pb-24">
             {/* Top Bar */}
-            <div className="w-full max-w-md flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white sticky top-0 z-10">
+            <div className="w-full max-w-md flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
                 <div className="flex items-center">
-                    <img src="/assets/avatar/1.jpg" alt="avatar" className="w-9 h-9 rounded-full mr-2" />
-                    <span className="font-semibold text-lg flex flex-row">あや <span className="text-gray-400">
+                    <img src="/assets/avatar/1.jpg" alt="avatar" className="w-9 h-9 rounded-full mr-2 border border-secondary" />
+                    <span className="font-semibold text-lg flex flex-row text-white">あや <span className="text-white">
                         <Heart />
                     </span></span>
                 </div>
                 <div className="flex items-center space-x-4">
-                    <span className="inline-block w-6 h-6 rounded">
+                    <span className="inline-block w-6 h-6 rounded text-white">
                         <Video />
-                    </span> {/* Placeholder for video icon */}
-                    <span className="inline-block w-6 h-6 rounded">
+                    </span>
+                    <span className="inline-block w-6 h-6 rounded text-white">
                         <Ellipsis />
-                    </span> {/* Placeholder for menu icon */}
+                    </span>
                 </div>
             </div>
             {/* Banner */}
-            <div className="w-full max-w-md bg-red-700 text-white text-xs text-center py-1">コラボイベント実施中!! pishatto × SUPER GT</div>
+            <div className="w-full max-w-md bg-secondary text-white text-xs text-center py-1">コラボイベント実施中!! pishatto × SUPER GT</div>
             {/* Info Bar */}
-            <div className="w-full max-w-md bg-gray-100 text-xs text-gray-700 px-4 py-1 flex items-center">日程調整後、合流ができます</div>
+            <div className="w-full max-w-md bg-primary text-xs text-white px-4 py-1 flex items-center">日程調整後、合流ができます</div>
             {/* Chat Area */}
-            <div className="w-full max-w-md flex flex-col items-center px-4 py-6 bg-[#cdb6e6] relative">
-                <span className="text-xs text-gray-100 mb-4 text-center w-full">{jpDate}</span>
+            <div className="w-full max-w-md flex flex-col items-center px-4 py-6 bg-primary relative">
+                <span className="text-xs text-white mb-4 text-center w-full">{jpDate}</span>
                 <div className="flex items-center justify-center w-full mt-2">
-                    <span className="w-14 h-14 rounded-full bg-yellow-200 flex items-center justify-center">
+                    <span className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
                         <img src='/assets/avatar/avatar-2.png' className="w-12 h-12 rounded-full object-cover" alt="avatar" />
                     </span>
                 </div>
-                <span className="text-xs text-gray-100 mt-2">{jpTime}</span>
+                <span className="text-xs text-white mt-2">{jpTime}</span>
             </div>
             {/* Message Input */}
-            <div className="w-full max-w-md flex items-center px-4 py-2 border-b border-gray-200 bg-white">
-                <span className="text-yellow-500 mr-2">
+            <div className="w-full max-w-md flex items-center px-4 py-2 border-b border-secondary bg-primary">
+                <span className="text-white mr-2">
                     <Calendar />
                 </span>
                 <input
-                    className="flex-1 border-none outline-none text-sm bg-transparent"
+                    className="flex-1 border-none outline-none text-sm bg-primary text-white placeholder-red-400"
                     placeholder="メッセージを入力..."
                 />
-                <span className="text-gray-400 ml-2">
+                <span className="text-white ml-2">
                     <Image />
                 </span>
-                <span className="text-gray-400 ml-2">
+                <span className="text-white ml-2">
                     <Gift />
                 </span>
             </div>
             {/* Schedule Proposal Form */}
-            <div className="w-full max-w-md bg-gray-50 px-4 py-6 flex flex-col gap-3">
-                <div className="text-xs font-bold text-gray-700 mb-1">日程</div>
+            <div className="w-full max-w-md bg-primary px-4 py-6 flex flex-col gap-3">
+                <div className="text-xs font-bold text-white mb-1">日程</div>
                 <input
                     type="datetime-local"
-                    className="w-full border rounded-lg p-2 text-sm mb-2"
+                    className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary"
                     value={date}
                     onChange={e => setDate(e.target.value)}
                 />
                 {date && (
-                    <div className="text-sm text-gray-700 mb-2">{formatJPDateTimeInput(date)}</div>
+                    <div className="text-sm text-white mb-2">{formatJPDateTimeInput(date)}</div>
                 )}
                 <div className="flex gap-2 mb-2">
                     <div className="flex-1">
-                        <div className="text-xs font-bold text-gray-700 mb-1">キャスト人数</div>
+                        <div className="text-xs font-bold text-white mb-1">キャスト人数</div>
                         <input
-                            className="w-full border rounded-lg p-2 text-sm"
+                            className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary"
                             value={people}
                             onChange={e => setPeople(e.target.value)}
                         />
                     </div>
                     <div className="flex-1">
-                        <div className="text-xs font-bold text-gray-700 mb-1">時間</div>
+                        <div className="text-xs font-bold text-white mb-1">時間</div>
                         <input
-                            className="w-full border rounded-lg p-2 text-sm"
+                            className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary"
                             value={duration}
                             onChange={e => setDuration(e.target.value)}
                         />
                     </div>
                 </div>
-                <div className="text-sm text-gray-700 font-bold mt-2 mb-1">
+                <div className="text-sm text-white font-bold mt-2 mb-1">
                     9,000 (キャストP/30分) × {parsePeople(people)}名 × {Math.ceil(parseDuration(duration) / 60)}時間 <span className="float-right">{totalPoints.toLocaleString()}P</span>
                 </div>
-                <div className="text-xs text-gray-500 mb-2 text-right w-full">※延長15分につきpが発生します</div>
-                <div className="text-xs text-gray-700 flex justify-between text-center font-bold mb-2">実際に合流するまでポイントは消費されません</div>
+                <div className="text-xs text-white mb-2 text-right w-full">※延長15分につきpが発生します</div>
+                <div className="text-xs text-white flex justify-between text-center font-bold mb-2">実際に合流するまでポイントは消費されません</div>
                 <div className="flex justify-center w-full">
-                    <button className="py-3 rounded-lg bg-orange-500 text-white font-bold text-base mt-2 w-3/4">日程と人数を提案する</button>
+                    <button className="py-3 rounded-lg bg-secondary text-white font-bold text-base mt-2 w-3/4 hover:bg-red-700 transition-all duration-200">日程と人数を提案する</button>
                 </div>
             </div>
         </div>

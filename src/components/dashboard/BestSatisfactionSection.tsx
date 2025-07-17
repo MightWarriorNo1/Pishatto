@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { FiStar } from 'react-icons/fi';
 
@@ -34,34 +35,31 @@ const BestSatisfactionSection: React.FC = () => {
   ];
 
   return (
-    <div className="mb-8">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold">ユーザー満足度の高いキャスト</h2>
-        <button className="text-sm text-gray-500">すべて見る＞</button>
-      </div>
+    <div className="bg-primary rounded-lg shadow p-4 mb-4 border border-secondary">
+      <h2 className="font-bold text-lg mb-2 text-white">最高満足度</h2>
       <div className="grid grid-cols-2 gap-4">
         {profiles.map((profile) => (
-          <div key={profile.id} className="bg-white rounded-lg shadow p-3">
+          <div key={profile.id} className="bg-primary rounded-lg shadow p-3 border border-secondary">
             <div className="flex space-x-3">
               <div className="w-full">
                 <img
                   src={profile.imageUrl}
                   alt={profile.name}
-                  className="w-full h-full object-cover rounded-lg"
+                  className="w-full h-full object-cover rounded-lg border border-secondary"
                 />
               </div>
             </div>
             <div className="mt-2">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-sm">{profile.name}</span>
-                <div className="flex items-center text-yellow-400">
+                <span className="font-medium text-sm text-white">{profile.name}</span>
+                <div className="flex items-center text-white">
                   <FiStar className="w-3 h-3" />
                   <span className="ml-1 text-xs">{profile.rating}</span>
                 </div>
               </div>
-              <div className="text-gray-500 text-xs mt-1">
+              <div className="text-white text-xs mt-1">
                 <div>レビュー {profile.reviews}件</div>
-                <div className="mt-1 text-blue-600">
+                <div className="mt-1">
                   {profile.price.toLocaleString()}円 / {profile.duration}分
                 </div>
               </div>

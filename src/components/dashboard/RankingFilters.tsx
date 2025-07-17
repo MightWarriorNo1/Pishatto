@@ -9,14 +9,14 @@ const RankingFilters: React.FC = () => {
     const [period, setPeriod] = useState(periods[0]);
     const [region, setRegion] = useState(regions[0]);
     return (
-        <div className="flex gap-2 mb-4">
-            <select className="border rounded px-2 py-1" value={category} onChange={e => setCategory(e.target.value)}>
+        <div className="flex gap-2 mb-4 bg-primary p-2 rounded">
+            <select className="border border-secondary rounded px-2 py-1 text-white bg-primary" value={category} onChange={e => setCategory(e.target.value)}>
                 {categories.map(c => <option key={c}>{c}</option>)}
             </select>
-            <select className="border rounded px-2 py-1" value={period} onChange={e => setPeriod(e.target.value)}>
+            <select className="border border-secondary rounded px-2 py-1 text-white bg-primary" value={period} onChange={e => setPeriod(e.target.value)}>
                 {periods.map(p => <option key={p}>{p}</option>)}
             </select>
-            <select className="border rounded px-2 py-1" value={region} onChange={e => setRegion(e.target.value)}>
+            <select className="border border-secondary rounded px-2 py-1 text-white bg-primary" value={region} onChange={e => setRegion(e.target.value)}>
                 {regions.map(r => <option key={r}>{r}</option>)}
             </select>
         </div>

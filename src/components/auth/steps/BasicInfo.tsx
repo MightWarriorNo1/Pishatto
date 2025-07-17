@@ -30,13 +30,13 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ onNext, updateFormData, formData 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
+        <h2 className="text-2xl font-bold text-center text-white mb-8">
           基本情報入力
         </h2>
       </div>
       <form className="space-y-6" onSubmit={handleSubmit}>
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="block text-sm font-medium text-white">
             メールアドレス
           </label>
           <div className="mt-1">
@@ -48,13 +48,13 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ onNext, updateFormData, formData 
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+              className="appearance-none block w-full px-3 py-2 border border-secondary rounded-md shadow-sm placeholder-secondary focus:outline-none focus:ring-secondary focus:border-secondary bg-primary text-white"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="password" className="block text-sm font-medium text-white">
             パスワード
           </label>
           <div className="mt-1">
@@ -66,13 +66,13 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ onNext, updateFormData, formData 
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+              className="appearance-none block w-full px-3 py-2 border border-secondary rounded-md shadow-sm placeholder-secondary focus:outline-none focus:ring-secondary focus:border-secondary bg-primary text-white"
             />
           </div>
         </div>
 
         {error && (
-          <div className="text-red-600 text-sm">
+          <div className="text-white text-sm">
             {error}
           </div>
         )}
@@ -80,7 +80,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ onNext, updateFormData, formData 
         <div>
           <button
             type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
           >
             次へ
           </button>

@@ -3,21 +3,21 @@ import React from 'react';
 
 const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-white pb-8">
+        <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
             {/* Top bar */}
-            <div className="flex items-center px-4 pt-6 pb-2">
-                <button onClick={onBack} className="mr-2 text-2xl text-gray-500">
+            <div className="flex items-center px-4 pt-6 pb-6">
+                <button onClick={onBack} className="mr-2 text-2xl text-white">
                     <ChevronLeft />
                 </button>
-                <span className="flex-1 text-center text-base font-bold -ml-8">本人認証</span>
+                <span className="flex-1 text-center text-base font-bold -ml-8 text-white">本人認証</span>
             </div>
-            {/* Orange instruction section */}
-            <div className="bg-orange-500 text-white text-center py-6 px-4">
+            {/* Red instruction section */}
+            <div className="bg-primary text-white text-center py-6 px-4">
                 <div className="text-xl font-bold mb-2">本人確認書類を撮影してください</div>
                 <div className="text-sm">安心してpishattoをご利用いただくために、<br />ご協力をお願いいたします。</div>
             </div>
             {/* Phone + ID illustration */}
-            <div className="flex justify-center -mt-10 mb-4">
+            <div className="flex justify-center -mt-10 mb-8">
                 {/* Placeholder illustration */}
                 <svg width="300" height="120" viewBox="0 0 300 120" fill="none">
                     <rect x="10" y="20" width="280" height="80" rx="20" fill="#fff" stroke="#bbb" strokeWidth="4" />
@@ -28,7 +28,7 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                 </svg>
             </div>
             {/* Acceptable documents */}
-            <div className="text-center font-bold text-lg mb-2">登録可能な本人確認書類</div>
+            <div className="text-center font-bold text-lg mb-">登録可能な本人確認書類</div>
             <div className="flex justify-center gap-8 mb-6">
                 <div className="flex flex-col items-center">
                     {/* License icon */}
@@ -47,14 +47,14 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                 </div>
             </div>
             {/* Info box */}
-            <div className="mx-4 border border-orange-300 rounded-xl bg-orange-50 py-4 px-4 mb-8 flex flex-col items-center">
-                <Lock className="text-orange-500 mb-2" />
-                <div className="font-bold mb-1">お客様情報は厳重に管理しています</div>
-                <div className="text-xs text-gray-600 text-center">提出いただいた証明書の画像は本人確認のみに使用し、<br />他の目的には一切使用しません。</div>
+            <div className="mx-4 border border-secondary rounded-xl bg-primary py-4 px-4 mb-24 flex flex-col items-center">
+                <Lock className="text-white mb-2" />
+                <div className="font-bold mb-1 text-white">お客様情報は厳重に管理しています</div>
+                <div className="text-xs text-white text-center">提出いただいた証明書の画像は本人確認のみに使用し、<br />他の目的には一切使用しません。</div>
             </div>
             {/* Start button */}
             <div className="px-4">
-                <button className="w-full bg-orange-500 text-white py-3 rounded-lg font-bold text-lg">本人認証をはじめる</button>
+                <button className="w-full bg-primary text-white py-3 rounded-lg font-bold text-lg">本人認証をはじめる</button>
             </div>
         </div>
     );

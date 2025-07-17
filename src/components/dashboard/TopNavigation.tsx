@@ -9,42 +9,42 @@ interface TopNavigationProps {
 
 const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange }) => {
   return (
-    <div className="fixed max-w-md mx-auto top-0 left-0 right-0 bg-white z-50">
+    <div className="fixed max-w-md mx-auto top-0 left-0 right-0 bg-primary z-50 border-b border-secondary">
       <div className="max-w-md mx-auto px-4 pt-5">
         <div className="flex items-center justify-between">
           <div className="flex-1 relative">
             <input
               type="text"
               placeholder="年齢,身長検索が可能になりました"
-              className="w-full pl-10 pr-4 py-2 rounded-full bg-gray-100 text-sm"
+              className="w-full pl-10 pr-4 py-2 rounded-full bg-primary text-white text-sm border border-secondary placeholder-red-500"
             />
-            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white" />
           </div>
           <button className="ml-4">
-            <FiCode className="w-6 h-6 text-gray-600" />
+            <FiCode className="w-6 h-6 text-white" />
           </button>
         </div>
         <div className="flex justify-between mt-3 text-sm">
           <button
-            className={`font-medium pb-3 ${activeTab === 'home' ? 'text-black border-b-2 border-black' : 'text-gray-600'}`}
+            className={`font-medium pb-3 ${activeTab === 'home' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}
             onClick={() => onTabChange('home')}
           >
             ホーム
           </button>
           <button
-            className={`font-medium pb-3 ${activeTab === 'favorites' ? 'text-black border-b-2 border-black' : 'text-gray-600'}`}
+            className={`font-medium pb-3 ${activeTab === 'favorites' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}
             onClick={() => onTabChange('favorites')}
           >
             お気に入り
           </button>
           <button
-            className={`font-medium pb-3 ${activeTab === 'history' ? 'text-black border-b-2 border-black' : 'text-gray-600'}`}
+            className={`font-medium pb-3 ${activeTab === 'history' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}
             onClick={() => onTabChange('history')}
           >
             足あとから
           </button>
           <button
-            className={`font-medium pb-3 ${activeTab === 'ranking' ? 'text-black border-b-2 border-black' : 'text-gray-600'}`}
+            className={`font-medium pb-3 ${activeTab === 'ranking' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}
             onClick={() => onTabChange('ranking')}
           >
             ランキング

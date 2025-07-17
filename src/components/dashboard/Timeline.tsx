@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import PostCreatePage from './PostCreatePage';
+import { Bell, SlidersHorizontal } from 'lucide-react';
 
 const stories = [
     { name: 'まこと', img: '/assets/avatar/AdobeStock_1095142160_Preview.jpeg', isNew: true },
@@ -52,45 +53,49 @@ const Timeline: React.FC = () => {
     };
     if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddPost} />;
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-white pb-20 relative">
+        <div className="max-w-md mx-auto min-h-screen bg-primary pb-20 relative">
             {/* Top bar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b">
-                <span className="text-lg font-bold mx-auto">つぶやき</span>
-                <button className="absolute right-4 top-3 text-gray-400">
-                    <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="6" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="18" r="2" /></svg>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary">
+                <div className="text-white">
+                    <Bell />
+                </div>
+                <span className="text-lg font-bold mx-auto text-white">つぶやき</span>
+                <button className="absolute right-4 top-3 text-white">
+                    <SlidersHorizontal />
                 </button>
+
             </div>
             {/* Stories */}
             <div className="flex gap-3 px-4 py-3 overflow-x-auto">
                 {stories.map((story, idx) => (
                     <div key={idx} className="flex flex-col items-center cursor-pointer" onClick={() => alert(`${story.name}のストーリーを表示`)}>
-                        <div className={`rounded-full border-2 ${story.isNew ? 'border-orange-400' : 'border-gray-200'} p-1`}>
+                        <div className={`rounded-full border-2 ${story.isNew ? 'border-secondary' : 'border-black'} p-1`}>
                             <img src={story.img} alt={story.name} className="w-12 h-12 rounded-full object-cover" />
                         </div>
-                        <span className="text-xs mt-1 text-gray-700 truncate max-w-[48px]">{story.name}{idx === 0 && <span className="text-orange-400 ml-1">＋</span>}</span>
+                        <span className="text-xs mt-1 text-white truncate max-w-[48px]">{story.name}{idx === 0 && <span className="text-white ml-1">＋</span>}</span>
                     </div>
                 ))}
             </div>
             {/* Posts */}
             <div className="px-4 flex flex-col gap-4">
                 {posts.map((post, idx) => (
-                    <div key={idx} className="bg-white rounded-lg shadow-sm p-4 flex flex-col">
+                    <div key={idx} className="bg-primary rounded-lg shadow-sm p-4 flex flex-col border border-secondary">
                         <div className="flex items-center mb-1">
-                            <img src={post.user.img} alt={post.user.name} className="w-10 h-10 rounded-full object-cover mr-2" />
+                            <img src={post.user.img} alt={post.user.name} className="w-10 h-10 rounded-full object-cover mr-2 border border-secondary" />
                             <div className="flex flex-col flex-1">
-                                <span className="font-bold text-sm text-gray-800">{post.user.name}{post.user.age && ` ${post.user.age}歳`}</span>
-                                {post.user.job && <span className="text-xs text-blue-400">{post.user.job}・{post.time}</span>}
-                                {!post.user.job && <span className="text-xs text-gray-400">{post.time}</span>}
+                                <span className="font-bold text-sm text-white">{post.user.name}{post.user.age && ` ${post.user.age}歳`}</span>
+                                {post.user.job && <span className="text-xs text-white">{post.user.job}・{post.time}</span>}
+                                {!post.user.job && <span className="text-xs text-white">{post.time}</span>}
                             </div>
-                            <span className="ml-2 text-gray-400">{post.likes}</span>
+                            <span className="ml-2 text-white">{post.likes}</span>
                         </div>
-                        <div className="text-gray-800 text-sm whitespace-pre-line mt-1">{post.content}</div>
+                        <div className="text-white text-sm whitespace-pre-line mt-1">{post.content}</div>
                     </div>
                 ))}
             </div>
             {/* 投稿 button inside main screen */}
-            <div className="flex justify-end mt-8 mb-8">
-                <button className="bg-orange-500 text-white rounded-full w-16 h-16 flex flex-col items-center justify-center shadow-lg" onClick={() => setShowPostCreate(true)}>
+            <div className="flex justify-end mt-24 mb-8">
+                <button className="bg-secondary text-white rounded-full w-16 h-16 flex flex-col items-center justify-center shadow-lg" onClick={() => setShowPostCreate(true)}>
                     <span className="text-2xl font-bold mb-1">＋</span>
                     <span className="text-xs font-bold">投稿</span>
                 </button>

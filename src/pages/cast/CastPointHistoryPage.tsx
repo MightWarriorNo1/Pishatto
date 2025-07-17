@@ -1,4 +1,3 @@
-import React from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -96,38 +95,38 @@ const history = [
 const CastPointHistoryPage: React.FC = () => {
     const navigate = useNavigate();
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-[#f7f8fa] pb-8">
+        <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
             {/* Top bar */}
-            <div className="flex items-center px-4 py-3">
-                <button className="mr-2 text-2xl text-gray-500" onClick={() => navigate(-1)}>
+            <div className="flex items-center px-4 py-3 border-b border-secondary bg-primary">
+                <button className="mr-2 text-2xl text-white" onClick={() => navigate(-1)}>
                     <ChevronLeft />
                 </button>
-                <span className="text-lg font-bold flex-1 text-center">売上履歴一覧</span>
+                <span className="text-lg font-bold flex-1 text-center text-white">売上履歴一覧</span>
             </div>
             {/* History List */}
-            <div className="divide-y bg-white">
+            <div className="divide-y divide-red-600 bg-primary">
                 {history.map((item, i) => (
-                    <div key={i} className="flex items-center px-4 py-3">
+                    <div key={i} className="flex items-center px-4 py-3 bg-primary">
                         {item.icon ? (
-                            <img src={item.icon} alt="icon" className="w-10 h-10 rounded-full mr-3 object-cover" />
+                            <img src={item.icon} alt="icon" className="w-10 h-10 rounded-full mr-3 object-cover border-2 border-secondary" />
                         ) : (
-                            <div className="w-10 h-10 rounded-full bg-gray-200 mr-3 flex items-center justify-center">
-                                <span className="text-gray-400 text-xl">👤</span>
+                            <div className="w-10 h-10 rounded-full bg-secondary mr-3 flex items-center justify-center">
+                                <span className="text-white text-xl">👤</span>
                             </div>
                         )}
                         <div className="flex-1">
-                            <div className="text-xs text-gray-500">{item.date}</div>
-                            <div className="text-base text-gray-800 truncate">{item.desc}</div>
+                            <div className="text-xs text-white">{item.date}</div>
+                            <div className="text-base text-white truncate">{item.desc}</div>
                         </div>
                         <div className="flex flex-col items-end ml-2">
-                            <div className={`font-bold text-lg ${item.positive ? 'text-[#2e7d32]' : 'text-[#e53935]'}`}>{item.point}</div>
-                            {item.detail && <span className="text-gray-400 text-xl">&gt;</span>}
+                            <div className={`font-bold text-lg ${item.positive ? 'text-white' : 'text-white'}`}>{item.point}</div>
+                            {item.detail && <span className="text-white text-xl">&gt;</span>}
                         </div>
                     </div>
                 ))}
             </div>
             {/* Payment details link */}
-            <div className="bg-white px-4 py-3 text-center text-sm text-gray-700 border-b cursor-pointer">
+            <div className="bg-primary px-4 py-3 text-center text-sm text-white border-b border-secondary cursor-pointer">
                 支払い明細書を確認する
             </div>
         </div>

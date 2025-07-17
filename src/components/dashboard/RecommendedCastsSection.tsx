@@ -6,14 +6,14 @@ const recommendedCasts = [
 ];
 
 const RecommendedCastsSection: React.FC = () => (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
-        <h2 className="font-bold text-lg mb-2">おすすめキャスト</h2>
+    <div className="bg-primary rounded-lg shadow p-4 mb-4 border border-secondary">
+        <h2 className="font-bold text-lg mb-2 text-white">おすすめキャスト</h2>
         <div className="flex gap-4">
             {recommendedCasts.map(cast => (
                 <div key={cast.name} className="flex flex-col items-center">
-                    <img src={cast.img} alt={cast.name} className="w-20 h-20 rounded-full object-cover mb-2" />
-                    <span className="font-bold text-sm mb-1">{cast.name}</span>
-                    <span className="text-xs text-gray-500 text-center">{cast.desc}</span>
+                    <img src={cast.img} alt={cast.name} className="w-20 h-20 rounded-full object-cover mb-2 border-2 border-secondary" />
+                    <span className="font-bold text-sm mb-1 text-white">{cast.name}</span>
+                    <span className="text-xs text-white text-center">{cast.desc}</span>
                 </div>
             ))}
         </div>

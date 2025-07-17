@@ -75,57 +75,57 @@ const castPosts = [
 const CastTimelinePage: React.FC = () => {
     const [tab, setTab] = useState<'all' | 'cast'>('all');
     return (
-        <div className="max-w-md mx-auto pb-20 min-h-screen bg-white">
+        <div className="max-w-md mx-auto pb-20 min-h-screen bg-primary">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                <span className="text-2xl text-gray-700">
+                <span className="text-2xl text-white">
                     <Bell />
                 </span>
-                <span className="text-xl font-bold">つぶやき</span>
-                <span className="text-2xl text-gray-700">
+                <span className="text-xl font-bold text-white">つぶやき</span>
+                <span className="text-2xl text-white">
                     <SlidersHorizontal />
                 </span>
             </div>
             {/* Tabs */}
-            <div className="flex items-center border-b">
-                <button onClick={() => setTab('all')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'all' ? 'text-black border-b-2 border-black' : 'text-gray-400'}`}>みんなのつぶやき</button>
-                <button onClick={() => setTab('cast')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'cast' ? 'text-black border-b-2 border-black' : 'text-gray-400'}`}>キャスト専用</button>
+            <div className="flex items-center border-b border-secondary">
+                <button onClick={() => setTab('all')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'all' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>みんなのつぶやき</button>
+                <button onClick={() => setTab('cast')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'cast' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>キャスト専用</button>
             </div>
             {/* Stories row */}
             <div className="flex space-x-3 px-4 py-3 overflow-x-auto">
                 {stories.map((story, idx) => (
                     <div key={idx} className="flex flex-col items-center">
-                        <div className="w-16 h-16 rounded-full border-4 border-purple-400 flex items-center justify-center overflow-hidden">
+                        <div className="w-16 h-16 rounded-full border-4 border-secondary flex items-center justify-center overflow-hidden">
                             <img src={story.img} alt={story.name} className="w-16 h-16 object-cover" />
                         </div>
-                        <span className="text-xs text-gray-700 mt-1 truncate w-16 text-center">{story.name}</span>
+                        <span className="text-xs text-white mt-1 truncate w-16 text-center">{story.name}</span>
                     </div>
                 ))}
             </div>
             {/* Posts */}
             <div className="px-4">
                 {(tab === 'cast' ? castPosts : posts).map((post, idx) => (
-                    <div key={idx} className="border-b py-4">
+                    <div key={idx} className="border-b border-secondary py-4">
                         <div className="flex items-center mb-1">
-                            <img src={post.avatar} alt={post.user} className="w-10 h-10 rounded-full mr-2" />
-                            <span className="font-bold text-base mr-2">{post.user}</span>
-                            {('role' in post) && post.role && <span className="text-xs text-gray-400 mr-2">{post.role}</span>}
+                            <img src={post.avatar} alt={post.user} className="w-10 h-10 rounded-full mr-2 border-2 border-secondary" />
+                            <span className="font-bold text-base mr-2 text-white">{post.user}</span>
+                            {('role' in post) && post.role && <span className="text-xs text-white mr-2">{post.role}</span>}
                             {('badge' in post) && post.badge && (
                                 <img src={post.badge} alt="badge" className="w-5 h-5 inline-block mr-1 align-middle" />
                             )}
                             {('badgeLabel' in post) && post.badgeLabel && (
-                                <span className="text-xs text-yellow-700 font-bold mr-2 align-middle">{post.badgeLabel}</span>
+                                <span className="text-xs text-white font-bold mr-2 align-middle">{post.badgeLabel}</span>
                             )}
-                            <span className="text-xs text-gray-400">{post.time}</span>
-                            <span className="ml-auto text-gray-400 text-xl">♡ {post.likes}</span>
+                            <span className="text-xs text-white">{post.time}</span>
+                            <span className="ml-auto text-white text-xl">♡ {post.likes}</span>
                         </div>
-                        {post.text && <div className="text-sm text-gray-900 whitespace-pre-line mb-2">{post.text}</div>}
-                        {('img' in post) && post.img && <img src={post.img} alt="post" className="rounded-lg w-full max-w-xs mb-2" />}
+                        {post.text && <div className="text-sm text-white whitespace-pre-line mb-2">{post.text}</div>}
+                        {('img' in post) && post.img && <img src={post.img} alt="post" className="rounded-lg w-full max-w-xs mb-2 border-2 border-secondary" />}
                     </div>
                 ))}
             </div>
             {/* Floating 投稿 button */}
-            <button className="fixed left-1/2 -translate-x-1/2 bottom-20 z-30 bg-purple-500 text-white rounded-full px-6 py-4 shadow-lg font-bold text-lg flex items-center">
+            <button className="fixed left-1/2 -translate-x-1/2 bottom-20 z-30 bg-secondary text-white rounded-full px-6 py-4 shadow-lg font-bold text-lg flex items-center hover:bg-red-700 transition">
                 <span className="mr-2 text-2xl">
                     <Plus /></span>投稿
             </button>

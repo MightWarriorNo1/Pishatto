@@ -24,38 +24,38 @@ const NotificationSettingsPage: React.FC<NotificationSettingsPageProps> = ({ onB
     };
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-white">
+        <div className="max-w-md mx-auto min-h-screen bg-primary">
             {/* Top bar */}
-            <div className="flex items-center px-4 py-3 border-b bg-white">
-                <button onClick={onBack} className="mr-2 text-2xl text-gray-500">&#60;</button>
-                <span className="text-lg font-bold flex-1 text-center">通知設定</span>
+            <div className="flex items-center px-4 py-3 border-b border-secondary bg-primary">
+                <button onClick={onBack} className="mr-2 text-2xl text-white">&#60;</button>
+                <span className="text-lg font-bold flex-1 text-center text-white">通知設定</span>
             </div>
             {/* Notification toggles */}
-            <div className="divide-y">
+            <div className="divide-y divide-red-600">
                 {settings.map((item, idx) => (
-                    <div key={item.label} className="flex items-center justify-between px-4 py-4 bg-white">
-                        <span>{item.label}</span>
+                    <div key={item.label} className="flex items-center justify-between px-4 py-4 bg-primary">
+                        <span className="text-white">{item.label}</span>
                         <button
-                            className={`w-12 h-7 flex items-center rounded-full p-1 transition-colors duration-200 ${item.value ? 'bg-blue-500' : 'bg-gray-300'}`}
+                            className={`w-12 h-7 flex items-center rounded-full p-1 transition-colors duration-200 ${item.value ? 'bg-secondary' : 'bg-primary border border-secondary'}`}
                             onClick={() => handleToggle(idx)}
                         >
                             <span
-                                className={`h-5 w-5 bg-white rounded-full shadow transform transition-transform duration-200 ${item.value ? 'translate-x-5' : ''}`}
+                                className={`h-5 w-5 bg-primary rounded-full shadow transform transition-transform duration-200 ${item.value ? 'translate-x-5' : ''}`}
                             />
                         </button>
                     </div>
                 ))}
                 {/* Section header */}
-                <div className="bg-gray-100 text-xs text-gray-500 px-4 py-2 font-bold">アプリ内通知設定</div>
+                <div className="bg-primary text-xs text-white px-4 py-2 font-bold">アプリ内通知設定</div>
                 {/* App message toggle */}
-                <div className="flex items-center justify-between px-4 py-4 bg-white">
-                    <span>メッセージ</span>
+                <div className="flex items-center justify-between px-4 py-4 bg-primary">
+                    <span className="text-white">メッセージ</span>
                     <button
-                        className={`w-12 h-7 flex items-center rounded-full p-1 transition-colors duration-200 ${appMessage ? 'bg-blue-500' : 'bg-gray-300'}`}
+                        className={`w-12 h-7 flex items-center rounded-full p-1 transition-colors duration-200 ${appMessage ? 'bg-secondary' : 'bg-primary border border-secondary'}`}
                         onClick={() => setAppMessage(v => !v)}
                     >
                         <span
-                            className={`h-5 w-5 bg-white rounded-full shadow transform transition-transform duration-200 ${appMessage ? 'translate-x-5' : ''}`}
+                            className={`h-5 w-5 bg-primary rounded-full shadow transform transition-transform duration-200 ${appMessage ? 'translate-x-5' : ''}`}
                         />
                     </button>
                 </div>

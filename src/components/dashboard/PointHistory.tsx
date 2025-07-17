@@ -1,53 +1,49 @@
 import React, { useState } from 'react';
 import PaymentInfoRegisterPage from './PaymentInfoRegisterPage';
+import { ChevronLeft } from 'lucide-react';
 
-interface PointHistoryItem {
-    avatar: string;
-    date: string;
-    desc: string;
-}
 const pointHistory = [
     {
-        avatar: 'https://placehold.co/40x40',
+        avatar: '/assets/avatar/AdobeStock_1095142160_Preview.jpeg',
         date: '2025年02月20日 13:32',
         desc: 'ギフト送付',
         amount: -100000,
     },
     {
-        avatar: 'https://placehold.co/40x40?text=%F0%9F%A6%85',
+        avatar: '/assets/avatar/AdobeStock_1095142160_Preview.jpeg',
         date: '2025年02月20日 13:32',
         desc: 'オートチャージ',
         amount: 99000,
         receipt: true,
     },
     {
-        avatar: 'https://placehold.co/40x40',
+        avatar: '/assets/avatar/AdobeStock_1095142160_Preview.jpeg',
         date: '2025年02月20日 13:32',
         desc: 'ギフト送付',
         amount: -50000,
     },
     {
-        avatar: 'https://placehold.co/40x40?text=%F0%9F%A6%85',
+        avatar: '/assets/avatar/AdobeStock_1095142160_Preview.jpeg',
         date: '2025年02月20日 13:32',
         desc: 'オートチャージ',
         amount: 51000,
         receipt: true,
     },
     {
-        avatar: 'https://placehold.co/40x40',
+        avatar: '/assets/avatar/AdobeStock_1095142160_Preview.jpeg',
         date: '2025年02月20日 03:24',
         desc: 'ギフト送付',
         amount: -50000,
     },
     {
-        avatar: 'https://placehold.co/40x40?text=%F0%9F%A6%85',
+        avatar: '/assets/avatar/AdobeStock_1095142160_Preview.jpeg',
         date: '2025年02月20日 03:24',
         desc: 'オートチャージ',
         amount: 51000,
         receipt: true,
     },
     {
-        avatar: 'https://placehold.co/40x40',
+        avatar: '/assets/avatar/AdobeStock_1095142160_Preview.jpeg',
         date: '2025年02月20日 03:24',
         desc: 'ギフト送付',
         amount: -50000,
@@ -66,8 +62,7 @@ function formatDate(dateStr: string) {
 
 const sortedPointHistory = [...pointHistory].sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
 
-function groupByDate(items: PointHistoryItem[]) 
-{
+function groupByDate(items: any[]) {
     return items.reduce((acc, item) => {
         const dateKey = formatDate(item.date);
         if (!acc[dateKey]) acc[dateKey] = [];
@@ -79,40 +74,75 @@ function groupByDate(items: PointHistoryItem[])
 const groupedHistory = groupByDate(sortedPointHistory);
 const dateKeys = Object.keys(groupedHistory).sort((a, b) => b.localeCompare(a));
 
+function ReceiptDetail({ onClose, data }: { onClose: () => void, data: any }) {
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-primary opacity-30" onClick={onClose}></div>
+            <div className="relative bg-primary w-full max-w-md mx-auto min-h-[60vh] rounded-lg shadow-lg">
+                {/* Top bar */}
+                <div className="flex items-center justify-between px-4 py-3 border-b">
+                    <button onClick={onClose} className="text-2xl text-gray-500">&#8963;</button>
+                    <span className="font-bold">領収書を発行する</span>
+                    <button className="text-orange-500 font-bold">発行</button>
+                </div>
+                <div className="px-4 py-6">
+                    <div className="flex items-center mb-6">
+                        <span className="w-24 text-gray-500">宛名</span>
+                        <span className="flex-1 text-right font-bold text-lg">株式会社テストて</span>
+                    </div>
+                    <div className="flex items-center mb-6">
+                        <span className="w-24 text-gray-500">但し書き</span>
+                        <span className="flex-1 text-right font-bold">pishatto利用料</span>
+                    </div>
+                    <div className="flex items-center mb-6">
+                        <span className="w-24 text-gray-500">メールアドレス</span>
+                        <span className="flex-1 text-right font-bold">test@jp</span>
+                    </div>
+                    <div className="bg-gray-100 rounded-lg p-4 text-xs text-gray-500 mt-8">
+                        領収書はポイント利用毎に発行ができます。<br />メールアドレスを入力すると領収書のリンクが届きます。
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 const PointHistory: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [showPaymentInfo, setShowPaymentInfo] = useState(false);
     // const [receiptIndex, setReceiptIndex] = useState<number | null>(null);
     if (showPaymentInfo) return <PaymentInfoRegisterPage onBack={() => setShowPaymentInfo(false)} />;
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-white pb-4">
+        <div className="max-w-md mx-auto min-h-screen bg-primary pb-4">
             {/* Top bar */}
-            <div className="flex items-center px-4 py-3 border-b">
-                <button onClick={onBack} className="mr-2 text-2xl text-gray-500">&#60;</button>
-                <span className="text-lg font-bold flex-1 text-center">ポイント履歴・領収書</span>
+            <div className="flex items-center px-4 py-3 border-b border-secondary bg-primary">
+                <button onClick={onBack} className="mr-2 text-2xl text-white">
+                    <ChevronLeft />
+                </button>
+                <span className="text-lg font-bold flex-1 text-center text-white">ポイント履歴・領収書</span>
             </div>
             {/* Current points */}
             <div className="text-center mt-6">
-                <div className="text-gray-500 text-sm mb-1">現在の所有ポイント</div>
-                <div className="text-3xl font-bold mb-2">1,742P</div>
-                <div className="text-xs text-gray-500">ポイントは3,000Pごとにオートチャージされます<br />またポイントの有効期限は購入・取得から180日です</div>
+                <div className="text-white text-sm mb-1">現在の所有ポイント</div>
+                <div className="text-3xl font-bold mb-2 text-white">1,742P</div>
+                <div className="text-xs text-white">ポイントは3,000Pごとにオートチャージされます<br />またポイントの有効期限は購入・取得から180日です</div>
             </div>
             {/* History list */}
-            <div className="mt-6 divide-y">
+            <div className="mt-6 divide-y divide-red-600">
                 {dateKeys.map((dateKey: string) => (
                     <div key={dateKey}>
-                        <div className="bg-gray-100 text-xs text-gray-500 px-4 py-2">{dateKey}</div>
+                        <div className="bg-primary text-xs text-white px-4 py-2">{dateKey}</div>
                         {groupedHistory[dateKey].map((item: any, idx: number) => (
                             <div
                                 key={idx}
-                                className="bg-white px-4 py-3 flex items-start gap-3 cursor-pointer hover:bg-gray-50 transition"
+                                className="bg-primary px-4 py-6 flex items-start gap-3 cursor-pointer hover:bg-secondary/10 transition"
                                 onClick={() => setShowPaymentInfo(true)}
                             >
-                                <img src={item.avatar} alt="avatar" className="w-10 h-10 rounded-full object-cover mt-1" />
+                                <img src={item.avatar} alt="avatar" className="w-10 h-10 rounded-full object-cover mt-1 border border-secondary" />
                                 <div className="flex-1">
-                                    <div className="text-xs text-gray-500">{item.date}</div>
-                                    <div className="font-bold text-sm mb-1">{item.desc}</div>
+                                    <div className="text-xs text-white">{item.date}</div>
+                                    <div className="font-bold text-sm mb-1 text-white">{item.desc}</div>
                                 </div>
-                                <div className={`text-lg font-bold ${item.amount < 0 ? 'text-red-500' : 'text-green-600'}`}>{item.amount < 0 ? '' : '+'}{item.amount.toLocaleString()}P</div>
+                                <div className={`text-lg font-bold ${item.amount < 0 ? 'text-white' : 'text-white'}`}>{item.amount < 0 ? '' : '+'}{item.amount.toLocaleString()}P</div>
                             </div>
                         ))}
                     </div>

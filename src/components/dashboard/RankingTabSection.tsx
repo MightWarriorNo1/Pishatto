@@ -25,14 +25,14 @@ const RankingTabSection: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col bg-white min-h-[calc(100vh-10rem)] relative">
+    <div className="flex flex-col bg-primary min-h-[calc(100vh-10rem)] relative">
       {/* User Type Tabs */}
       <div className="px-4 pt-4">
         <div className="flex">
           <button
             className={`flex-1 py-3 text-sm font-medium border-b-2 ${userType === 'cast'
-              ? 'border-black text-black'
-              : 'border-transparent text-gray-400'
+              ? 'border-secondary text-white'
+              : 'border-transparent text-white'
               }`}
             onClick={() => setUserType('cast')}
           >
@@ -40,15 +40,15 @@ const RankingTabSection: React.FC = () => {
           </button>
           <button
             className={`flex-1 py-3 text-sm font-medium border-b-2 ${userType === 'guest'
-              ? 'border-black text-black'
-              : 'border-transparent text-gray-400'
+              ? 'border-secondary text-white'
+              : 'border-transparent text-white'
               }`}
             onClick={() => setUserType('guest')}
           >
             ゲスト
           </button>
           <button
-            className="flex items-center space-x-1 px-3 py-1.5 border rounded-md"
+            className="flex items-center space-x-1 px-3 py-1.5 border rounded-md border-secondary text-white"
             onClick={() => setIsAreaDropdownOpen(!isAreaDropdownOpen)}
           >
             <span className="text-sm">{selectedArea}</span>
@@ -58,33 +58,33 @@ const RankingTabSection: React.FC = () => {
           {/* Area Dropdown */}
           {isAreaDropdownOpen && (
             <div className="fixed inset-0 flex items-center justify-center z-50">
-              <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setIsAreaDropdownOpen(false)} />
-              <div className="relative w-48 bg-white rounded-lg shadow-lg border">
+              <div className="absolute inset-0 bg-primary bg-opacity-50" onClick={() => setIsAreaDropdownOpen(false)} />
+              <div className="relative w-48 bg-primary rounded-lg shadow-lg border border-secondary">
                 <div className="py-2">
                   {areas.map((area) => (
                     <button
                       key={area}
-                      className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center justify-between"
+                      className="w-full px-4 py-3 text-left text-sm hover:bg-secondary hover:text-white flex items-center justify-between text-white"
                       onClick={() => handleAreaSelect(area)}
                     >
                       {area}
                       {selectedArea === area && (
-                        <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                         </svg>
                       )}
                     </button>
                   ))}
                 </div>
-                <div className="border-t flex justify-between p-3">
+                <div className="border-t flex justify-between p-3 border-secondary">
                   <button
-                    className="text-sm text-gray-600"
+                    className="text-sm text-white"
                     onClick={() => setIsAreaDropdownOpen(false)}
                   >
                     閉じる
                   </button>
                   <button
-                    className="text-sm text-blue-500 font-medium"
+                    className="text-sm text-white font-medium"
                     onClick={() => setIsAreaDropdownOpen(false)}
                   >
                     決定
@@ -102,8 +102,8 @@ const RankingTabSection: React.FC = () => {
           <div className="flex space-x-1 w-full overflow-x-auto">
             <button
               className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === '総合'
-                ? 'bg-black text-white'
-                : 'border border-gray-300 text-gray-600'
+                ? 'bg-secondary text-white'
+                : 'border border-gray-700 text-white'
                 }`}
               onClick={() => setSelectedCategory('総合')}
             >
@@ -111,8 +111,8 @@ const RankingTabSection: React.FC = () => {
             </button>
             <button
               className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === 'パトロール'
-                ? 'bg-black text-white'
-                : 'border border-gray-300 text-gray-600'
+                ? 'bg-secondary text-white'
+                : 'border border-gray-700 text-white'
                 }`}
               onClick={() => setSelectedCategory('パトロール')}
             >
@@ -120,8 +120,8 @@ const RankingTabSection: React.FC = () => {
             </button>
             <button
               className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === 'コバト'
-                ? 'bg-black text-white'
-                : 'border border-gray-300 text-gray-600'
+                ? 'bg-secondary text-white'
+                : 'border border-gray-700 text-white'
                 }`}
               onClick={() => setSelectedCategory('コバト')}
             >
@@ -129,8 +129,8 @@ const RankingTabSection: React.FC = () => {
             </button>
             <button
               className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === 'ギフ'
-                ? 'bg-black text-white'
-                : 'border border-gray-300 text-gray-600'
+                ? 'bg-secondary text-white'
+                : 'border border-gray-700 text-white'
                 }`}
               onClick={() => setSelectedCategory('ギフ')}
             >
@@ -145,8 +145,8 @@ const RankingTabSection: React.FC = () => {
         <div className="flex w-full text-sm">
           <button
             className={`flex-1 py-2 ${timePeriod === 'current'
-              ? 'text-black border-b border-black'
-              : 'text-gray-400'
+              ? 'text-white border-b border-secondary'
+              : 'text-white'
               }`}
             onClick={() => setTimePeriod('current')}
           >
@@ -154,8 +154,8 @@ const RankingTabSection: React.FC = () => {
           </button>
           <button
             className={`flex-1 py-2 ${timePeriod === 'yesterday'
-              ? 'text-black border-b border-black'
-              : 'text-gray-400'
+              ? 'text-white border-b border-secondary'
+              : 'text-white'
               }`}
             onClick={() => setTimePeriod('yesterday')}
           >
@@ -163,8 +163,8 @@ const RankingTabSection: React.FC = () => {
           </button>
           <button
             className={`flex-1 py-2 ${timePeriod === 'lastWeek'
-              ? 'text-black border-b border-black'
-              : 'text-gray-400'
+              ? 'text-white border-b border-secondary'
+              : 'text-white'
               }`}
             onClick={() => setTimePeriod('lastWeek')}
           >
@@ -172,8 +172,8 @@ const RankingTabSection: React.FC = () => {
           </button>
           <button
             className={`flex-1 py-2 ${timePeriod === 'lastMonth'
-              ? 'text-black border-b border-black'
-              : 'text-gray-400'
+              ? 'text-white border-b border-secondary'
+              : 'text-white'
               }`}
             onClick={() => setTimePeriod('lastMonth')}
           >
@@ -181,8 +181,8 @@ const RankingTabSection: React.FC = () => {
           </button>
           <button
             className={`flex-1 py-2 ${timePeriod === 'allTime'
-              ? 'text-black border-b border-black'
-              : 'text-gray-400'
+              ? 'text-white border-b border-secondary'
+              : 'text-white'
               }`}
             onClick={() => setTimePeriod('allTime')}
           >
@@ -195,11 +195,11 @@ const RankingTabSection: React.FC = () => {
       <div className="flex-1 flex flex-col items-center justify-center min-w-[360px]">
         <div className="relative">
           <div className="absolute -left-16 top-12">
-            <div className="w-8 h-8 bg-[#FF6B00] rounded-full flex items-center justify-center text-white text-base font-bold">
+            <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-white text-base font-bold">
               1
             </div>
           </div>
-          <div className="w-[120px] h-[120px] rounded-full bg-[#FFF5EB] flex items-center justify-center relative">
+          <div className="w-[120px] h-[120px] rounded-full bg-primary flex items-center justify-center relative border border-secondary">
             <div className="w-full h-full relative">
               <img
                 src="/assets/avatar/avatar-1.png"
@@ -209,13 +209,13 @@ const RankingTabSection: React.FC = () => {
             </div>
           </div>
         </div>
-        <p className="mt-4 text-sm text-gray-600">R491TBD</p>
+        <p className="mt-4 text-sm text-white">R491TBD</p>
       </div>
 
       {/* Bottom Profile Bar */}
-      <div className="bg-[#1F2937] text-white p-4 flex items-center space-x-3 mt-auto min-w-[360px]">
+      <div className="bg-primary text-white p-4 flex items-center space-x-3 mt-auto min-w-[360px] border-t border-secondary">
         <span className="text-sm">圏外</span>
-        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-400">
+        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-400 border-2 border-secondary">
           <img
             src="/assets/avatar/avatar-2.png"
             alt="Profile"

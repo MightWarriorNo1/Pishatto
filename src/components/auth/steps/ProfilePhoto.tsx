@@ -28,41 +28,39 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] flex flex-col">
+    <div className="min-h-screen bg-primary flex flex-col">
       <div className="px-4 py-4">
-        <button onClick={onBack} className="text-gray-600 text-xl">
+        <button onClick={onBack} className="text-white text-xl">
           ＜
         </button>
       </div>
       <div className="flex-1 px-4 flex flex-col">
         <div className="flex items-center justify-center space-x-2 mb-6">
-          <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center">1</div>
-          <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center">2</div>
-          <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center">3</div>
-          <div className="w-8 h-8 rounded-full bg-[#FF6B00] text-white flex items-center justify-center">4</div>
+          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">1</div>
+          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">2</div>
+          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">3</div>
+          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center border border-secondary">4</div>
         </div>
-
         <div className="mb-6">
-          <h1 className="text-lg font-medium mb-2">
+          <h1 className="text-lg font-medium mb-2 text-white">
             プロフィール写真
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-white">
             ※あとから変更可能
           </p>
         </div>
-
         <div className="flex justify-center mb-8">
           <div className="relative">
-            <div className="w-32 h-32 rounded-full bg-gray-500 flex items-center justify-center">
+            <div className="w-32 h-32 rounded-full bg-primary flex items-center justify-center">
               {formData.profilePhoto ? (
-                <img 
-                  src={URL.createObjectURL(formData.profilePhoto)} 
-                  alt="Profile" 
+                <img
+                  src={URL.createObjectURL(formData.profilePhoto)}
+                  alt="Profile"
                   className="w-full h-full rounded-full object-cover"
                 />
               ) : (
                 <svg
-                  className="w-12 h-12 text-gray-400"
+                  className="w-12 h-12 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -78,17 +76,16 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
             </div>
             <button
               onClick={() => setShowOptions(true)}
-              className="absolute bottom-0 right-0 w-8 h-8 bg-[#FF6B00] rounded-full flex items-center justify-center text-white"
+              className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white"
             >
               +
             </button>
           </div>
         </div>
-
         {showOptions && (
-          <div className="bg-white rounded-lg shadow-md">
+          <div className="bg-primary rounded-lg shadow-md border border-secondary">
             <button
-              className="w-full py-4 px-4 flex items-center space-x-3 text-left border-b border-gray-100"
+              className="w-full py-4 px-4 flex items-center space-x-3 text-left border-b border-secondary text-white"
               onClick={() => {
                 fileInputRef.current?.click();
               }}
@@ -97,7 +94,7 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
               <span>写真ライブラリ</span>
             </button>
             <button
-              className="w-full py-4 px-4 flex items-center space-x-3 text-left border-b border-gray-100"
+              className="w-full py-4 px-4 flex items-center space-x-3 text-left border-b border-secondary text-white"
               onClick={() => {
                 fileInputRef.current?.click();
               }}
@@ -106,7 +103,7 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
               <span>写真またはビデオを撮る</span>
             </button>
             <button
-              className="w-full py-4 px-4 flex items-center space-x-3 text-left"
+              className="w-full py-4 px-4 flex items-center space-x-3 text-left text-white"
               onClick={() => {
                 fileInputRef.current?.click();
               }}
@@ -116,7 +113,6 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
             </button>
           </div>
         )}
-
         <input
           ref={fileInputRef}
           type="file"
@@ -124,11 +120,10 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
           onChange={handleFileSelect}
           className="hidden"
         />
-
         <div className="mt-auto pb-8">
           <button
             onClick={onNext}
-            className="w-full py-4 bg-[#FF6B00] text-white rounded-lg font-medium"
+            className="w-full py-4 bg-primary text-white rounded-lg font-medium"
           >
             次へ
           </button>

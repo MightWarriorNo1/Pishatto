@@ -51,36 +51,33 @@ const NewCastSection: React.FC = () => {
   };
 
   return (
-    <div className="mb-8">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold">新人キャスト</h2>
-        <button className="text-sm text-orange-500">すべて見る＞</button>
-      </div>
+    <div className="bg-primary rounded-lg shadow p-4 mb-4 border border-secondary">
+      <h2 className="font-bold text-lg mb-2 text-white">新着キャスト</h2>
       <div className="grid grid-cols-3 gap-3">
         {castProfiles.map((profile) => (
           <div
             key={profile.id}
-            className="bg-white rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105"
+            className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary"
             onClick={() => handleCastClick(profile.id)}
           >
             <div className="aspect-w-3 aspect-h-4 relative">
               <img
                 src={profile.imageUrl}
                 alt={profile.name}
-                className="w-full h-full object-cover rounded-lg"
+                className="w-full h-full object-cover rounded-lg border border-secondary"
               />
               {profile.isPremium && (
-                <div className="absolute top-[132px] h-[25px] w-[80%] bg-gradient-to-r from-blue-500 to-blue-400 text-white text-xs px-2 py-1 rounded">
+                <div className="absolute top-[132px] h-[25px] w-[80%] bg-gradient-to-r from-red-600 to-red-400 text-white text-xs px-2 py-1 rounded">
                   プレミアム
                 </div>
               )}
             </div>
             <div className="p-2">
               <div className="flex items-center gap-2 text-sm">
-                <span>● {profile.age}歳</span>
-                <span>{profile.name}</span>
+                <span className="text-white">● {profile.age}歳</span>
+                <span className="text-white">{profile.name}</span>
               </div>
-              <div className="text-gray-500 text-xs mt-1">
+              <div className="text-white text-xs mt-1">
                 {profile.location}
               </div>
             </div>

@@ -16,18 +16,18 @@ interface BottomNavigationBarProps {
 
 const BottomNavigationBar: React.FC<BottomNavigationBarProps> = ({ selected = 0, onTabChange }) => {
     return (
-        <div className="rounded-b-3xl shadow p-4 flex flex-row items-center bg-white">
+        <div className="rounded-b-3xl shadow p-4 flex flex-row items-center bg-secondary border-t border-secondary">
             {navs.map((nav, idx) => (
                 <button
                     key={nav.label}
                     aria-label={nav.aria}
-                    className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${selected === idx ? 'text-purple-600 font-bold' : 'text-gray-500'}`}
+                    className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${selected === idx ? 'text-primary font-bold' : 'text-white'}`}
                     onClick={() => onTabChange && onTabChange(idx)}
                 >
                     <span className="relative text-2xl mb-1">
                         {nav.icon}
                         {nav.badge && (
-                            <span className="absolute -top-1 -right-2 bg-pink-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{nav.badge}</span>
+                            <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{nav.badge}</span>
                         )}
                     </span>
                     <span>{nav.label}</span>

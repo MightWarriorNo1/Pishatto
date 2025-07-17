@@ -1,37 +1,37 @@
 import React, { useState } from 'react';
-import { SlidersHorizontal, Bell, MessageCircleQuestionMark, ChevronLeft } from 'lucide-react';
+import { Crown, SlidersHorizontal, Bell, MessageCircleQuestionMark, ChevronLeft } from 'lucide-react';
 
 // GuestDetailPage component
 type GuestDetailPageProps = { onBack: () => void; avatarFilename: string };
 const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, avatarFilename }) => {
     const avatarSrc = `/assets/avatar/${avatarFilename}`;
     return (
-        <div className="max-w-md mx-auto bg-white min-h-screen pb-8">
+        <div className="max-w-md mx-auto bg-primary min-h-screen pb-8">
             {/* Header with back button */}
             <div className="flex items-center px-2 pt-2 pb-2">
-                <button onClick={onBack} className="text-2xl text-gray-700 font-bold">
+                <button onClick={onBack} className="text-2xl text-white font-bold">
                     <ChevronLeft />
                 </button>
             </div>
             {/* Main image */}
-            <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+            <div className="w-full h-48 bg-primary flex items-center justify-center border-b border-secondary">
                 <img src={avatarSrc} alt="guest_detail" className="object-contain h-full mx-auto" />
             </div>
             {/* Badge */}
             <div className="px-4 mt-2">
-                <span className="inline-block bg-orange-500 text-white text-xs rounded px-2 py-0.5">最近入会</span>
+                <span className="inline-block bg-secondary text-white text-xs rounded px-2 py-0.5">最近入会</span>
             </div>
             {/* Profile card */}
-            <div className="flex items-center px-4 py-2 mt-2 bg-white rounded shadow">
-                <img src={avatarSrc} alt="guest_thumb" className="w-10 h-10 rounded mr-2" />
+            <div className="flex items-center px-4 py-2 mt-2 bg-primary rounded shadow border border-secondary">
+                <img src={avatarSrc} alt="guest_thumb" className="w-10 h-10 rounded mr-2 border-2 border-secondary" />
                 <div>
-                    <div className="font-bold text-sm">オフライン中  まこちゃん</div>
-                    <div className="text-xs text-gray-500">弁護士 / お酒がすき</div>
+                    <div className="font-bold text-sm text-white">オフライン中  まこちゃん</div>
+                    <div className="text-xs text-white">弁護士 / お酒がすき</div>
                 </div>
             </div>
             {/* Profile details */}
             <div className="px-4 py-2">
-                <table className="w-full text-sm text-gray-700">
+                <table className="w-full text-sm text-white">
                     <tbody>
                         <tr><td className="py-1">身長：</td><td>175</td></tr>
                         <tr><td className="py-1">居住地：</td><td>東京都</td></tr>
@@ -47,20 +47,20 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, avatarFilenam
             </div>
             {/* Like button */}
             <div className="px-4 py-2">
-                <button className="w-full border border-orange-400 text-orange-500 rounded py-2 flex items-center justify-center font-bold">
+                <button className="w-full border border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition">
                     <span className="mr-2">🧡</span>いいね
                 </button>
             </div>
             {/* Recent post */}
             <div className="px-4 pt-4">
-                <div className="font-bold text-sm mb-1">最近のつぶやき</div>
+                <div className="font-bold text-sm mb-1 text-white">最近のつぶやき</div>
                 <div className="flex items-center mb-1">
-                    <img src={avatarSrc} alt="guest_thumb" className="w-6 h-6 rounded mr-2" />
-                    <span className="text-xs font-bold">まこちゃん</span>
-                    <span className="text-xs text-gray-400 ml-2">弁護士・22.10</span>
-                    <span className="ml-auto text-pink-500 text-lg">❤ 1</span>
+                    <img src={avatarSrc} alt="guest_thumb" className="w-6 h-6 rounded mr-2 border-2 border-secondary" />
+                    <span className="text-xs font-bold text-white">まこちゃん</span>
+                    <span className="text-xs text-white ml-2">弁護士・22.10</span>
+                    <span className="ml-auto text-white text-lg">❤ 1</span>
                 </div>
-                <div className="text-xs text-gray-700">よろしくお願いします！</div>
+                <div className="text-xs text-white">よろしくお願いします！</div>
             </div>
         </div>
     );
@@ -113,23 +113,23 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const dateTabs = ['今月', '昨日', '先週', '先月', '全期間'];
     const ranking = rankingData[dateTab] || [];
     return (
-        <div className="max-w-md mx-auto pb-8 bg-white min-h-screen">
+        <div className="max-w-md mx-auto pb-8 bg-primary min-h-screen">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b">
-                <button onClick={onBack} className="text-2xl text-gray-700 font-bold">
+            <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-secondary">
+                <button onClick={onBack} className="text-2xl text-white font-bold">
                     <ChevronLeft />
                 </button>
-                <span className="text-lg font-bold">ランキング</span>
+                <span className="text-lg font-bold text-white">ランキング</span>
                 <span></span>
             </div>
             {/* Main Tabs */}
             <div className="flex items-center space-x-2 px-4 py-3">
-                <button onClick={() => setMainTab('cast')} className={`px-4 py-2 rounded-lg font-bold ${mainTab === 'cast' ? 'bg-gray-100 text-gray-700' : 'bg-white text-gray-400 border'}`}>キャスト</button>
-                <button onClick={() => setMainTab('guest')} className={`px-4 py-2 rounded-lg font-bold ${mainTab === 'guest' ? 'bg-gray-900 text-white' : 'bg-white text-gray-400 border'}`}>ゲスト</button>
+                <button onClick={() => setMainTab('cast')} className={`px-4 py-2 rounded-lg font-bold ${mainTab === 'cast' ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}>キャスト</button>
+                <button onClick={() => setMainTab('guest')} className={`px-4 py-2 rounded-lg font-bold ${mainTab === 'guest' ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}>ゲスト</button>
                 <div className="flex-1" />
                 <div className="relative">
                     <select
-                        className="flex items-center border rounded px-3 py-1 text-gray-700 bg-white"
+                        className="flex items-center border border-secondary rounded px-3 py-1 text-white bg-primary"
                         value={region}
                         onChange={e => setRegion(e.target.value)}
                     >
@@ -145,14 +145,14 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             {/* Category Buttons */}
             <div className="flex space-x-2 px-4 pb-2">
                 {categories.map(cat => (
-                    <button key={cat} onClick={() => setCategory(cat)} className={`px-4 py-1 rounded-lg font-bold border ${category === cat ? 'bg-gray-900 text-white' : 'bg-white text-gray-700'}`}>{cat}</button>
+                    <button key={cat} onClick={() => setCategory(cat)} className={`px-4 py-1 rounded-lg font-bold border border-secondary ${category === cat ? 'bg-secondary text-white' : 'bg-primary text-white'}`}>{cat}</button>
                 ))}
             </div>
             {/* Date Tabs */}
             <div className="px-4 mt-4 mx-auto w-full">
                 <div className='flex text-sm w-full'>
                     {dateTabs.map(tab => (
-                        <button key={tab} onClick={() => setDateTab(tab)} className={`${dateTab === tab ? 'flex-1 py-2 text-black border-b border-black' : 'flex-1 py-2 text-gray-400'}`}>{tab}</button>
+                        <button key={tab} onClick={() => setDateTab(tab)} className={`${dateTab === tab ? 'flex-1 py-2 text-white border-b border-secondary' : 'flex-1 py-2 text-white'}`}>{tab}</button>
                     ))}
                 </div>
             </div>
@@ -162,27 +162,27 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     user.rank === 1 ? (
                         <div key={user.rank} className="flex flex-col items-center px-4 py-4">
                             <div className="flex items-center mb-2 w-full">
-                                <div className="w-6 h-6 bg-purple-500 text-white flex items-center justify-center rounded font-bold mr-2">{user.rank}</div>
+                                <div className="w-6 h-6 bg-secondary text-white flex items-center justify-center rounded font-bold mr-2">{user.rank}</div>
                             </div>
                             <div className="flex flex-col items-center w-full">
-                                <div className="w-28 h-28 rounded-full border-4 border-purple-500 overflow-hidden mb-2">
+                                <div className="w-28 h-28 rounded-full border-4 border-secondary overflow-hidden mb-2">
                                     <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                                 </div>
-                                <div className="text-lg font-bold text-gray-900">{user.name}{user.age && `　${user.age}歳`}</div>
+                                <div className="text-lg font-bold text-white">{user.name}{user.age && `　${user.age}歳`}</div>
                             </div>
                         </div>
                     ) : (
-                        <div key={user.rank} className="flex items-center px-4 py-2 border-b">
-                            <div className={`flex items-center justify-center w-8 h-8 text-lg font-bold ${user.rank === 2 ? 'text-gray-700 bg-gray-200 rounded' : user.rank === 3 ? 'text-white bg-orange-400 rounded' : ''}`}>{user.rank}</div>
+                        <div key={user.rank} className="flex items-center px-4 py-2 border-b border-secondary">
+                            <div className={`flex items-center justify-center w-8 h-8 text-lg font-bold ${user.rank === 2 ? 'text-white bg-primary border border-secondary rounded' : user.rank === 3 ? 'text-white bg-secondary rounded' : 'text-white bg-primary border border-secondary rounded'}`}>{user.rank}</div>
                             <div className="mx-4">
                                 {user.avatar ? (
                                     <img src={user.avatar} alt={user.name} className="w-16 h-16 rounded-full border-4 border-transparent" />
                                 ) : (
-                                    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center text-2xl">👤</div>
+                                    <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl text-white">👤</div>
                                 )}
                             </div>
                             <div className="flex-1">
-                                <div className="text-base font-bold text-gray-900">{user.name}{user.age && `　${user.age}歳`}</div>
+                                <div className="text-base font-bold text-white">{user.name}{user.age && `　${user.age}歳`}</div>
                             </div>
                         </div>
                     )
@@ -195,54 +195,54 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 // Add EasyMessagePage component
 const EasyMessagePage: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
-        <div className="max-w-md mx-auto bg-white min-h-screen pb-8 relative">
+        <div className="max-w-md mx-auto bg-primary min-h-screen pb-8 relative">
             {/* Header with close button */}
             <div className="flex items-center px-4 pt-4 pb-2">
-                <button onClick={onClose} className="text-2xl text-gray-700 font-bold">×</button>
-                <div className="flex-1 text-center text-lg font-bold -ml-8">らくらくメッセ</div>
+                <button onClick={onClose} className="text-2xl text-white font-bold">×</button>
+                <div className="flex-1 text-center text-lg font-bold -ml-8 text-white">らくらくメッセ</div>
                 <div style={{ width: 32 }} /> {/* Spacer for symmetry */}
             </div>
             {/* Description */}
-            <div className="px-4 text-sm text-gray-700 mb-4">
+            <div className="px-4 text-sm text-white mb-4">
                 らくらくメッセを使うと、おすすめのゲスト25~30人にメッセージが送れるよ♪簡単にアポゲット！
             </div>
             {/* Region select */}
             <div className="px-4 mb-2">
                 <div className="flex items-center">
-                    <span className="text-base font-bold mr-2">地域を選択</span>
-                    <button className="border rounded px-4 py-2 text-base font-bold flex items-center">
+                    <span className="text-base font-bold mr-2 text-white">地域を選択</span>
+                    <button className="border border-secondary rounded px-4 py-2 text-base font-bold flex items-center text-white bg-primary">
                         全国 <span className="ml-2">▼</span>
                     </button>
                 </div>
-                <div className="text-xs text-gray-400 mt-1">*地域を選択すると、その地域をよく利用するゲストに送信されます。</div>
+                <div className="text-xs text-white mt-1">*地域を選択すると、その地域をよく利用するゲストに送信されます。</div>
             </div>
             {/* Message textarea */}
             <div className="px-4 mb-2">
                 <textarea
-                    className="w-full h-28 border rounded bg-gray-50 p-3 text-base resize-none focus:outline-none"
+                    className="w-full h-28 border border-secondary rounded bg-primary p-3 text-base resize-none focus:outline-none text-white"
                     placeholder="ここにメッセージを入力..."
                 />
             </div>
             {/* Nickname note */}
-            <div className="px-4 text-xs text-gray-500 mb-2">
+            <div className="px-4 text-xs text-white mb-2">
                 文中に“%”と入力すると、ゲストのニックネームが表示されます。 例）“%さん” → 「ゲストの名前」さん
             </div>
             {/* Checkbox for history */}
             <div className="px-4 flex items-center mb-2">
                 <input type="checkbox" id="saveHistory" className="mr-2 w-4 h-4" />
-                <label htmlFor="saveHistory" className="text-xs text-gray-700">チェックを入れると次回以降、履歴として保存します</label>
+                <label htmlFor="saveHistory" className="text-xs text-white">チェックを入れると次回以降、履歴として保存します</label>
             </div>
-            <div className="px-4 text-xs text-gray-400 mb-4">※ 履歴として保存できるのは最大6個までとなります。</div>
+            <div className="px-4 text-xs text-white mb-4">※ 履歴として保存できるのは最大6個までとなります。</div>
             {/* No history message */}
-            <div className="px-4 text-center text-gray-400 mb-8">履歴がまだありません。</div>
+            <div className="px-4 text-center text-white mb-8">履歴がまだありません。</div>
             {/* Send button */}
             <div className="px-4 mb-2">
-                <button className="w-full bg-gray-200 text-white rounded py-3 font-bold text-base" disabled>
+                <button className="w-full bg-secondary text-white rounded py-3 font-bold text-base hover:bg-red-700 transition" disabled>
                     メッセージを送信する
                 </button>
             </div>
             {/* Note about sending time */}
-            <div className="px-4 text-xs text-gray-400 text-center">
+            <div className="px-4 text-xs text-white text-center">
                 メッセージの送信に10秒ほどかかる場合があります
             </div>
         </div>
@@ -287,28 +287,28 @@ const CastSearchPage: React.FC = () => {
         return <EasyMessagePage onClose={() => setShowEasyMessage(false)} />;
     }
     return (
-        <div className="max-w-md mx-auto pb-20">
+        <div className="max-w-md mx-auto pb-20 bg-primary">
             {/* Top bar with filter and crown */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                <span>
+                <span className="text-white">
                     <Bell />
                 </span>
-                <button className="flex items-center bg-purple-500 text-white rounded-full px-4 py-1 font-bold text-base"><span className="mr-2">
+                <button className="flex items-center bg-secondary text-white rounded-full px-4 py-1 font-bold text-base"><span className="mr-2">
                     <SlidersHorizontal /></span>絞り込み中</button>
-                <span className="text-2xl text-gray-400 cursor-pointer" onClick={() => setShowRanking(true)}>
-                    <img src="/assets/icons/crown.png" alt="crown" />
+                <span className="text-2xl text-white cursor-pointer" onClick={() => setShowRanking(true)}>
+                    <img src="/assets/icons/crown.png" />
                 </span>
             </div>
             {/* Repeat guests */}
             <div className="px-4 pt-2 pb-1 flex items-center justify-between">
-                <span className="text-base font-bold text-gray-900">あなたにリピートしそうなゲスト <span className="text-xs text-gray-400 ml-1">i</span></span>
-                <button className="text-xs text-purple-500 font-bold">すべて見る &gt;</button>
+                <span className="text-base font-bold text-white">あなたにリピートしそうなゲスト <span className="text-xs text-white ml-1">i</span></span>
+                <button className="text-xs text-white font-bold">すべて見る &gt;</button>
             </div>
-            <div className="flex space-x-2 px-4 pb-4">
+            <div className="flex space-x-2 overflow-x-auto px-4 pb-4">
                 {avatarImages.map((filename, idx) => (
                     <div
                         key={filename}
-                        className={`w-32 h-40 bg-gray-200 cursor-pointer rounded-lg flex items-center justify-center`}
+                        className={`w-32 min-w-[120px] h-40 bg-primary cursor-pointer rounded-lg flex items-center justify-center border border-secondary`}
                         onClick={() => {
                             setSelectedAvatar(filename);
                             setShowGuestDetail(true);
@@ -317,31 +317,31 @@ const CastSearchPage: React.FC = () => {
                         <img
                             src={`/assets/avatar/${filename}`}
                             alt={`cast_search_${idx}`}
-                            className="w-16 h-20 object-cover rounded-lg"
+                            className="object-cover rounded-lg border-2 border-secondary"
                         />
                     </div>
                 ))}
             </div>
             {/* Previous search results */}
-            <div className="px-4 pt-2 pb-1 text-base font-bold text-gray-900">前回の検索結果</div>
+            <div className="px-4 pt-2 pb-1 text-base font-bold text-white">前回の検索結果</div>
             <div className="grid grid-cols-2 gap-4 px-4">
                 {location.map((filename, idx) => (
                     <div
                         key={filename}
-                        className="w-full h-60 bg-gray-100 rounded-lg flex flex-col items-center justify-end p-2"
+                        className="w-full h-60 bg-primary rounded-lg flex flex-col items-center justify-end p-2 border border-secondary"
                     >
                         <img
                             src={`/assets/avatar/${filename}`}
                             alt={`search_result_${idx}`}
-                            className="w-40 h-40 object-cover rounded-lg mb-2"
+                            className="w-40 h-40 object-cover rounded-lg mb-2 border-2 border-secondary"
                         />
-                        <div className="text-xs text-gray-700">検索結果 {idx + 1}</div>
+                        <div className="text-xs text-white">検索結果 {idx + 1}</div>
                     </div>
                 ))}
             </div>
             {/* Floating yellow button */}
             <button
-                className="fixed left-1/2 -translate-x-1/2 bottom-20 z-30 bg-yellow-400 text-white rounded-full px-8 py-4 shadow-lg font-bold text-lg flex items-center"
+                className="fixed left-1/2 -translate-x-1/2 bottom-20 z-30 bg-secondary text-white rounded-full px-8 py-4 shadow-lg font-bold text-lg flex items-center hover:bg-red-700 transition"
                 onClick={() => setShowEasyMessage(true)}
             >
                 <span className="mr-2">

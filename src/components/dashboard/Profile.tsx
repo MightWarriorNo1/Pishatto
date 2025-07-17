@@ -1,5 +1,5 @@
-import React, {useState } from 'react';
-import { Bell, CreditCard, FileUser, HelpCircle, Link, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User } from 'lucide-react';
+import React, { Component, useState } from 'react';
+import { Bell, ChevronLeft, ChevronRight, CreditCard, FileUser, HelpCircle, Link, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User } from 'lucide-react';
 import PointHistory from './PointHistory';
 import GradeDetail from './GradeDetail';
 import AvatarEditPage from './AvatarEditPage';
@@ -10,7 +10,7 @@ import IdentityVerificationScreen from './IdentityVerificationScreen';
 
 const notifications = [
     {
-        avatar: 'https://placehold.co/60x60',
+        avatar: '/assets/avatar/AdobeStock_1095142160_Preview.jpeg',
         name: 'もえ',
         icons: '🚩中🏳️‍🌈✈️',
         area: '東京',
@@ -20,7 +20,7 @@ const notifications = [
         message: '初めまして！普段は不動産系の会社員とSNS関係や人材紹介の個人事業主をしてます✨ 昔は芸能活動もしてました🌸…',
     },
     {
-        avatar: 'https://placehold.co/60x60',
+        avatar: '/assets/avatar/AdobeStock_1067731649_Preview.jpeg',
         name: '暇なOL',
         icons: '🐰🍒',
         area: '',
@@ -43,10 +43,12 @@ function NotificationScreen({ onBack }: { onBack: () => void }) {
         { date: '2025/1/1', message: '利用規約違反者への対処について' },
     ];
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-white pb-4">
+        <div className="max-w-md mx-auto min-h-screen bg-primary pb-4">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b">
-                <button onClick={onBack} className="mr-2 text-2xl text-gray-500">&#60;</button>
+                <button onClick={onBack} className="mr-2 text-2xl text-gray-500">
+                    <ChevronLeft />
+                </button>
                 <span className="text-lg font-bold flex-1 text-center">お知らせ</span>
             </div>
             {/* Tabs */}
@@ -115,26 +117,26 @@ const Profile: React.FC = () => {
     if (showPointPurchase) return <PointPurchasePage onBack={() => setShowPointPurchase(false)} />;
     if (showIdentityVerification) return <IdentityVerificationScreen onBack={() => setShowIdentityVerification(false)} />;
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-[#fffbe9] pb-20">
+        <div className="max-w-md mx-auto min-h-screen bg-primary pb-20">
             {/* Top bar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b bg-white relative">
+            <div className="flex items-center justify-between px-4 py-3 border-b bg-primary border-secondary relative">
                 <button onClick={() => setShowNotification(true)} className="relative">
-                    <Bell className="w-6 h-6" />
-                    <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full px-1">1</span>
+                    <Bell className="w-6 h-6 text-white" />
+                    <span className="absolute -top-1 -right-1 bg-secondary text-white text-xs rounded-full px-1">1</span>
                 </button>
-                <span className="text-lg font-bold">マイページ</span>
+                <span className="text-lg font-bold text-white">マイページ</span>
                 <div className="flex items-center gap-2">
-                    <button onClick={() => alert('QRコードを開く')} className="text-gray-500">
+                    <button onClick={() => alert('QRコードを開く')} className="text-white">
                         <QrCode className="w-6 h-6" />
                     </button>
-                    <button onClick={() => setShowNotificationSettings(true)} className="text-gray-500">
+                    <button onClick={() => setShowNotificationSettings(true)} className="text-white">
                         <Settings className="w-6 h-6" />
                     </button>
                 </div>
             </div>
             {/* Coupon banner */}
-            <div className="bg-white text-xs text-gray-700 px-4 py-2 border-b flex items-center">
-                <button onClick={() => setShowNotification(true)} className="mr-2 text-gray-500">
+            <div className="bg-primary text-xs text-white px-4 py-2 border-b border-secondary flex items-center">
+                <button onClick={() => setShowNotification(true)} className="mr-2 text-white">
                     <Bell className="w-6 h-6" />
                 </button>
                 <span>最大30,000Pの紹介クーポンがもらえる特別な期間！</span>
@@ -142,92 +144,108 @@ const Profile: React.FC = () => {
             {/* Profile avatar and name */}
             <div className="flex flex-col items-center py-6">
                 <div className="relative">
-                    <img src="/assets/avatar/2.jpg" alt="avatar" className="w-24 h-24 rounded-full object-cover border-4 border-white shadow" />
-                    <button onClick={() => setShowAvatarEdit(true)} className="absolute bottom-2 right-2 bg-orange-500 rounded-full p-1 border-2 border-white">
-                        <Pencil className="w-6 h-6" />
+                    <img src="/assets/avatar/2.jpg" alt="avatar" className="w-24 h-24 rounded-full object-cover border-4 border-secondary shadow" />
+                    <button onClick={() => setShowAvatarEdit(true)} className="absolute bottom-2 right-2 bg-secondary rounded-full p-1 border-2 border-white">
+                        <Pencil className="w-6 h-6 text-white" />
                     </button>
                 </div>
-                <span className="mt-2 text-lg font-bold">まこちゃん</span>
+                <span className="mt-2 text-lg font-bold text-white">まこちゃん</span>
             </div>
             {/* Grade section */}
-            <div className="bg-[#bfa76a] text-white text-center py-2 font-bold">今期のグレード</div>
-            <div className="bg-white px-4 py-4 flex items-center gap-4">
-                <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-yellow-300 text-3xl shadow"><svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#FFD700" /><polygon points="12,7 13.09,10.26 16.18,10.27 13.64,12.14 14.73,15.4 12,13.53 9.27,15.4 10.36,12.14 7.82,10.27 10.91,10.26" fill="#fff" /></svg></span>
-                <span className="text-2xl font-bold text-[#bfa76a]">ビギナー</span>
+            <div className="bg-secondary text-white text-center py-2 font-bold">今期のグレード</div>
+            <div className="bg-primary px-4 py-4 flex items-center gap-4 border border-secondary">
+                <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-secondary text-3xl shadow"><svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#FF0000" /><polygon points="12,7 13.09,10.26 16.18,10.27 13.64,12.14 14.73,15.4 12,13.53 9.27,15.4 10.36,12.14 7.82,10.27 10.91,10.26" fill="#fff" /></svg></span>
+                <span className="text-2xl font-bold text-white">ビギナー</span>
                 <button onClick={() => setShowGradeDetail(true)} className="ml-auto">
                     <svg width="24" height="24" fill="none" stroke="#bfa76a" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg>
                 </button>
             </div>
             {/* Grade up section */}
-            <div className="bg-orange-100 px-4 py-4 flex items-center gap-4 mt-2 rounded-lg mx-4">
+            <div className="bg-secondary px-4 py-4 flex items-center gap-4 mt-2 rounded-lg mx-4">
                 <div className="flex-1">
-                    <div className="text-orange-700 font-bold text-sm mb-1">クレジットカードを登録するだけで次のグレードに!!</div>
-                    <button onClick={() => alert('グレードアップ画面へ')} className="w-full bg-orange-500 text-white rounded-full py-2 font-bold mt-2">グレードアップする</button>
+                    <div className="text-white font-bold text-sm mb-1">クレジットカードを登録するだけで次のグレードに!!</div>
+                    <button onClick={() => alert('グレードアップ画面へ')} className="w-full bg-primary text-white rounded-full py-2 font-bold mt-2 border border-secondary">グレードアップする</button>
                 </div>
-                <img src="/assets/avatar/mascot.png" alt="mascot" className="w-16 h-16 object-contain" />
+                <img src="/assets/icons/gold-cup.png" alt="mascot" className="w-16 h-16 object-contain" />
             </div>
             {/* Settings/Options menu */}
-            <div className="bg-white mt-4 rounded-lg shadow mx-2 divide-y">
+            <div className="bg-primary mt-4 rounded-lg shadow mx-2 divide-y divide-red-600">
                 <button onClick={() => setShowPointHistory(true)} className="w-full flex items-center px-4 py-4 text-left">
                     <span className="mr-3">
                         <TicketCheck />
                     </span>
-                    <span className="flex-1">ポイント履歴・領収書</span>
-                    <span className="text-gray-400">&gt;</span>
+                    <span className="flex-1 text-white">ポイント履歴・領収書</span>
+                    <span className="text-white">
+                        <ChevronRight />
+                    </span>
                 </button>
                 <button onClick={() => setShowPaymentInfoSimple(true)} className="w-full flex items-center px-4 py-4 text-left">
                     <span className="mr-3">
-                        <CreditCard className="w-6 h-6" />
+                        <CreditCard className="w-6 h-6 text-white" />
                     </span>
-                    <span className="flex-1">お支払い情報</span>
-                    <span className="text-gray-400">&gt;</span>
+                    <span className="flex-1 text-white">お支払い情報</span>
+                    <span className="text-white">
+                        <ChevronRight />
+                    </span>
                 </button>
                 <button onClick={() => setShowPointPurchase(true)} className="w-full flex items-center px-4 py-4 text-left">
                     <span className="mr-3">
-                        <TicketPercent className="w-6 h-6" />
+                        <TicketPercent className="w-6 h-6 text-white" />
                     </span>
-                    <span className="flex-1">ポイント購入</span>
-                    <span className="text-gray-400">&gt;</span>
+                    <span className="flex-1 text-white">ポイント購入</span>
+                    <span className="text-white">
+                        <ChevronRight />
+                    </span>
                 </button>
                 <button onClick={() => setShowIdentityVerification(true)} className="w-full flex items-center px-4 py-4 text-left">
                     <span className="mr-3">
-                        <User className="w-6 h-6" />
+                        <User className="w-6 h-6 text-white" />
                     </span>
-                    <span className="flex-1">本人認証</span>
+                    <span className="flex-1 text-white">本人認証</span>
                     <span className="bg-orange-500 text-white text-xs rounded px-2 py-1 mr-2">本人確認書類をご登録ください</span>
-                    <span className="text-gray-400">&gt;</span>
+                    <span className="text-white">
+                        <ChevronRight />
+                    </span>
                 </button>
                 <button onClick={() => alert('クーポン')} className="w-full flex items-center px-4 py-4 text-left">
                     <span className="mr-3">
-                        <TicketPercent className="w-6 h-6" />
+                        <TicketPercent className="w-6 h-6 text-white" />
                     </span>
-                    <span className="flex-1">クーポン</span>
-                    <span className="text-gray-400">&gt;</span>
+                    <span className="flex-1 text-white">クーポン</span>
+                    <span className="text-white">
+                        <ChevronRight />
+                    </span>
                 </button>
                 <button onClick={() => alert('pishattoアプリ版「バトラー」再連携')} className="w-full flex items-center px-4 py-4 text-left">
                     <span className="mr-3">
-                        <Link className="w-6 h-6" />
+                        <Link className="w-6 h-6 text-white" />
                     </span>
-                    <span className="flex-1">pishattoアプリ版「バトラー」再連携</span>
-                    <span className="text-gray-400">&gt;</span>
+                    <span className="flex-1 text-white">pishattoアプリ版「バトラー」再連携</span>
+                    <span className="text-white">
+                        <ChevronRight />
+                    </span>
                 </button>
                 <button onClick={() => alert('キャスト応募')} className="w-full flex items-center px-4 py-4 text-left">
                     <span className="mr-3">
-                        <FileUser className="w-6 h-6" />
+                        <FileUser className="w-6 h-6 text-white" />
                     </span>
-                    <span className="flex-1">キャスト応募</span>
-                    <span className="text-gray-400">&gt;</span>
+                    <span className="flex-1 text-white">キャスト応募</span>
+                    <span className="text-white">
+                        <ChevronRight />
+                    </span>
                 </button>
                 <button onClick={() => alert('ヘルプ')} className="w-full flex items-center px-4 py-4 text-left">
                     <span className="mr-3">
-                        <HelpCircle className="w-6 h-6" />
+                        <HelpCircle className="w-6 h-6 text-white" />
                     </span>
-                    <span className="flex-1">ヘルプ</span>
-                    <span className="text-gray-400">&gt;</span>
+                    <span className="flex-1 text-white">ヘルプ</span>
+                    <span className="text-white">
+                        <ChevronRight />
+                    </span>
                 </button>
             </div>
             {/* App download banner */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t flex items-center px-4 py-2 z-20">
+            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t flex items-center px-4 py-2 z-20">
                 <img src="https://placehold.co/40x40?text=P" alt="pishatto" className="w-10 h-10 rounded mr-2" />
                 <div className="flex-1">
                     <div className="text-xs font-bold">待望のpishattoアプリ版登場！</div>
