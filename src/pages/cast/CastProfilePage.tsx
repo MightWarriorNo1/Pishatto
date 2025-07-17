@@ -59,7 +59,7 @@ const CastProfilePage: React.FC = () => {
                     </span>
                     <span className="text-xs text-white">WhiteDayイベントはアイテムを活用してギフトゲット！？</span>
                 </div>
-                <img src="/assets/icons/profile_number.png" />
+                <img src="/assets/icons/profile_number.png" alt='profile_number'/>
             </div>
             {/* Top row: avatar, name, pencil */}
             <div className="flex items-center justify-between px-4 pt-6">
