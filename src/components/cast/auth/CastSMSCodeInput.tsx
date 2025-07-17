@@ -9,7 +9,7 @@ interface CastSMSCodeInputProps {
 
 const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone }) => {
     const [code, setCode] = useState(['', '', '', '', '', '']);
-    const [timeLeft, setTimeLeft] = useState(30);
+    const [timeLeft] = useState(30);
     const isActive = code.length === 6 && /^[a-zA-Z0-9]{6}$/.test(code.join(''));
     const navigate = useNavigate();
 
@@ -27,7 +27,7 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone }) =>
         }
     };
     return (
-        <div className="min-h-screen bg-primary flex items-center justify-center">
+        <div className="min-h-screen bg-gray-200 flex items-center justify-center">
             <div className="max-w-md w-full mx-auto bg-primary rounded-2xl shadow-lg p-8 border border-secondary">
                 <div className="min-h-screen flex flex-col bg-primary">
                     {/* Header */}
@@ -62,7 +62,7 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone }) =>
                     {/* Bottom Button */}
                     <div className="w-full px-4 pb-4 mt-auto">
                         <button
-                            className={`w-full py-3 rounded-full font-medium text-base ${isActive ? 'bg-secondary text-white hover:bg-red-700 transition-all duration-200' : 'bg-primary border border-secondary text-white cursor-not-allowed'}`}
+                            className={`w-full py-3 rounded-full font-medium text-base ${isActive ? 'bg-secondary text-white hover:bg-pink-700 transition-all duration-200' : 'bg-pink-400 border border-secondary text-white cursor-not-allowed'}`}
                             disabled={!isActive}
                             onClick={() => {
                                 if (isActive) {

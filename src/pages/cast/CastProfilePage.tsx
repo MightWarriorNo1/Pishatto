@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BadgeQuestionMark, Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, UserCheck, BookOpen, ChevronRight } from 'lucide-react';
+import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const campaignImages = [
@@ -59,7 +59,7 @@ const CastProfilePage: React.FC = () => {
                     </span>
                     <span className="text-xs text-white">WhiteDayイベントはアイテムを活用してギフトゲット！？</span>
                 </div>
-                <img src="/assets/icons/profile_number.png" alt='profile_number'/>
+                <img src="/assets/icons/profile_number.png" alt='profile_number' />
             </div>
             {/* Top row: avatar, name, pencil */}
             <div className="flex items-center justify-between px-4 pt-6">
@@ -128,19 +128,19 @@ const CastProfilePage: React.FC = () => {
                 <div className="font-bold text-base mb-2 text-white">pishattoパスポート</div>
                 <div className="flex space-x-2 overflow-x-auto overflow-y-auto">
                     <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1095142160_Preview.jpeg" alt="pic1"/>
+                        <img src="/assets/avatar/AdobeStock_1095142160_Preview.jpeg" alt='img1' />
                     </div>
                     <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1067731649_Preview.jpeg" alt="pic1" />
+                        <img src="/assets/avatar/AdobeStock_1067731649_Preview.jpeg" alt='img1' />
                     </div>
                     <div className="w-60 h-24 bg-gray-900 rounded-lg  min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1190678828_Preview.jpeg" alt="pic1" />
+                        <img src="/assets/avatar/AdobeStock_1190678828_Preview.jpeg" alt='img1' />
                     </div>
                     <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1537463438_Preview.jpeg"  alt="pic1"/>
+                        <img src="/assets/avatar/AdobeStock_1537463438_Preview.jpeg" alt='img1' />
                     </div>
                     <div className="w-60 h-24 bg-gray-900 rounded-lg flex min-w-[120px] justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1537463446_Preview.jpeg" alt="pic1"/>
+                        <img src="/assets/avatar/AdobeStock_1537463446_Preview.jpeg" alt='img1' />
                     </div>
                 </div>
             </div>
@@ -178,33 +178,6 @@ const CastProfilePage: React.FC = () => {
                         <UserPlus />
                     </span>
                     <span className='flex-1 text-white'>お友達紹介</span>
-                    <span className="text-gray-400">
-                        <ChevronRight />
-                    </span>
-                </div>
-                <div className="w-full flex items-center px-4 py-4 text-left hover:bg-gray-900 transition">
-                    <span className="mr-3 text-white">
-                        <UserCheck />
-                    </span>
-                    <span className='flex-1 text-white'>本人認証</span>
-                    <span className="text-gray-400">
-                        <ChevronRight />
-                    </span>
-                </div>
-                <div className="w-full flex items-center px-4 py-4 text-left hover:bg-gray-900 transition">
-                    <span className="text-xl mr-3 text-white">
-                        <BookOpen />
-                    </span>
-                    <span className='flex-1 text-white'>pishattoパーフェクトマニュアル</span>
-                    <span className="text-gray-400">
-                        <ChevronRight />
-                    </span>
-                </div>
-                <div className="w-full flex items-center px-4 py-4 text-left hover:bg-gray-900 transition">
-                    <span className="text-xl mr-3 text-white">
-                        <BadgeQuestionMark />
-                    </span>
-                    <span className='flex-1 text-white'>ヘルプ</span>
                     <span className="text-gray-400">
                         <ChevronRight />
                     </span>

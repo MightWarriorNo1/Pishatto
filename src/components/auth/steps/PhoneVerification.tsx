@@ -97,7 +97,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
           <button
             onClick={handlePhoneSubmit}
             disabled={!phoneNumber}
-            className={`w-full py-4 text-center text-white rounded-lg ${phoneNumber ? 'bg-primary' : 'bg-primary border border-secondary text-white'}`}
+            className={`w-full py-4 text-center text-white rounded-lg ${phoneNumber ? 'bg-secondary hover:bg-red-500' : 'bg-primary border border-secondary text-white'}`}
           >
             SMS認証コードを送信する
           </button>
@@ -156,7 +156,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
         <button
           onClick={handleCodeSubmit}
           disabled={verificationCode.some(digit => digit === '')}
-          className={`w-full py-4 text-center text-white rounded-lg ${verificationCode.every(digit => digit !== '') ? 'bg-primary' : 'bg-primary border border-secondary text-white'}`}
+          className={`w-full py-4 text-center text-white rounded-lg ${verificationCode.every(digit => digit !== '') ? 'bg-secondary hover:bg-red-400' : 'bg-primary border border-secondary text-white'}`}
         >
           認証する
         </button>

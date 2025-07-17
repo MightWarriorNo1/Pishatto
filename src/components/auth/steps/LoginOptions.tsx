@@ -15,14 +15,14 @@ const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
 
           <button
             onClick={onNext}
-            className="w-full flex items-center justify-center py-3 px-4 rounded-full bg-primary border border-secondary text-white font-medium relative"
+            className="w-full flex items-center justify-center py-3 px-4 rounded-full bg-primary border border-secondary hover:bg-red-500 text-white font-medium relative"
           >
             <span className="absolute left-4">📞</span>
             電話番号で始める
           </button>
 
           <button
-            className="w-full flex items-center justify-center py-3 px-4 rounded-full bg-primary text-white border border-secondary font-medium relative"
+            className="w-full flex items-center justify-center py-3 px-4 rounded-full bg-secondary text-white border border-secondary font-medium relative"
           >
             <span className="absolute left-4">
               <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">

@@ -28,7 +28,7 @@ const TopNavigationBar: React.FC = () => {
                 ))}
             </div>
             {/* Dots indicator */}
-            <div className="flex space-x-1 mt-1 justify-center">
+            <div className="flex space-x-1 mt-1 justify-center ">
                 {navItems.map((_, idx) => (
                     <span
                         key={idx}

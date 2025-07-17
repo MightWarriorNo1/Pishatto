@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { FiBell } from 'react-icons/fi';
-import ChatScreen from './ChatScreen';
 import { useNavigate } from 'react-router-dom';
 
 interface MessageScreenProps {
@@ -8,7 +7,7 @@ interface MessageScreenProps {
     setShowChat: (show: boolean) => void;
 }
 
-const MessageScreen: React.FC<MessageScreenProps> = ({ showChat, setShowChat }) => {
+const CastMessage: React.FC<MessageScreenProps> = ({ showChat, setShowChat }) => {
     const [selectedTab, setSelectedTab] = useState<'all' | 'favorite'>('all');
     const navigate = useNavigate();
     // Mock favorite casts data
@@ -32,9 +31,6 @@ const MessageScreen: React.FC<MessageScreenProps> = ({ showChat, setShowChat }) 
             unread: 0,
         },
     ];
-    if (showChat) {
-        return <ChatScreen onBack={() => setShowChat(false)} />;
-    }
 
     return (
         <div className="bg-primary min-h-screen flex flex-col">
@@ -47,7 +43,7 @@ const MessageScreen: React.FC<MessageScreenProps> = ({ showChat, setShowChat }) 
             {/* Campaign banner */}
             <div className="bg-primary px-4 py-2 border-b border-secondary">
                 <div className="bg-primary rounded-lg shadow-sm flex items-center p-2">
-                    <img src="/assets/icons/logo_call.png" alt='logo_call' />
+                    <img src="/assets/icons/logo_call.png" />
                 </div>
             </div>
             {/* Tabs */}
@@ -136,4 +132,4 @@ const MessageScreen: React.FC<MessageScreenProps> = ({ showChat, setShowChat }) 
     );
 };
 
-export default MessageScreen; 
+export default CastMessage; 

@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { Crown, SlidersHorizontal, Bell, MessageCircleQuestionMark, ChevronLeft } from 'lucide-react';
+import { Heart, SlidersHorizontal, Bell, MessageCircleQuestionMark, ChevronLeft } from 'lucide-react';
 
 // GuestDetailPage component
 type GuestDetailPageProps = { onBack: () => void; avatarFilename: string };
 const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, avatarFilename }) => {
+    const [showEasyMessage, setShowEasyMessage] = useState(false);
     const avatarSrc = `/assets/avatar/${avatarFilename}`;
+
+    if (showEasyMessage) {
+        return <EasyMessagePage onClose={() => setShowEasyMessage(false)} />
+    }
     return (
-        <div className="max-w-md mx-auto bg-primary min-h-screen pb-8">
+        <div className="max-w-md mx-auto bg-primary min-h-screen pb-8 auto">
             {/* Header with back button */}
             <div className="flex items-center px-2 pt-2 pb-2">
                 <button onClick={onBack} className="text-2xl text-white font-bold">
@@ -47,8 +52,11 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, avatarFilenam
             </div>
             {/* Like button */}
             <div className="px-4 py-2">
-                <button className="w-full border border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition">
-                    <span className="mr-2">🧡</span>いいね
+                <button className="w-full border border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" onClick={() => setShowEasyMessage(true)}>
+                    <span className="mr-2">
+                        <Heart /></span>
+                    <span className="text-base">
+                    </span>いいね
                 </button>
             </div>
             {/* Recent post */}
@@ -208,7 +216,7 @@ const EasyMessagePage: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
             {/* Region select */}
             <div className="px-4 mb-2">
-                <div className="flex items-center">
+                <div className="flex items-center justify-between">
                     <span className="text-base font-bold mr-2 text-white">地域を選択</span>
                     <button className="border border-secondary rounded px-4 py-2 text-base font-bold flex items-center text-white bg-primary">
                         全国 <span className="ml-2">▼</span>
@@ -217,7 +225,7 @@ const EasyMessagePage: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <div className="text-xs text-white mt-1">*地域を選択すると、その地域をよく利用するゲストに送信されます。</div>
             </div>
             {/* Message textarea */}
-            <div className="px-4 mb-2">
+            <div className="px-4 mb-8">
                 <textarea
                     className="w-full h-28 border border-secondary rounded bg-primary p-3 text-base resize-none focus:outline-none text-white"
                     placeholder="ここにメッセージを入力..."
@@ -228,11 +236,11 @@ const EasyMessagePage: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 文中に“%”と入力すると、ゲストのニックネームが表示されます。 例）“%さん” → 「ゲストの名前」さん
             </div>
             {/* Checkbox for history */}
-            <div className="px-4 flex items-center mb-2">
+            <div className="px-4 flex items-center mb-8">
                 <input type="checkbox" id="saveHistory" className="mr-2 w-4 h-4" />
                 <label htmlFor="saveHistory" className="text-xs text-white">チェックを入れると次回以降、履歴として保存します</label>
             </div>
-            <div className="px-4 text-xs text-white mb-4">※ 履歴として保存できるのは最大6個までとなります。</div>
+            <div className="px-4 text-xs text-white mb-8">※ 履歴として保存できるのは最大6個までとなります。</div>
             {/* No history message */}
             <div className="px-4 text-center text-white mb-8">履歴がまだありません。</div>
             {/* Send button */}
@@ -296,7 +304,7 @@ const CastSearchPage: React.FC = () => {
                 <button className="flex items-center bg-secondary text-white rounded-full px-4 py-1 font-bold text-base"><span className="mr-2">
                     <SlidersHorizontal /></span>絞り込み中</button>
                 <span className="text-2xl text-white cursor-pointer" onClick={() => setShowRanking(true)}>
-                    <img src="/assets/icons/crown.png" alt="pic1"/>
+                    <img src="/assets/icons/crown.png" alt='crown' />
                 </span>
             </div>
             {/* Repeat guests */}

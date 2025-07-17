@@ -9,7 +9,7 @@ import FloatingActionButton from '../../components/cast/dashboard/FloatingAction
 import CastSearchPage from './CastSearchPage';
 import CastTimelinePage from './CastTimelinePage';
 import CastProfilePage from './CastProfilePage';
-import MessageProposalPage from '../../components/cast/dashboard/MessageProposalPage';
+import MessagePage from '../../components/cast/dashboard/MessagePage';
 
 const sampleCalls = [
     {
@@ -107,17 +107,17 @@ const sampleCalls = [
 const CallDetailModal = ({ call, onClose }: { call: any, onClose: () => void }) => {
     if (!call) return null;
     return (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-primary bg-opacity-40">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-gray-300 bg-opacity-40">
             <div className="bg-primary rounded-2xl shadow-xl max-w-md w-full mx-2 p-6 relative animate-fadeIn">
                 <button onClick={onClose} className="absolute top-3 right-3 text-black text-xl font-bold">×</button>
                 <div className="flex items-center mb-4">
                     <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center mr-3 border border-black">
                         <span className="text-3xl">🎩</span>
                     </div>
-                    <span className="text-base font-medium text-black">匿名様</span>
+                    <span className="text-base font-medium text-white">匿名様</span>
                 </div>
-                <div className="text-lg font-bold text-black mb-2">{call.time} {call.title}</div>
-                <div className="flex items-center text-sm text-black mb-2">
+                <div className="text-lg font-bold text-white mb-2">{call.time} {call.title}</div>
+                <div className="flex items-center text-sm text-white mb-2">
                     <span className="flex items-center mr-4">
                         <Clock3 />1時間</span>
                     <span className="flex items-center mr-4"><UserRound /> {call.people}名</span>
@@ -125,7 +125,7 @@ const CallDetailModal = ({ call, onClose }: { call: any, onClose: () => void }) 
                 <div className="text-xs text-black mb-1">獲得予定ポイント</div>
                 <div className="flex items-center mb-1">
                     <span className="text-2xl font-bold text-white mr-2">{call.points}</span>
-                    <span className="bg-red-100 text-white text-xs px-2 py-0.5 rounded font-bold mr-2">延長時</span>
+                    <span className="bg-red-100 text-black text-xs px-2 py-0.5 rounded font-bold mr-2">延長時</span>
                     <span className="text-white font-bold text-lg">+ 10,850P</span>
                     <span className="text-xs text-black ml-1">/1時間</span>
                 </div>
@@ -142,7 +142,7 @@ const CallDetailModal = ({ call, onClose }: { call: any, onClose: () => void }) 
                     />
                 </div>
                 <button className="w-full py-3 rounded-lg bg-secondary text-white font-bold text-base mb-2">応募する</button>
-                <button onClick={onClose} className="w-full py-2 rounded-lg text-black font-medium text-base">閉じる</button>
+                <button onClick={onClose} className="w-full py-2 text-black bg-gray-400 font-medium text-base">閉じる</button>
             </div>
         </div>
     );
@@ -207,7 +207,7 @@ const CastDashboard: React.FC = () => {
                 </div>
             )}
             {selectedTab === 1 && <CastSearchPage />}
-            {selectedTab === 2 && <MessageProposalPage />}
+            {selectedTab === 2 && <MessagePage />}
             {selectedTab === 3 && <CastTimelinePage />}
             {selectedTab === 4 && <CastProfilePage />}
             {/* Floating Action Button - only on Home */}

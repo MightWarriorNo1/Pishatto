@@ -58,7 +58,7 @@ const RankingTabSection: React.FC = () => {
           {/* Area Dropdown */}
           {isAreaDropdownOpen && (
             <div className="fixed inset-0 flex items-center justify-center z-50">
-              <div className="absolute inset-0 bg-primary bg-opacity-50" onClick={() => setIsAreaDropdownOpen(false)} />
+              <div className="absolute inset-0 bg-gray-400 bg-opacity-50" onClick={() => setIsAreaDropdownOpen(false)} />
               <div className="relative w-48 bg-primary rounded-lg shadow-lg border border-secondary">
                 <div className="py-2">
                   {areas.map((area) => (

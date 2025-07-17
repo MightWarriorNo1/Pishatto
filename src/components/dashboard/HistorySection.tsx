@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiMessageSquare } from 'react-icons/fi';
+import { MessageSquareMore } from 'lucide-react';
 
 interface HistoryProfile {
   id: number;
@@ -88,8 +88,11 @@ const HistorySection: React.FC = () => {
               <p className="text-sm text-white mt-2 line-clamp-2">
                 {profile.message}
               </p>
-              <button className="w-full mt-3 flex items-center justify-center space-x-2 bg-secondary text-white py-2 rounded-lg">
-                <FiMessageSquare className="w-4 h-4" />
+              <button
+                className="w-full mt-3 flex items-center justify-center space-x-2 bg-secondary text-white py-2 rounded-lg"
+                onClick={() => (window.location.href = `/cast/${profile.id}/message`)}
+              >
+                <MessageSquareMore />
                 <span>メッセージを送る</span>
               </button>
             </div>

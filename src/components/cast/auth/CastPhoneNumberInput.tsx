@@ -51,7 +51,7 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
                     {/* Bottom Button */}
                     <div className="w-full px-4 pb-6">
                         <button
-                            className={`w-full py-3 rounded-full font-medium text-base ${isActive ? 'bg-secondary text-white hover:bg-red-700 transition-all duration-200' : 'bg-primary border border-secondary text-white cursor-not-allowed'}`}
+                            className={`w-full py-3 rounded-full font-medium text-base ${isActive ? 'bg-secondary text-white hover:bg-red-700 transition-all duration-200' : 'bg-pink-400 border border-secondary text-white cursor-not-allowed'}`}
                             disabled={!isActive}
                             onClick={() => isActive && setShowSMS(true)}
                         >

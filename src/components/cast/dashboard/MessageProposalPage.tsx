@@ -61,7 +61,7 @@ const MessageProposalPage: React.FC = () => {
     const totalPoints = calcPoints(people, duration);
 
     return (
-        <div className="min-h-screen bg-primary flex flex-col items-center pb-24">
+        <div className="min-h-screen bg-gray-100 flex flex-col items-center pb-24">
             {/* Top Bar */}
             <div className="w-full max-w-md flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
                 <div className="flex items-center">

@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface NotificationSettingsPageProps {
@@ -27,16 +28,18 @@ const NotificationSettingsPage: React.FC<NotificationSettingsPageProps> = ({ onB
         <div className="max-w-md mx-auto min-h-screen bg-primary">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b border-secondary bg-primary">
-                <button onClick={onBack} className="mr-2 text-2xl text-white">&#60;</button>
+                <button onClick={onBack} className="mr-2 text-2xl text-white">
+                    <ChevronLeft />
+                </button>
                 <span className="text-lg font-bold flex-1 text-center text-white">通知設定</span>
             </div>
             {/* Notification toggles */}
-            <div className="divide-y divide-red-600">
+            <div className="divide-y divide-secondary">
                 {settings.map((item, idx) => (
                     <div key={item.label} className="flex items-center justify-between px-4 py-4 bg-primary">
                         <span className="text-white">{item.label}</span>
                         <button
-                            className={`w-12 h-7 flex items-center rounded-full p-1 transition-colors duration-200 ${item.value ? 'bg-secondary' : 'bg-primary border border-secondary'}`}
+                            className={`w-12 h-7 flex items-center rounded-full p-1 transition-colors duration-200 ${item.value ? 'bg-secondary' : 'bg-white border border-secondary'}`}
                             onClick={() => handleToggle(idx)}
                         >
                             <span

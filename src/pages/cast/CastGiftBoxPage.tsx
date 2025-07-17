@@ -30,7 +30,7 @@ const mockGifts = [
 
 const CastGiftBoxPage: React.FC = () => {
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-white">
+        <div className="max-w-md mx-auto min-h-screen bg-primary">
             {/* Top bar */}
             <div className="flex items-center px-4 pt-4 pb-2 border-b bg-primary border-secondary">
                 <button className="mr-2 text-2xl text-white" onClick={() => window.history.back()}>

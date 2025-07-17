@@ -10,7 +10,7 @@ const tabs = [
 const TabBar: React.FC = () => {
     const [selected, setSelected] = useState(0);
     return (
-        <div className="w-full bg-primary shadow-sm">
+        <div className="w-full bg-primary shadow-sm border border-secondary rounded-t-xl">
             <div className="flex w-full border-b border-secondary">
                 {tabs.map((tab, idx) => (
                     <button

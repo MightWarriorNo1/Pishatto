@@ -48,7 +48,7 @@ const StepRequirementScreen: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <div className="mx-4 bg-primary border-t-0 rounded-b-xl text-center text-white font-bold py-2 -mt-4 mb-4 cursor-pointer border border-secondary" onClick={() => setShowPaymentInfoRegister(true)}>登録する</div>
+            <div className="mx-4 bg-secondary hover:bg-pink-400 border-t-0 rounded-b-xl text-center text-white font-bold py-2 -mt-4 mb-4 cursor-pointer border border-secondary" onClick={() => setShowPaymentInfoRegister(true)}>登録する</div>
             {/* Step 3: Identity verification */}
             <div className="mx-4 rounded-xl overflow-hidden mb-4 bg-primary flex items-center cursor-pointer border border-secondary">
                 <div className="flex items-center flex-1 p-4">
@@ -61,7 +61,7 @@ const StepRequirementScreen: React.FC = () => {
                     </div>
                 </div>
             </div>
-            <div className="mx-4 bg-primary border-t-0 rounded-b-xl text-center text-white font-bold py-2 -mt-4 cursor-pointer border border-secondary" onClick={() => setShowIdentityVerification(true)}>登録する</div>
+            <div className="mx-4 bg-secondary hover:bg-pink-400 border-t-0 rounded-b-xl text-center text-white font-bold py-2 -mt-4 cursor-pointer border border-secondary" onClick={() => setShowIdentityVerification(true)}>登録する</div>
         </div>
     );
 };

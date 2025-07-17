@@ -1,5 +1,5 @@
-import React, { Component, useState } from 'react';
-import { Bell, ChevronLeft, ChevronRight, CreditCard, FileUser, HelpCircle, Link, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, ChevronLeft, ChevronRight, CreditCard, HelpCircle, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User } from 'lucide-react';
 import PointHistory from './PointHistory';
 import GradeDetail from './GradeDetail';
 import AvatarEditPage from './AvatarEditPage';
@@ -7,6 +7,7 @@ import NotificationSettingsPage from './NotificationSettingsPage';
 import PaymentInfoSimplePage from './PaymentInfoSimplePage';
 import PointPurchasePage from './PointPurchasePage';
 import IdentityVerificationScreen from './IdentityVerificationScreen';
+import HelpPage from '../help/HelpPage';
 
 const notifications = [
     {
@@ -102,6 +103,7 @@ function NotificationScreen({ onBack }: { onBack: () => void }) {
 const Profile: React.FC = () => {
     const [showNotification, setShowNotification] = useState(false);
     const [showPointHistory, setShowPointHistory] = useState(false);
+    const [showHelp, setShowHelp] = useState(false);
     const [showGradeDetail, setShowGradeDetail] = useState(false);
     const [showAvatarEdit, setShowAvatarEdit] = useState(false);
     const [showNotificationSettings, setShowNotificationSettings] = useState(false);
@@ -116,6 +118,7 @@ const Profile: React.FC = () => {
     if (showPaymentInfoSimple) return <PaymentInfoSimplePage onBack={() => setShowPaymentInfoSimple(false)} />;
     if (showPointPurchase) return <PointPurchasePage onBack={() => setShowPointPurchase(false)} />;
     if (showIdentityVerification) return <IdentityVerificationScreen onBack={() => setShowIdentityVerification(false)} />;
+    if (showHelp) return <HelpPage onBack={() => setShowHelp(false)} />;
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-20">
             {/* Top bar */}
@@ -169,8 +172,8 @@ const Profile: React.FC = () => {
                 <img src="/assets/icons/gold-cup.png" alt="mascot" className="w-16 h-16 object-contain" />
             </div>
             {/* Settings/Options menu */}
-            <div className="bg-primary mt-4 rounded-lg shadow mx-2 divide-y divide-red-600">
-                <button onClick={() => setShowPointHistory(true)} className="w-full flex items-center px-4 py-4 text-left">
+            <div className="bg-primary mt-4 rounded-lg shadow mx-2 divide-y divide-secondary">
+                <button onClick={() => setShowPointHistory(true)} className="w-full flex hover:bg-secondary items-center px-4 py-4 text-left">
                     <span className="mr-3">
                         <TicketCheck />
                     </span>
@@ -179,7 +182,7 @@ const Profile: React.FC = () => {
                         <ChevronRight />
                     </span>
                 </button>
-                <button onClick={() => setShowPaymentInfoSimple(true)} className="w-full flex items-center px-4 py-4 text-left">
+                <button onClick={() => setShowPaymentInfoSimple(true)} className="w-full flex hover:bg-secondary  items-center px-4 py-4 text-left">
                     <span className="mr-3">
                         <CreditCard className="w-6 h-6 text-white" />
                     </span>
@@ -188,7 +191,7 @@ const Profile: React.FC = () => {
                         <ChevronRight />
                     </span>
                 </button>
-                <button onClick={() => setShowPointPurchase(true)} className="w-full flex items-center px-4 py-4 text-left">
+                <button onClick={() => setShowPointPurchase(true)} className="w-full flex hover:bg-secondary  items-center px-4 py-4 text-left">
                     <span className="mr-3">
                         <TicketPercent className="w-6 h-6 text-white" />
                     </span>
@@ -197,7 +200,7 @@ const Profile: React.FC = () => {
                         <ChevronRight />
                     </span>
                 </button>
-                <button onClick={() => setShowIdentityVerification(true)} className="w-full flex items-center px-4 py-4 text-left">
+                <button onClick={() => setShowIdentityVerification(true)} className="w-full hover:bg-secondary  flex items-center px-4 py-4 text-left">
                     <span className="mr-3">
                         <User className="w-6 h-6 text-white" />
                     </span>
@@ -207,34 +210,7 @@ const Profile: React.FC = () => {
                         <ChevronRight />
                     </span>
                 </button>
-                <button onClick={() => alert('クーポン')} className="w-full flex items-center px-4 py-4 text-left">
-                    <span className="mr-3">
-                        <TicketPercent className="w-6 h-6 text-white" />
-                    </span>
-                    <span className="flex-1 text-white">クーポン</span>
-                    <span className="text-white">
-                        <ChevronRight />
-                    </span>
-                </button>
-                <button onClick={() => alert('pishattoアプリ版「バトラー」再連携')} className="w-full flex items-center px-4 py-4 text-left">
-                    <span className="mr-3">
-                        <Link className="w-6 h-6 text-white" />
-                    </span>
-                    <span className="flex-1 text-white">pishattoアプリ版「バトラー」再連携</span>
-                    <span className="text-white">
-                        <ChevronRight />
-                    </span>
-                </button>
-                <button onClick={() => alert('キャスト応募')} className="w-full flex items-center px-4 py-4 text-left">
-                    <span className="mr-3">
-                        <FileUser className="w-6 h-6 text-white" />
-                    </span>
-                    <span className="flex-1 text-white">キャスト応募</span>
-                    <span className="text-white">
-                        <ChevronRight />
-                    </span>
-                </button>
-                <button onClick={() => alert('ヘルプ')} className="w-full flex items-center px-4 py-4 text-left">
+                <button onClick={() => setShowHelp(true)} className="w-full flex hover:bg-secondary  items-center px-4 py-4 text-left">
                     <span className="mr-3">
                         <HelpCircle className="w-6 h-6 text-white" />
                     </span>
@@ -242,17 +218,6 @@ const Profile: React.FC = () => {
                     <span className="text-white">
                         <ChevronRight />
                     </span>
-                </button>
-            </div>
-            {/* App download banner */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t flex items-center px-4 py-2 z-20">
-                <img src="https://placehold.co/40x40?text=P" alt="pishatto" className="w-10 h-10 rounded mr-2" />
-                <div className="flex-1">
-                    <div className="text-xs font-bold">待望のpishattoアプリ版登場！</div>
-                    <div className="text-xs text-gray-500">pishatto専用ブラウザアプリ「バトラー」</div>
-                </div>
-                <button onClick={() => window.open('https://apps.apple.com/', '_blank')} className="ml-2">
-                    <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="App Store" className="h-8" />
                 </button>
             </div>
         </div>

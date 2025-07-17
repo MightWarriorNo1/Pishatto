@@ -73,12 +73,12 @@ const NicknameInput: React.FC<NicknameInputProps> = ({
       {/* Progress Steps */}
       <div className="px-4 py-6 bg-primary">
         <div className="flex items-center justify-between max-w-[240px] mx-auto">
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">1</div>
-          <div className="flex-1 h-[2px] bg-primary"></div>
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center">2</div>
-          <div className="flex-1 h-[2px] bg-primary"></div>
+          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center border border-secondary">1</div>
+          <div className="flex-1 h-[2px] bg-secondary"></div>
+          <div className="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center">2</div>
+          <div className="flex-1 h-[2px] bg-secondary"></div>
           <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center border border-secondary">3</div>
-          <div className="flex-1 h-[2px] bg-primary"></div>
+          <div className="flex-1 h-[2px] bg-secondary"></div>
           <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center border border-secondary">4</div>
         </div>
       </div>
@@ -104,7 +104,7 @@ const NicknameInput: React.FC<NicknameInputProps> = ({
           </div>
           <button
             onClick={generateRandomNickname}
-            className="w-full py-3 text-white border border-secondary rounded-lg bg-primary"
+            className="w-full py-3 text-white border border-secondary rounded-lg bg-secondary hover:bg-red-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
           >
             おまかせ入力
           </button>
@@ -115,7 +115,7 @@ const NicknameInput: React.FC<NicknameInputProps> = ({
         <button
           onClick={handleSubmit}
           disabled={nickname.length < 2}
-          className={`w-full py-4 text-center text-white rounded-lg ${nickname.length >= 2 ? 'bg-primary' : 'bg-primary border border-secondary text-white'}`}
+          className={`w-full py-4 text-center text-white rounded-lg ${nickname.length >= 2 ? 'bg-secondary hover:bg-secondary' : 'bg-primary border border-secondary text-white'}`}
         >
           次へ
         </button>

@@ -32,7 +32,7 @@ const CastDetail: React.FC = () => {
     ];
 
     return (
-        <div className="min-h-screen flex justify-center bg-primary">
+        <div className="min-h-screen flex justify-center bg-gray-400">
             <div className="w-full max-w-md relative bg-primary">
                 {/* Header */}
                 <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-primary z-50">
@@ -157,10 +157,21 @@ const CastDetail: React.FC = () => {
                         <p>都内どこでも行きます🎵<br />
                             タカ以降のお時間比較的空いてます🔥</p>
                     </div>
+
+                    <div className="mb-8 overflow-x-auto mt-4">
+                        <div className='flex items-center text-white font-bold rounded-lg px-2 h-12 text-lg'>
+                            おすすめキャスト
+                        </div>
+                        <div className='flex flex-row'>
+                            {images.map((img, index) => (
+                                <img src={img} alt={`Thumbnail ${index + 1}`} className="w-32 h-32 object-cover" />
+                            ))}
+                        </div>
+                    </div>
                     {/* Like Button */}
                     <button
                         type="button"
-                        className={`w-full mt-6 p-3 border rounded-lg flex items-center justify-center gap-2 ${liked ? 'text-white border-secondary' : 'text-white border-secondary'}`}
+                        className={`w-full mt-6 p-3 bg-secondary border rounded-lg flex items-center justify-center gap-2 ${liked ? 'text-white border-secondary' : 'text-white border-secondary'}`}
                         onClick={() => setLiked((prev) => !prev)}
                     >
                         <Heart size={24} fill={liked ? '#e3342f' : 'none'} color={liked ? '#e3342f' : undefined} />

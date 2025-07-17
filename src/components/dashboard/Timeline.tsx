@@ -94,7 +94,7 @@ const Timeline: React.FC = () => {
                 ))}
             </div>
             {/* 投稿 button inside main screen */}
-            <div className="flex justify-end mt-24 mb-8">
+            <div className="flex justify-end px-4">
                 <button className="bg-secondary text-white rounded-full w-16 h-16 flex flex-col items-center justify-center shadow-lg" onClick={() => setShowPostCreate(true)}>
                     <span className="text-2xl font-bold mb-1">＋</span>
                     <span className="text-xs font-bold">投稿</span>

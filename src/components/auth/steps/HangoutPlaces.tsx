@@ -14,14 +14,14 @@ const HangoutPlaces: React.FC = () => {
                 {cities.map(city => (
                     <button
                         key={city}
-                        className={`px-4 py-2 rounded-full border font-bold ${selected.includes(city) ? 'bg-primary text-white border-secondary' : 'bg-primary text-white border-secondary'}`}
+                        className={`px-4 py-2 rounded-full border font-bold ${selected.includes(city) ? 'bg-secondary hover:bg-red-400 text-white border-secondary' : 'bg-primary text-white border-secondary'}`}
                         onClick={() => toggleCity(city)}
                     >
                         {city}
                     </button>
                 ))}
             </div>
-            <button className={`w-full bg-primary text-white py-3 rounded font-bold ${selected.length === 0 ? 'opacity-50' : ''}`} disabled={selected.length === 0}>次へ</button>
+            <button className={`w-full bg-secondary text-white py-3 rounded font-bold ${selected.length === 0 ? 'opacity-50' : ''}`} disabled={selected.length === 0}>次へ</button>
         </div>
     );
 };

@@ -76,13 +76,13 @@ const PointPurchasePage: React.FC<PointPurchasePageProps> = ({ onBack }) => {
                                 <span>🅿️</span>
                                 <span className="font-bold text-lg">{opt.points.toLocaleString()}ポイント</span>
                             </div>
-                            <span className="bg-primary text-white font-bold rounded px-6 py-2 text-lg">￥{opt.price.toLocaleString()}</span>
+                            <span className="bg-secondary text-white font-bold rounded px-6 py-2 text-lg">￥{opt.price.toLocaleString()}</span>
                         </div>
                     ))}
                 </div>
             )}
             {tab === 'bank' && (
-                <div className="bg-[#f7f8fa] px-0 pt-0 pb-8">
+                <div className="bg-primary px-0 pt-0 pb-8">
                     {/* Illustration and message */}
                     <div className="bg-primary mx-2 mt-4 rounded-xl flex flex-col items-center justify-center px-4 py-6 shadow border border-secondary">
                         {/* Placeholder SVG illustration */}
@@ -100,10 +100,10 @@ const PointPurchasePage: React.FC<PointPurchasePageProps> = ({ onBack }) => {
                         <div className="text-xl font-bold mb-2">銀行振込で<br />ポイントを購入</div>
                     </div>
                     {/* Stepper */}
-                    <div className="bg-[#f7f8fa] px-2 pt-6 pb-4">
+                    <div className="bg-primary px-2 pt-6 pb-4">
                         <div className="flex items-center justify-center gap-8 mb-2">
                             <div className="flex flex-col items-center">
-                                <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center font-bold">1</div>
+                                <div className="w-6 h-6 rounded-full bg-secondary text-white flex items-center justify-center font-bold">1</div>
                                 <div className="text-xs mt-1 font-bold text-white">振込申請</div>
                             </div>
                             <div className="w-8 h-1 bg-gray-300 rounded-full mt-3"></div>
@@ -156,7 +156,7 @@ const PointPurchasePage: React.FC<PointPurchasePageProps> = ({ onBack }) => {
                         {/* Button */}
                         <div className="flex justify-center mt-6 mb-2">
                             <button
-                                className="w-full max-w-xs bg-gray-200 text-white font-bold py-3 rounded text-lg cursor-not-allowed"
+                                className="w-full max-w-xs bg-gray-200 text-primary font-bold py-3 rounded text-lg cursor-not-allowed"
                                 disabled
                             >
                                 申請する
@@ -174,7 +174,7 @@ const PointPurchasePage: React.FC<PointPurchasePageProps> = ({ onBack }) => {
             )}
             {/* Card Register Modal */}
             {showCardModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary bg-opacity-40">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-400 bg-opacity-40">
                     <div className="bg-primary rounded-xl shadow-lg max-w-[90vw] w-[400px] mx-2 overflow-hidden relative border border-secondary">
                         {/* Top image */}
                         <div className="w-full h-32 bg-yellow-200 flex items-center justify-center relative">
@@ -189,8 +189,8 @@ const PointPurchasePage: React.FC<PointPurchasePageProps> = ({ onBack }) => {
                                     <img key={i} src={src} alt="card" className="h-7" />
                                 ))}
                             </div>
-                            <button className="w-full bg-primary text-white font-bold py-3 rounded text-lg mb-3">クレジットカードを登録する</button>
-                            <button className="w-full text-gray-400 font-bold py-2 rounded text-lg" onClick={() => setShowCardModal(false)}>あとで</button>
+                            <button className="w-full bg-secondary text-white font-bold py-3 rounded text-lg mb-3">クレジットカードを登録する</button>
+                            <button className="w-full bg-gray-400 text-primary font-bold py-2 rounded text-lg" onClick={() => setShowCardModal(false)}>あとで</button>
                         </div>
                     </div>
                 </div>

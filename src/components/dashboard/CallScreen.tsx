@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { ChevronLeft, Clock, Flag, HelpCircleIcon, MapPin, Ticket, Users, CircleParking, CalendarArrowUp, ChevronRight } from 'lucide-react';
+import { ChevronLeft, Clock, Flag, HelpCircleIcon, MapPin, Ticket, Users, CircleParking, CalendarArrowUp, ChevronRight, Minus, Plus } from 'lucide-react';
 import StepRequirementScreen from './StepRequirementScreen';
 
 const mockCasts = [
@@ -34,7 +34,7 @@ const castSkillOptions = [
 
 function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: () => void }) {
     const [selectedTime, setSelectedTime] = useState('30分後');
-    const [selectedArea, setSelectedArea] = useState('東京 / 六本木');
+    const [selectedArea] = useState('東京 / 六本木');
     const [counts, setCounts] = useState([1, 1, 0]);
     const [selectedDuration, setSelectedDuration] = useState('1時間');
     const total = counts.reduce((a, b) => a + b, 0);
@@ -77,7 +77,7 @@ function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: ()
                 </button>
             </div>
             {/* People selection */}
-            <div className="px-4 mt-8">
+            <div className="px-4 mt-4">
                 <div className="flex items-center mb-2">
                     <span className="font-bold flex items-center text-white">
                         <Users />
@@ -86,7 +86,7 @@ function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: ()
                 </div>
                 <div className="bg-primary rounded-lg p-4 border border-secondary">
                     {classOptions.map((opt, idx) => (
-                        <div key={opt.name} className="flex items-center mb-8 last:mb-0 justify-between">
+                        <div key={opt.name} className="flex items-center mb-4 last:mb-0 justify-between">
                             <div className="flex flex-col min-w-[110px]">
                                 <div className="flex items-center">
                                     <span className={`inline-block w-4 h-4 rounded-full mr-2 ${opt.name === 'ロイヤルVIP' ? 'bg-secondary' : opt.name === 'VIP' ? 'bg-red-400' : 'bg-gray-700'}`}></span>
@@ -99,12 +99,16 @@ function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: ()
                                     className={`w-8 h-8 rounded-full border flex items-center justify-center text-2xl ${counts[idx] === 0 ? 'border-gray-800 text-gray-700 bg-gray-900 cursor-not-allowed' : 'border-secondary text-white bg-primary'}`}
                                     onClick={() => counts[idx] > 0 && setCounts(c => c.map((v, i) => i === idx ? Math.max(0, v - 1) : v))}
                                     disabled={counts[idx] === 0}
-                                >－</button>
+                                >
+                                    <Minus />
+                                </button>
                                 <span className={`w-4 text-center font-bold mx-1 ${counts[idx] > 0 ? 'text-white' : 'text-gray-400'}`}>{counts[idx]}</span>
                                 <button
                                     className="w-8 h-8 rounded-full border border-secondary text-2xl text-white flex items-center justify-center bg-primary"
                                     onClick={() => setCounts(c => c.map((v, i) => i === idx ? v + 1 : v))}
-                                >＋</button>
+                                >
+                                    <Plus />
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -116,7 +120,7 @@ function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: ()
                 </div>
             </div>
             {/* Duration selection */}
-            <div className="px-4 mt-8">
+            <div className="px-4 mt-4">
                 <div className="flex items-center mb-8">
                     <span className="font-bold mr-2 flex items-center text-white">
                         <Clock />
@@ -135,7 +139,7 @@ function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: ()
                 </div>
             </div>
             {/* Next button */}
-            <div className="px-4 mt-16">
+            <div className="px-4 mt-4">
                 <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition" onClick={onNext}>次に進む</button>
             </div>
         </div>
@@ -168,7 +172,7 @@ function OrderDetailConditionsScreen({ onBack, onNext }: { onBack: () => void, o
                 </div>
             </div>
             {/* キャストタイプ */}
-            <div className="px-4 mt-8">
+            <div className="px-4 mt-4">
                 <div className="font-bold mb-6 text-white">キャストタイプ</div>
                 <div className="flex flex-wrap gap-2">
                     {castTypeOptions.map(opt => (
@@ -181,7 +185,7 @@ function OrderDetailConditionsScreen({ onBack, onNext }: { onBack: () => void, o
                 </div>
             </div>
             {/* キャストスキル */}
-            <div className="px-4 mt-8">
+            <div className="px-4 mt-4">
                 <div className="font-bold mb-6 text-white">キャストスキル</div>
                 <div className="flex flex-wrap gap-2">
                     {castSkillOptions.map(opt => (
@@ -194,7 +198,7 @@ function OrderDetailConditionsScreen({ onBack, onNext }: { onBack: () => void, o
                 </div>
             </div>
             {/* Next button */}
-            <div className="px-4 mt-28">
+            <div className="px-4 mt-8">
                 <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition" onClick={onNext}>次に進む</button>
             </div>
         </div>
@@ -289,7 +293,7 @@ function OrderFinalConfirmationScreen({ onBack, onConfirmed }: { onBack: () => v
                 </div>
             </div>
             {/* Confirm button */}
-            <div className="px-4 mt-24">
+            <div className="px-4 mt-4">
                 <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition" onClick={onConfirmed}>予約を確定する</button>
             </div>
         </div>
@@ -350,12 +354,12 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
                     <span className="ml-4 text-white text-sm">現在のキャスト数</span>
                     <span className="ml-2 font-bold text-xl text-white">6人</span>
                 </div>
-                <button className="w-full border border-secondary text-white py-2 rounded-lg font-bold mt-2 hover:bg-red-700 hover:text-white transition" onClick={() => onStartOrder && onStartOrder()}>キャストを選ぶ</button>
+                <button className="w-full border border-secondary text-white py-2 rounded-lg font-bold mt-2 hover:bg-red-600 hover:text-white transition" onClick={() => onStartOrder && onStartOrder()}>キャストを選ぶ</button>
             </div>
             {/* Order history - styled as in the second image */}
             <div className="mx-2 mt-3">
                 <button
-                    className="w-full flex items-center justify-between bg-gradient-to-r from-red-500 to-red-700 text-white px-4 py-3 rounded-lg shadow font-bold text-base focus:outline-none"
+                    className="w-full flex items-center justify-between bg-gradient-to-r bg-secondary text-white px-4 py-3 rounded-lg shadow font-bold text-base focus:outline-none"
                     onClick={() => setPage('orderHistory')}
                 >
                     <span className="flex items-center">

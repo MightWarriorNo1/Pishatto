@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface ProfileDetailEditPageProps {
@@ -54,7 +55,9 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
         <div className="max-w-md mx-auto min-h-screen bg-primary relative">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
-                <button onClick={onBack} className="mr-2 text-2xl text-white">&#60;</button>
+                <button onClick={onBack} className="mr-2 text-2xl text-white">
+                    <ChevronLeft />
+                </button>
                 <span className="text-lg font-bold flex-1 text-center text-white">基本情報</span>
                 <button className="text-white font-bold">保存</button>
             </div>
@@ -76,7 +79,7 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
             </div>
             {/* Picker Modal */}
             {picker && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary bg-opacity-30">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-500 bg-opacity-30">
                     <div className="bg-primary rounded-xl w-80 max-w-full shadow-lg flex flex-col overflow-hidden border border-secondary">
                         <div className="text-center font-bold py-3 border-b text-lg text-white border-secondary">{picker.field}</div>
                         <div className="flex-1 overflow-y-auto max-h-72">
@@ -91,8 +94,8 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
                             ))}
                         </div>
                         <div className="flex border-t text-white text-lg font-bold divide-x border-secondary">
-                            <button className="flex-1 py-3" onClick={closePicker}>Cancel</button>
-                            <button className="flex-1 py-3" onClick={confirmPicker}>OK</button>
+                            <button className="flex-1 py-3 bg-secondary hover:bg-pink-500" onClick={closePicker}>キャンセル</button>
+                            <button className="flex-1 py-3 bg-secondary hover:bg-pink-500" onClick={confirmPicker}>わかりました</button>
                         </div>
                     </div>
                 </div>
