@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Image, Camera, FolderClosed } from 'lucide-react';
-import { FiChevronLeft, FiGift, FiImage, FiCamera, FiFolder } from 'react-icons/fi';
+import { FiChevronLeft, FiGift, FiImage } from 'react-icons/fi';
 
 interface ChatScreenProps {
     onBack: () => void;

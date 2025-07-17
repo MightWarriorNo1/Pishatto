@@ -3,7 +3,6 @@ import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const CastImmediatePaymentPage: React.FC = () => {
-    const navigate = useNavigate();
     // Mock data
     const totalPoints = 133920;
     const immediatePoints = 66960;
