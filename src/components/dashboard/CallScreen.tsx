@@ -258,7 +258,7 @@ function OrderFinalConfirmationScreen({ onBack, onConfirmed }: { onBack: () => v
                     <span className="w-6">
                         <CircleParking />
                     </span>
-                    <span className="text-white">おひねりコール</span>
+                    <span className="text-white">おひねりフリー一覧</span>
                     <span className="ml-auto font-bold text-white">0P</span>
                     <span className="ml-2 text-white">&gt;</span>
                 </div>

@@ -73,7 +73,7 @@ function Order({ onBack }: { onBack: () => void }) {
                 <div className="px-4 mt-4">
                     <div className="flex items-center py-3 border-b border-secondary">
                         <span className="w-6 text-white">🅿️</span>
-                        <span className="text-white">おひねりコール</span>
+                        <span className="text-white">おひねりフリー一覧</span>
                         <span className="ml-auto font-bold text-white">0P</span>
                         <span className="ml-2 text-white">&gt;</span>
                     </div>

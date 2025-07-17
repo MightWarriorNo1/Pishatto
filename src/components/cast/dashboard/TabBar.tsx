@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 
 const tabs = [
     { label: 'すべて' },
-    { label: '今日のコール' },
-    { label: '明日以降のコール' },
+    { label: '今日のフリー一覧' },
+    { label: '明日以降のフリー一覧' },
     { label: '合流ゲスト' },
 ];
 

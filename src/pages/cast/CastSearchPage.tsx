@@ -117,7 +117,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             { rank: 5, name: "エミ", age: 22, avatar: "/assets/avatar/female.png" },
         ],
     };
-    const categories = ['総合', 'パトコール', 'コパト', 'ギフト'];
+    const categories = ['総合', 'パトフリー一覧', 'コパト', 'ギフト'];
     const dateTabs = ['今月', '昨日', '先週', '先月', '全期間'];
     const ranking = rankingData[dateTab] || [];
     return (

@@ -31,7 +31,7 @@ const sampleCalls = [
         closed: false,
     },
     {
-        title: '日本橋[1名コール] (東京)',
+        title: '日本橋[1名フリー一覧] (東京)',
         time: '',
         type: 'プレミアム',
         people: 3,
