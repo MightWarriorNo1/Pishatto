@@ -77,7 +77,6 @@ const Dashboard: React.FC = () => {
     }
   }, [activeBottomTab, user]);
 
-  console.log('messageCount', messageCount);
   // Render content for the search tabs
   const renderSearchTabContent = () => {
     switch (activeSearchTab) {

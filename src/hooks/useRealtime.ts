@@ -8,7 +8,7 @@ export function useChatMessages(
 ) {
   useEffect(() => {
     if (!chatId) return;
-    const channel = echo.private(`chat.${chatId}`);
+    const channel = echo.channel(`chat.${chatId}`);
     channel.listen("MessageSent", (e: { message: any }) => {
       onNewMessage(e.message);
     });
@@ -25,7 +25,7 @@ export function useReservationUpdates(
 ) {
   useEffect(() => {
     if (!reservationId) return;
-    const channel = echo.private(`reservation.${reservationId}`);
+    const channel = echo.channel(`reservation.${reservationId}`);
     channel.listen("ReservationUpdated", (e: { reservation: any }) => {
       onReservationUpdate(e.reservation);
     });
@@ -42,7 +42,7 @@ export function useNotifications(
 ) {
   useEffect(() => {
     if (!userId) return;
-    const channel = echo.private(`user.${userId}`);
+    const channel = echo.channel(`user.${userId}`);
     channel.listen("NotificationSent", (e: { notification: any }) => {
       onNotification(e.notification);
     });

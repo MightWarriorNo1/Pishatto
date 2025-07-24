@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Image, Camera, FolderClosed, Gift, ChevronLeft, X } from 'lucide-react';
-import { sendMessage, getChatMessages, fetchAllGifts, getNotifications, markNotificationRead } from '../../services/api';
+import { sendMessage, getChatMessages, fetchAllGifts} from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useChatMessages } from '../../hooks/useRealtime';
 

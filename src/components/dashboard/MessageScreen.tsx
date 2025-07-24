@@ -18,7 +18,6 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const [chats, setChats] = useState<any[]>([]);
     const [messageNotifications, setMessageNotifications] = useState<any[]>([]);
     const { user } = useUser();
-    const navigate = useNavigate();
     const { refreshKey } = useChatRefresh();
     useEffect(() => {
         getGuestChats(userId)

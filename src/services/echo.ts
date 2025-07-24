@@ -6,15 +6,13 @@ import Pusher from "pusher-js";
 
 const echo = new Echo({
   broadcaster: "reverb",
-  key: "local", // Should match your .env and backend config
-  wsHost: "127.0.0.1",
-  wsPort: 8080,
+  key: "key",
+  wsHost: process.env.WS_HOST || "127.0.0.1",
+  wsPort: process.env.WS_PORT ? Number(process.env.WS_PORT) : 6001,
   forceTLS: false,
-  disableStats: true,
+  // disableStats: true,
   encrypted: false,
   cluster: "mt1",
-  authEndpoint: "http://localhost:8000/broadcasting/auth",
-  withCredentials: true,
 });
 
 export default echo;

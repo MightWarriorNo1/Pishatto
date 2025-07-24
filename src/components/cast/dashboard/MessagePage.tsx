@@ -4,6 +4,7 @@ import { ChevronLeft, Calendar, Image} from 'lucide-react';
 import MessageProposalPage from './MessageProposalPage';
 import { sendMessage, getChatMessages } from '../../../services/api';
 import { getCastChats } from '../../../services/api';
+import { useChatMessages } from '../../../hooks/useRealtime';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 interface Message {
@@ -32,16 +33,22 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
     const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
 
+    // Fetch initial messages once
     useEffect(() => {
         const fetchMessages = async () => {
             const msgs = await getChatMessages(Number(message.id));
             setMessages(Array.isArray(msgs) ? msgs : []);
         };
         fetchMessages();
-        // Add polling for real-time updates
-        const interval = setInterval(fetchMessages, 3000);
-        return () => clearInterval(interval);
     }, [message.id]);
+
+    // Real-time updates
+    useChatMessages(message.id, (msg) => {
+        setMessages((prev) => {
+            if (prev.some(m => m.id === msg.id)) return prev;
+            return [...prev, msg];
+        });
+    });
 
     const handleImageButtonClick = () => {
         fileInputRef.current?.click();
