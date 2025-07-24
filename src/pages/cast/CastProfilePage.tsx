@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import CastGiftBoxPage from './CastGiftBoxPage';
+import CastActivityRecordPage from './CastActivityRecordPage';
+import CastFriendReferralPage from './CastFriendReferralPage';
+import CastImmediatePaymentPage from './CastImmediatePaymentPage';
 
 const campaignImages = [
     "/assets/avatar/2.jpg",
@@ -11,6 +15,16 @@ const campaignImages = [
 const CastProfilePage: React.FC = () => {
     const [current, setCurrent] = useState(0);
     const navigate = useNavigate();
+    const [showGiftBox, setShowGiftBox] = useState(false);
+    const [showActivityRecord, setShowActivityRecord] = useState(false);
+    const [showFriendReferral, setShowFriendReferral] = useState(false);
+    const [showImmediatePayment, setShowImmediatePayment] = useState(false);
+    const castId = Number(localStorage.getItem('castId'));
+
+    if (showGiftBox) return <CastGiftBoxPage onBack={() => setShowGiftBox(false)} />;
+    if (showActivityRecord) return <CastActivityRecordPage onBack={() => setShowActivityRecord(false)} />;
+    if (showFriendReferral) return <CastFriendReferralPage onBack={() => setShowFriendReferral(false)} />;
+    if (showImmediatePayment) return <CastImmediatePaymentPage onBack={() => setShowImmediatePayment(false)} />;
 
     return (
         <div className="max-w-md mx-auto bg-primary min-h-screen pb-24">
@@ -146,7 +160,34 @@ const CastProfilePage: React.FC = () => {
             </div>
             {/* Menu List */}
             <div className="bg-primary border border-secondary rounded-lg mx-4 my-2 p-2 divide-y divide-gray-800">
-                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-gray-900 transition" onClick={() => navigate('/cast/gift-box')}>
+                {/* <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-gray-900 transition" onClick={() => setShowPointHistory(true)}>
+                    <span className="text-xl mr-3 text-white">
+                        <ChartSpline />
+                    </span>
+                    <span className='flex-1 text-white'>ポイント履歴</span>
+                    <span className="text-gray-400">
+                        <ChevronRight />
+                    </span>
+                </div>
+                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-gray-900 transition" onClick={() => setShowReceipts(true)}>
+                    <span className="text-xl mr-3 text-white">
+                        <Gift />
+                    </span>
+                    <span className='flex-1 text-white'>領収書</span>
+                    <span className="text-gray-400">
+                        <ChevronRight />
+                    </span>
+                </div>
+                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-gray-900 transition" onClick={() => setShowPaymentInfo(true)}>
+                    <span className="text-xl mr-3 text-white">
+                        <Pencil />
+                    </span>
+                    <span className='flex-1 text-white'>お支払い情報</span>
+                    <span className="text-gray-400">
+                        <ChevronRight />
+                    </span>
+                </div> */}
+                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-secondary transition" onClick={() => setShowGiftBox(true)}>
                     <span className="text-xl mr-3 text-white">
                         <Gift />
                     </span>
@@ -155,7 +196,7 @@ const CastProfilePage: React.FC = () => {
                         <ChevronRight />
                     </span>
                 </div>
-                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-gray-900 transition" onClick={() => navigate('/cast/activity-record')}>
+                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-secondary transition" onClick={() => setShowActivityRecord(true)}>
                     <span className="text-xl mr-3 text-white">
                         <ChartSpline />
                     </span>
@@ -164,20 +205,20 @@ const CastProfilePage: React.FC = () => {
                         <ChevronRight />
                     </span>
                 </div>
-                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-gray-900 transition" onClick={() => navigate('/cast/friend-referral')}>
+                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-secondary transition" onClick={() => setShowFriendReferral(true)}>
                     <span className="text-xl mr-3 text-white">
                         <Users />
                     </span>
-                    <span className='flex-1 text-white'>お友達キャスト管理</span>
+                    <span className='flex-1 text-white'>お友達紹介</span>
                     <span className="text-gray-400">
                         <ChevronRight />
                     </span>
                 </div>
-                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-gray-900 transition" onClick={() => navigate('/cast/immediate-payment')}>
+                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-secondary transition" onClick={() => setShowImmediatePayment(true)}>
                     <span className="text-xl mr-3 text-white">
                         <UserPlus />
                     </span>
-                    <span className='flex-1 text-white'>お友達紹介</span>
+                    <span className='flex-1 text-white'>すぐ入金</span>
                     <span className="text-gray-400">
                         <ChevronRight />
                     </span>

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { createReservation } from '../../services/api';
+import { useUser } from '../../contexts/UserContext';
 
 const classOptions = [
     { name: 'ロイヤルVIP', color: 'bg-secondary', price: 12500 },
@@ -20,6 +22,7 @@ const castSkillOptions = [
 ];
 
 function Order({ onBack }: { onBack: () => void }) {
+    const { user } = useUser();
     // State for all order fields
     const [selectedTime, setSelectedTime] = useState('30分後');
     const [selectedArea] = useState('東京 / 六本木');
@@ -29,9 +32,25 @@ function Order({ onBack }: { onBack: () => void }) {
     const [selectedCastTypes, setSelectedCastTypes] = useState<string[]>([]);
     const [selectedCastSkills, setSelectedCastSkills] = useState<string[]>([]);
     const [page, setPage] = useState<'form' | 'final'>('form');
+    const [reservationMessage, setReservationMessage] = useState<string | null>(null);
     const total = counts.reduce((a, b) => a + b, 0);
     const toggle = (arr: string[], setArr: (v: string[]) => void, value: string) => {
         setArr(arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value]);
+    };
+    const handleReservation = async () => {
+        if (!user) return;
+        try {
+            await createReservation({
+                guest_id: user.id,
+                scheduled_at: new Date().toISOString(), // For demo, use now
+                location: selectedArea,
+                duration: Number(selectedDuration.replace('時間', '')) || 1,
+                details: `VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, シチュ: ${selectedSituations.join(',')}, タイプ: ${selectedCastTypes.join(',')}, スキル: ${selectedCastSkills.join(',')}`,
+            });
+            setReservationMessage('予約が完了しました');
+        } catch {
+            setReservationMessage('予約に失敗しました');
+        }
     };
     if (page === 'final') {
         return (
@@ -107,9 +126,10 @@ function Order({ onBack }: { onBack: () => void }) {
                 </div>
                 {/* Confirm button */}
                 <div className="px-4 mt-8">
-                    <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition" onClick={() => { }}>
+                    <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition" onClick={handleReservation}>
                         予約を確定する
                     </button>
+                    {reservationMessage && <div className="text-white text-center mt-2">{reservationMessage}</div>}
                 </div>
             </div>
         );

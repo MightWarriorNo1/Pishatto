@@ -1,13 +1,47 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Share, Heart, Mail } from 'lucide-react';
+import { likeCast, recordCastVisit, getCastProfileWithExtras } from '../services/api';
+import { useUser } from '../contexts/UserContext';
 
 const CastDetail: React.FC = () => {
     //eslint-disable-next-line
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useUser();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [liked, setLiked] = useState(false);
+    const [cast, setCast] = useState<any>(null);
+    const [badges, setBadges] = useState<any[]>([]);
+    const [titles, setTitles] = useState<any[]>([]);
+    const [recommended, setRecommended] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (user && id) {
+            recordCastVisit(user.id, Number(id));
+        }
+    }, [user, id]);
+
+    useEffect(() => {
+        if (id) {
+            setLoading(true);
+            getCastProfileWithExtras(Number(id)).then((data) => {
+                setCast(data.cast);
+                setBadges(data.badges || []);
+                setTitles(data.titles || []);
+                setRecommended(data.recommended || []);
+                setLoading(false);
+            });
+        }
+    }, [id]);
+
+    const handleLike = async () => {
+        if (!user || !id) return;
+        const res = await likeCast(user.id, Number(id));
+        setLiked(res.liked);
+    };
+
     const handleMessageClick = () => {
         navigate(`/cast/${id}/message`);
     };
@@ -23,13 +57,9 @@ const CastDetail: React.FC = () => {
     const timePosted = '10時間前';
     const points = '7,500P';
 
-    // Mock badge data
-    const badges = [
-        { id: 1, name: '可愛い', count: 3, icon: '❤️' },
-        { id: 2, name: 'ピュア', count: 1, icon: '🤍' },
-        { id: 3, name: '笑顔', count: 1, icon: '😊' },
-        { id: 4, name: '明るい', count: 1, icon: '☀️' },
-    ];
+    if (loading) {
+        return <div className="min-h-screen flex items-center justify-center bg-primary text-white">ローディング...</div>;
+    }
 
     return (
         <div className="min-h-screen flex justify-center bg-gray-400">
@@ -108,36 +138,46 @@ const CastDetail: React.FC = () => {
                     <div className="mb-6">
                         <h3 className="text-lg font-bold mb-4 text-white">獲得した称号</h3>
                         <div className="flex items-center justify-center">
-                            <div className="text-center">
-                                <img
-                                    src="/assets/icons/gold-cup.png"
-                                    alt="Trophy"
-                                    className="w-20 h-20 mx-auto mb-2"
-                                />
-                                <div className="text-sm text-white">2024年5月 週間ポイント</div>
-                                <div className="text-sm font-medium text-white">美組 チーム優勝</div>
-                            </div>
+                            {titles.length === 0 ? (
+                                <div className="text-white text-sm">称号はありません</div>
+                            ) : (
+                                titles.map((title, idx) => (
+                                    <div key={idx} className="text-center mx-2">
+                                        <img
+                                            src="/assets/icons/gold-cup.png"
+                                            alt="Trophy"
+                                            className="w-20 h-20 mx-auto mb-2"
+                                        />
+                                        <div className="text-sm text-white">{title.period || ''}</div>
+                                        <div className="text-sm font-medium text-white">{title.name || title.title || ''}</div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                     {/* Badges Section */}
                     <div className="border-t border-secondary">
                         <h3 className="text-lg font-bold mb-4 text-white">ゲストから受け取ったバッジ</h3>
                         <div className="grid grid-cols-4 gap-4">
-                            {badges.map((badge) => (
-                                <div key={badge.id} className="text-center">
-                                    <div className="relative inline-block">
-                                        <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl text-white">
-                                            {badge.icon}
-                                        </div>
-                                        {badge.count > 1 && (
-                                            <div className="absolute -top-1 -right-1 bg-secondary text-white text-xs rounded-full px-1">
-                                                ×{badge.count}
+                            {badges.length === 0 ? (
+                                <div className="text-white text-sm col-span-4">バッジはありません</div>
+                            ) : (
+                                badges.map((badge, idx) => (
+                                    <div key={idx} className="text-center">
+                                        <div className="relative inline-block">
+                                            <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl text-white">
+                                                {badge.icon || '🏅'}
                                             </div>
-                                        )}
+                                            {badge.count > 1 && (
+                                                <div className="absolute -top-1 -right-1 bg-secondary text-white text-xs rounded-full px-1">
+                                                    ×{badge.count}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="text-sm mt-1 text-white">{badge.name || badge.label || ''}</div>
                                     </div>
-                                    <div className="text-sm mt-1 text-white">{badge.name}</div>
-                                </div>
-                            ))}
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
@@ -145,34 +185,30 @@ const CastDetail: React.FC = () => {
                 <div className="bg-primary mt-2 p-4">
                     <h3 className="text-lg font-bold mb-4 text-white">自己紹介</h3>
                     <div className="space-y-4 text-sm text-white">
-                        <p>はじめまして、なのっていいます😺💘</p>
-                        <p>ご飯 飲み カフェ カラオケ<br />
-                            シーシャ 野球 ダーツ ポーカー💗</p>
-                        <p>ゴルフ始めてみたいので教えてくれる方募集です🤔</p>
-                        <p>食べものの好き嫌いありません🤍<br />
-                            お酒もなんでも好きです🍾 飲めます🤍</p>
-                        <p>周りからは愛嬌あるって言われます🐱<br />
-                            人と喋るのが大好きです🥰</p>
-                        <p>ぜひコバトでお会いしたいです💗</p>
-                        <p>都内どこでも行きます🎵<br />
-                            タカ以降のお時間比較的空いてます🔥</p>
+                        <p>{cast?.profile_text || '自己紹介はありません'}</p>
                     </div>
-
                     <div className="mb-8 overflow-x-auto mt-4">
                         <div className='flex items-center text-white font-bold rounded-lg px-2 h-12 text-lg'>
                             おすすめキャスト
                         </div>
-                        <div className='flex flex-row'>
-                            {images.map((img, index) => (
-                                <img src={img} alt={`Thumbnail ${index + 1}`} className="w-32 h-32 object-cover" />
-                            ))}
+                        <div className='flex flex-row gap-2'>
+                            {recommended.length === 0 ? (
+                                <div className="text-white text-sm">おすすめキャストはありません</div>
+                            ) : (
+                                recommended.map((rec) => (
+                                    <div key={rec.id} className="flex flex-col items-center cursor-pointer" onClick={() => navigate(`/cast/${rec.id}`)}>
+                                        <img src={rec.avatar || '/assets/avatar/female.png'} alt={rec.nickname || ''} className="w-20 h-20 rounded-full object-cover mb-2 border-2 border-secondary" />
+                                        <span className="font-bold text-sm mb-1 text-white">{rec.nickname || ''}</span>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                     {/* Like Button */}
                     <button
                         type="button"
                         className={`w-full mt-6 p-3 bg-secondary border rounded-lg flex items-center justify-center gap-2 ${liked ? 'text-white border-secondary' : 'text-white border-secondary'}`}
-                        onClick={() => setLiked((prev) => !prev)}
+                        onClick={handleLike}
                     >
                         <Heart size={24} fill={liked ? '#e3342f' : 'none'} color={liked ? '#e3342f' : undefined} />
                         <span>いいね</span>

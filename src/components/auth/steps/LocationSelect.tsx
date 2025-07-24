@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
+import StepIndicator from './StepIndicator';
 
 interface LocationSelectProps {
   onNext: () => void;
   onBack: () => void;
   // eslint-disable-next-line
-  updateFormData: (data: { location: string }) => void;
+  updateFormData: (data: { favorite_area: string }) => void;
   formData: {
-    location: string;
+    favorite_area: string;
   };
 }
 
@@ -16,7 +17,7 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
   updateFormData,
   formData,
 }) => {
-  const [selectedLocation, setSelectedLocation] = useState(formData.location || '');
+  const [selectedLocation, setSelectedLocation] = useState(formData.favorite_area || '');
 
   const locations = [
     '東京', '大阪', '福岡',
@@ -29,7 +30,7 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
 
   const handleLocationSelect = (location: string) => {
     setSelectedLocation(location);
-    updateFormData({ location });
+    updateFormData({ favorite_area: location });
   };
 
   const handleNext = () => {
@@ -51,15 +52,7 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
 
       {/* Progress Steps */}
       <div className="px-4 py-4 bg-primary">
-        <div className="flex items-center justify-between max-w-[240px] mx-auto">
-          <div className="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center border border-secondary">1</div>
-          <div className="flex-1 h-[2px] bg-secondary"></div>
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex border border-secondary items-center justify-center">2</div>
-          <div className="flex-1 h-[2px] bg-secondary"></div>
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center border border-secondary">3</div>
-          <div className="flex-1 h-[2px] bg-secondary"></div>
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center border border-secondary">4</div>
-        </div>
+        <StepIndicator totalSteps={6} currentStep={1} />
       </div>
 
       {/* Main Content */}

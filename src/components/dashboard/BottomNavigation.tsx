@@ -6,22 +6,23 @@ interface BottomNavigationProps {
   activeTab: 'search' | 'message' | 'call' | 'tweet' | 'mypage';
   onTabChange: (tab: 'search' | 'message' | 'call' | 'tweet' | 'mypage') => void;
   messageCount?: number;
+  tweetCount?: number;
 }
 
-const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange, messageCount = 0 }) => {
+const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange, messageCount = 0, tweetCount = 0 }) => {
   return (
-    <div className="fixed max-w-md mx-auto bottom-0 left-0 right-0 bg-primary border-t border-secondary z-50">
+    <div className="fixed max-w-md mx-auto bottom-0 left-0 right-0 bg-secondary border-t border-secondary z-50">
       <div className="max-w-md mx-auto px-4 py-2">
         <div className="flex justify-between items-center">
           <button
-            className={`flex flex-col items-center ${activeTab === 'search' ? 'text-secondary' : 'text-white'}`}
+            className={`flex flex-col items-center ${activeTab === 'search' ? 'text-primary' : 'text-white'}`}
             onClick={() => onTabChange('search')}
           >
             <Search />
             <span className="text-xs mt-1">探す</span>
           </button>
           <button
-            className={`relative flex flex-col items-center ${activeTab === 'message' ? 'text-secondary' : 'text-white'}`}
+            className={`relative flex flex-col items-center ${activeTab === 'message' ? 'text-primary' : 'text-white'}`}
             onClick={() => onTabChange('message')}
           >
             <MessageSquareMore />
@@ -33,21 +34,28 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
             <span className="text-xs mt-1">メッセージ</span>
           </button>
           <button
-            className={`flex flex-col items-center ${activeTab === 'call' ? 'text-secondary' : 'text-white'}`}
+            className={`flex flex-col items-center ${activeTab === 'call' ? 'text-primary' : 'text-white'}`}
             onClick={() => onTabChange('call')}
           >
             <Hand />
             <span className="text-xs mt-1">呼ぶ</span>
           </button>
           <button
-            className={`flex flex-col items-center ${activeTab === 'tweet' ? 'text-secondary' : 'text-white'}`}
+            className={`flex flex-col items-center ${activeTab === 'tweet' ? 'text-primary' : 'text-white'}`}
             onClick={() => onTabChange('tweet')}
           >
-            <Clock4 />
+            <span className="relative">
+              <Clock4 />
+              {tweetCount > 0 && (
+                <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                  {tweetCount}
+                </span>
+              )}
+            </span>
             <span className="text-xs mt-1">つぶやき</span>
           </button>
           <button
-            className={`flex flex-col items-center ${activeTab === 'mypage' ? 'text-secondary' : 'text-white'}`}
+            className={`flex flex-col items-center ${activeTab === 'mypage' ? 'text-primary' : 'text-white'}`}
             onClick={() => onTabChange('mypage')}
           >
             <User />

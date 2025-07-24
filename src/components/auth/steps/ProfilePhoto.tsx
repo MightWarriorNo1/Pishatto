@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import StepIndicator from './StepIndicator';
 
 interface ProfilePhotoProps {
   onNext: () => void;
@@ -8,6 +9,7 @@ interface ProfilePhotoProps {
   formData: {
     profilePhoto: File | null;
   };
+  isSubmitting?: boolean;
 }
 
 const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
@@ -15,6 +17,7 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
   onBack,
   updateFormData,
   formData,
+  isSubmitting = false,
 }) => {
   const [showOptions, setShowOptions] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,15 +39,7 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
       </div>
       <div className="flex-1 px-4 flex flex-col">
         <div className="px-4 py-6 bg-primary">
-          <div className="flex items-center justify-between max-w-[240px] mx-auto">
-            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center border border-secondary">1</div>
-            <div className="flex-1 h-[2px] bg-secondary"></div>
-            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center border border-secondary justify-center">2</div>
-            <div className="flex-1 h-[2px] bg-secondary"></div>
-            <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center border border-secondary">3</div>
-            <div className="flex-1 h-[2px] bg-secondary"></div>
-            <div className="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center border border-secondary">4</div>
-          </div>
+          <StepIndicator totalSteps={6} currentStep={6} />
         </div>
         <div className="mb-6">
           <h1 className="text-lg font-medium mb-2 text-white">
@@ -128,9 +123,19 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
         <div className="mt-auto pb-8">
           <button
             onClick={onNext}
-            className="w-full py-4 bg-secondary text-white rounded-lg font-medium"
+            disabled={isSubmitting}
+            className={`w-full py-4 bg-secondary text-white rounded-lg font-medium ${
+              isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700'
+            }`}
           >
-            次へ
+            {isSubmitting ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white mr-2"></div>
+                登録中...
+              </div>
+            ) : (
+              '次へ'
+            )}
           </button>
         </div>
       </div>

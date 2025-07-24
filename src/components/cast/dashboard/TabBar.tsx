@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const tabs = [
     { label: 'すべて' },
@@ -7,8 +7,12 @@ const tabs = [
     { label: '合流ゲスト' },
 ];
 
-const TabBar: React.FC = () => {
-    const [selected, setSelected] = useState(0);
+interface TabBarProps {
+    selected: number;
+    onTabChange: (idx: number) => void;
+}
+
+const TabBar: React.FC<TabBarProps> = ({ selected, onTabChange }) => {
     return (
         <div className="w-full bg-primary shadow-sm border border-secondary rounded-t-xl">
             <div className="flex w-full border-b border-secondary">
@@ -22,7 +26,7 @@ const TabBar: React.FC = () => {
               ${idx === 0 ? 'rounded-tl-xl' : ''} ${idx === tabs.length - 1 ? 'rounded-tr-xl' : ''}
             `}
                         style={{ borderRight: idx !== tabs.length - 1 ? '1px solid #FF0000' : undefined }}
-                        onClick={() => setSelected(idx)}
+                        onClick={() => onTabChange(idx)}
                     >
                         {tab.label}
                     </button>

@@ -1,50 +1,69 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Image, Camera, FolderClosed } from 'lucide-react';
-import { FiChevronLeft, FiGift, FiImage } from 'react-icons/fi';
+import { Image, Camera, FolderClosed, Gift, ChevronLeft, X } from 'lucide-react';
+import { sendMessage, getChatMessages, fetchAllGifts, getNotifications, markNotificationRead } from '../../services/api';
+import { useUser } from '../../contexts/UserContext';
+import { useChatMessages } from '../../hooks/useRealtime';
 
 interface ChatScreenProps {
+    chatId: number;
     onBack: () => void;
 }
 
-const messages = [
-    {
-        id: 1,
-        name: 'pishattoコンシェルジュ 11歳',
-        avatar: '/assets/avatar/1.jpg',
-        time: '22:02',
-        content: (
-            <div className="bg-[#f3f8fc] border border-[#e3e8ee] rounded-2xl p-4 max-w-[80%]">
-                <div className="flex items-center mb-2">
-                    <img src="/assets/icons/card-1.png" alt="pishatto" className="w-32 h-20 rounded mr-2 object-contain" />
-                    <div className="flex flex-col">
-                        <span className="text-2xl font-bold text-yellow-600">pishatto</span>
-                        <span className="text-xs text-orange-500">へ ようこそ</span>
-                    </div>
-                </div>
-                <div className="text-gray-700 text-sm mb-2">はじめまして。<br />pishattoコンシェルジュのパットくんと申します。</div>
-                <div className="text-gray-700 text-sm mb-2">「お問い合わせ窓口」として24時間体制でサポートさせていただきます。お困りの際はお気軽にご連絡ください。</div>
-                <div className="text-gray-700 text-sm">↓ 合流方法は2種類✨</div>
-            </div>
-        ),
-    },
-    {
-        id: 2,
-        name: 'pishattoコンシェルジュ 11歳',
-        avatar: '/assets/avatar/1.jpg',
-        time: '22:02',
-        content: <span>��</span>,
-    },
-];
-
-const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
+const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
+    const { user } = useUser();
     const [showGift, setShowGift] = useState(false);
     const [showFile, setShowFile] = useState(false);
     const [input, setInput] = useState('');
     const attachBtnRef = useRef<HTMLButtonElement>(null);
     const [attachPopoverStyle, setAttachPopoverStyle] = useState<React.CSSProperties>({});
     const [giftTab, setGiftTab] = useState<'standard' | 'local' | 'grade' | 'mygift'>('mygift');
-    const [attachedImages, setAttachedImages] = useState<string[]>([]);
+    const [attachedFile, setAttachedFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [sending, setSending] = useState(false);
+    const [localMessages, setLocalMessages] = useState<any[]>([]);
+    const [messages, setMessages] = useState<any[]>([]);
+    const [fetching, setFetching] = useState(true);
+    const [fetchError, setFetchError] = useState<string | null>(null);
+    const [sendError, setSendError] = useState<string | null>(null);
+    const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+    const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
+    const [gifts, setGifts] = useState<any[]>([]);
+    const [showGiftModal, setShowGiftModal] = useState(false);
+    const [selectedGiftCategory, setSelectedGiftCategory] = useState('standard');
+
+    useChatMessages(chatId, (message) => {
+        setMessages((prev) => {
+            if (prev.some(m => m.id === message.id)) return prev;
+            return [ message,...prev];
+        });
+    });
+
+    useEffect(() => {
+        setFetching(true);
+        setFetchError(null);
+        const fetchMessages = async () => {
+            if (!chatId || isNaN(Number(chatId))) {
+                setMessages([]);
+                setFetching(false);
+                return;
+            }
+            try {
+                const msgs = await getChatMessages(chatId);
+                setMessages(Array.isArray(msgs) ? msgs : []);
+                setFetchError(null);
+            } catch (e) {
+                setFetchError('メッセージの取得に失敗しました');
+            } finally {
+                setFetching(false);
+            }
+        };
+        fetchMessages();
+    }, [chatId]);
+
+    useEffect(() => {
+        fetchAllGifts().then(setGifts);
+    }, []);
 
     // Position the attach popover above the attach button
     useEffect(() => {
@@ -59,12 +78,54 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
         }
     }, [showFile]);
 
+
+    const handleImageButtonClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setAttachedFile(file);
+            const reader = new FileReader();
+            reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSend = async () => {
+        if ((input.trim() || attachedFile) && !sending && user) {
+            setSending(true);
+            setSendError(null);
+            try {
+                const payload: any = {
+                    chat_id: chatId,
+                    sender_guest_id: user.id,
+                };
+                if (input.trim()) payload.message = input.trim();
+                if (attachedFile) payload.image = attachedFile;
+                const sent = await sendMessage(payload);
+                // Patch the sender_guest_id or sender_cast_id for immediate alignment
+                if ('sender_guest_id' in sent) sent.sender_guest_id = user.id;
+                if ('sender_cast_id' in sent) sent.sender_cast_id = user.id;
+                setMessages((prev) => [...prev, sent]);
+                setInput('');
+                setAttachedFile(null);
+                setImagePreview(null);
+            } catch (e) {
+                setSendError('メッセージの送信に失敗しました');
+            } finally {
+                setSending(false);
+            }
+        }
+    };
+
     return (
         <div className="bg-primary min-h-screen flex flex-col relative">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button onClick={onBack} className="mr-2">
-                    <FiChevronLeft className="w-6 h-6 text-white" />
+                    <ChevronLeft size={30} />
                 </button>
                 <img
                     src="/assets/avatar/1.jpg"
@@ -73,59 +134,101 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                 />
                 <span className="font-bold text-white text-base truncate">pishattoコンシェルジュ 11歳</span>
             </div>
-            {/* Date separator */}
-            <div className="flex justify-center my-4">
-                <span className="bg-primary text-white text-xs px-3 py-1 rounded-full border border-secondary">02月20日(木)</span>
-            </div>
             {/* Chat history */}
             <div className="flex-1 overflow-y-auto px-4 pb-32">
-                {messages.map((msg) => (
-                    <div key={msg.id} className="flex items-start mb-4">
-                        <img
-                            src={msg.avatar}
-                            alt="avatar"
-                            className="w-8 h-8 rounded-full mr-2 border border-secondary mt-1"
-                        />
-                        <div>
-                            <div className="flex items-center mb-1">
-                                <span className="font-bold text-white text-sm mr-2">{msg.name}</span>
-                                <span className="text-xs text-white">{msg.time}</span>
+                {fetching ? (
+                    <div className="flex justify-center items-center h-40 text-white">ローディング...</div>
+                ) : fetchError ? (
+                    <div className="text-center text-red-400 py-10">{fetchError}</div>
+                ) : !chatId || isNaN(Number(chatId)) ? (
+                    <div className="text-center text-white py-10">チャットが選択されていません</div>
+                ) : messages.length === 0 ? (
+                    <div className="text-center text-white py-10">メッセージがありません</div>
+                ) : (
+                    (messages || []).map((msg, idx) => {
+                        const isSent = (user && (msg.sender_guest_id === user.id));
+                        const senderAvatar = msg.guest?.avatar || msg.cast?.avatar || '/assets/avatar/1.jpg';
+                        const senderName = msg.guest?.nickname || msg.cast?.nickname || 'ゲスト/キャスト';
+                        let proposal = null;
+                        try {
+                            const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                            if (parsed && parsed.type === 'proposal') proposal = parsed;
+                        } catch (e) { }
+                        if (proposal) {
+                            return (
+                                <div key={msg.id || idx} className="flex justify-start mb-4">
+                                    <div className="bg-orange-600 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md">
+                                        <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
+                                        <div>人数：{proposal.people.replace(/名$/, '')}人</div>
+                                        <div>時間：{proposal.duration}</div>
+                                        <div>消費ポイント：{proposal.totalPoints.toLocaleString()}P</div>
+                                        <div>（延長：{proposal.extensionPoints.toLocaleString()}P / 15分）</div>
+                                    </div>
+                                </div>
+                            );
+                        }
+                        return (
+                            <div key={msg.id || idx} className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
+                                {!isSent && (
+                                    <img
+                                        src={senderAvatar}
+                                        alt="avatar"
+                                        className="w-8 h-8 rounded-full mr-2 border border-secondary mt-1"
+                                    />
+                                )}
+                                <div>
+                                    {!isSent && <div className="text-xs text-gray-400 mb-1">{senderName}</div>}
+                                    <div className={isSent ? 'bg-secondary text-white rounded-lg px-4 py-2' : 'bg-white text-black rounded-lg px-4 py-2'}>
+                                        {msg.gift_id && msg.gift && (
+                                            <div className="flex items-center mb-1">
+                                                <span className="text-3xl mr-2">
+                                                    <img src={`${IMAGE_BASE_URL}/storage/${msg.gift.icon}`} alt="gift" className="w-10 h-10" />
+                                                </span>
+                                                <span className="font-bold">{msg.gift.name}</span>
+                                                <span className="ml-2 text-xs text-primary font-bold">{msg.gift.points}P</span>
+                                            </div>
+                                        )}
+                                        {msg.image && (
+                                            <img
+                                                src={
+                                                    msg.image.startsWith('http')
+                                                        ? msg.image
+                                                        : `${IMAGE_BASE_URL}/storage/${msg.image}`
+                                                }
+                                                alt="sent"
+                                                className="max-w-full max-h-40 rounded mb-2"
+                                            />
+                                        )}
+                                        {msg.message}
+                                    </div>
+                                    <div className="text-xs text-gray-400 mt-1 text-right">{msg.created_at}</div>
+                                </div>
                             </div>
-                            {msg.content}
-                        </div>
-                    </div>
-                ))}
-                {/* Render attached images as chat bubbles */}
-                {attachedImages.map((img, idx) => (
-                    <div key={idx} className="flex items-start mb-4">
-                        <img
-                            src="/assets/avatar/2.jpg"
-                            alt="avatar"
-                            className="w-8 h-8 rounded-full mr-2 border border-secondary mt-1"
-                        />
-                        <div className="bg-primary border border-secondary rounded-2xl p-2 max-w-[60%]">
-                            <img src={img} alt="attachment" className="max-w-full max-h-40 rounded" />
+                        );
+                    })
+                )}
+                {localMessages.map((msg, idx) => (
+                    <div key={idx} className="flex items-end justify-end mb-4">
+                        <div className="bg-secondary text-white rounded-lg px-4 py-2 max-w-[80%]">
+                            {msg.message}
                         </div>
                     </div>
                 ))}
             </div>
             {/* Input bar (always fixed at bottom) */}
             <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t border-secondary flex flex-col px-4 py-2 z-20">
-                {/* Show attached image previews */}
-                {attachedImages.length > 0 && (
-                    <div className="flex gap-2 mb-2">
-                        {attachedImages.map((img, idx) => (
-                            <div key={idx} className="relative">
-                                <img src={img} alt="preview" className="w-12 h-12 object-cover rounded border border-secondary bg-primary" />
-                                <button
-                                    className="absolute -top-2 -right-2 bg-primary border border-secondary rounded-full w-5 h-5 flex items-center justify-center text-xs text-white"
-                                    onClick={() => setAttachedImages(prev => prev.filter((_, i) => i !== idx))}
-                                    type="button"
-                                >
-                                    ×
-                                </button>
-                            </div>
-                        ))}
+                {sendError && <div className="text-red-400 text-xs mb-1">{sendError}</div>}
+                {/* Image preview */}
+                {imagePreview && (
+                    <div className="flex items-center mt-2">
+                        <img src={imagePreview} alt="preview" className="h-20 rounded border border-gray-300" />
+                        <button
+                            type="button"
+                            className="ml-2 text-white bg-red-500 rounded-full w-8 h-8 flex items-center justify-center"
+                            onClick={() => { setAttachedFile(null); setImagePreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                        >
+                            ×
+                        </button>
                     </div>
                 )}
                 <div className="flex items-center w-full">
@@ -135,12 +238,24 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                         placeholder="メッセージを入力..."
                         value={input}
                         onChange={e => setInput(e.target.value)}
+                        onKeyDown={async (e) => {
+                            if (e.key === 'Enter') {
+                                await handleSend();
+                            }
+                        }}
                     />
-                    <button ref={attachBtnRef} className="text-white mr-2 relative" onClick={() => setShowFile(v => !v)}>
-                        <FiImage className="w-7 h-7" />
-                    </button>
-                    <button className="text-white" onClick={() => setShowGift(v => !v)}>
-                        <FiGift className="w-7 h-7" />
+                    <span className="text-white ml-2 cursor-pointer" onClick={handleImageButtonClick}>
+                        <Image size={30} />
+                    </span>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileInputRef}
+                        style={{ display: 'none' }}
+                        onChange={handleImageChange}
+                    />
+                    <button className="text-white ml-2" onClick={() => setShowGiftModal(true)}>
+                        <Gift size={30} />
                     </button>
                 </div>
             </div>
@@ -154,41 +269,95 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                             <button className={`flex-1 py-3 font-bold ${giftTab === 'grade' ? 'text-white border-b-2 border-secondary' : 'text-white'}`} onClick={() => setGiftTab('grade')}>グレード</button>
                             <button className={`flex-1 py-3 font-bold ${giftTab === 'mygift' ? 'text-white border-b-2 border-secondary' : 'text-white'}`} onClick={() => setGiftTab('mygift')}>Myギフト</button>
                         </div>
-                        <div className="py-8 text-center flex-1 flex flex-col justify-center w-full">
-                            {giftTab === 'standard' && (
-                                <div>
-                                    <div className="mb-4 text-white">定番ギフト一覧</div>
-                                    <img src="/assets/icons/card-2.png" alt="standard gifts" className="mx-auto mb-4 w-10" />
-                                    <div className="font-bold text-lg mb-2 text-white">人気の定番ギフトを贈ろう！</div>
-                                    <div className="text-xs text-white">ここに定番ギフトの説明やリストを表示</div>
-                                </div>
-                            )}
-                            {giftTab === 'local' && (
-                                <div>
-                                    <div className="mb-4 text-white">ご当地ギフト一覧</div>
-                                    <img src="/assets/icons/card-1.png" alt="local gifts" className="mx-auto mb-4 w-10" />
-                                    <div className="font-bold text-lg mb-2 text-white">地域限定のギフトをチェック！</div>
-                                    <div className="text-xs text-white">ここにご当地ギフトの説明やリストを表示</div>
-                                </div>
-                            )}
-                            {giftTab === 'grade' && (
-                                <div>
-                                    <div className="mb-4 text-white">グレードギフト一覧</div>
-                                    <img src="/assets/icons/crown.png" alt="grade gifts" className="mx-auto mb-4 w-10" />
-                                    <div className="font-bold text-lg mb-2 text-white">グレード限定ギフトを贈ろう！</div>
-                                    <div className="text-xs text-white">ここにグレードギフトの説明やリストを表示</div>
-                                </div>
-                            )}
-                            {giftTab === 'mygift' && (
-                                <div>
-                                    <div className="mb-4 text-white">一部ゲストだけの特別なギフト</div>
-                                    <img src="/assets/icons/card-1.png" alt="gifts" className="mx-auto mb-4 w-6" />
-                                    <div className="font-bold text-lg mb-2 text-white">ギフトイベントで上位にランクインして<br />Myギフトを獲得しましょう！</div>
-                                    <div className="text-xs text-white">Myギフトを手に入れると、イベント限定ギフトが期間終了後も贈ることができます</div>
-                                </div>
-                            )}
+                        <div className="py-4 text-center flex-1 flex flex-col justify-center w-full">
+                            <div className="grid grid-cols-4 gap-4 px-4">
+                                {gifts.map(gift => (
+                                    <button
+                                        key={gift.id}
+                                        className="flex flex-col items-center justify-center bg-secondary rounded-lg p-2 text-white hover:bg-red-700 transition"
+                                        onClick={async () => {
+                                            if (!user) return;
+                                            setShowGift(false);
+                                            setSending(true);
+                                            setSendError(null);
+                                            try {
+                                                const sent = await sendMessage({
+                                                    chat_id: chatId,
+                                                    sender_guest_id: user.id,
+                                                    gift_id: gift.id,
+                                                });
+                                                setLocalMessages((prev) => [...prev, sent]);
+                                            } catch (e) {
+                                                setSendError('ギフトの送信に失敗しました');
+                                            } finally {
+                                                setSending(false);
+                                            }
+                                        }}
+                                    >
+                                        <span className="text-3xl mb-1">
+                                            <img src={`${APP_BASE_URL}/${gift.icon}`} alt="gift" className="w-5 h-5" />
+                                        </span>
+                                        <span className="text-xs">{gift.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                        <button className="absolute top-2 right-2 text-white text-2xl" onClick={() => setShowGift(false)}>&times;</button>
+                        <button className="absolute top-2 right-2 text-white text-2xl" onClick={() => setShowGift(false)}>
+                            <X size={30} />
+                        </button>
+                    </div>
+                </div>
+            )}
+            {showGiftModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                    <div className="bg-primary rounded-2xl shadow-lg p-6 flex flex-col items-center border border-secondary min-w-[320px] max-w-[90vw]">
+                        <h2 className="font-bold text-lg mb-4 text-white">ギフトを選択</h2>
+                        <div className="flex gap-2 mb-4">
+                            {['standard', 'regional', 'grade', 'mygift'].map(cat => (
+                                <button
+                                    key={cat}
+                                    className={`px-3 py-1 rounded-full font-bold text-sm ${selectedGiftCategory === cat ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}
+                                    onClick={() => setSelectedGiftCategory(cat)}
+                                >
+                                    {cat === 'standard' ? '定番' : cat === 'regional' ? 'ご当地' : cat === 'grade' ? 'グレード' : 'Myギフト'}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-4 gap-4 mb-4">
+                            {gifts.filter(g => g.category === selectedGiftCategory).map(gift => (
+                                <button
+                                    key={gift.id}
+                                    className="flex flex-col items-center justify-center bg-secondary rounded-lg p-2 text-white hover:bg-red-700 transition"
+                                    onClick={async () => {
+                                        setShowGiftModal(false);
+                                        setSending(true);
+                                        setSendError(null);
+                                        try {
+                                            const payload: any = {
+                                                chat_id: chatId,
+                                                sender_guest_id: user?.id,
+                                                gift_id: gift.id,
+                                            };
+                                            const sent = await sendMessage(payload);
+                                            if ('sender_guest_id' in sent) sent.sender_guest_id = user?.id;
+                                            if ('sender_cast_id' in sent) sent.sender_cast_id = user?.id;
+                                            setMessages((prev) => [...prev, sent]);
+                                        } catch (e) {
+                                            setSendError('ギフトの送信に失敗しました');
+                                        } finally {
+                                            setSending(false);
+                                        }
+                                    }}
+                                >
+                                    <span className="text-3xl mb-1">
+                                        <img src={`${IMAGE_BASE_URL}/storage/${gift.icon}`} alt="gift" className="w-10 h-10" />
+                                    </span>
+                                    <span className="text-xs">{gift.name}</span>
+                                    <span className="text-xs text-yellow-300 font-bold">{gift.points}P</span>
+                                </button>
+                            ))}
+                        </div>
+                        <button className="text-white mt-2 hover:text-red-700 transition-all duration-200 font-medium" onClick={() => setShowGiftModal(false)}>閉じる</button>
                     </div>
                 </div>
             )}
@@ -213,10 +382,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ onBack }) => {
                         onChange={e => {
                             const file = e.target.files?.[0];
                             if (file) {
+                                setAttachedFile(file);
                                 const reader = new FileReader();
                                 reader.onload = ev => {
                                     if (typeof ev.target?.result === 'string') {
-                                        setAttachedImages(prev => [...prev, ev.target!.result as string]);
+                                        setAttachedFile(file); // Only one image preview
+                                        setImagePreview(ev.target.result as string);
                                     }
                                 };
                                 reader.readAsDataURL(file);

@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
 import { Heart, SlidersHorizontal, Bell, MessageCircleQuestionMark, ChevronLeft } from 'lucide-react';
+import { getRepeatGuests, RepeatGuest, getGuestProfileById, GuestProfile } from '../../services/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 // GuestDetailPage component
-type GuestDetailPageProps = { onBack: () => void; avatarFilename: string };
-const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, avatarFilename }) => {
+type GuestDetailPageProps = { onBack: () => void; guest: RepeatGuest };
+const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
     const [showEasyMessage, setShowEasyMessage] = useState(false);
-    const avatarSrc = `/assets/avatar/${avatarFilename}`;
-
+    const [profile, setProfile] = useState<GuestProfile | null>(null);
+    const [loading, setLoading] = useState(true);
+    React.useEffect(() => {
+        getGuestProfileById(guest.id).then(setProfile).finally(() => setLoading(false));
+    }, [guest.id]);
+    const avatarSrc = guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png';
     if (showEasyMessage) {
         return <EasyMessagePage onClose={() => setShowEasyMessage(false)} />
     }
     return (
-        <div className="max-w-md mx-auto bg-primary min-h-screen pb-8 auto">
+        <div className="max-w-md  bg-primary min-h-screen pb-8 auto">
             {/* Header with back button */}
             <div className="flex items-center px-2 pt-2 pb-2">
                 <button onClick={onBack} className="text-2xl text-white font-bold">
@@ -30,25 +36,31 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, avatarFilenam
             <div className="flex items-center px-4 py-2 mt-2 bg-primary rounded shadow border border-secondary">
                 <img src={avatarSrc} alt="guest_thumb" className="w-10 h-10 rounded mr-2 border-2 border-secondary" />
                 <div>
-                    <div className="font-bold text-sm text-white">オフライン中  まこちゃん</div>
-                    <div className="text-xs text-white">弁護士 / お酒がすき</div>
+                    <div className="font-bold text-sm text-white">{profile ? profile.nickname : guest.nickname}</div>
+                    <div className="text-xs text-white">{profile ? profile.occupation : ''}</div>
                 </div>
             </div>
             {/* Profile details */}
             <div className="px-4 py-2">
+                {loading ? (
+                  <div className="text-white">ローディング...</div>
+                ) : profile ? (
                 <table className="w-full text-sm text-white">
                     <tbody>
-                        <tr><td className="py-1">身長：</td><td>175</td></tr>
-                        <tr><td className="py-1">居住地：</td><td>東京都</td></tr>
-                        <tr><td className="py-1">出身地：</td><td>北海道</td></tr>
-                        <tr><td className="py-1">学歴：</td><td>大学卒</td></tr>
-                        <tr><td className="py-1">年収：</td><td>400万〜600万</td></tr>
-                        <tr><td className="py-1">お仕事：</td><td>弁護士</td></tr>
-                        <tr><td className="py-1">お酒：</td><td>ときどき飲む</td></tr>
-                        <tr><td className="py-1">タバコ：</td><td>ときどき吸う</td></tr>
-                        <tr><td className="py-1">兄弟姉妹：</td><td>長男</td></tr>
+                        <tr><td className="py-1">身長：</td><td>{profile.height || '-'}</td></tr>
+                        <tr><td className="py-1">居住地：</td><td>{profile.residence || '-'}</td></tr>
+                        <tr><td className="py-1">出身地：</td><td>{profile.birthplace || '-'}</td></tr>
+                        <tr><td className="py-1">学歴：</td><td>{profile.education || '-'}</td></tr>
+                        <tr><td className="py-1">年収：</td><td>{profile.annual_income || '-'}</td></tr>
+                        <tr><td className="py-1">お仕事：</td><td>{profile.occupation || '-'}</td></tr>
+                        <tr><td className="py-1">お酒：</td><td>{profile.alcohol || '-'}</td></tr>
+                        <tr><td className="py-1">タバコ：</td><td>{profile.tobacco || '-'}</td></tr>
+                        <tr><td className="py-1">兄弟姉妹：</td><td>{profile.siblings || '-'}</td></tr>
                     </tbody>
                 </table>
+                ) : (
+                  <div className="text-white">データが見つかりません</div>
+                )}
             </div>
             {/* Like button */}
             <div className="px-4 py-2">
@@ -260,33 +272,15 @@ const EasyMessagePage: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 const CastSearchPage: React.FC = () => {
     const [showRanking, setShowRanking] = useState(false);
     const [showGuestDetail, setShowGuestDetail] = useState(false);
-    const [selectedAvatar, setSelectedAvatar] = useState<string>("");
+    const [selectedGuest, setSelectedGuest] = useState<RepeatGuest | null>(null);
+    const [repeatGuests, setRepeatGuests] = useState<RepeatGuest[]>([]);
+    const [loading, setLoading] = useState(true);
     const [showEasyMessage, setShowEasyMessage] = useState(false);
-    // Array of avatar image filenames
-    const avatarImages = [
-        "1.jpg",
-        "2.jpg",
-        "avatar-1.png",
-        "avatar-2.png",
-    ];
-
-    const location = [
-        "female.png",
-        "man.png",
-        "francesco-ZxNKxnR32Ng-unsplash.jpg",
-        "harald-hofer-pKoKW6UQOuk-unsplash.jpg",
-        "ian-robinson-DfKZs6DOrw4-unsplash.jpg",
-        "jf-brou-915UJQaxtrk-unsplash.jpg",
-        "jonatan-pie-xgTMSz6kegE-unsplash.jpg",
-        "knight_3275232.png",
-        "mathew-schwartz-O31kjYCHzPY-unsplash.jpg",
-        "ray-hennessy-xUUZcpQlqpM-unsplash.jpg",
-        "smit-patel-dGMcpbzcq1I-unsplash.jpg",
-        "tof-mayanoff-CS5vT_Kin3E-unsplash.jpg",
-        "uriel-soberanes-oMvtVzcFPlU-unsplash.jpg"
-    ]
-    if (showGuestDetail) {
-        return <GuestDetailPage onBack={() => setShowGuestDetail(false)} avatarFilename={selectedAvatar || "1.jpg"} />;
+    React.useEffect(() => {
+        getRepeatGuests().then(setRepeatGuests).finally(() => setLoading(false));
+    }, []);
+    if (showGuestDetail && selectedGuest) {
+        return <GuestDetailPage onBack={() => setShowGuestDetail(false)} guest={selectedGuest} />;
     }
     if (showRanking) {
         return <RankingPage onBack={() => setShowRanking(false)} />;
@@ -295,7 +289,7 @@ const CastSearchPage: React.FC = () => {
         return <EasyMessagePage onClose={() => setShowEasyMessage(false)} />;
     }
     return (
-        <div className="max-w-md mx-auto pb-20 bg-primary">
+        <div className="flex-1 max-w-md pb-20 bg-primary">
             {/* Top bar with filter and crown */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <span className="text-white">
@@ -312,38 +306,51 @@ const CastSearchPage: React.FC = () => {
                 <span className="text-base font-bold text-white">あなたにリピートしそうなゲスト <span className="text-xs text-white ml-1">i</span></span>
                 <button className="text-xs text-white font-bold">すべて見る &gt;</button>
             </div>
-            <div className="flex space-x-2 overflow-x-auto px-4 pb-4">
-                {avatarImages.map((filename, idx) => (
+            <div className="gap-3 px-4 pb-4 max-w-md mx-auto overflow-x-auto flex flex-row">
+                {loading ? (
+                  <div className="text-white col-span-2">ローディング...</div>
+                ) : repeatGuests.length === 0 ? (
+                  <div className="text-white col-span-2">該当ゲストなし</div>
+                ) : repeatGuests.map((guest) => (
                     <div
-                        key={filename}
-                        className={`w-32 min-w-[120px] h-40 bg-primary cursor-pointer rounded-lg flex items-center justify-center border border-secondary`}
+                        key={guest.id}
+                        className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary flex flex-col items-center p-3"
                         onClick={() => {
-                            setSelectedAvatar(filename);
+                            setSelectedGuest(guest);
                             setShowGuestDetail(true);
                         }}
                     >
-                        <img
-                            src={`/assets/avatar/${filename}`}
-                            alt={`cast_search_${idx}`}
-                            className="object-cover rounded-lg border-2 border-secondary"
-                        />
+                        <div className="w-20 h-20 mb-2 relative">
+                            <img
+                                src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'}
+                                alt={guest.nickname}
+                                className="w-full h-full object-cover rounded-lg border-2 border-secondary"
+                            />
+                        </div>
+                        <div className="text-xs text-white font-bold truncate w-full text-center">{guest.nickname}</div>
+                        <div className="text-xs text-white">{guest.reservations_count}回利用</div>
                     </div>
                 ))}
             </div>
             {/* Previous search results */}
             <div className="px-4 pt-2 pb-1 text-base font-bold text-white">前回の検索結果</div>
-            <div className="grid grid-cols-2 gap-4 px-4">
-                {location.map((filename, idx) => (
+            <div className="grid grid-cols-2 gap-4 px-4 ">
+                {repeatGuests.map((guest) => (
                     <div
-                        key={filename}
-                        className="w-full h-60 bg-primary rounded-lg flex flex-col items-center justify-end p-2 border border-secondary"
+                        key={guest.id}
+                        className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary flex flex-col items-center p-3"
+                        onClick={() => {
+                            setSelectedGuest(guest);
+                            setShowGuestDetail(true);
+                        }}
                     >
-                        <img
-                            src={`/assets/avatar/${filename}`}
-                            alt={`search_result_${idx}`}
-                            className="w-40 h-40 object-cover rounded-lg mb-2 border-2 border-secondary"
-                        />
-                        <div className="text-xs text-white">検索結果 {idx + 1}</div>
+                        <div className="w-32 h-32 mb-2 relative">
+                            <img
+                                src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'}
+                                alt={guest.nickname}
+                                className="w-full h-full object-cover rounded-lg border-2 border-secondary"
+                            />
+                        </div>
                     </div>
                 ))}
             </div>

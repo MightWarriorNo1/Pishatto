@@ -1,7 +1,10 @@
 
 import { useState } from 'react';
-import { ChevronLeft, Clock, Flag, HelpCircleIcon, MapPin, Ticket, Users, CircleParking, CalendarArrowUp, ChevronRight, Minus, Plus } from 'lucide-react';
+import { ChevronLeft, Clock, Flag, HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus } from 'lucide-react';
 import StepRequirementScreen from './StepRequirementScreen';
+import { createReservation } from '../../services/api';
+import { useUser } from '../../contexts/UserContext';
+import MyOrderPage from './MyOrderPage';
 
 const mockCasts = [
     { name: 'たまごちゃん', tag: 'ロイヤルVIP', age: '', desc: '', img: 'assets/icons/akiko.png', badge: '🌈' },
@@ -32,14 +35,21 @@ const castSkillOptions = [
     'お酒好き', '英語が話せる', '中国語が話せる', '韓国語が話せる', '盛り上げ上手', '歌うま'
 ];
 
-function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: () => void }) {
-    const [selectedTime, setSelectedTime] = useState('30分後');
-    const [selectedArea] = useState('東京 / 六本木');
-    const [counts, setCounts] = useState([1, 1, 0]);
-    const [selectedDuration, setSelectedDuration] = useState('1時間');
+function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, selectedArea, setSelectedArea, counts, setCounts, selectedDuration, setSelectedDuration }: {
+    onBack: () => void,
+    onNext: () => void,
+    selectedTime: string,
+    setSelectedTime: (v: string) => void,
+    selectedArea: string,
+    setSelectedArea: (v: string) => void,
+    counts: number[],
+    setCounts: (v: number[]) => void,
+    selectedDuration: string,
+    setSelectedDuration: (v: string) => void,
+}) {
     const total = counts.reduce((a, b) => a + b, 0);
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
+        <div>
             <div className="flex items-center px-4 pt-6 pb-2">
                 <button onClick={onBack} className="mr-2 text-2xl text-white">
                     <ChevronLeft />
@@ -71,10 +81,17 @@ function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: ()
                         どこに呼びますか?
                     </span>
                 </div>
-                <button className="w-full border rounded px-4 py-2 text-left flex items-center border-secondary bg-primary text-white">
-                    <span>{selectedArea}</span>
-                    <span className="ml-auto text-white">&gt;</span>
-                </button>
+                <select
+                    className="w-full border rounded px-4 py-2 text-left border-secondary bg-primary text-white appearance-none focus:outline-none focus:ring-2 focus:ring-secondary"
+                    value={selectedArea}
+                    onChange={e => setSelectedArea(e.target.value)}
+                >
+                    <option value="東京都">東京都</option>
+                    <option value="大阪府">大阪府</option>
+                    <option value="愛知県">愛知県</option>
+                    <option value="福岡県">福岡県</option>
+                    <option value="北海道">北海道</option>
+                </select>
             </div>
             {/* People selection */}
             <div className="px-4 mt-4">
@@ -97,7 +114,7 @@ function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: ()
                             <div className="flex items-center">
                                 <button
                                     className={`w-8 h-8 rounded-full border flex items-center justify-center text-2xl ${counts[idx] === 0 ? 'border-gray-800 text-gray-700 bg-gray-900 cursor-not-allowed' : 'border-secondary text-white bg-primary'}`}
-                                    onClick={() => counts[idx] > 0 && setCounts(c => c.map((v, i) => i === idx ? Math.max(0, v - 1) : v))}
+                                    onClick={() => counts[idx] > 0 && setCounts(counts.map((v, i) => i === idx ? Math.max(0, v - 1) : v))}
                                     disabled={counts[idx] === 0}
                                 >
                                     <Minus />
@@ -105,7 +122,7 @@ function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: ()
                                 <span className={`w-4 text-center font-bold mx-1 ${counts[idx] > 0 ? 'text-white' : 'text-gray-400'}`}>{counts[idx]}</span>
                                 <button
                                     className="w-8 h-8 rounded-full border border-secondary text-2xl text-white flex items-center justify-center bg-primary"
-                                    onClick={() => setCounts(c => c.map((v, i) => i === idx ? v + 1 : v))}
+                                    onClick={() => setCounts(counts.map((v, i) => i === idx ? v + 1 : v))}
                                 >
                                     <Plus />
                                 </button>
@@ -146,10 +163,16 @@ function OrderHistoryScreen({ onBack, onNext }: { onBack: () => void, onNext: ()
     );
 }
 
-function OrderDetailConditionsScreen({ onBack, onNext }: { onBack: () => void, onNext: () => void }) {
-    const [selectedSituations, setSelectedSituations] = useState<string[]>([]);
-    const [selectedCastTypes, setSelectedCastTypes] = useState<string[]>([]);
-    const [selectedCastSkills, setSelectedCastSkills] = useState<string[]>([]);
+function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSelectedSituations, selectedCastTypes, setSelectedCastTypes, selectedCastSkills, setSelectedCastSkills }: {
+    onBack: () => void,
+    onNext: () => void,
+    selectedSituations: string[],
+    setSelectedSituations: (v: string[]) => void,
+    selectedCastTypes: string[],
+    setSelectedCastTypes: (v: string[]) => void,
+    selectedCastSkills: string[],
+    setSelectedCastSkills: (v: string[]) => void,
+}) {
     const toggle = (arr: string[], setArr: (v: string[]) => void, value: string) => {
         setArr(arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value]);
     };
@@ -205,8 +228,53 @@ function OrderDetailConditionsScreen({ onBack, onNext }: { onBack: () => void, o
     );
 }
 
-function OrderFinalConfirmationScreen({ onBack, onConfirmed }: { onBack: () => void, onConfirmed: () => void }) {
-    // Static/mock data for now
+function OrderFinalConfirmationScreen({
+    onBack,
+    onConfirmed,
+    selectedTime,
+    selectedArea,
+    counts,
+    selectedDuration,
+    selectedSituations,
+    selectedCastTypes,
+    selectedCastSkills,
+    onReservationSuccess,
+}: {
+    onBack: () => void;
+    onConfirmed: () => void;
+    selectedTime: string;
+    selectedArea: string;
+    counts: number[];
+    selectedDuration: string;
+    selectedSituations: string[];
+    selectedCastTypes: string[];
+    selectedCastSkills: string[];
+    onReservationSuccess: () => void;
+}) {
+    const { user } = useUser();
+    const [reservationMessage, setReservationMessage] = useState<string | null>(null);
+    const handleReservation = async () => {
+        if (!user) return;
+        // Format date as MySQL DATETIME string
+        const now = new Date();
+        const pad = (n: number) => n.toString().padStart(2, '0');
+        const toMysqlDatetime = (date: Date) =>
+            `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        const hours = selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''));
+        try {
+            await createReservation({
+                guest_id: user.id,
+                scheduled_at: toMysqlDatetime(now),
+                location: selectedArea,
+                duration: hours, // always a number, 4 if '4時間以上'
+                details: `VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, シチュ: ${selectedSituations.join(',')}, タイプ: ${selectedCastTypes.join(',')}, スキル: ${selectedCastSkills.join(',')}`,
+                time: selectedTime, // store the selected time
+            });
+            setReservationMessage('予約が完了しました');
+        } catch {
+            setReservationMessage('予約に失敗しました');
+        }
+    };
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
             {/* Back and Title */}
@@ -224,36 +292,46 @@ function OrderFinalConfirmationScreen({ onBack, onConfirmed }: { onBack: () => v
                         <Clock />
                     </span>
                     <span className="text-white mr-2">合流予定</span>
-                    <span className="ml-auto font-bold text-white">今すぐ(30分後)</span>
+                    <span className="ml-auto font-bold text-white">{selectedTime}</span>
                 </div>
                 <div className="flex items-center mb-1 text-sm">
                     <span className="w-6">
                         <MapPin />
                     </span>
                     <span className="text-white mr-2">合流エリア</span>
-                    <span className="ml-auto font-bold text-white">東京 / 六本木</span>
+                    <span className="ml-auto font-bold text-white">{selectedArea}</span>
                 </div>
                 <div className="flex mb-1 text-sm">
                     <span className="w-6">
                         <Users />
                     </span>
                     <span className="text-white mr-2">キャスト人数</span>
-                    <span className="ml-auto font-bold text-white">ロイヤルVIP：1人<br />VIP：1人</span>
+                    <span className="ml-auto font-bold text-white">ロイヤルVIP：{counts[0]}人<br />VIP：{counts[1]}人<br />プレミアム：{counts[2]}人</span>
                 </div>
                 <div className="flex items-center mb-10 text-sm">
                     <span className="w-6">
                         <Clock />
                     </span>
                     <span className="text-white mr-2">設定時間</span>
-                    <span className="ml-auto font-bold text-white">1時間</span>
+                    <span className="ml-auto font-bold text-white">{selectedDuration}</span>
                 </div>
+                {/* Show selected situations, cast types, and skills if any */}
+                {selectedSituations.length > 0 && (
+                    <div className="text-white text-sm mb-1">シチュエーション: {selectedSituations.join(', ')}</div>
+                )}
+                {selectedCastTypes.length > 0 && (
+                    <div className="text-white text-sm mb-1">キャストタイプ: {selectedCastTypes.join(', ')}</div>
+                )}
+                {selectedCastSkills.length > 0 && (
+                    <div className="text-white text-sm mb-1">キャストスキル: {selectedCastSkills.join(', ')}</div>
+                )}
             </div>
             {/* Change button */}
             <div className="px-4 mt-4">
                 <button className="w-full font-bold py-2 border-t border-secondary text-white">変更する</button>
             </div>
             {/* Ohineri and Coupon rows */}
-            <div className="px-4 mt-4">
+            {/* <div className="px-4 mt-4">
                 <div className="flex items-center py-3 border-b border-secondary">
                     <span className="w-6">
                         <CircleParking />
@@ -270,31 +348,38 @@ function OrderFinalConfirmationScreen({ onBack, onConfirmed }: { onBack: () => v
                     <span className="ml-auto font-bold text-white">クーポン未所持</span>
                     <span className="ml-2 text-white">&gt;</span>
                 </div>
-            </div>
+            </div> */}
             {/* Price breakdown */}
             <div className="px-4 mt-8">
                 <div className="bg-primary rounded-lg p-4 border border-secondary">
                     <div className="flex justify-between text-sm mb-1 text-white">
-                        <span>ロイヤルVIP 1人</span>
-                        <span>25,000P</span>
+                        <span>ロイヤルVIP {counts[0]}人</span>
+                        <span>{12500 * counts[0] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30}P</span>
                     </div>
                     <div className="flex justify-between text-sm mb-1 text-white">
-                        <span>VIP 1人</span>
-                        <span>14,000P</span>
+                        <span>VIP {counts[1]}人</span>
+                        <span>{7000 * counts[1] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30}P</span>
+                    </div>
+                    <div className="flex justify-between text-sm mb-1 text-white">
+                        <span>プレミアム {counts[2]}人</span>
+                        <span>{4750 * counts[2] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30}P</span>
                     </div>
                     <div className="flex justify-between text-sm mt-2 text-white">
                         <span>小計</span>
-                        <span>39,000P</span>
+                        <span>{12500 * counts[0] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30 + 7000 * counts[1] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30 + 4750 * counts[2] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30}P</span>
                     </div>
                     <div className="flex justify-between font-bold text-xl mt-4 text-white">
                         <span>合計</span>
-                        <span>39,000P</span>
+                        <span>{12500 * counts[0] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30 + 7000 * counts[1] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30 + 4750 * counts[2] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30}P</span>
                     </div>
                 </div>
             </div>
             {/* Confirm button */}
             <div className="px-4 mt-4">
-                <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition" onClick={onConfirmed}>予約を確定する</button>
+                <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition" onClick={handleReservation}>
+                    予約を確定する
+                </button>
+                {reservationMessage && <div className="text-white text-center mt-2">{reservationMessage}</div>}
             </div>
         </div>
     );
@@ -306,21 +391,60 @@ type CallScreenProps = {
 };
 
 const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
+    // Add state to pass order data between steps
+    const [selectedTime, setSelectedTime] = useState('30分後');
+    const [selectedArea, setSelectedArea] = useState('東京都');
+    const [counts, setCounts] = useState([1, 1, 0]);
+    const [selectedDuration, setSelectedDuration] = useState('1時間');
+    const [selectedSituations, setSelectedSituations] = useState<string[]>([]);
+    const [selectedCastTypes, setSelectedCastTypes] = useState<string[]>([]);
+    const [selectedCastSkills, setSelectedCastSkills] = useState<string[]>([]);
     const [page, setPage] = useState<'main' | 'orderHistory' | 'orderDetail' | 'orderFinal' | 'stepRequirement'>('main');
-    if (page === 'orderHistory') return <OrderHistoryScreen onBack={() => setPage('main')} onNext={() => setPage('orderDetail')} />;
-    if (page === 'orderDetail') return <OrderDetailConditionsScreen onBack={() => setPage('orderHistory')} onNext={() => setPage('orderFinal')} />;
-    if (page === 'orderFinal') return <OrderFinalConfirmationScreen onBack={() => setPage('orderDetail')} onConfirmed={() => setPage('stepRequirement')} />;
+    const [showMyOrder, setShowMyOrder] = useState(false);
+    if (showMyOrder) return <MyOrderPage onBack={() => setShowMyOrder(false)} />;
+    if (page === 'orderHistory') return (
+        <OrderHistoryScreen
+            onBack={() => setPage('main')}
+            onNext={() => setPage('orderDetail')}
+            selectedTime={selectedTime}
+            setSelectedTime={setSelectedTime}
+            selectedArea={selectedArea}
+            setSelectedArea={setSelectedArea}
+            counts={counts}
+            setCounts={setCounts}
+            selectedDuration={selectedDuration}
+            setSelectedDuration={setSelectedDuration}
+        />
+    );
+    if (page === 'orderDetail') return (
+        <OrderDetailConditionsScreen
+            onBack={() => setPage('orderHistory')}
+            onNext={() => setPage('orderFinal')}
+            selectedSituations={selectedSituations}
+            setSelectedSituations={setSelectedSituations}
+            selectedCastTypes={selectedCastTypes}
+            setSelectedCastTypes={setSelectedCastTypes}
+            selectedCastSkills={selectedCastSkills}
+            setSelectedCastSkills={setSelectedCastSkills}
+        />
+    );
+    if (page === 'orderFinal') return (
+        <OrderFinalConfirmationScreen
+            onBack={() => setPage('orderDetail')}
+            onConfirmed={() => setPage('stepRequirement')}
+            selectedTime={selectedTime}
+            selectedArea={selectedArea}
+            counts={counts}
+            selectedDuration={selectedDuration}
+            selectedSituations={selectedSituations}
+            selectedCastTypes={selectedCastTypes}
+            selectedCastSkills={selectedCastSkills}
+            onReservationSuccess={() => setPage('main')}
+        />
+    );
     if (page === 'stepRequirement') return <StepRequirementScreen />;
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-20">
-            {/* Top status bar */}
-            <div className="bg-primary text-white flex items-center px-4 py-2 text-sm border-b border-secondary">
-                <span className="mr-2 text-white">&#x26A0;</span>
-                <span>ご利用準備が完了していません</span>
-                <span className="ml-auto text-white font-bold">1/3 完了</span>
-                <span className="ml-2 text-white">&gt;</span>
-            </div>
-            {/* Campaign banner */}
             <div className="bg-secondary text-white px-4 py-2 text-lg font-bold">今すぐ呼ぶ</div>
             <div className="bg-primary px-4 py-2 flex flex-col gap-2 border-b border-secondary">
                 <div className="rounded-lg p-2 flex items-center justify-between">
@@ -334,7 +458,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
             </div>
             {/* Quick Call */}
             <div className="bg-primary mt-3 px-4 py-4 rounded-lg mx-2 border border-secondary">
-                <div className="font-bold text-lg mb-2 text-white">おまかせで呼ぶ</div>
+                <div className="font-bold text-lg mb-2 text-white">フリー</div>
                 <div className="flex items-center mb-2">
                     <div className="flex -space-x-2">
                         <img src="assets/icons/akiko.png" alt="VIP" className="w-10 h-10 rounded-full border-2 border-secondary" />
@@ -342,25 +466,23 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
                         <img src="assets/icons/akiko.png" alt="Royal VIP" className="w-10 h-10 rounded-full border-2 border-secondary" />
                     </div>
                     <span className="ml-4 text-white text-sm">待機キャスト数</span>
-                    <span className="ml-2 font-bold text-xl text-white">308人</span>
                 </div>
                 <button className="w-full bg-secondary text-white py-2 rounded-lg font-bold mt-2 hover:bg-red-700 transition" onClick={() => onStartOrder && onStartOrder()}>人数を決める</button>
             </div>
             {/* Choose Call */}
             <div className="bg-primary mt-3 px-4 py-4 rounded-lg mx-2 border border-secondary">
-                <div className="font-bold text-lg mb-2 text-white">選んで呼ぶ</div>
+                <div className="font-bold text-lg mb-2 text-white">ピシャット</div>
                 <div className="flex items-center mb-2">
                     <img src="assets/icons/ayaka.png" alt="cast" className="w-10 h-10 rounded-full border-2 border-secondary" />
                     <span className="ml-4 text-white text-sm">現在のキャスト数</span>
-                    <span className="ml-2 font-bold text-xl text-white">6人</span>
                 </div>
-                <button className="w-full border border-secondary text-white py-2 rounded-lg font-bold mt-2 hover:bg-red-600 hover:text-white transition" onClick={() => onStartOrder && onStartOrder()}>キャストを選ぶ</button>
+                <button className="w-full border border-secondary text-white py-2 rounded-lg font-bold mt-2 hover:bg-red-600 hover:text-white transition" onClick={() => setPage("orderHistory")}>キャストを選ぶ</button>
             </div>
             {/* Order history - styled as in the second image */}
             <div className="mx-2 mt-3">
                 <button
                     className="w-full flex items-center justify-between bg-gradient-to-r bg-secondary text-white px-4 py-3 rounded-lg shadow font-bold text-base focus:outline-none"
-                    onClick={() => setPage('orderHistory')}
+                    onClick={() => setShowMyOrder(true)}
                 >
                     <span className="flex items-center">
                         <CalendarArrowUp />

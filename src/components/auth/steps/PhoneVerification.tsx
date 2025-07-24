@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../../../contexts/UserContext';
+import { guestLogin, fetchAllGuestPhones, getGuestProfile } from '../../../services/api';
 
 interface PhoneVerificationData {
   phoneNumber?: string;
@@ -19,10 +22,18 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
   updateFormData,
   formData,
 }) => {
+  const navigate = useNavigate();
+  const { setUser, setPhone } = useUser();
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [phoneNumber, setPhoneNumber] = useState(formData.phoneNumber || '');
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(30);
+  const [error, setError] = useState<string | null>(null);
+  const [allPhones, setAllPhones] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetchAllGuestPhones().then(setAllPhones);
+  }, []);
 
   useEffect(() => {
     if (step === 'code' && timeLeft > 0) {
@@ -54,10 +65,27 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
     }
   };
 
-  const handleCodeSubmit = (e: React.FormEvent) => {
+  const normalizePhone = (phone: string) =>
+    phone.replace(/[^0-9]/g, '').trim();
+
+  const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = verificationCode.join('');
     updateFormData({ verificationCode: code });
+    setError(null);
+    // Normalize all phones for comparison
+    const normalizedPhones = allPhones.map(normalizePhone);
+    const normalizedInput = normalizePhone(phoneNumber);
+    if (normalizedPhones.includes(normalizedInput)) {
+      setPhone(phoneNumber);
+      try {
+        const { guest } = await getGuestProfile(phoneNumber);
+        if (guest) setUser(guest);
+        window.location.href = '/dashboard';
+      } catch (e) { /* handle error if needed */ }
+      
+      return;
+    }
     onNext();
   };
 
@@ -140,6 +168,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
               <div className="text-sm text-white">
                 認証コードを再送する {timeLeft > 0 ? `(${timeLeft}秒)` : ''}
               </div>
+              {error && <div className="text-red-500 text-center mt-2">{error}</div>}
             </div>
             {/* SMS not received notice */}
             <div className="mt-4 flex items-center text-xs text-white">

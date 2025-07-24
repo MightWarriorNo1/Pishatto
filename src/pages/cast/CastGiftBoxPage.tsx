@@ -1,61 +1,60 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ChevronLeft, Gift } from 'lucide-react';
+import { fetchCastReceivedGifts } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
+// @ts-ignore: Fix import path or provide type declarations if available
+import BottomNavigationBar from '../../components/cast/dashboard/BottomNavigationBar';
+import CastDashboardLayout from '../../components/cast/dashboard/CastDashboardLayout';
 
-const mockGifts = [
-    {
-        id: 1,
-        sender: 'まこちゃん',
-        avatar: '/assets/avatar/1.jpg',
-        date: '2025年03月10日 16:01',
-        giftName: 'バラの花束',
-        points: 5000,
-    },
-    {
-        id: 2,
-        sender: 'さくら',
-        avatar: '/assets/avatar/AdobeStock_1067731649_Preview.jpeg',
-        date: '2025年03月06日 20:36',
-        giftName: 'チョコレート',
-        points: 1200,
-    },
-    {
-        id: 3,
-        sender: 'ゲストA',
-        avatar: '/assets/avatar/AdobeStock_1190678828_Preview.jpeg',
-        date: '2025年03月01日 00:01',
-        giftName: 'ぬいぐるみ',
-        points: 3000,
-    },
-];
+const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
 
-const CastGiftBoxPage: React.FC = () => {
+const CastGiftBoxPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const [gifts, setGifts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
+    const castId = Number(localStorage.getItem('castId'));
+    
+    useEffect(() => {
+        if (!castId) return;
+        fetchCastReceivedGifts(castId)
+            .then(setGifts)
+            .finally(() => setLoading(false));
+    }, [castId]);
+
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary">
+        <div className='max-w-md  bg-primary min-h-screen pb-24'>
             {/* Top bar */}
             <div className="flex items-center px-4 pt-4 pb-2 border-b bg-primary border-secondary">
-                <button className="mr-2 text-2xl text-white" onClick={() => window.history.back()}>
-                    <ChevronLeft />
+                <button className="mr-2 text-2xl text-white" onClick={onBack}>
+                    <ChevronLeft size={24}/>
                 </button>
                 <span className="flex-1 text-center text-base font-bold text-white">ギフトボックス</span>
             </div>
             {/* Gift List */}
             <div className="divide-y divide-red-600">
-                {mockGifts.length === 0 ? (
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-white/50">
+                        <div className="text-lg font-bold mb-1">読み込み中...</div>
+                    </div>
+                ) : gifts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-white/50">
                         <Gift className="w-12 h-12 mb-2" />
                         <div className="text-lg font-bold mb-1">まだギフトがありません</div>
                         <div className="text-sm">ギフトが届くとここに表示されます</div>
                     </div>
                 ) : (
-                    mockGifts.map(gift => (
+                    gifts.map(gift => (
                         <div key={gift.id} className="flex items-center px-4 py-4 bg-primary">
-                            <img src={gift.avatar} alt={gift.sender} className="w-12 h-12 rounded-full object-cover mr-3 border border-secondary" />
+                            <img src={gift.sender_avatar ? `${IMAGE_BASE_URL}/storage/${gift.sender_avatar}` : '/assets/avatar/1.jpg'} alt={gift.sender} className="w-12 h-12 rounded-full object-cover mr-3 border border-secondary" />
                             <div className="flex-1">
                                 <div className="flex items-center mb-1">
                                     <span className="font-bold text-base mr-2 text-white">{gift.sender}</span>
-                                    <span className="text-xs text-white/50">{gift.date}</span>
+                                    <span className="text-xs text-white/50">{gift.date ? new Date(gift.date).toLocaleString('ja-JP') : ''}</span>
                                 </div>
-                                <div className="text-sm text-white">{gift.giftName}</div>
+                                <div className="text-sm text-white flex items-center">
+                                    {gift.gift_icon && <img src={gift.gift_icon.startsWith('/') ? gift.gift_icon : `${IMAGE_BASE_URL}/storage/${gift.gift_icon}`} alt="gift" className="w-5 h-5 mr-1 inline-block" />} {gift.gift_name}
+                                </div>
                             </div>
                             <div className="text-white font-bold text-lg ml-2">+{gift.points}P</div>
                         </div>

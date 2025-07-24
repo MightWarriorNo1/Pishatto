@@ -8,6 +8,9 @@ import PaymentInfoSimplePage from './PaymentInfoSimplePage';
 import PointPurchasePage from './PointPurchasePage';
 import IdentityVerificationScreen from './IdentityVerificationScreen';
 import HelpPage from '../help/HelpPage';
+import { useUser } from '../../contexts/UserContext';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 const notifications = [
     {
@@ -101,6 +104,7 @@ function NotificationScreen({ onBack }: { onBack: () => void }) {
 }
 
 const Profile: React.FC = () => {
+    const { user, loading } = useUser();
     const [showNotification, setShowNotification] = useState(false);
     const [showPointHistory, setShowPointHistory] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
@@ -110,6 +114,15 @@ const Profile: React.FC = () => {
     const [showPaymentInfoSimple, setShowPaymentInfoSimple] = useState(false);
     const [showPointPurchase, setShowPointPurchase] = useState(false);
     const [showIdentityVerification, setShowIdentityVerification] = useState(false);
+
+    // Get avatar URL
+    const getAvatarUrl = () => {
+        if (user?.avatar) {
+            return `${API_BASE_URL}/${user.avatar}`;
+        }
+        return '/assets/avatar/2.jpg'; // Default avatar
+    };
+
     if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
     if (showPointHistory) return <PointHistory onBack={() => setShowPointHistory(false)} />;
     if (showGradeDetail) return <GradeDetail onBack={() => setShowGradeDetail(false)} />;
@@ -119,6 +132,7 @@ const Profile: React.FC = () => {
     if (showPointPurchase) return <PointPurchasePage onBack={() => setShowPointPurchase(false)} />;
     if (showIdentityVerification) return <IdentityVerificationScreen onBack={() => setShowIdentityVerification(false)} />;
     if (showHelp) return <HelpPage onBack={() => setShowHelp(false)} />;
+
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-20">
             {/* Top bar */}
@@ -147,12 +161,28 @@ const Profile: React.FC = () => {
             {/* Profile avatar and name */}
             <div className="flex flex-col items-center py-6">
                 <div className="relative">
-                    <img src="/assets/avatar/2.jpg" alt="avatar" className="w-24 h-24 rounded-full object-cover border-4 border-secondary shadow" />
+                    {loading ? (
+                        <div className="w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center border-4 border-secondary shadow">
+                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                        </div>
+                    ) : (
+                        <img 
+                            src={getAvatarUrl()} 
+                            alt="avatar" 
+                            className="w-24 h-24 rounded-full object-cover border-4 border-secondary shadow" 
+                            onError={(e) => {
+                                // Fallback to default avatar if upload fails
+                                e.currentTarget.src = '/assets/avatar/2.jpg';
+                            }}
+                        />
+                    )}
                     <button onClick={() => setShowAvatarEdit(true)} className="absolute bottom-2 right-2 bg-secondary rounded-full p-1 border-2 border-white">
                         <Pencil className="w-6 h-6 text-white" />
                     </button>
                 </div>
-                <span className="mt-2 text-lg font-bold text-white">まこちゃん</span>
+                <span className="mt-2 text-lg font-bold text-white">
+                    {loading ? '読み込み中...' : user?.nickname || 'まこちゃん'}
+                </span>
             </div>
             {/* Grade section */}
             <div className="bg-secondary text-white text-center py-2 font-bold">今期のグレード</div>

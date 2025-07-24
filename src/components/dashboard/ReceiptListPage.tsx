@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { getPointHistory } from '../../services/api';
-import { ChevronLeft } from 'lucide-react';
+import { getReceipts } from '../../services/api';
 
-interface PointHistoryProps {
+interface ReceiptListPageProps {
   onBack?: () => void;
   userType?: 'guest' | 'cast';
   userId?: number;
 }
 
-const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest', userId }) => {
-  const [history, setHistory] = useState<any[]>([]);
+const ReceiptListPage: React.FC<ReceiptListPageProps> = ({ onBack, userType = 'guest', userId }) => {
+  const [receipts, setReceipts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,9 +16,9 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
     if (!userId) return;
     setLoading(true);
     setError(null);
-    getPointHistory(userType, userId)
-      .then(setHistory)
-      .catch(() => setError('履歴の取得に失敗しました'))
+    getReceipts(userType, userId)
+      .then(setReceipts)
+      .catch(() => setError('領収書の取得に失敗しました'))
       .finally(() => setLoading(false));
   }, [userType, userId]);
 
@@ -27,26 +26,24 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
     <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
       <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
         {onBack && (
-          <button onClick={onBack} className="mr-2 text-2xl text-white">
-            <ChevronLeft />
-          </button>
+          <button onClick={onBack} className="mr-2 text-2xl text-white">&#60;</button>
         )}
-        <span className="text-lg font-bold flex-1 text-center text-white">ポイント履歴</span>
+        <span className="text-lg font-bold flex-1 text-center text-white">領収書一覧</span>
       </div>
       <div className="p-4">
         {loading ? (
           <div className="text-white text-center">ローディング...</div>
         ) : error ? (
           <div className="text-red-400 text-center">{error}</div>
-        ) : history.length === 0 ? (
-          <div className="text-white text-center">履歴がありません</div>
+        ) : receipts.length === 0 ? (
+          <div className="text-white text-center">領収書がありません</div>
         ) : (
           <div className="space-y-4">
-            {history.map((item) => (
+            {receipts.map((item) => (
               <div key={item.id} className="bg-white rounded shadow p-4 flex flex-col">
                 <div className="flex justify-between mb-1">
-                  <span className="font-bold text-primary">{item.amount.toLocaleString()}P</span>
-                  <span className={`text-xs font-bold ${item.status === 'completed' ? 'text-green-600' : 'text-yellow-600'}`}>{item.status === 'completed' ? '完了' : '未完了'}</span>
+                  <span className="font-bold text-primary">{item.amount ? item.amount.toLocaleString() : '-'}円</span>
+                  <span className="text-xs text-gray-500">No.{item.receipt_number || item.id}</span>
                 </div>
                 <div className="text-xs text-gray-500">{item.created_at ? new Date(item.created_at).toLocaleString() : ''}</div>
               </div>
@@ -58,4 +55,4 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
   );
 };
 
-export default PointHistory; 
+export default ReceiptListPage; 

@@ -1,6 +1,8 @@
 import { ChevronLeft } from 'lucide-react';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { castRegister } from '../../../services/api';
+import { castLogin } from '../../../services/api';
 
 interface CastSMSCodeInputProps {
     onBack: () => void;
@@ -12,6 +14,8 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone }) =>
     const [timeLeft] = useState(30);
     const isActive = code.length === 6 && /^[a-zA-Z0-9]{6}$/.test(code.join(''));
     const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleCodeChange = (index: number, value: string) => {
         if (value.length <= 1) {
@@ -62,16 +66,35 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone }) =>
                     {/* Bottom Button */}
                     <div className="w-full px-4 pb-4 mt-auto">
                         <button
-                            className={`w-full py-3 rounded-full font-medium text-base ${isActive ? 'bg-secondary text-white hover:bg-pink-700 transition-all duration-200' : 'bg-pink-400 border border-secondary text-white cursor-not-allowed'}`}
-                            disabled={!isActive}
-                            onClick={() => {
+                            className={`w-full h-20 py-3 font-medium text-base ${isActive ? 'bg-secondary text-white hover:bg-pink-700 transition-all duration-200' : 'bg-pink-400 border border-secondary text-white cursor-not-allowed'}`}
+                            disabled={!isActive || loading}
+                            onClick={async () => {
                                 if (isActive) {
-                                    navigate('/cast/dashboard');
+                                    setLoading(true);
+                                    setError(null);
+                                    try {
+                                        // Try login with phone number
+                                        const response = await castLogin(phone);
+                                        if (response.cast) {
+                                            localStorage.setItem('castId', response.cast.id);
+                                            navigate('/cast/dashboard');
+                                            return;
+                                        }
+                                        // fallback: register
+                                        const result = await castRegister({ phone });
+                                        localStorage.setItem('castId', result.cast.id);
+                                        navigate('/cast/dashboard');
+                                    } catch (err: any) {
+                                        setError('ログインに失敗しました。もう一度お試しください。');
+                                    } finally {
+                                        setLoading(false);
+                                    }
                                 }
                             }}
                         >
-                            認証して次へ
+                            {loading ? '登録中...' : '認証して次へ'}
                         </button>
+                        {error && <div className="text-red-500 text-center mt-2">{error}</div>}
                     </div>
                 </div>
             </div>

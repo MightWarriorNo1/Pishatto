@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
+import { GuestInterest } from '../../../services/api';
+import StepIndicator from './StepIndicator';
 
 interface InterestTagsData {
-  interests: string[];
+  interests: GuestInterest[];
 }
 
 interface InterestTagsProps {
   onNext: () => void;
   onBack: () => void;
-  // eslint-disable-next-line
   updateFormData: (data: InterestTagsData) => void;
   formData: InterestTagsData;
 }
@@ -18,9 +19,9 @@ const InterestTags: React.FC<InterestTagsProps> = ({
   updateFormData,
   formData,
 }) => {
-  const [selectedTags, setSelectedTags] = useState<string[]>(formData.interests || []);
+  const [selectedTags, setSelectedTags] = useState<GuestInterest[]>(formData.interests || []);
 
-  const categories = {
+  const categories: { [key: string]: string[] } = {
     '飲み方': ['わいわい', 'しっとり', 'パリピ'],
     '趣味': ['海好き', 'ゴルフ', 'カラオケ', 'アニメ', '漫画'],
     '映画鑑賞': [],
@@ -28,11 +29,12 @@ const InterestTags: React.FC<InterestTagsProps> = ({
     '音楽': ['ゲーム']
   };
 
-  const handleTagSelect = (tag: string) => {
+  const handleTagSelect = (category: string, tag: string) => {
+    const exists = selectedTags.some(t => t.tag === tag && t.category === category);
     setSelectedTags(prev =>
-      prev.includes(tag)
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
+      exists
+        ? prev.filter(t => !(t.tag === tag && t.category === category))
+        : [...prev, { category, tag }]
     );
   };
 
@@ -54,15 +56,7 @@ const InterestTags: React.FC<InterestTagsProps> = ({
 
       {/* Progress Steps */}
       <div className="px-4 py-4 bg-primary">
-        <div className="flex items-center justify-between max-w-[240px] mx-auto">
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center border border-secondary">1</div>
-          <div className="flex-1 h-[2px] bg-secondary"></div>
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center border border-secondary justify-center">2</div>
-          <div className="flex-1 h-[2px] bg-secondary"></div>
-          <div className="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center border border-secondary">3</div>
-          <div className="flex-1 h-[2px] bg-secondary"></div>
-          <div className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center border border-secondary">4</div>
-        </div>
+        <StepIndicator totalSteps={6} currentStep={3} />
       </div>
 
       {/* Main Content */}
@@ -80,11 +74,12 @@ const InterestTags: React.FC<InterestTagsProps> = ({
                 {tags.map((tag) => (
                   <button
                     key={tag}
-                    onClick={() => handleTagSelect(tag)}
-                    className={`px-4 py-2 rounded-full border ${selectedTags.includes(tag)
-                      ? 'bg-secondary text-white border-secondary'
-                      : 'bg-primary text-white border-secondary hover:bg-secondary'
-                      }`}
+                    onClick={() => handleTagSelect(category, tag)}
+                    className={`px-4 py-2 rounded-full border ${
+                      selectedTags.some(t => t.tag === tag && t.category === category)
+                        ? 'bg-secondary text-white border-secondary'
+                        : 'bg-primary text-white border-secondary hover:bg-secondary'
+                    }`}
                   >
                     {tag}
                   </button>

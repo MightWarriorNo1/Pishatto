@@ -1,57 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PostCreatePage from './PostCreatePage';
-import { Bell, SlidersHorizontal } from 'lucide-react';
+import { Bell, Plus, SlidersHorizontal } from 'lucide-react';
+import { fetchAllTweets, createTweet } from '../../services/api';
+import { useUser } from '../../contexts/UserContext';
+import { useTweets } from '../../hooks/useRealtime';
 
-const stories = [
-    { name: 'まこと', img: '/assets/avatar/AdobeStock_1095142160_Preview.jpeg', isNew: true },
-    { name: 'カエル', img: '/assets/avatar/2.jpg', isNew: false },
-    { name: 'ゆう', img: '/assets/avatar/AdobeStock_1067731649_Preview.jpeg', isNew: false },
-    { name: 'りほ', img: '/assets/avatar/AdobeStock_1190678828_Preview.jpeg', isNew: false },
-];
-
-const initialPosts = [
-    {
-        user: { name: 'キリ', age: 27, job: 'クリエイター', img: '/assets/avatar/AdobeStock_1537463438_Preview.jpeg' },
-        time: '1分前',
-        content: '裁縫が得意な人いますか？',
-        likes: 0,
-    },
-    {
-        user: { name: 'Hiro', age: 28, job: 'IT関連', img: '/assets/avatar/AdobeStock_1537463446_Preview.jpeg' },
-        time: '2分前',
-        content: '明日の夜、急遽予定が空きました！！！\n久々にお酒飲みたいと思っており、どなたか一緒に行きませんかー？',
-        likes: 2,
-    },
-    {
-        user: { name: '', age: '', job: '', img: '/assets/avatar/T06LD1H7RDE-U07S7J2QWKH-2ab7091be9e0-512.jpg' },
-        time: '6分前',
-        content: '🐒',
-        likes: 7,
-    },
-    {
-        user: { name: 'R', age: 23, job: '美容', img: '/assets/avatar/T06LD1H7RDE-U086L3N9W4F-6a0b2fcb5192-512.jpg' },
-        time: '7分前',
-        content: '23歳なりました(｡&bull;_&bull;｡, )~☆\nお祝いしてくれたら嬉しいです🥺🥺🍭',
-        likes: 1,
-    },
-];
+const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
 
 const Timeline: React.FC = () => {
+    const { user } = useUser();
     const [showPostCreate, setShowPostCreate] = useState(false);
-    const [posts, setPosts] = useState(initialPosts);
-    const handleAddPost = (content: string) => {
-        setPosts([
-            {
-                user: { name: 'まこちゃん', age: '', job: '', img: '/assets/avatar/avatar-1.png' },
-                time: 'たった今',
-                content,
-                likes: 0,
-            },
-            ...posts,
-        ]);
-        setShowPostCreate(false);
+    const [tweets, setTweets] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadTweets = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await fetchAllTweets();
+            setTweets(data);
+        } catch (e) {
+            setError('つぶやきの取得に失敗しました');
+        } finally {
+            setLoading(false);
+        }
     };
-    if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddPost} />;
+
+    useEffect(() => {
+        loadTweets();
+    }, []);
+
+    useTweets((tweet) => {
+        setTweets((prev) => {
+            // Avoid duplicates if tweet already exists
+            if (prev.some(t => t.id === tweet.id)) return prev;
+            return [tweet, ...prev];
+        });
+    });
+
+    const handleAddTweet = async (content: string, image?: File | null) => {
+        if (!user) return;
+        try {
+            await createTweet({ content, guest_id: user.id, image });
+            setShowPostCreate(false);
+            loadTweets();
+        } catch (e) {
+            alert('投稿に失敗しました');
+        }
+    };
+
+    if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} />;
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-20 relative">
             {/* Top bar */}
@@ -63,43 +63,56 @@ const Timeline: React.FC = () => {
                 <button className="absolute right-4 top-3 text-white">
                     <SlidersHorizontal />
                 </button>
-
-            </div>
-            {/* Stories */}
-            <div className="flex gap-3 px-4 py-3 overflow-x-auto">
-                {stories.map((story, idx) => (
-                    <div key={idx} className="flex flex-col items-center cursor-pointer" onClick={() => alert(`${story.name}のストーリーを表示`)}>
-                        <div className={`rounded-full border-2 ${story.isNew ? 'border-secondary' : 'border-black'} p-1`}>
-                            <img src={story.img} alt={story.name} className="w-12 h-12 rounded-full object-cover" />
-                        </div>
-                        <span className="text-xs mt-1 text-white truncate max-w-[48px]">{story.name}{idx === 0 && <span className="text-white ml-1">＋</span>}</span>
-                    </div>
-                ))}
             </div>
             {/* Posts */}
             <div className="px-4 flex flex-col gap-4">
-                {posts.map((post, idx) => (
-                    <div key={idx} className="bg-primary rounded-lg shadow-sm p-4 flex flex-col border border-secondary">
-                        <div className="flex items-center mb-1">
-                            <img src={post.user.img} alt={post.user.name} className="w-10 h-10 rounded-full object-cover mr-2 border border-secondary" />
-                            <div className="flex flex-col flex-1">
-                                <span className="font-bold text-sm text-white">{post.user.name}{post.user.age && ` ${post.user.age}歳`}</span>
-                                {post.user.job && <span className="text-xs text-white">{post.user.job}・{post.time}</span>}
-                                {!post.user.job && <span className="text-xs text-white">{post.time}</span>}
+                {loading ? (
+                    <div className="text-white py-10 text-center">ローディング...</div>
+                ) : error ? (
+                    <div className="text-red-400 py-10 text-center">{error}</div>
+                ) : tweets.length === 0 ? (
+                    <div className="text-gray-400 py-10 text-center">つぶやきがありません</div>
+                ) : (
+                    tweets.map((tweet, idx) => (
+                        <div key={tweet.id || idx} className="bg-primary rounded-lg shadow-sm p-4 flex flex-col border border-secondary">
+                            <div className="flex items-center mb-1">
+                                <img
+                                    src={
+                                        tweet.guest?.avatar
+                                            ? `${APP_BASE_URL}/${tweet.guest.avatar}`
+                                            : tweet.cast?.avatar
+                                                ? `${APP_BASE_URL}/${tweet.cast.avatar}`
+                                                : '/assets/avatar/avatar-1.png'
+                                    }
+                                    alt={tweet.guest?.nickname || tweet.cast?.nickname || ''}
+                                    className="w-10 h-10 rounded-full object-cover mr-2 border border-secondary"
+                                />
+                                <div className="flex flex-col flex-1">
+                                    <span className="font-bold text-sm text-white">{tweet.guest?.nickname || tweet.cast?.nickname || 'ゲスト/キャスト'}</span>
+                                    <span className="text-xs text-white">{new Date(tweet.created_at).toLocaleString()}</span>
+                                </div>
                             </div>
-                            <span className="ml-2 text-white">{post.likes}</span>
+                            <div className="text-white text-sm whitespace-pre-line mt-1">{tweet.content}</div>
+                            {tweet.image && (
+                                <img
+                                    src={
+                                        tweet.image.startsWith('http')
+                                            ? tweet.image
+                                            : `${IMAGE_BASE_URL}/storage/${tweet.image}`
+                                    }
+                                    alt="tweet"
+                                    className="max-h-48 rounded my-2 border border-secondary"
+                                />
+                            )}
                         </div>
-                        <div className="text-white text-sm whitespace-pre-line mt-1">{post.content}</div>
-                    </div>
-                ))}
+                    ))
+                )}
             </div>
             {/* 投稿 button inside main screen */}
-            <div className="flex justify-end px-4">
-                <button className="bg-secondary text-white rounded-full w-16 h-16 flex flex-col items-center justify-center shadow-lg" onClick={() => setShowPostCreate(true)}>
-                    <span className="text-2xl font-bold mb-1">＋</span>
-                    <span className="text-xs font-bold">投稿</span>
-                </button>
-            </div>
+            <button className="fixed left-1/2 -translate-x-1/2 bottom-20 z-30 bg-secondary text-white rounded-full px-6 py-4 shadow-lg font-bold text-lg flex items-center hover:bg-red-700 transition" onClick={() => setShowPostCreate(true)}>
+                <span className="mr-2 text-2xl">
+                    <Plus /></span>投稿
+            </button>
         </div>
     );
 };

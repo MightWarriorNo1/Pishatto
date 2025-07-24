@@ -1,5 +1,7 @@
 import { ChevronLeft } from 'lucide-react';
 import React, { useState } from 'react';
+import { guestUpdateProfile } from '../../services/api';
+import { useUser } from '../../contexts/UserContext';
 
 interface ProfileDetailEditPageProps {
     onBack: () => void;
@@ -37,9 +39,26 @@ const initialValues: { [key: string]: string } = fields.reduce((acc, cur) => {
 }, {} as { [key: string]: string });
 
 const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack }) => {
-    const [values, setValues] = useState(initialValues);
+    const { user, setUser, phone } = useUser();
+    // Use index signature for values
+    const [values, setValues] = useState<{ [key: string]: string }>(() => {
+        return {
+            '身長': user?.height?.toString() || '未選択',
+            '居住地': user?.residence || '未選択',
+            '出身地': user?.birthplace || '未選択',
+            '学歴': user?.education || '未選択',
+            '年収': user?.annual_income || '未選択',
+            'お仕事': user?.occupation || '未選択',
+            'お酒': user?.alcohol || '未選択',
+            'タバコ': user?.tobacco || '未選択',
+            '兄弟姉妹': user?.siblings || '未選択',
+            '同居人': user?.cohabitant || '未選択',
+        };
+    });
     const [picker, setPicker] = useState<null | { field: string; value: string }>();
     const [tempValue, setTempValue] = useState<string>('');
+    const [isSaving, setIsSaving] = useState(false);
+    const [message, setMessage] = useState<string | null>(null);
 
     const openPicker = (field: string) => {
         setTempValue(values[field] !== '未選択' ? values[field] : (fieldOptions[field]?.[0] || ''));
@@ -51,6 +70,33 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
         setPicker(null);
     };
 
+    const handleSave = async () => {
+        if (!phone) return;
+        setIsSaving(true);
+        setMessage(null);
+        try {
+            const payload: any = { phone };
+            if (values['身長'] !== '未選択') payload.height = Number(values['身長']);
+            if (values['居住地'] !== '未選択') payload.residence = values['居住地'];
+            if (values['出身地'] !== '未選択') payload.birthplace = values['出身地'];
+            if (values['学歴'] !== '未選択') payload.education = values['学歴'];
+            if (values['年収'] !== '未選択') payload.annual_income = values['年収'];
+            if (values['お仕事'] !== '未選択') payload.occupation = values['お仕事'];
+            if (values['お酒'] !== '未選択') payload.alcohol = values['お酒'];
+            if (values['タバコ'] !== '未選択') payload.tobacco = values['タバコ'];
+            if (values['兄弟姉妹'] !== '未選択') payload.siblings = values['兄弟姉妹'];
+            if (values['同居人'] !== '未選択') payload.cohabitant = values['同居人'];
+            const response = await guestUpdateProfile(payload);
+            if (response.guest) setUser(response.guest);
+            setMessage('保存しました');
+            setTimeout(() => onBack(), 1000);
+        } catch (e) {
+            setMessage('保存に失敗しました');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary relative">
             {/* Top bar */}
@@ -59,24 +105,22 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
                     <ChevronLeft />
                 </button>
                 <span className="text-lg font-bold flex-1 text-center text-white">基本情報</span>
-                <button className="text-white font-bold">保存</button>
+                <button className="text-white font-bold" onClick={handleSave} disabled={isSaving}>{isSaving ? '保存中...' : '保存'}</button>
             </div>
             {/* Profile fields */}
-            <div className="divide-y divide-red-600">
-                {fields.map((label) => (
-                    <div
-                        key={label}
-                        className="flex items-center justify-between px-4 py-4 bg-primary cursor-pointer"
-                        onClick={() => openPicker(label)}
-                    >
-                        <span className="text-white">{label}</span>
-                        <div className="flex items-center gap-2">
-                            <span className={values[label] !== '未選択' ? 'text-white' : 'text-white'}>{values[label]}</span>
-                            <span className="text-white text-xl">&gt;</span>
-                        </div>
+            {fields.map((label) => (
+                <div
+                    key={label}
+                    className="flex items-center justify-between px-4 py-4 bg-primary cursor-pointer"
+                    onClick={() => openPicker(label)}
+                >
+                    <span className="text-white">{label}</span>
+                    <div className="flex items-center gap-2">
+                        <span className={values[label] !== '未選択' ? 'text-white' : 'text-white'}>{values[label]}</span>
+                        <span className="text-white text-xl">&gt;</span>
                     </div>
-                ))}
-            </div>
+                </div>
+            ))}
             {/* Picker Modal */}
             {picker && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-500 bg-opacity-30">
@@ -98,6 +142,11 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
                             <button className="flex-1 py-3 bg-secondary hover:bg-pink-500" onClick={confirmPicker}>わかりました</button>
                         </div>
                     </div>
+                </div>
+            )}
+            {message && (
+                <div className="fixed bottom-4 left-0 right-0 flex justify-center">
+                    <div className="bg-secondary text-white px-6 py-2 rounded shadow-lg">{message}</div>
                 </div>
             )}
         </div>

@@ -1,17 +1,17 @@
 import React from 'react';
 import { ChevronLeft } from 'lucide-react';
 
-const CastImmediatePaymentPage: React.FC = () => {
+const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     // Mock data
     const totalPoints = 133920;
     const immediatePoints = 66960;
     const fee = 3717;
     const amount = 63243;
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary">
+        <div className='max-w-md  bg-primary min-h-screen pb-24'>
             {/* Top bar */}
             <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
-                <button className="mr-2 text-2xl text-white" onClick={() => window.history.back()}>
+                <button className="mr-2 text-2xl text-white" onClick={onBack}>
                     <ChevronLeft />
                 </button>
                 <span className="flex-1 text-center text-base font-bold text-white">すぐ入金</span>

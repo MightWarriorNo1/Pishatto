@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Ellipsis, Heart, Video, Gift, Image } from 'lucide-react';
+import { Calendar, Ellipsis, Heart, Video, Gift, Image, ChevronLeft } from 'lucide-react';
 
 function formatJPDate(date: Date) {
     const days = ['日', '月', '火', '水', '木', '金', '土'];
@@ -50,7 +50,7 @@ const calcPoints = (people: string, duration: string) => {
     return 9000 * numPeople * units;
 };
 
-const MessageProposalPage: React.FC = () => {
+const MessageProposalPage: React.FC<{ onBack: () => void; onProposalSend?: (proposal: any) => void }> = ({ onBack, onProposalSend }) => {
     const [date, setDate] = useState('');
     const [people, setPeople] = useState('1名');
     const [duration, setDuration] = useState('2時間');
@@ -60,11 +60,27 @@ const MessageProposalPage: React.FC = () => {
 
     const totalPoints = calcPoints(people, duration);
 
+    const handleProposalSend = () => {
+        if (onProposalSend) {
+            onProposalSend({
+                date,
+                people,
+                duration,
+                totalPoints,
+                extensionPoints: Math.round(9000 * parsePeople(people) / 2), // 15min = half of 30min
+            });
+        }
+    };
+
     return (
-        <div className="min-h-screen bg-gray-100 flex flex-col items-center pb-24">
+        <div className="min-h-screen bg-primary flex flex-col items-center pb-24">
             {/* Top Bar */}
             <div className="w-full max-w-md flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
+                
                 <div className="flex items-center">
+                    <button onClick={onBack} className="mr-2">
+                        <ChevronLeft className="text-white" size={24} />
+                    </button>
                     <img src="/assets/avatar/1.jpg" alt="avatar" className="w-9 h-9 rounded-full mr-2 border border-secondary" />
                     <span className="font-semibold text-lg flex flex-row text-white">あや <span className="text-white">
                         <Heart />
@@ -79,10 +95,6 @@ const MessageProposalPage: React.FC = () => {
                     </span>
                 </div>
             </div>
-            {/* Banner */}
-            <div className="w-full max-w-md bg-secondary text-white text-xs text-center py-1">コラボイベント実施中!! pishatto × SUPER GT</div>
-            {/* Info Bar */}
-            <div className="w-full max-w-md bg-primary text-xs text-white px-4 py-1 flex items-center">日程調整後、合流ができます</div>
             {/* Chat Area */}
             <div className="w-full max-w-md flex flex-col items-center px-4 py-6 bg-primary relative">
                 <span className="text-xs text-white mb-4 text-center w-full">{jpDate}</span>
@@ -93,37 +105,24 @@ const MessageProposalPage: React.FC = () => {
                 </div>
                 <span className="text-xs text-white mt-2">{jpTime}</span>
             </div>
-            {/* Message Input */}
-            <div className="w-full max-w-md flex items-center px-4 py-2 border-b border-secondary bg-primary">
-                <span className="text-white mr-2">
-                    <Calendar />
-                </span>
-                <input
-                    className="flex-1 border-none outline-none text-sm bg-primary text-white placeholder-red-400"
-                    placeholder="メッセージを入力..."
-                />
-                <span className="text-white ml-2">
-                    <Image />
-                </span>
-                <span className="text-white ml-2">
-                    <Gift />
-                </span>
-            </div>
             {/* Schedule Proposal Form */}
             <div className="w-full max-w-md bg-primary px-4 py-6 flex flex-col gap-3">
-                <div className="text-xs font-bold text-white mb-1">日程</div>
-                <input
-                    type="datetime-local"
-                    className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary"
-                    value={date}
-                    onChange={e => setDate(e.target.value)}
-                />
-                {date && (
-                    <div className="text-sm text-white mb-2">{formatJPDateTimeInput(date)}</div>
-                )}
+                <div className="text-lg font-bold text-white mb-1 font-l">日程</div>
+                <div className="flex flex-row gap-2">
+                    <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center">
+                        <Calendar className="text-white" size={24} />
+                    </div>
+                    <input
+                        type="datetime-local"
+                        className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary"
+                        value={date}
+                        onChange={e => setDate(e.target.value)}
+                    />
+                </div>
+                
                 <div className="flex gap-2 mb-2">
                     <div className="flex-1">
-                        <div className="text-xs font-bold text-white mb-1">キャスト人数</div>
+                        <div className="text-lg font-bold text-white mb-1">キャスト人数</div>
                         <input
                             className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary"
                             value={people}
@@ -131,7 +130,7 @@ const MessageProposalPage: React.FC = () => {
                         />
                     </div>
                     <div className="flex-1">
-                        <div className="text-xs font-bold text-white mb-1">時間</div>
+                        <div className="text-lg font-bold text-white mb-1">時間</div>
                         <input
                             className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary"
                             value={duration}
@@ -139,13 +138,18 @@ const MessageProposalPage: React.FC = () => {
                         />
                     </div>
                 </div>
-                <div className="text-sm text-white font-bold mt-2 mb-1">
+                <div className="text-md text-white font-bold mt-2 mb-1">
                     9,000 (キャストP/30分) × {parsePeople(people)}名 × {Math.ceil(parseDuration(duration) / 60)}時間 <span className="float-right">{totalPoints.toLocaleString()}P</span>
                 </div>
-                <div className="text-xs text-white mb-2 text-right w-full">※延長15分につきpが発生します</div>
-                <div className="text-xs text-white flex justify-between text-center font-bold mb-2">実際に合流するまでポイントは消費されません</div>
-                <div className="flex justify-center w-full">
-                    <button className="py-3 rounded-lg bg-secondary text-white font-bold text-base mt-2 w-3/4 hover:bg-red-700 transition-all duration-200">日程と人数を提案する</button>
+                <div className="text-md text-white mb-2 text-right w-full">※延長15分につきpが発生します</div>
+                <div className="text-md  text-white flex justify-between text-center font-bold mb-2">実際に合流するまでポイントは消費されません</div>
+                <div className="flex justify-center w-full mt-8">
+                    <button
+                        className="py-3 rounded-lg bg-secondary text-white font-bold text-base mt-2 w-3/4 hover:bg-red-700 transition-all duration-200"
+                        onClick={handleProposalSend}
+                    >
+                        日程と人数を提案する
+                    </button>
                 </div>
             </div>
         </div>

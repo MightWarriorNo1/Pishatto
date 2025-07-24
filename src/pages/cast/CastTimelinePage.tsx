@@ -1,81 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, SlidersHorizontal, Plus } from 'lucide-react';
+import { fetchAllTweets, fetchUserTweets, createTweet } from '../../services/api';
+import { useUser } from '../../contexts/UserContext';
+import PostCreatePage from '../../components/dashboard/PostCreatePage';
+import { useTweets } from '../../hooks/useRealtime';
 
-const stories = [
-    { name: '◎ えま◎', img: '/assets/avatar/avatar-1.png' },
-    { name: 'me🌙', img: '/assets/avatar/avatar-2.png' },
-    { name: 'm🐱大阪', img: '/assets/avatar/female.png' },
-    { name: 'ほのか/…', img: '/assets/avatar/1.jpg' },
-    { name: 'ゆりあ…', img: '/assets/avatar/knight_3275232.png' },
-];
-
-const posts = [
-    {
-        user: 'にゃんこ🐾',
-        time: '20:19',
-        text: 'ひましてます\n都内誘ってください',
-        img: '/assets/avatar/francesco-ZxNKxnR32Ng-unsplash.jpg',
-        likes: 0,
-        avatar: '/assets/avatar/avatar-2.png',
-    },
-    {
-        user: 'あやなちゃん',
-        time: '受付・20:18',
-        text: '急で申し訳ないが新宿のぶり中野21時から行ける方いませんか😭😭ドタキャンされて困ってます予約してます…',
-        likes: 1,
-        avatar: '/assets/avatar/1.jpg',
-    },
-    {
-        user: 'もめんちゃん',
-        time: '20:16',
-        text: '',
-        likes: 0,
-        avatar: '/assets/avatar/female.png',
-    },
-    {
-        user: 'さくら',
-        time: '19:55',
-        text: '今日はいい天気ですね！',
-        img: '/assets/avatar/harald-hofer-pKoKW6UQOuk-unsplash.jpg',
-        likes: 2,
-        avatar: '/assets/avatar/knight_3275232.png',
-    },
-    {
-        user: 'ジョン',
-        time: '19:30',
-        text: '新しい友達ができました！',
-        img: '/assets/avatar/jf-brou-915UJQaxtrk-unsplash.jpg',
-        likes: 3,
-        avatar: '/assets/avatar/avatar-1.png',
-    },
-];
-
-const castPosts = [
-    {
-        user: 'M🐵',
-        role: '会社員',
-        time: '01/29(水) 01:09',
-        text: '女の子側も咲く時につぶやきを表示するゲスト選べるようにして欲しいです。（合流済みのゲストにはつぶやき非表示にする、など）',
-        likes: 3,
-        avatar: '/assets/avatar/avatar-1.png',
-        badge: '/assets/icons/crown.png',
-        badgeLabel: 'ゴールドキャスト',
-    },
-    {
-        user: 'コンシェルジュ',
-        time: '01/27(月) 22:55',
-        text: 'いつもpishatto六本木オフィスのご利用ありがとうございます🐤\n\n申し訳ありません🙇\n本日1/27(月)は23:30以降\n六本木オフィスに\nスタッフが在中しないため\n待機のご利用はできかねます🙇\n\nご迷惑おかけしますが\nご理解の程お願いいたします\n\n本日はpishattoパスポートにある\n待機場所をぜひご利用ください😊\n\n▼六本木駅付近\n・ハニトラ\n・muse六本木店\n・Bloom Lounge',
-        likes: 1,
-        avatar: '/assets/avatar/knight_3275232.png',
-        badge: null,
-        badgeLabel: null,
-    },
-];
+const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
 
 const CastTimelinePage: React.FC = () => {
+    const { user } = useUser();
     const [tab, setTab] = useState<'all' | 'cast'>('all');
+    const [tweets, setTweets] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [showPostCreate, setShowPostCreate] = useState(false);
+
+    const loadTweets = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = tab === 'cast' && user ? await fetchUserTweets('cast', user.id) : await fetchAllTweets();
+            setTweets(data);
+        } catch (e) {
+            setError('つぶやきの取得に失敗しました');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadTweets();
+        // Remove polling, only load on mount/tab change
+        // eslint-disable-next-line
+    }, [tab]);
+
+    useTweets((tweet) => {
+        if (tab === 'all') {
+            setTweets((prev) => {
+                if (prev.some(t => t.id === tweet.id)) return prev;
+                return [tweet, ...prev];
+            });
+        }
+    });
+
+    const handleAddTweet = async (content: string, image?: File | null) => {
+        if (!user) return;
+        try {
+            await createTweet({ content, cast_id: user.id, image });
+            setShowPostCreate(false);
+            loadTweets();
+        } catch (e) {
+            alert('投稿に失敗しました');
+        }
+    };
+    if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} />;
     return (
-        <div className="max-w-md mx-auto pb-20 min-h-screen bg-primary">
+        <div className="max-w-md pb-20 min-h-screen bg-primary">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <span className="text-2xl text-white">
@@ -91,44 +72,52 @@ const CastTimelinePage: React.FC = () => {
                 <button onClick={() => setTab('all')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'all' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>みんなのつぶやき</button>
                 <button onClick={() => setTab('cast')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'cast' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>キャスト専用</button>
             </div>
-            {/* Stories row */}
-            <div className="flex space-x-3 px-4 py-3 overflow-x-auto">
-                {stories.map((story, idx) => (
-                    <div key={idx} className="flex flex-col items-center">
-                        <div className="w-16 h-16 rounded-full border-4 border-secondary flex items-center justify-center overflow-hidden">
-                            <img src={story.img} alt={story.name} className="w-16 h-16 object-cover" />
-                        </div>
-                        <span className="text-xs text-white mt-1 truncate w-16 text-center">{story.name}</span>
-                    </div>
-                ))}
-            </div>
             {/* Posts */}
-            <div className="px-4">
-                {(tab === 'cast' ? castPosts : posts).map((post, idx) => (
-                    <div key={idx} className="border-b border-secondary py-4">
-                        <div className="flex items-center mb-1">
-                            <img src={post.avatar} alt={post.user} className="w-10 h-10 rounded-full mr-2 border-2 border-secondary" />
-                            <span className="font-bold text-base mr-2 text-white">{post.user}</span>
-                            {('role' in post) && post.role && <span className="text-xs text-white mr-2">{post.role}</span>}
-                            {('badge' in post) && post.badge && (
-                                <img src={post.badge} alt="badge" className="w-5 h-5 inline-block mr-1 align-middle" />
+            <div className="px-4 flex flex-col gap-4">
+                {loading ? (
+                    <div className="text-white py-10 text-center">ローディング...</div>
+                ) : error ? (
+                    <div className="text-red-400 py-10 text-center">{error}</div>
+                ) : tweets.length === 0 ? (
+                    <div className="text-gray-400 py-10 text-center">つぶやきがありません</div>
+                ) : (
+                    tweets.map((tweet, idx) => (
+                        <div key={tweet.id || idx} className="bg-primary rounded-lg shadow-sm p-4 flex flex-col border border-secondary">
+                            <div className="flex items-center mb-1">
+                                <img src={
+                                        tweet.guest?.avatar
+                                            ? `${APP_BASE_URL}/${tweet.guest.avatar}`
+                                            : tweet.cast?.avatar
+                                                ? `${APP_BASE_URL}/${tweet.cast.avatar}`
+                                                : '/assets/avatar/avatar-1.png'
+                                    } alt={tweet.guest?.nickname || tweet.cast?.nickname || ''} className="w-10 h-10 rounded-full object-cover mr-2 border border-secondary" />
+                                <div className="flex flex-col flex-1">
+                                    <span className="font-bold text-sm text-white">{tweet.guest?.nickname || tweet.cast?.nickname || 'ゲスト/キャスト'}</span>
+                                    <span className="text-xs text-white">{new Date(tweet.created_at).toLocaleString()}</span>
+                                </div>
+                            </div>
+                            <div className="text-white text-sm whitespace-pre-line mt-1">{tweet.content}</div>
+                            {tweet.image && (
+                                <img
+                                    src={
+                                        tweet.image.startsWith('http')
+                                            ? tweet.image
+                                            : `${IMAGE_BASE_URL}/storage/${tweet.image}`
+                                    }
+                                    alt="tweet"
+                                    className="max-h-48 rounded my-2 border border-secondary"
+                                />
                             )}
-                            {('badgeLabel' in post) && post.badgeLabel && (
-                                <span className="text-xs text-white font-bold mr-2 align-middle">{post.badgeLabel}</span>
-                            )}
-                            <span className="text-xs text-white">{post.time}</span>
-                            <span className="ml-auto text-white text-xl">♡ {post.likes}</span>
                         </div>
-                        {post.text && <div className="text-sm text-white whitespace-pre-line mb-2">{post.text}</div>}
-                        {('img' in post) && post.img && <img src={post.img} alt="post" className="rounded-lg w-full max-w-xs mb-2 border-2 border-secondary" />}
-                    </div>
-                ))}
+                    ))
+                )}
             </div>
             {/* Floating 投稿 button */}
-            <button className="fixed left-1/2 -translate-x-1/2 bottom-20 z-30 bg-secondary text-white rounded-full px-6 py-4 shadow-lg font-bold text-lg flex items-center hover:bg-red-700 transition">
+            <button className="fixed left-1/2 -translate-x-1/2 bottom-20 z-30 bg-secondary text-white rounded-full px-6 py-4 shadow-lg font-bold text-lg flex items-center hover:bg-red-700 transition" onClick={() => setShowPostCreate(true)}>
                 <span className="mr-2 text-2xl">
                     <Plus /></span>投稿
             </button>
+            {showPostCreate && <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} />}
         </div>
     );
 };

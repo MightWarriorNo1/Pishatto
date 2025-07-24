@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
+import CastDashboardLayout from '../../components/cast/dashboard/CastDashboardLayout';
 
-const CastFriendReferralPage: React.FC = () => {
+const CastFriendReferralPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [invoice, setInvoice] = useState('');
     const [name, setName] = useState('')
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary">
+        <div className='max-w-md  bg-primary min-h-screen pb-24'>
             {/* Top bar */}
             <div className="flex items-center px-4 pt-4 pb-2 border-b bg-primary border-secondary">
-                <button className="mr-2 text-2xl text-white" onClick={() => window.history.back()}>
+                <button className="mr-2 text-2xl text-white" onClick={onBack}>
                     <ChevronLeft />
                 </button>
                 <span className="flex-1 text-center text-base font-bold text-white">インボイス番号登録</span>

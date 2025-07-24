@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getCastList } from '../../services/api';
 
 interface CastProfile {
   id: number;
@@ -8,81 +9,76 @@ interface CastProfile {
   location: string;
   isPremium: boolean;
   imageUrl: string;
-  hasHeart?: boolean;
-  points?: number;
+  created_at?: string;
+  avatar?: string;
+  nickname?: string;
+  birth_year?: number;
+  favorite_area?: string;
 }
 
 const NewCastSection: React.FC = () => {
   const navigate = useNavigate();
+  const [castProfiles, setCastProfiles] = useState<CastProfile[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const castProfiles: CastProfile[] = [
-    {
-      id: 1,
-      name: 'カナ',
-      age: 24,
-      location: '名古屋',
-      isPremium: true,
-      imageUrl: 'assets/avatar/female.png',
-      points: 7500,
-    },
-    {
-      id: 2,
-      name: 'もな',
-      age: 20,
-      location: '名古屋',
-      isPremium: true,
-      imageUrl: 'assets/avatar/female.png',
-      hasHeart: true,
-      points: 7500,
-    },
-    {
-      id: 3,
-      name: 'ava',
-      age: 26,
-      location: '名古屋',
-      isPremium: true,
-      imageUrl: 'assets/avatar/female.png',
-      points: 7500,
-    },
-  ];
+  useEffect(() => {
+    setLoading(true);
+    getCastList({}).then((data) => {
+      // Filter to only casts registered today
+      const today = new Date().toISOString().slice(0, 10);
+      const newCasts = (data.casts || []).filter((profile: CastProfile) => {
+        if (!profile.created_at) return false;
+        return profile.created_at.slice(0, 10) === today;
+      });
+      setCastProfiles(newCasts);
+      setLoading(false);
+    });
+  }, []);
 
   const handleCastClick = (castId: number) => {
     navigate(`/cast/${castId}`);
   };
 
   return (
-    <div className="bg-primary rounded-lg shadow p-4 mb-4 border border-secondary">
+    <div>
       <h2 className="font-bold text-lg mb-2 text-white">新着キャスト</h2>
-      <div className="grid grid-cols-3 gap-3">
-        {castProfiles.map((profile) => (
-          <div
-            key={profile.id}
-            className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary"
-            onClick={() => handleCastClick(profile.id)}
-          >
-            <div className="aspect-w-3 aspect-h-4 relative">
-              <img
-                src={profile.imageUrl}
-                alt={profile.name}
-                className="w-full h-full object-cover rounded-lg border border-secondary"
-              />
-              {profile.isPremium && (
-                <div className="absolute top-[132px] h-[25px] w-[80%] bg-gradient-to-r from-red-600 to-red-400 text-white text-xs px-2 py-1 rounded">
-                  プレミアム
+      <div className="bg-primary rounded-lg shadow p-4 mb-4 border border-secondary">
+        
+        {loading ? (
+          <div className="text-white">ローディング...</div>
+        ) : castProfiles.length === 0 ? (
+          <div className="text-white">本日登録されたキャストはいません</div>
+        ) : (
+          <div className="flex gap-3 overflow-x-auto">
+            {castProfiles.map((profile) => (
+              <div
+                key={profile.id}
+                className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary min-w-[120px] max-w-[120px] flex-shrink-0"
+                onClick={() => handleCastClick(profile.id)}
+              >
+                <div className="aspect-w-3 aspect-h-4 relative">
+                  <img
+                    src={profile.avatar || profile.imageUrl || '/assets/avatar/female.png'}
+                    alt={profile.nickname || profile.name || ''}
+                    className="w-full h-full object-cover rounded-lg border border-secondary"
+                  />
+                  {profile.isPremium && (
+                    <div className="absolute top-[100px] h-[20px] w-[80%] bg-gradient-to-r from-red-600 to-red-400 text-white text-xs px-2 py-1 rounded">
+                      プレミアム
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <div className="p-2">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-white">● {profile.age}歳</span>
-                <span className="text-white">{profile.name}</span>
+                <div className="p-2">
+                  <div className="flex flex-col gap-1 text-xs">
+                    <span className="text-white">{profile.nickname || profile.name || ''}</span>
+                    <span className="text-white">{profile.age || profile.birth_year || '-'}歳</span>
+                    <span className="text-white">{profile.location || profile.favorite_area || ''}</span>
+                  </div>
+                </div>
               </div>
-              <div className="text-white text-xs mt-1">
-                {profile.location}
-              </div>
-            </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

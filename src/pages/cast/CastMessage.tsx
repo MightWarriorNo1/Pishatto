@@ -1,39 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiBell } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
+import ChatScreen from '../../components/dashboard/ChatScreen';
+import { useChatRefresh } from '../../contexts/ChatRefreshContext';
+import { getCastChats } from '../../services/api';
 
 interface MessageScreenProps {
-    showChat: boolean;
-    setShowChat: (show: boolean) => void;
+    showChat: number | null;
+    setShowChat: (show: number | null) => void;
 }
 
-const CastMessage: React.FC<MessageScreenProps> = ({ showChat, setShowChat }) => {
+const CastMessage: React.FC<MessageScreenProps & { userId: number }> = ({ showChat, setShowChat, userId }) => {
     const [selectedTab, setSelectedTab] = useState<'all' | 'favorite'>('all');
+    const [chats, setChats] = useState<any[]>([]);
     const navigate = useNavigate();
-    // Mock favorite casts data
-    const favoriteCasts = [
-        {
-            id: 1,
-            name: 'カナ',
-            age: 24,
-            imageUrl: '/assets/avatar/female.png',
-            lastMessage: 'こんにちは！',
-            time: '21:30',
-            unread: 2,
-        },
-        {
-            id: 2,
-            name: 'もな',
-            age: 20,
-            imageUrl: '/assets/avatar/female.png',
-            lastMessage: 'またね！',
-            time: '20:15',
-            unread: 0,
-        },
-    ];
+    const { refreshKey } = useChatRefresh();
+
+    useEffect(() => {
+        getCastChats(userId)
+            .then(chats => setChats(chats || []));
+    }, [userId, refreshKey]);
+
+    if (showChat) {
+        return <ChatScreen chatId={showChat} onBack={() => setShowChat(null)} />;
+    }
 
     return (
-        <div className="bg-primary min-h-screen flex flex-col">
+        <div className="bg-primary min-h-screen flex flex-col relative">
             {/* Top bar */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-secondary">
                 <FiBell className="w-6 h-6 text-white" />
@@ -72,59 +65,30 @@ const CastMessage: React.FC<MessageScreenProps> = ({ showChat, setShowChat }) =>
             {/* Message list */}
             <div className="px-4 mt-4">
                 {selectedTab === 'all' ? (
-                    <button className="w-full" onClick={() => setShowChat(true)}>
-                        <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
-                            <img
-                                src="/assets/avatar/1.jpg"
-                                alt="avatar"
-                                className="w-12 h-12 rounded-full mr-3 border border-secondary"
-                            />
-                            <div className="flex-1">
-                                <div className="flex items-center">
-                                    <span className="font-bold text-white text-base mr-2">pishattoコンシェルジュ 11歳</span>
-                                    <span className="bg-secondary text-white text-[10px] rounded px-1 ml-1">P</span>
+                    chats.length === 0 ? (
+                        <div className="text-white text-center py-8">グループチャットがありません</div>
+                    ) : (
+                        chats.map(chat => (
+                            <button key={chat.id} className="w-full" onClick={() => setShowChat(chat.id)}>
+                                <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
+                                    <img
+                                        src="/assets/avatar/1.jpg"
+                                        alt="avatar"
+                                        className="w-12 h-12 rounded-full mr-3 border border-secondary"
+                                    />
+                                    <div className="flex-1">
+                                        <div className="flex items-center">
+                                            <span className="font-bold text-white text-base mr-2">グループチャット {chat.id}</span>
+                                        </div>
+                                        <div className="text-sm text-white">ゲスト: {chat.guest_id}, キャスト: {chat.cast_id}</div>
+                                    </div>
                                 </div>
-                                <div className="text-sm text-white">メッセージが届いています</div>
-                            </div>
-                            <div className="flex flex-col items-end ml-2">
-                                <span className="text-xs text-white">22:02</span>
-                                <span className="bg-secondary text-white text-xs rounded-full px-2 py-0.5 mt-1">4</span>
-                            </div>
-                        </div>
-                    </button>
+                            </button>
+                        ))
+                    )
                 ) : (
                     <div className="flex flex-col gap-3">
-                        {favoriteCasts.length === 0 ? (
-                            <div className="text-white text-center py-8">お気に入りのキャストがいません</div>
-                        ) : (
-                            favoriteCasts.map(cast => (
-                                <button
-                                    key={cast.id}
-                                    className="w-full text-left"
-                                    onClick={() => navigate(`/cast/${cast.id}/message`)}
-                                >
-                                    <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
-                                        <img
-                                            src={cast.imageUrl}
-                                            alt="avatar"
-                                            className="w-12 h-12 rounded-full mr-3 border border-secondary"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="flex items-center">
-                                                <span className="font-bold text-white text-base mr-2">{cast.name} {cast.age}歳</span>
-                                            </div>
-                                            <div className="text-sm text-white">{cast.lastMessage}</div>
-                                        </div>
-                                        <div className="flex flex-col items-end ml-2">
-                                            <span className="text-xs text-white">{cast.time}</span>
-                                            {cast.unread > 0 && (
-                                                <span className="bg-secondary text-white text-xs rounded-full px-2 py-0.5 mt-1">{cast.unread}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </button>
-                            ))
-                        )}
+                        <div className="text-white text-center py-8">お気に入りのキャストがいません</div>
                     </div>
                 )}
             </div>

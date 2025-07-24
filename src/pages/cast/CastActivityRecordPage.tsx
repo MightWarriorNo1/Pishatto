@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft } from 'lucide-react';
+import CastDashboardLayout from '../../components/cast/dashboard/CastDashboardLayout';
 
 const mockRecords = [
     {
@@ -74,14 +75,14 @@ const mockRecords = [
     },
 ];
 
-const CastActivityRecordPage: React.FC = () => {
+const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary">
+        <div className='max-w-md  bg-primary min-h-screen pb-24'>
             {/* Top bar */}
             <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
                 <button
                     className="mr-2 text-2xl text-white"
-                    onClick={() => { window.location.href = '/cast/dashboard'; }}
+                    onClick={onBack}
                 >
                     <ChevronLeft />
                 </button>
