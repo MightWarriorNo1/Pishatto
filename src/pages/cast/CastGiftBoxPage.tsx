@@ -2,9 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { ChevronLeft, Gift } from 'lucide-react';
 import { fetchCastReceivedGifts } from '../../services/api';
 import { useNavigate } from 'react-router-dom';
-// @ts-ignore: Fix import path or provide type declarations if available
-import BottomNavigationBar from '../../components/cast/dashboard/BottomNavigationBar';
-import CastDashboardLayout from '../../components/cast/dashboard/CastDashboardLayout';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
@@ -12,7 +9,6 @@ const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
 const CastGiftBoxPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [gifts, setGifts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
     const castId = Number(localStorage.getItem('castId'));
     
     useEffect(() => {

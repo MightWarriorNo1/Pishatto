@@ -75,6 +75,8 @@ export interface GuestProfile {
   pressure?: 'weak' | 'medium' | 'strong';
   favorite_area?: string;
   interests?: GuestInterest[];
+  points?: number;
+  payment_info?: string;
   created_at: string;
   updated_at: string;
 }
@@ -89,6 +91,13 @@ export interface Reservation {
   duration?: number;
   details?: string;
   created_at?: string;
+  started_at?: string;
+  ended_at?: string;
+  points_earned?: number;
+  // Feedback fields
+  feedback_text?: string;
+  feedback_rating?: number;
+  feedback_badge_id?: number;
 }
 
 export interface CastProfile {
@@ -209,14 +218,20 @@ export const createReservation = async (data: Reservation) => {
   return response.data;
 };
 
+export const updateReservation = async (reservationId: number, data: Partial<Reservation>) => {
+  const response = await api.put(`/reservations/${reservationId}`, data);
+  console.log("UPDATE RESERVATION RESPONSE", response.data);
+  return response.data.reservation;
+};
+
 export const getCastReservations = async () => {
   const response = await api.get(`/cast/reservations`);
   return response.data.reservations;
 };
 
 export const castUpdateProfile = async (data: any) => {
-  const response = await api.post('/cast/profile', data);
-  return response.data;
+  // expects data to include at least phone or id
+  return api.post('/cast/profile', data).then(res => res.data);
 };
 
 export const getCastProfile = async (castId: number): Promise<{ cast: CastProfile, reservations: Reservation[] }> => {
@@ -254,8 +269,8 @@ export const getCastChats = async (castId: number) => {
   return response.data.chats;
 };
 
-export const getGuestChats = async (guestId: number) => {
-  const response = await api.get(`/chats/guest/${guestId}`);
+export const getGuestChats = async (guestId: number, userType: string) => {
+  const response = await api.get(`/chats/guest/${guestId}`, { params: { user_id: guestId, user_type: userType } });
   return response.data.chats;
 };
 
@@ -285,9 +300,14 @@ export const sendMessage = async (data: {
   return response.data.message;
 };
 
-export const getChatMessages = async (chatId: number) => {
-  const response = await api.get(`/chats/${chatId}/messages`);
+export const getChatMessages = async (chatId: number, userId: number, userType: string) => {
+  const response = await api.get(`/chats/${chatId}/messages`, { params: { user_id: userId, user_type: userType } });
   return response.data.messages;
+};
+
+export const getChatById = async (chatId: number) => {
+  const response = await api.get(`/chats/${chatId}`);
+  return response.data.chat;
 };
 
 export const getRepeatGuests = async (): Promise<RepeatGuest[]> => {
@@ -310,8 +330,8 @@ export const likeCast = async (guest_id: number, cast_id: number) => {
   return response.data;
 };
 
-export const recordCastVisit = async (guest_id: number, cast_id: number) => {
-  const response = await api.post('/casts/visit', { guest_id, cast_id });
+export const recordGuestVisit = async (cast_id: number, guest_id: number) => {
+  const response = await api.post('/guests/visit', { cast_id, guest_id });
   return response.data;
 };
 
@@ -320,15 +340,33 @@ export const getCastVisitHistory = async (guest_id: number) => {
   return response.data;
 };
 
+export const getFootprints = async (guestId: number) => {
+  const response = await api.get(`/casts/visit-history/${guestId}`);
+  return response.data;
+};
+
 export const getCastProfileWithExtras = async (castId: number) => {
   const response = await api.get(`/cast/profile/${castId}`);
   return response.data;
 };
 
+export const getCastProfileById = async (castId: number) => {
+  const response = await api.get(`/casts/profile/${castId}`);
+  return response.data;
+};
+
+export const getCastPointsData = async (castId: number) => {
+  const response = await api.get(`/casts/points/${castId}`);
+  return response.data;
+};
+
+export const getCastPassportData = async (castId: number) => {
+  const response = await api.get(`/casts/passport/${castId}`);
+  return response.data;
+};
 
 export const getNotifications = async (userType: 'guest' | 'cast', userId: number) => {
   const response = await api.get(`/notifications/${userType}/${userId}`);
-  console.log(response.data.notifications);
   return response.data.notifications;
 };
 
@@ -342,8 +380,42 @@ export const markAllNotificationsRead = async (userType: 'guest' | 'cast', userI
   return response.data;
 };
 
-export const purchasePoints = async (user_id: number, user_type: 'guest' | 'cast', amount: number, payment_info?: string) => {
-  const response = await api.post('/payments/purchase', { user_id, user_type, amount, payment_info });
+export const createChargeDirect = async (
+  card: string, 
+  amount: number, 
+  currency: string = 'jpy', 
+  tenant?: string,
+  user_id?: number,
+  user_type?: 'guest' | 'cast'
+) => {
+  const payload: any = {
+    card,
+    amount,
+    currency,
+  };
+  
+  if (tenant) payload.tenant = tenant;
+  if (user_id) payload.user_id = user_id;
+  if (user_type) payload.user_type = user_type;
+  
+  const response = await api.post('/payments/charge-direct', payload);
+  return response.data;
+};
+
+export const debugPayJPResponse = async (card: string, amount: number) => {
+  const response = await api.post('/payments/debug-response', {
+    card,
+    amount,
+  });
+  return response.data;
+};
+
+export const purchasePoints = async (user_id: number, user_type: 'guest' | 'cast', amount: number, token?: string, payment_method?: string) => {
+  const payload: any = { user_id, user_type, amount };
+  if (token && token.trim() !== '') payload.token = token;
+  if (payment_method) payload.payment_method = payment_method;
+  console.log("payload", payload);
+  const response = await api.post('/payments/purchase', payload);
   return response.data;
 };
 
@@ -362,15 +434,28 @@ export const registerPaymentInfo = async (user_id: number, user_type: 'guest' | 
   return response.data;
 };
 
+export const registerCard = async (user_id: number, user_type: 'guest' | 'cast', token: string) => {
+  const response = await api.post('/payments/register-card', { user_id, user_type, token });
+  return response.data;
+};
+
 export const getPaymentInfo = async (user_type: 'guest' | 'cast', user_id: number) => {
   const response = await api.get(`/payments/info/${user_type}/${user_id}`);
   return response.data.payment_info;
+};
+
+export const deletePaymentInfo = async (user_type: 'guest' | 'cast', user_id: number, card_id: string) => {
+  const response = await api.delete(`/payments/info/${user_type}/${user_id}/${card_id}`);
+  return response.data;
 };
 
 export const requestPayout = async (cast_id: number, amount: number) => {
   const response = await api.post('/payouts/request', { cast_id, amount });
   return response.data.payout;
 };
+
+// PAY.JP related functions (handled through PayJPService)
+// These functions are available in the PayJPService class for better organization
 
 export const fetchAllTweets = async () => {
   const response = await api.get('/tweets');
@@ -410,7 +495,23 @@ export const fetchAllGuestPhones = async (): Promise<string[]> => {
 };
 
 export const applyReservation = async (reservation_id: number, cast_id: number) => {
+  console.log("applyReservation", reservation_id, cast_id);
   return api.post('/reservation/match', { reservation_id, cast_id });
+};
+
+export const startReservation = async (reservation_id: number, cast_id: number) => {
+  const response = await api.post('/reservation/start', { reservation_id, cast_id });
+  return response.data.reservation;
+};
+
+export const stopReservation = async (reservation_id: number, cast_id: number) => {
+  const response = await api.post('/reservation/stop', { reservation_id, cast_id });
+  return response.data.reservation;
+};
+
+export const getPointTransactions = async (userType: 'guest' | 'cast', userId: number) => {
+  const response = await api.get(`/point-transactions/${userType}/${userId}`);
+  return response.data;
 };
 
 export const fetchAllGifts = async () => {
@@ -421,6 +522,124 @@ export const fetchAllGifts = async () => {
 export const fetchCastReceivedGifts = async (castId: number) => {
   const response = await api.get(`/cast/${castId}/received-gifts`);
   return response.data.gifts;
+};
+
+export const uploadCastAvatar = async (file: File) => {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  // Adjust endpoint as needed; here we use /cast/avatar-upload
+  const response = await api.post('/cast/avatar-upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const likeGuest = async (cast_id: number, guest_id: number) => {
+  console.log("likeGuest", cast_id, guest_id);
+  const response = await api.post('/guests/like', { cast_id, guest_id });
+  return response.data;
+};
+
+export const createChat = async (cast_id: number, guest_id: number) => {
+  console.log("createChat", cast_id, guest_id);
+  const response = await api.post('/chats/create', { cast_id, guest_id });
+  return response.data;
+};
+
+export const sendCastMessage = async (chat_id: number, cast_id: number, message: string) => {
+  const response = await api.post('/messages', {
+    chat_id,
+    sender_cast_id: cast_id,
+    message,
+  });
+  return response.data;
+};
+
+export const sendGuestMessage = async (chat_id: number, guest_id: number, message: string) => {
+  const response = await api.post('/messages', {
+    chat_id,
+    sender_guest_id: guest_id,
+    message,
+  });
+  return response.data;
+};
+
+export const getLikeStatus = async (cast_id: number, guest_id: number) => {
+  const response = await api.get(`/guests/like-status/${cast_id}/${guest_id}`);
+  return response.data;
+};
+
+export const fetchRanking = async (params: { userType: string; timePeriod: string; category: string; area: string }) => {
+  console.log(params);
+  const response = await api.get('/ranking', { params });
+  return response.data;
+};
+
+export const updateRanking = async (params: { userType: string; timePeriod: string; category: string; area: string }) => {
+  const response = await api.post('/ranking/recalculate-all', { params });
+  return response.data;
+};
+
+export const likeTweet = async (tweet_id: number, guest_id?: number, cast_id?: number) => {
+  const response = await api.post('/tweets/like', { tweet_id, guest_id, cast_id });
+  return response.data;
+};
+
+export const getTweetLikeCount = async (tweet_id: number) => {
+  console.log("GETTING TWEET LIKE COUNT", tweet_id);
+  const response = await api.get(`/tweets/${tweet_id}/like-count`);
+  console.log("RESPONSE", response.data);
+  return response.data.count;
+};
+
+export const getTweetLikeStatus = async (tweet_id: number, guest_id?: number, cast_id?: number) => {
+  const params: any = {};
+  if (guest_id) params.guest_id = guest_id;
+  if (cast_id) params.cast_id = cast_id;
+  const response = await api.get(`/tweets/${tweet_id}/like-status`, { params });
+  return { liked: response.data.liked, count: response.data.count };
+};
+
+export const getFavorites = async (guestId: number) => {
+  const response = await api.get(`/casts/favorites/${guestId}`);
+  return response.data;
+};
+
+export const favoriteCast = async (guest_id: number, cast_id: number) => {
+  const response = await api.post('/casts/favorite', { guest_id, cast_id });
+  return response.data;
+};
+
+export const unfavoriteCast = async (guest_id: number, cast_id: number) => {
+  const response = await api.post('/casts/unfavorite', { guest_id, cast_id });
+  return response.data;
+};
+
+export const fetchAllBadges = async () => {
+  const response = await api.get('/badges');
+  return response.data.badges;
+};
+
+export const completeReservation = async (reservationId: number, feedback: {
+  feedback_text?: string;
+  feedback_rating?: number;
+  feedback_badge_id?: number;
+}) => {
+  const response = await api.post(`/reservations/${reservationId}/complete`, feedback);
+  return response.data;
+};
+
+export const getCastImmediatePaymentData = async (castId: number) => {
+  const response = await api.get(`/casts/${castId}/immediate-payment`);
+  return response.data;
+};
+
+export const processCastImmediatePayment = async (castId: number, data: {
+  amount: number;
+  payjp_token: string;
+}) => {
+  const response = await api.post(`/casts/${castId}/immediate-payment`, data);
+  return response.data;
 };
 
 export default api; 

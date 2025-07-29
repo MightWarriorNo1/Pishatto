@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { createReservation } from '../../services/api';
+import { createReservation, fetchRanking } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 
 const classOptions = [
@@ -48,6 +48,18 @@ function Order({ onBack }: { onBack: () => void }) {
                 details: `VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, シチュ: ${selectedSituations.join(',')}, タイプ: ${selectedCastTypes.join(',')}, スキル: ${selectedCastSkills.join(',')}`,
             });
             setReservationMessage('予約が完了しました');
+            
+            // Trigger ranking update by fetching current rankings
+            try {
+                await fetchRanking({
+                    userType: 'guest',
+                    timePeriod: 'current',
+                    category: 'reservation',
+                    area: '全国'
+                });
+            } catch (error) {
+                console.log('Ranking refresh failed:', error);
+            }
         } catch {
             setReservationMessage('予約に失敗しました');
         }

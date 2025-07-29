@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PostCreatePage from './PostCreatePage';
-import { Bell, Plus, SlidersHorizontal } from 'lucide-react';
-import { fetchAllTweets, createTweet } from '../../services/api';
+import { Bell, Plus, SlidersHorizontal, Heart } from 'lucide-react';
+import { fetchAllTweets, createTweet, likeTweet, getTweetLikeCount, getTweetLikeStatus } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useTweets } from '../../hooks/useRealtime';
 
@@ -14,6 +14,9 @@ const Timeline: React.FC = () => {
     const [tweets, setTweets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [likeStatuses, setLikeStatuses] = useState<{ [tweetId: number]: boolean }>({});
+    const [likeCounts, setLikeCounts] = useState<{ [tweetId: number]: number }>({});
+    const castId = Number(localStorage.getItem('castId')) || null;
 
     const loadTweets = async () => {
         setLoading(true);
@@ -28,9 +31,32 @@ const Timeline: React.FC = () => {
         }
     };
 
+    // Fetch like status and count for all tweets
+    const fetchLikes = async (tweets: any[]) => {
+        const promises = tweets.map(async (tweet) => {
+            const { liked, count } = await getTweetLikeStatus(tweet.id, user ? user.id : undefined, undefined);
+            return { id: tweet.id, liked, count };
+        });
+        const results = await Promise.all(promises);
+        const statuses: { [tweetId: number]: boolean } = {};
+        const counts: { [tweetId: number]: number } = {};
+        results.forEach(({ id, liked, count }) => {
+            statuses[id] = liked;
+            counts[id] = count;
+        });
+        console.log("STATUS", statuses);
+        console.log("COUNTS", counts);
+        setLikeStatuses(statuses);
+        setLikeCounts(counts);
+    };
+
     useEffect(() => {
         loadTweets();
     }, []);
+
+    useEffect(() => {
+        if (tweets.length > 0 && (user || castId)) fetchLikes(tweets);
+    }, [tweets, user, castId]);
 
     useTweets((tweet) => {
         setTweets((prev) => {
@@ -49,6 +75,13 @@ const Timeline: React.FC = () => {
         } catch (e) {
             alert('投稿に失敗しました');
         }
+    };
+
+    const handleLike = async (tweetId: number) => {
+        if (!user && !castId) return;
+        const res = await likeTweet(tweetId, user ? user.id : undefined, !user && castId ? castId : undefined);
+        setLikeStatuses((prev) => ({ ...prev, [tweetId]: res.liked }));
+        setLikeCounts((prev) => ({ ...prev, [tweetId]: res.count }));
     };
 
     if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} />;
@@ -104,6 +137,16 @@ const Timeline: React.FC = () => {
                                     className="max-h-48 rounded my-2 border border-secondary"
                                 />
                             )}
+                            {/* Like button and count */}
+                            <div className="flex items-center mt-2">
+                                <button
+                                    className={`mr-2 text-lg ${likeStatuses[tweet.id] ? 'text-red-500' : 'text-gray-400'}`}
+                                    onClick={() => handleLike(tweet.id)}
+                                >
+                                    <Heart fill={likeStatuses[tweet.id] ? 'red' : 'white'} />
+                                </button>
+                                <span className="text-white text-sm">{likeCounts[tweet.id] || 0}</span>
+                            </div>
                         </div>
                     ))
                 )}

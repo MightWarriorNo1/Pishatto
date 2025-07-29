@@ -1,26 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { FiBell } from 'react-icons/fi';
 import ChatScreen from './ChatScreen';
-import { useNavigate } from 'react-router-dom';
 import { useChatRefresh } from '../../contexts/ChatRefreshContext';
 import { getGuestChats, getNotifications, markNotificationRead } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useNotifications } from '../../hooks/useRealtime';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 interface MessageScreenProps {
     showChat: number | null;
     setShowChat: (show: number | null) => void;
     onNotificationCountChange?: (count: number) => void;
+    activeBottomTab?: 'search' | 'message' | 'call' | 'tweet' | 'mypage';
 }
 
-const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ showChat, setShowChat, userId, onNotificationCountChange }) => {
+const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ showChat, setShowChat, userId, onNotificationCountChange, activeBottomTab }) => {
     const [selectedTab, setSelectedTab] = useState<'all' | 'favorite'>('all');
     const [chats, setChats] = useState<any[]>([]);
     const [messageNotifications, setMessageNotifications] = useState<any[]>([]);
     const { user } = useUser();
     const { refreshKey } = useChatRefresh();
     useEffect(() => {
-        getGuestChats(userId)
+        getGuestChats(userId, 'guest')
             .then(chats => setChats(chats || []));
         // Fetch message notifications
         if (user) {
@@ -33,12 +34,16 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         }
     }, [userId, refreshKey, user]);
 
+
     // Listen for real-time notifications
     useNotifications(user?.id ?? '', (notification) => {
+        console.log("Notification", notification);
         if (notification.type === 'message') {
             setMessageNotifications((prev) => {
                 const newNotifications = [notification, ...prev];
-                onNotificationCountChange?.(newNotifications.length);
+                if (activeBottomTab !== 'message') {
+                    onNotificationCountChange?.(newNotifications.length);
+                }
                 return newNotifications;
             });
         }
@@ -51,7 +56,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
 
     if (showChat) {
         return <ChatScreen chatId={showChat} onBack={() => setShowChat(null)} />;
-    }
+    } 
 
     return (
         <div className="bg-primary min-h-screen flex flex-col">
@@ -136,13 +141,14 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                         chats.map(chat => {
                             // Find notification for this chat
                             const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
-
                             return (
                                 <button
                                     key={chat.id}
                                     className="w-full"
                                     onClick={async () => {
                                         setShowChat(chat.id);
+                                        // Immediately set unread to 0 for this chat in local state
+                                        setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
                                         if (chatNotif) {
                                             await markNotificationRead(chatNotif.id);
                                             setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));
@@ -151,17 +157,16 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                 >
                                     <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
                                         <img
-                                            src={chat.avatar || '/assets/avatar/1.jpg'}
+                                            src={chat.avatar ? `${API_BASE_URL}/${chat.avatar}` : '/assets/avatar/1.jpg'}
                                             alt="avatar"
                                             className="w-12 h-12 rounded-full mr-3 border border-secondary"
                                         />
                                         <div className="flex-1">
                                             <div className="flex items-center">
                                                 <span className="font-bold text-white text-base mr-2">グループチャット {chat.id}</span>
-                                                {/* Show badge if notification exists */}
-                                                {chatNotif && (
+                                                {chat.unread > 0 && (
                                                     <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
-                                                        !
+                                                        {chat.unread}
                                                     </span>
                                                 )}
                                             </div>

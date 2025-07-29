@@ -1,38 +1,43 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { fetchRanking } from '../../services/api';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 interface RankingProfile {
   id: number;
-  rank: number;
   name: string;
-  imageUrl: string;
-  comment: string;
+  avatar?: string;
+  points: number;
+  gift_count?: number;
+  reservation_count?: number;
 }
 
 const RankingSection: React.FC = () => {
-  const rankings: RankingProfile[] = [
-    {
-      id: 1,
-      rank: 1,
-      name: 'みく',
-      imageUrl: 'assets/avatar/female.png',
-      comment: 'お話上手でした！'
-    },
-    {
-      id: 2,
-      rank: 2,
-      name: 'あい',
-      imageUrl: 'assets/avatar/female.png',
-      comment: 'お話上手でした！'
-    },
-    {
-      id: 3,
-      rank: 3,
-      name: 'あい',
-      imageUrl: 'assets/avatar/female.png',
-      comment: 'お話上手でした！'
-    }
+  const navigate = useNavigate();
+  const [rankings, setRankings] = useState<RankingProfile[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  ];
+  useEffect(() => {
+    setLoading(true);
+    // Get yesterday's ranking for casts by gifts
+    fetchRanking({
+      userType: 'cast',
+      timePeriod: 'yesterday',
+      category: 'gift',
+      area: '全国'
+    }).then((data) => {
+      setRankings(data.data || []);
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Failed to fetch rankings:', error);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleCastClick = (castId: number) => {
+    navigate(`/cast/${castId}`);
+  };
 
   return (
     <div className="mb-8">
@@ -40,26 +45,39 @@ const RankingSection: React.FC = () => {
         <h2 className="text-lg font-bold text-white">昨日のランキングTOP10</h2>
         <button className="text-sm text-white">ランキングを見る＞</button>
       </div>
-      <div className="grid grid-cols-3 gap-4">
-        {rankings.map((profile) => (
-          <div key={profile.id} className="bg-primary rounded-lg shadow p-3 border border-secondary">
-            <div className="relative">
-              <img
-                src={profile.imageUrl}
-                alt={profile.name}
-                className="w-full aspect-square object-cover rounded border border-secondary"
-              />
-              <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                {profile.rank}
+      {loading ? (
+        <div className="text-white">ローディング...</div>
+      ) : rankings.length === 0 ? (
+        <div className="text-white">ランキングデータがありません</div>
+      ) : (
+        <div className="grid grid-cols-3 gap-4">
+          {rankings.slice(0, 3).map((profile, index) => (
+            <div 
+              key={profile.id} 
+              className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer"
+              onClick={() => handleCastClick(profile.id)}
+            >
+              <div className="relative">
+                <img
+                  src={profile.avatar ? `${API_BASE_URL}/${profile.avatar}` : '/assets/avatar/female.png'}
+                  alt={profile.name}
+                  className="w-full aspect-square object-cover rounded border border-secondary"
+                />
+                <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+                  {index + 1}
+                </div>
+              </div>
+              <div className="mt-2">
+                <div className="font-medium text-white">{profile.name}</div>
+                <div className="text-xs text-white mt-1">
+                  {profile.points}ポイント
+                  {profile.gift_count && ` (${profile.gift_count}件)`}
+                </div>
               </div>
             </div>
-            <div className="mt-2">
-              <div className="font-medium text-white">{profile.name}</div>
-              <div className="text-xs text-white mt-1">{profile.comment}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

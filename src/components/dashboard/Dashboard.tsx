@@ -5,57 +5,59 @@ import UserSatisfactionSection from './UserSatisfactionSection';
 import RankingSection from './RankingSection';
 import BottomNavigation from './BottomNavigation';
 import FavoritesSection from './FavoritesSection';
-import HistorySection from './HistorySection';
 import RankingTabSection from './RankingTabSection';
 import BestSatisfactionSection from './BestSatisfactionSection';
 import MessageScreen from './MessageScreen';
 import CallScreen from './CallScreen';
-import Order from './Order';
 import Timeline from './Timeline';
 import Profile from './Profile';
+import FootprintsSection from './FootprintsSection';
 import { useUser } from '../../contexts/UserContext';
-import { getGuestChats, markNotificationRead, markAllNotificationsRead } from '../../services/api';
-import { useNotifications } from '../../hooks/useRealtime';
-import { useTweets } from '../../hooks/useRealtime';
+import { markAllNotificationsRead } from '../../services/api';
+import { useChatMessages, useTweets } from '../../hooks/useRealtime';
 
 const Dashboard: React.FC = () => {
-  // Bottom navigation: search, message, call, tweet, mypage
   const [activeBottomTab, setActiveBottomTab] = useState<'search' | 'message' | 'call' | 'tweet' | 'mypage'>('search');
-  // Top navigation (search tabs): home, favorites, history, ranking
-  const [activeSearchTab, setActiveSearchTab] = useState<'home' | 'favorites' | 'history' | 'ranking'>('home');
-  // Chat detail state
+  const [activeSearchTab, setActiveSearchTab] = useState<'home' | 'favorites' | 'footprints' | 'ranking'>('home');
   const [showChat, setShowChat] = useState<number | null>(null);
-  // Order flow state
   const [showOrder, setShowOrder] = useState(false);
   const { user } = useUser();
-  const [messageCount, setMessageCount] = useState(0);
-  const [notificationCount, setNotificationCount] = useState(0);
-  const [lastNotificationId, setLastNotificationId] = useState<number | null>(null);
+  const [messageCount, setMessageCount] = useState(0);;
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
-  const [latestNotification, setLatestNotification] = useState<any>(null);
+  const [latestNotification] = useState<any>(null);
   const [tweetCount, setTweetCount] = useState(0);
   const prevTab = React.useRef(activeBottomTab);
 
-  useEffect(() => {
-    if (user) {
-      getGuestChats(user.id).then((chats) => {
-        const totalUnread = (chats || []).reduce((sum: any, chat: any) => sum + (chat.unread || 0), 0);
-        setMessageCount(totalUnread);
-      });
-    }
-  }, [user]);
+  // useEffect(() => {
+  //   if (user) {
+  //     getGuestChats(user.id).then((chats) => {
+  //       const totalUnread = (chats || []).reduce((sum: any, chat: any) => sum + (chat.unread || 0), 0);
+  //       setMessageCount(totalUnread);
+  //     });
+  //   }
+  // }, []);
 
-  useNotifications(user?.id ?? '', (notification) => {
-    setNotificationCount((c) => c + 1);
-    setLatestNotification(notification);
-    setShowNotificationPopup(true);
-    setLastNotificationId(notification.id);
-  });
+  // useNotifications(user?.id ?? '', (notification) => {
+  //   if (notification.type === 'message') {
+  //     setMessageCount((c) => c + 1);
+  //   }
+  //   console.log("messageCount", messageCount); 
+  //   setLatestNotification(notification);
+  //   setShowNotificationPopup(true);
+  //   setLastNotificationId(notification.id);
+  // });
 
   useTweets((tweet) => {
     // Only increment if not on tweet tab
     if (activeBottomTab !== 'tweet') {
       setTweetCount((c) => c + 1);
+    }
+    console.log("Tweet count", tweetCount);
+  });
+
+  useChatMessages(user?.id || 0, (message) => {
+    if(activeBottomTab !== 'message') {
+      setMessageCount((c) => c + 1);
     }
   });
 
@@ -67,12 +69,11 @@ const Dashboard: React.FC = () => {
 
     if (activeBottomTab === 'message' && prevTab.current !== 'message') {
       // Mark all notifications as read when entering message tab
+      setMessageCount(0); // Reset immediately for UI responsiveness
       if (user) {
         markAllNotificationsRead('guest', user.id).then(() => {
-          setMessageCount(0);
+          // setMessageCount(0); // Already reset above
         });
-      } else {
-        setMessageCount(0);
       }
     }
   }, [activeBottomTab, user]);
@@ -94,8 +95,8 @@ const Dashboard: React.FC = () => {
         );
       case 'favorites':
         return <FavoritesSection />;
-      case 'history':
-        return <HistorySection />;
+      case 'footprints':
+        return <FootprintsSection />;
       case 'ranking':
         return <RankingTabSection />;
       default:
@@ -111,6 +112,7 @@ const Dashboard: React.FC = () => {
           showChat={showChat}
           setShowChat={setShowChat}
           userId={user?.id || 0}
+          activeBottomTab={activeBottomTab}
           // Only update messageCount if new notifications arrive (not on initial fetch)
           onNotificationCountChange={count => {
             if (activeBottomTab !== 'message') {
@@ -119,9 +121,6 @@ const Dashboard: React.FC = () => {
           }}
         />;
       case 'call':
-        if (showOrder) {
-          return <Order onBack={() => setShowOrder(false)} />;
-        }
         return <CallScreen onStartOrder={() => setShowOrder(true)} />;
       case 'tweet':
         return <Timeline />;
@@ -161,11 +160,7 @@ const Dashboard: React.FC = () => {
           <div className="font-bold mb-1">新着通知</div>
           <div>{latestNotification.message}</div>
           <button className="mt-2 text-xs underline" onClick={async () => {
-            setShowNotificationPopup(false);
-            if (latestNotification.id) {
-              await markNotificationRead(latestNotification.id);
-              setNotificationCount((c) => Math.max(0, c - 1));
-            }
+            setShowNotificationPopup(false)
           }}>閉じる</button>
         </div>
       )}

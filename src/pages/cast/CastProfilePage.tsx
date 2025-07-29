@@ -1,10 +1,58 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import CastGiftBoxPage from './CastGiftBoxPage';
 import CastActivityRecordPage from './CastActivityRecordPage';
 import CastFriendReferralPage from './CastFriendReferralPage';
 import CastImmediatePaymentPage from './CastImmediatePaymentPage';
+import { getCastProfileById, getCastPointsData, getCastPassportData } from '../../services/api';
+import CastProfileEditPage from './CastProfileEditPage';
+import CastPointHistoryPage from './CastPointHistoryPage';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+interface Badge {
+    id: number;
+    name: string;
+    icon: string;
+    description: string;
+}
+
+interface Gift {
+    id: number;
+    name: string;
+    category: string;
+    points: number;
+    icon: string;
+}
+
+interface CastProfile {
+    id: number;
+    nickname: string;
+    avatar: string;
+    birth_year: number;
+    height: number;
+    residence: string;
+    birthplace: string;
+    profile_text: string;
+    badges: Badge[];
+    receivedGifts: Gift[];
+}
+
+interface PointsData {
+    monthly_total_points: number;
+    gift_points: number;
+    copat_back_rate: number;
+    total_reservations: number;
+    completed_reservations: number;
+}
+
+interface PassportData {
+    id: number;
+    name: string;
+    image: string;
+    description: string;
+}
 
 const campaignImages = [
     "/assets/avatar/2.jpg",
@@ -20,11 +68,75 @@ const CastProfilePage: React.FC = () => {
     const [showFriendReferral, setShowFriendReferral] = useState(false);
     const [showImmediatePayment, setShowImmediatePayment] = useState(false);
     const castId = Number(localStorage.getItem('castId'));
+    const [showEdit, setShowEdit] = useState(false);
+    const [showPointHistory, setShowPointHistory] = useState(false);
+    const [cast, setCast] = useState<CastProfile | null>(null);
+    const [pointsData, setPointsData] = useState<PointsData | null>(null);
+    const [passportData, setPassportData] = useState<PassportData[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchCastProfile = async () => {
+        try {
+            const data = await getCastProfileById(castId);
+            setCast(data.cast);
+        } catch (error) {
+            console.error('Failed to fetch cast profile:', error);
+        }
+    };
+
+    const fetchPointsData = async () => {
+        try {
+            const data = await getCastPointsData(castId);
+            setPointsData(data);
+        } catch (error) {
+            console.error('Failed to fetch points data:', error);
+        }
+    };
+
+    const fetchPassportData = async () => {
+        try {
+            const data = await getCastPassportData(castId);
+            setPassportData(data.passport_data);
+        } catch (error) {
+            console.error('Failed to fetch passport data:', error);
+        }
+    };
+
+    useEffect(() => {
+        const fetchAllData = async () => {
+            setLoading(true);
+            await Promise.all([
+                fetchCastProfile(),
+                fetchPointsData(),
+                fetchPassportData()
+            ]);
+            setLoading(false);
+        };
+        
+        if (castId) {
+            fetchAllData();
+        }
+    }, [castId]);
+
+    const handleProfileUpdate = () => {
+        // Refresh the profile data after successful update
+        fetchCastProfile();
+    };
 
     if (showGiftBox) return <CastGiftBoxPage onBack={() => setShowGiftBox(false)} />;
     if (showActivityRecord) return <CastActivityRecordPage onBack={() => setShowActivityRecord(false)} />;
     if (showFriendReferral) return <CastFriendReferralPage onBack={() => setShowFriendReferral(false)} />;
     if (showImmediatePayment) return <CastImmediatePaymentPage onBack={() => setShowImmediatePayment(false)} />;
+    if (showEdit) return <CastProfileEditPage onBack={() => setShowEdit(false)} onProfileUpdate={handleProfileUpdate} />;
+    if (showPointHistory) return <CastPointHistoryPage onBack={() => setShowPointHistory(false)} />;
+
+    if (loading) {
+        return (
+            <div className="max-w-md mx-auto bg-primary min-h-screen pb-24 flex items-center justify-center">
+                <div className="text-white text-lg">読み込み中...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-md mx-auto bg-primary min-h-screen pb-24">
@@ -47,7 +159,7 @@ const CastProfilePage: React.FC = () => {
             <div className="px-4 pt-2 flex flex-col items-center">
                 <div className="rounded-lg overflow-hidden mb-2 w-full border-2 border-secondary">
                     <img
-                        src={campaignImages[current]}
+                        src={cast && cast.avatar ? `${API_BASE_URL}/${cast.avatar}` : '/assets/avatar/avatar-1.png'}
                         alt={`campaign-${current}`}
                         className="w-full h-16 object-cover"
                     />
@@ -65,27 +177,21 @@ const CastProfilePage: React.FC = () => {
                     ))}
                 </div>
             </div>
-            {/* WhiteDay Event Card */}
-            <div className="bg-primary border border-secondary rounded-lg mx-4 my-2 p-3 flex flex-col">
-                <div className="flex items-center mb-1">
-                    <span className="text-white mr-2">
-                        <Bell />
-                    </span>
-                    <span className="text-xs text-white">WhiteDayイベントはアイテムを活用してギフトゲット！？</span>
-                </div>
-                <img src="/assets/icons/profile_number.png" alt='profile_number' />
-            </div>
             {/* Top row: avatar, name, pencil */}
-            <div className="flex items-center justify-between px-4 pt-6">
+            <div className="w-full flex flex-row justify-between items-center px-4 py-4 text-left cursor-pointer transition">
                 <div className="flex items-center">
-                    <img src="/assets/avatar/1.jpg" alt="profile" className="w-10 h-10 rounded-full mr-2 border-2 border-secondary" />
-                    <span className="font-bold text-lg text-white">◎ えま◎</span>
+                    <img
+                        src={cast && cast.avatar ? `${API_BASE_URL}/${cast.avatar}` : '/assets/avatar/avatar-1.png'}
+                        alt="profile"
+                        className="w-10 h-10 rounded-full mr-2 border-2 border-secondary"
+                        onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
+                    />
+                    <span className="font-bold text-lg text-white">{cast ? cast.nickname : '◎ えま◎'}</span>
                 </div>
-                <button className="text-white">
+                <button className="text-white  hover:text-secondary" onClick={() => setShowEdit(true)}>
                     <Pencil />
                 </button>
             </div>
-
             <div className="flex items-center justify-between px-4 pt-6">
                 <Link to="/cast/grade-detail">
                     <img src="/assets/icons/profile_badge.png" alt="badge" className="border-2 border-secondary rounded-lg" />
@@ -99,94 +205,59 @@ const CastProfilePage: React.FC = () => {
                         <CircleQuestionMark />
                     </span>
                 </div>
-                <div className="text-3xl font-bold text-white mb-2">133,920P</div>
+                <div className="text-3xl font-bold text-white mb-2">
+                    {pointsData ? `${pointsData.monthly_total_points.toLocaleString()}P` : '0P'}
+                </div>
                 <div className="flex space-x-2 mb-2">
                     <div className="flex-1 bg-gray-900 rounded-lg p-2 text-center border border-secondary">
                         <div className="text-xs text-gray-400">ギフト獲得ポイント</div>
-                        <div className="font-bold text-lg text-white">21,600p</div>
+                        <div className="font-bold text-lg text-white">
+                            {pointsData ? `${pointsData.gift_points.toLocaleString()}p` : '0p'}
+                        </div>
                     </div>
                     <div className="flex-1 bg-gray-900 rounded-lg p-2 text-center border border-secondary">
                         <div className="text-xs text-gray-400">今月のコパトバック率</div>
-                        <div className="font-bold text-lg text-white">78%</div>
-                    </div>
-                </div>
-                <button className="w-full py-2 rounded-lg bg-secondary text-white font-bold hover:bg-red-700 transition" onClick={() => navigate('/cast/point-history')}>所持ポイント確認・精算</button>
-            </div>
-            {/* Copat-back Rate Section */}
-            <div className="bg-primary border border-secondary rounded-lg mx-4 my-2 p-4">
-                <div className="w-full flex items-center mb-2">
-                    <span className="w-full bg-secondary text-white rounded px-2 py-1 text-lg font-bold mr-2 text-center h-10">アポに参加で最大コパトバック率90%</span>
-                </div>
-                <div className="flex flex-col justify-between mb-2">
-                    <div className="text-white">
-                        コバトバック率ステップ
-                    </div>
-                    <div className='flex flex-row justify-between'>
-                        <div>
-                            <div className="text-xs text-gray-400">今月の累計参加時間</div>
-                            <div className="font-bold text-lg text-white">6時間</div>
-                        </div>
-                        <div>
-                            <div className="text-xs text-gray-400">来月のコパトバック率</div>
-                            <div className="font-bold text-lg text-white">75%</div>
+                        <div className="font-bold text-lg text-white">
+                            {pointsData ? `${pointsData.copat_back_rate}%` : '0%'}
                         </div>
                     </div>
                 </div>
-                <div className="w-full h-2 bg-gray-900 rounded mb-2">
-                    <div className="h-2 bg-secondary rounded" style={{ width: '60%' }} />
-                </div>
-                <div className="text-xs text-gray-400 text-center mb-2">次のステップまで4時間</div>
+                <button className="w-full py-2 rounded-lg bg-secondary text-white font-bold hover:bg-red-700 transition" onClick={() => setShowPointHistory(true)}>所持ポイント確認・精算</button>
             </div>
             {/* Passport/Partner Shop Cards */}
             <div className="bg-primary border border-secondary rounded-lg mx-4 my-2 p-4">
                 <div className="font-bold text-base mb-2 text-white">pishattoパスポート</div>
                 <div className="flex space-x-2 overflow-x-auto overflow-y-auto">
-                    <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1095142160_Preview.jpeg" alt='img1' />
-                    </div>
-                    <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1067731649_Preview.jpeg" alt='img1' />
-                    </div>
-                    <div className="w-60 h-24 bg-gray-900 rounded-lg  min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1190678828_Preview.jpeg" alt='img1' />
-                    </div>
-                    <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1537463438_Preview.jpeg" alt='img1' />
-                    </div>
-                    <div className="w-60 h-24 bg-gray-900 rounded-lg flex min-w-[120px] justify-center text-xs border border-secondary">
-                        <img src="/assets/avatar/AdobeStock_1537463446_Preview.jpeg" alt='img1' />
-                    </div>
+                    {passportData.length > 0 ? (
+                        passportData.map((passport) => (
+                            <div key={passport.id} className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
+                                <img src={passport.image} alt={passport.name} className="w-full h-full object-cover rounded" />
+                            </div>
+                        ))
+                    ) : (
+                        // Fallback to static images if no data
+                        <>
+                            <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
+                                <img src="/assets/avatar/AdobeStock_1095142160_Preview.jpeg" alt='img1' />
+                            </div>
+                            <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
+                                <img src="/assets/avatar/AdobeStock_1067731649_Preview.jpeg" alt='img1' />
+                            </div>
+                            <div className="w-60 h-24 bg-gray-900 rounded-lg  min-w-[120px] flex justify-center text-xs border border-secondary">
+                                <img src="/assets/avatar/AdobeStock_1190678828_Preview.jpeg" alt='img1' />
+                            </div>
+                            <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
+                                <img src="/assets/avatar/AdobeStock_1537463438_Preview.jpeg" alt='img1' />
+                            </div>
+                            <div className="w-60 h-24 bg-gray-900 rounded-lg flex min-w-[120px] justify-center text-xs border border-secondary">
+                                <img src="/assets/avatar/AdobeStock_1537463446_Preview.jpeg" alt='img1' />
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
             {/* Menu List */}
             <div className="bg-primary border border-secondary rounded-lg mx-4 my-2 p-2 divide-y divide-gray-800">
-                {/* <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-gray-900 transition" onClick={() => setShowPointHistory(true)}>
-                    <span className="text-xl mr-3 text-white">
-                        <ChartSpline />
-                    </span>
-                    <span className='flex-1 text-white'>ポイント履歴</span>
-                    <span className="text-gray-400">
-                        <ChevronRight />
-                    </span>
-                </div>
-                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-gray-900 transition" onClick={() => setShowReceipts(true)}>
-                    <span className="text-xl mr-3 text-white">
-                        <Gift />
-                    </span>
-                    <span className='flex-1 text-white'>領収書</span>
-                    <span className="text-gray-400">
-                        <ChevronRight />
-                    </span>
-                </div>
-                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-gray-900 transition" onClick={() => setShowPaymentInfo(true)}>
-                    <span className="text-xl mr-3 text-white">
-                        <Pencil />
-                    </span>
-                    <span className='flex-1 text-white'>お支払い情報</span>
-                    <span className="text-gray-400">
-                        <ChevronRight />
-                    </span>
-                </div> */}
                 <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-secondary transition" onClick={() => setShowGiftBox(true)}>
                     <span className="text-xl mr-3 text-white">
                         <Gift />

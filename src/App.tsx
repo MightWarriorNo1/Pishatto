@@ -7,7 +7,6 @@ import Dashboard from './components/dashboard/Dashboard';
 import CastDetail from './pages/CastDetail';
 import CastDashboard from './pages/cast/CastDashboard';
 import CastGradeDetailPage from './pages/cast/CastGradeDetailPage';
-import CastPointHistoryPage from './pages/cast/CastPointHistoryPage';
 import CastProfilePage from './pages/cast/CastProfilePage';
 import CastMessageDetailPage from './pages/cast/CastMessageDetailPage';
 import { UserProvider } from './contexts/UserContext';
@@ -28,7 +27,6 @@ const App: React.FC = () => {
           <Route path="/cast/:id" element={<CastDetail />} />
           <Route path="/cast/dashboard" element={<CastDashboard />} />
           <Route path="/cast/grade-detail" element={<CastGradeDetailPage />} />
-          <Route path="/cast/point-history" element={<CastPointHistoryPage />} />
           <Route path="/cast/profile" element={<CastProfilePage />} />
           <Route path="/cast/:id/message" element={<CastMessageDetailPage />} />
         </Routes>

@@ -1,32 +1,50 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { fetchRanking } from '../../services/api';
+
+const API_BASE_URL=process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 type UserType = 'cast' | 'guest';
 type TimePeriod = 'current' | 'yesterday' | 'lastWeek' | 'lastMonth' | 'allTime';
-type Category = '総合' | 'パトロール' | 'コバト' | 'ギフ';
+type Category = 'gift' | 'reservation';
 
 const areas = [
   '全国',
-  '東京',
-  '大阪',
-  '福岡',
-  '名古屋'
+  '東京都',
+  '大阪府',
+  '愛知県',
+  '福岡県',
+  '北海道'
 ];
 
 const RankingTabSection: React.FC = () => {
   const [userType, setUserType] = useState<UserType>('cast');
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('current');
-  const [selectedCategory, setSelectedCategory] = useState<Category>('総合');
+  const [selectedCategory, setSelectedCategory] = useState<Category>('gift');
   const [selectedArea, setSelectedArea] = useState<string>('全国');
   const [isAreaDropdownOpen, setIsAreaDropdownOpen] = useState(false);
+  const [ranking, setRanking] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const handleAreaSelect = (area: string) => {
     setSelectedArea(area);
     setIsAreaDropdownOpen(false);
   };
 
+  useEffect(() => {
+    setLoading(true);
+    fetchRanking({
+      userType,
+      timePeriod,
+      category: selectedCategory,
+      area: selectedArea,
+    }).then((res) => {
+      setRanking(res.data || res.data?.data || []);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [userType, timePeriod, selectedCategory, selectedArea]);
+
   return (
     <div className="flex flex-col bg-primary min-h-[calc(100vh-10rem)] relative">
-      {/* User Type Tabs */}
       <div className="px-4 pt-4">
         <div className="flex">
           <button
@@ -101,40 +119,22 @@ const RankingTabSection: React.FC = () => {
         <div className="flex items-center justify-between w-full">
           <div className="flex space-x-1 w-full overflow-x-auto">
             <button
-              className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === '総合'
+              className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === 'gift'
                 ? 'bg-secondary text-white'
                 : 'border border-gray-700 text-white'
                 }`}
-              onClick={() => setSelectedCategory('総合')}
+              onClick={() => setSelectedCategory('gift')}
             >
-              総合
+              ギフト
             </button>
             <button
-              className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === 'パトロール'
+              className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === 'reservation'
                 ? 'bg-secondary text-white'
                 : 'border border-gray-700 text-white'
                 }`}
-              onClick={() => setSelectedCategory('パトロール')}
+              onClick={() => setSelectedCategory('reservation')}
             >
-              パトロール
-            </button>
-            <button
-              className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === 'コバト'
-                ? 'bg-secondary text-white'
-                : 'border border-gray-700 text-white'
-                }`}
-              onClick={() => setSelectedCategory('コバト')}
-            >
-              コバト
-            </button>
-            <button
-              className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === 'ギフ'
-                ? 'bg-secondary text-white'
-                : 'border border-gray-700 text-white'
-                }`}
-              onClick={() => setSelectedCategory('ギフ')}
-            >
-              ギフ
+              予約
             </button>
           </div>
         </div>
@@ -192,28 +192,37 @@ const RankingTabSection: React.FC = () => {
       </div>
 
       {/* Empty State */}
-      <div className="flex-1 flex flex-col items-center justify-center min-w-[360px]">
-        <div className="relative">
-          <div className="absolute -left-16 top-12">
-            <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-white text-base font-bold">
-              1
-            </div>
+      <div className="flex-1 flex-col items-center justify-center min-w-[360px]">
+        {loading ? (
+          <div className="text-white">ローディング...</div>
+        ) : ranking.length === 0 ? (
+          <div className="text-white">ランキングデータがありません</div>
+        ) : (
+          <div className="w-full">
+            {ranking.map((item, idx) => (
+              <div key={item.id || item.user_id} className="flex items-center p-2 border-b border-secondary">
+                <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-white text-base font-bold mr-2">{idx + 1}</div>
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-400 border-2 border-secondary mr-2">
+                  <img
+                    src={`${API_BASE_URL}/${item.avatar}` || '/assets/avatar/avatar-1.png'}
+                    alt={item.name || item.nickname || ''}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="text-white font-bold">{item.name || item.nickname || ''}</div>
+                  {item.points !== undefined && (
+                    <div className="text-xs text-white mt-1">ポイント: {item.points}</div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="w-[120px] h-[120px] rounded-full bg-primary flex items-center justify-center relative border border-secondary">
-            <div className="w-full h-full relative">
-              <img
-                src="/assets/avatar/avatar-1.png"
-                alt="Tiger Illustration"
-                className="w-full h-full object-contain"
-              />
-            </div>
-          </div>
-        </div>
-        <p className="mt-4 text-sm text-white">R491TBD</p>
+        )}
       </div>
 
       {/* Bottom Profile Bar */}
-      <div className="bg-primary text-white p-4 flex items-center space-x-3 mt-auto min-w-[360px] border-t border-secondary">
+      {/* <div className="bg-primary text-white p-4 flex items-center space-x-3 mt-auto min-w-[360px] border-t border-secondary">
         <span className="text-sm">圏外</span>
         <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-400 border-2 border-secondary">
           <img
@@ -223,7 +232,7 @@ const RankingTabSection: React.FC = () => {
           />
         </div>
         <span className="text-sm">まこちゃん</span>
-      </div>
+      </div> */}
     </div>
   );
 };

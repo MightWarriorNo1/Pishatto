@@ -6,9 +6,9 @@ import Pusher from "pusher-js";
 
 const echo = new Echo({
   broadcaster: "reverb",
-  key: "key",
+  key: process.env.REVERB_KEY || "local",
   wsHost: process.env.WS_HOST || "127.0.0.1",
-  wsPort: process.env.WS_PORT ? Number(process.env.WS_PORT) : 6001,
+  wsPort: process.env.WS_PORT ? Number(process.env.WS_PORT) : 8080,
   forceTLS: false,
   // disableStats: true,
   encrypted: false,

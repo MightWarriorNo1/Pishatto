@@ -1,20 +1,26 @@
 
-import { useState } from 'react';
-import { ChevronLeft, Clock, Flag, HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, Clock, Flag, HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus, X } from 'lucide-react';
 import StepRequirementScreen from './StepRequirementScreen';
-import { createReservation } from '../../services/api';
+import { createReservation, fetchRanking, getGuestChats } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import MyOrderPage from './MyOrderPage';
+import React from 'react'; // Added for React.useEffect
 
-const mockCasts = [
-    { name: 'たまごちゃん', tag: 'ロイヤルVIP', age: '', desc: '', img: 'assets/icons/akiko.png', badge: '🌈' },
-    { name: 'はいぼーる', tag: 'プレミアム', age: '24歳', desc: 'のみましょお', img: 'assets/icons/ayaka.png', badge: '' },
-    { name: 'ゆゆ', tag: 'プレミアム', age: '21歳', desc: '', img: 'assets/icons/ayaka.png', badge: '' },
-    { name: 'えり', tag: 'VIP', age: '22歳', desc: 'カラオケ大好き', img: 'assets/icons/haru.png', badge: '🎤' },
-    { name: 'かな', tag: 'ロイヤルVIP', age: '25歳', desc: 'お酒強い', img: 'assets/icons/haruka.png', badge: '🍶' },
-    { name: 'みき', tag: 'プレミアム', age: '23歳', desc: '英語OK', img: 'assets/icons/kaori.png', badge: '🇬🇧' },
-    { name: 'ゆい', tag: 'VIP', age: '20歳', desc: 'ダンス得意', img: 'assets/icons/kotomi.png', badge: '💃' },
-];
+const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+// Add interface for applied cast data
+interface AppliedCast {
+    id: number;
+    cast_id: number;
+    cast_nickname: string;
+    avatar?: string;
+    last_message?: string;
+    updated_at?: string;
+    unread?: number;
+}
+
+
+
 
 const classOptions = [
     { name: 'ロイヤルVIP', color: 'bg-gray-800', price: 12500 },
@@ -35,6 +41,63 @@ const castSkillOptions = [
     'お酒好き', '英語が話せる', '中国語が話せる', '韓国語が話せる', '盛り上げ上手', '歌うま'
 ];
 
+// Add modal component for custom time selection
+function CustomTimeModal({ isOpen, onClose, onConfirm }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (hours: number) => void;
+}) {
+    const [selectedHours, setSelectedHours] = useState(1);
+
+    const handleConfirm = () => {
+        onConfirm(selectedHours);
+        onClose();
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-primary border border-secondary rounded-lg p-6 w-80 max-w-[90%]">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-white">合流時間を選択</h3>
+                    <button onClick={onClose} className="text-white hover:text-gray-300">
+                        <X size={24} />
+                    </button>
+                </div>
+
+                <div className="mb-6">
+                    <label className="block text-white mb-2">何時間後に合流しますか？</label>
+                    <select
+                        className="w-full border rounded px-4 py-2 text-left border-secondary bg-primary text-white appearance-none focus:outline-none focus:ring-2 focus:ring-secondary"
+                        value={selectedHours}
+                        onChange={e => setSelectedHours(Number(e.target.value))}
+                    >
+                        {Array.from({ length: 24 }, (_, i) => (
+                            <option key={i} value={i + 1}>{i + 1}時間後</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div className="flex gap-2">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2 border border-gray-700 text-white rounded hover:bg-gray-700"
+                    >
+                        キャンセル
+                    </button>
+                    <button
+                        onClick={handleConfirm}
+                        className="flex-1 bg-secondary text-white py-2 rounded hover:bg-red-700"
+                    >
+                        確定
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, selectedArea, setSelectedArea, counts, setCounts, selectedDuration, setSelectedDuration }: {
     onBack: () => void,
     onNext: () => void,
@@ -48,6 +111,20 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
     setSelectedDuration: (v: string) => void,
 }) {
     const total = counts.reduce((a, b) => a + b, 0);
+    const [showCustomTimeModal, setShowCustomTimeModal] = useState(false);
+
+    const handleTimeSelection = (time: string) => {
+        if (time === 'それ以外') {
+            setShowCustomTimeModal(true);
+        } else {
+            setSelectedTime(time);
+        }
+    };
+
+    const handleCustomTimeConfirm = (hours: number) => {
+        setSelectedTime(`${hours}時間後`);
+    };
+
     return (
         <div>
             <div className="flex items-center px-4 pt-6 pb-2">
@@ -65,13 +142,18 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
                     <span className="text-white text-sm ml-auto">*必須</span>
                 </div>
                 <div className="flex gap-2 mb-6">
-                    {timeOptions.map(opt => (
-                        <button
-                            key={opt}
-                            className={`px-4 py-2 rounded border ${selectedTime === opt ? 'bg-secondary text-white border-secondary' : 'bg-primary text-white border-gray-700'}`}
-                            onClick={() => setSelectedTime(opt)}
-                        >{opt}</button>
-                    ))}
+                    {timeOptions.map(opt => {
+                        const displayText = opt === 'それ以外' && selectedTime.includes('時間後') ? selectedTime : opt;
+                        const isSelected = selectedTime === opt || (opt === 'それ以外' && selectedTime.includes('時間後'));
+
+                        return (
+                            <button
+                                key={opt}
+                                className={`px-4 py-2 rounded border ${isSelected ? 'bg-secondary text-white border-secondary' : 'bg-primary text-white border-gray-700'}`}
+                                onClick={() => handleTimeSelection(opt)}
+                            >{displayText}</button>
+                        );
+                    })}
                 </div>
             </div>
             <div className="px-4 mt-4">
@@ -159,6 +241,11 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
             <div className="px-4 mt-4">
                 <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition" onClick={onNext}>次に進む</button>
             </div>
+            <CustomTimeModal
+                isOpen={showCustomTimeModal}
+                onClose={() => setShowCustomTimeModal(false)}
+                onConfirm={handleCustomTimeConfirm}
+            />
         </div>
     );
 }
@@ -238,7 +325,7 @@ function OrderFinalConfirmationScreen({
     selectedSituations,
     selectedCastTypes,
     selectedCastSkills,
-    onReservationSuccess,
+    // onReservationSuccess,
 }: {
     onBack: () => void;
     onConfirmed: () => void;
@@ -249,12 +336,27 @@ function OrderFinalConfirmationScreen({
     selectedSituations: string[];
     selectedCastTypes: string[];
     selectedCastSkills: string[];
-    onReservationSuccess: () => void;
+    // onReservationSuccess: () => void;
 }) {
     const { user } = useUser();
     const [reservationMessage, setReservationMessage] = useState<string | null>(null);
+
+    // Calculate total cost
+    const totalCost = 12500 * counts[0] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30 +
+        7000 * counts[1] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30 +
+        4750 * counts[2] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30;
+
+    // Check if user has enough points
+    const hasEnoughPoints = user && user.points && user.points >= totalCost;
     const handleReservation = async () => {
         if (!user) return;
+
+        // Check if user has enough points
+        if (!hasEnoughPoints) {
+            setReservationMessage('ポイントが不足しているため、予約を作成できません。');
+            return;
+        }
+
         // Format date as MySQL DATETIME string
         const now = new Date();
         const pad = (n: number) => n.toString().padStart(2, '0');
@@ -262,15 +364,41 @@ function OrderFinalConfirmationScreen({
             `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
         const hours = selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''));
         try {
+            // Calculate scheduled time based on selectedTime format
+            let scheduledTime: Date;
+            if (selectedTime.includes('時間後')) {
+                const customHours = parseInt(selectedTime.replace('時間後', ''));
+                scheduledTime = new Date(now.getTime() + customHours * 60 * 60 * 1000);
+            } else {
+                const minutes = parseInt(selectedTime.replace('分後', ''));
+                scheduledTime = new Date(now.getTime() + minutes * 60 * 1000);
+            }
+
             await createReservation({
                 guest_id: user.id,
-                scheduled_at: toMysqlDatetime(now),
+                scheduled_at: toMysqlDatetime(scheduledTime),
                 location: selectedArea,
                 duration: hours, // always a number, 4 if '4時間以上'
-                details: `VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, シチュ: ${selectedSituations.join(',')}, タイプ: ${selectedCastTypes.join(',')}, スキル: ${selectedCastSkills.join(',')}`,
+                details: `VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, プレミアム:${counts[2]}人, シチュ: ${selectedSituations.join(',')}, タイプ: ${selectedCastTypes.join(',')}, スキル: ${selectedCastSkills.join(',')}`,
                 time: selectedTime, // store the selected time
             });
             setReservationMessage('予約が完了しました');
+
+            // Trigger ranking update by fetching current rankings
+            try {
+                await fetchRanking({
+                    userType: 'guest',
+                    timePeriod: 'current',
+                    category: 'reservation',
+                    area: '全国'
+                });
+            } catch (error) {
+                console.log('Ranking refresh failed:', error);
+            }
+
+            // Navigate to main call screen after reservation
+            // onReservationSuccess();
+            onConfirmed();
         } catch {
             setReservationMessage('予約に失敗しました');
         }
@@ -376,10 +504,27 @@ function OrderFinalConfirmationScreen({
             </div>
             {/* Confirm button */}
             <div className="px-4 mt-4">
-                <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition" onClick={handleReservation}>
+                <button
+                    className={`w-full py-3 rounded-lg font-bold text-lg transition ${hasEnoughPoints
+                            ? 'bg-secondary text-white hover:bg-red-700'
+                            : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                        }`}
+                    onClick={handleReservation}
+                    disabled={!hasEnoughPoints}
+                >
                     予約を確定する
                 </button>
-                {reservationMessage && <div className="text-white text-center mt-2">{reservationMessage}</div>}
+                {!hasEnoughPoints && (
+                    <div className="text-red-400 text-center mt-2 text-sm">
+                        ポイントが不足しているため、予約を作成できません。
+                    </div>
+                )}
+                {reservationMessage && (
+                    <div className={`text-center mt-2 text-sm ${reservationMessage.includes('不足') ? 'text-red-400' : 'text-white'
+                        }`}>
+                        {reservationMessage}
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -400,7 +545,54 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
     const [selectedCastTypes, setSelectedCastTypes] = useState<string[]>([]);
     const [selectedCastSkills, setSelectedCastSkills] = useState<string[]>([]);
     const [page, setPage] = useState<'main' | 'orderHistory' | 'orderDetail' | 'orderFinal' | 'stepRequirement'>('main');
+    const [showAreaModal, setShowAreaModal] = useState(false);
     const [showMyOrder, setShowMyOrder] = useState(false);
+    const [showStepRequirement, setShowStepRequirement] = useState(false);
+
+    // Add state for applied casts
+    const [appliedCasts, setAppliedCasts] = useState<AppliedCast[]>([]);
+    const [loadingAppliedCasts, setLoadingAppliedCasts] = useState(false);
+    const { user } = useUser();
+
+    // Fetch applied casts when component mounts
+    useEffect(() => {
+        const fetchAppliedCasts = async () => {
+            if (!user?.id) return;
+
+            setLoadingAppliedCasts(true);
+            try {
+                const chats = await getGuestChats(user.id, 'guest');
+                // Transform chat data to get cast information and remove duplicates
+                const castMap = new Map();
+
+                chats.forEach((chat: any) => {
+                    const castId = chat.cast_id;
+                    if (castId && !castMap.has(castId)) {
+                        castMap.set(castId, {
+                            id: chat.id,
+                            cast_id: chat.cast_id,
+                            cast_nickname: chat.cast_nickname,
+                            avatar: chat.avatar,
+                            last_message: chat.last_message,
+                            updated_at: chat.updated_at,
+                            unread: chat.unread
+                        });
+                    }
+                });
+
+                const uniqueCasts = Array.from(castMap.values());
+                setAppliedCasts(uniqueCasts);
+            } catch (error) {
+                console.error('Failed to fetch applied casts:', error);
+                setAppliedCasts([]);
+            } finally {
+                setLoadingAppliedCasts(false);
+            }
+        };
+
+        fetchAppliedCasts();
+    }, [user?.id]);
+
     if (showMyOrder) return <MyOrderPage onBack={() => setShowMyOrder(false)} />;
     if (page === 'orderHistory') return (
         <OrderHistoryScreen
@@ -431,7 +623,9 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
     if (page === 'orderFinal') return (
         <OrderFinalConfirmationScreen
             onBack={() => setPage('orderDetail')}
-            onConfirmed={() => setPage('stepRequirement')}
+            onConfirmed={() => {
+                setPage('main');
+            }}
             selectedTime={selectedTime}
             selectedArea={selectedArea}
             counts={counts}
@@ -439,22 +633,36 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
             selectedSituations={selectedSituations}
             selectedCastTypes={selectedCastTypes}
             selectedCastSkills={selectedCastSkills}
-            onReservationSuccess={() => setPage('main')}
+        // onReservationSuccess={() => setPage('main')}
         />
     );
-    if (page === 'stepRequirement') return <StepRequirementScreen />;
+    if (showStepRequirement) return <StepRequirementScreen onBack={() => setShowStepRequirement(false)} />;
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-20">
             <div className="bg-secondary text-white px-4 py-2 text-lg font-bold">今すぐ呼ぶ</div>
+            <div className="flex flex-row items-center justify-between text-white px-4 py-2 text-md font-bold">
+                <div>
+                    ! ご利用準備が完了していません !
+                </div>
+                <div onClick={() => setShowStepRequirement(true)} className='cursor-pointer'>
+                    <ChevronRight />
+                </div>
+            </div>
             <div className="bg-primary px-4 py-2 flex flex-col gap-2 border-b border-secondary">
                 <div className="rounded-lg p-2 flex items-center justify-between">
                     <img src="/assets/icons/logo_call.png" alt="call logo" className="border-2 border-secondary bg-primary" />
                 </div>
                 {/* Area selection */}
                 <div className="flex items-center justify-between text-sm mt-2">
-                    <span className="text-white">選択中のエリア：<span className="font-bold text-white">東京 / 六本木</span></span>
-                    <button className="text-white">選択</button>
+                    <span className="text-white">選択中のエリア：<span className="font-bold text-white">{selectedArea}</span></span>
+                    <button className="text-white" onClick={() => setShowAreaModal(true)}>選択</button>
                 </div>
+                <AreaSelectModal
+                    isOpen={showAreaModal}
+                    onClose={() => setShowAreaModal(false)}
+                    onSelect={setSelectedArea}
+                    selectedArea={selectedArea}
+                />
             </div>
             {/* Quick Call */}
             <div className="bg-primary mt-3 px-4 py-4 rounded-lg mx-2 border border-secondary">
@@ -500,20 +708,84 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
                     <button className="text-white text-sm">すべて見る &gt;</button>
                 </div>
                 <div className="flex overflow-x-auto">
-                    {mockCasts.map((cast, idx) => (
-                        <div key={idx} className="bg-primary rounded-lg shadow p-2 min-w-[120px] flex-shrink-0 border border-secondary mr-2">
-                            <img src={cast.img} alt={cast.name} className="w-20 h-20 rounded-lg object-cover mb-1 border-2 border-secondary" />
-                            <div className="text-xs font-bold mb-1">
-                                <span className="bg-secondary text-white px-1 rounded">{cast.tag}</span>
+                    {loadingAppliedCasts ? (
+                        <div className="text-white text-sm">読み込み中...</div>
+                    ) : appliedCasts.length > 0 ? (
+                        appliedCasts.map((cast, idx) => (
+                            <div key={cast.id} className="bg-primary rounded-lg shadow p-2 min-w-[120px] flex-shrink-0 border border-secondary mr-2">
+                                <img
+                                    src={`${APP_BASE_URL}/${cast.avatar}`}
+                                    alt={cast.cast_nickname}
+                                    className="w-20 h-20 rounded-lg object-cover mb-1 border-2 border-secondary"
+                                />
+                                <div className="text-xs font-bold mb-1">
+                                    <span className="bg-secondary text-white px-1 rounded">プレミアム</span>
+                                </div>
+                                <div className="text-xs font-bold text-white">{cast.cast_nickname}</div>
                             </div>
-                            <div className="text-xs font-bold text-white">{cast.name} {cast.badge}</div>
-                            {cast.age && <div className="text-xs text-white">{cast.age} {cast.desc}</div>}
-                        </div>
-                    ))}
+                        ))
+                    ) : (
+                        <div className="text-white text-sm">まだキャストからの応募はありません</div>
+                    )}
                 </div>
             </div>
         </div>
     );
 };
+
+// Area selection modal
+function AreaSelectModal({ isOpen, onClose, onSelect, selectedArea }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onSelect: (area: string) => void;
+    selectedArea: string;
+}) {
+    const areaOptions = [
+        '東京都', '大阪府', '愛知県', '福岡県', '北海道'
+    ];
+    const [area, setArea] = useState(selectedArea);
+
+    // Keep modal in sync with prop
+    React.useEffect(() => { setArea(selectedArea); }, [selectedArea, isOpen]);
+
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-primary border border-secondary rounded-lg p-6 w-80 max-w-[90%]">
+                <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-white">エリアを選択</h3>
+                    <button onClick={onClose} className="text-white hover:text-gray-300">
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className="mb-6">
+                    <select
+                        className="w-full border rounded px-4 py-2 text-left border-secondary bg-primary text-white appearance-none focus:outline-none focus:ring-2 focus:ring-secondary"
+                        value={area}
+                        onChange={e => setArea(e.target.value)}
+                    >
+                        {areaOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="flex gap-2">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-2 border border-gray-700 text-white rounded hover:bg-gray-700"
+                    >
+                        キャンセル
+                    </button>
+                    <button
+                        onClick={() => { onSelect(area); onClose(); }}
+                        className="flex-1 bg-secondary text-white py-2 rounded hover:bg-red-700"
+                    >
+                        決定
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default CallScreen; 

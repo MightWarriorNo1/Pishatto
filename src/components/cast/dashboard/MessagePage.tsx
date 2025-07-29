@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-// import axios from 'axios'; // Remove axios, not needed
 import { ChevronLeft, Calendar, Image} from 'lucide-react';
 import MessageProposalPage from './MessageProposalPage';
-import { sendMessage, getChatMessages } from '../../../services/api';
+import { sendMessage, getChatMessages,getChatById, getGuestReservations } from '../../../services/api';
 import { getCastChats } from '../../../services/api';
 import { useChatMessages } from '../../../hooks/useRealtime';
+import dayjs from 'dayjs';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 interface Message {
@@ -20,7 +20,16 @@ interface MessageDetailProps {
     message: Message;
     onBack: () => void;
 }
-
+interface Proposal {
+    type: string;
+    date?: string;
+    people?: string;
+    duration?: string | number;
+    totalPoints?: number;
+    extensionPoints?: number;
+    reservationId?: number;
+    [key: string]: any;
+  }
 
 const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     const [messageProposal, setMessageProposal] = useState(false);
@@ -32,21 +41,49 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
     const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
-
-    // Fetch initial messages once
+    const [guestId, setGuestId] = useState<number | null>(null);
+    const [guestReservations, setGuestReservations] = useState<any[]>([]);
     useEffect(() => {
         const fetchMessages = async () => {
-            const msgs = await getChatMessages(Number(message.id));
+            const castIdStr = localStorage.getItem('castId');
+            const castId = castIdStr ? Number(castIdStr) : null;
+            if (!castId) return;
+            const msgs = await getChatMessages(Number(message.id), castId, 'cast');
             setMessages(Array.isArray(msgs) ? msgs : []);
         };
         fetchMessages();
+        // Fetch guest_id for this chat
+        getChatById(Number(message.id)).then(chat => {
+            if (chat && chat.guest_id) setGuestId(chat.guest_id);
+        });
     }, [message.id]);
+
+    // Fetch guest reservations only when guestId is available
+    useEffect(() => {
+        if (guestId == null) return;
+        getGuestReservations(guestId).then(setGuestReservations).catch(() => setGuestReservations([]));
+    }, [guestId]);
 
     // Real-time updates
     useChatMessages(message.id, (msg) => {
         setMessages((prev) => {
-            if (prev.some(m => m.id === msg.id)) return prev;
-            return [...prev, msg];
+            // Remove optimistic message if real one matches (by image or message and sender_cast_id)
+            // Also check for duplicate messages by ID to prevent duplicates
+            const filtered = prev.filter(m => {
+                // Remove optimistic messages that match the real message
+                if (m.id && m.id.toString().startsWith('optimistic-') &&
+                    ((m.image && msg.image && m.image === msg.image) ||
+                     (m.message && msg.message && m.message === msg.message)) &&
+                    String(m.sender_cast_id) === String(msg.sender_cast_id)) {
+                    return false;
+                }
+                // Remove duplicate messages by ID
+                if (m.id === msg.id) {
+                    return false;
+                }
+                return true;
+            });
+            return [...filtered, msg];
         });
     });
 
@@ -85,44 +122,54 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
             }
         }}
     />;
+
     return (
         <div className="max-w-md min-h-screen bg-primary">
-            {/* Header */}
+            {/* Header */}  
             <div className="flex items-center px-4 py-3 border-b border-secondary">
                 <button onClick={onBack} className="mr-2">
                     <ChevronLeft className="text-white" size={24} />
                 </button>
                 <div className="flex items-center">
-                    <img src={message.avatar} alt={message.name} className="w-8 h-8 rounded-full mr-2" />
+                    <img src={`${message.avatar}`} alt={message.name} className="w-8 h-8 rounded-full mr-2" />
                     <span className="text-lg font-bold text-white">{message.name}</span>
                 </div>
             </div>
 
             {/* Messages area */}
             {/* <div className="h-[calc(100vh-180px)] overflow-y-auto"> */}
-            <div className=" p-4">
+            <div className="p-4">
                 {(messages || []).map((msg, idx) => {
-                    let proposal = null;
+                    let proposal: Proposal | null = null;
                     try {
                         const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
                         if (parsed && parsed.type === 'proposal') proposal = parsed;
                     } catch (e) {}
                     if (proposal) {
+                        // Check if proposal is accepted by matching guest_id and scheduled_at
+                        const isAccepted = guestReservations.some(res =>
+                            res.guest_id === guestId &&
+                            dayjs(res.scheduled_at).isSame(proposal?.date)
+                        );
+                        console.log("IS ACCEPTED", isAccepted);
                         return (
                             <div key={msg.id || idx} className="flex justify-end mb-4">
-                                <div className="bg-orange-500 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md">
+                                <div className={`bg-orange-500 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative ${isAccepted ? 'opacity-50' : ''}`}>
                                     <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
-                                    <div>人数：{proposal.people.replace(/名$/, '')}人</div>
+                                    <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
                                     <div>時間：{proposal.duration}</div>
-                                    <div>消費ポイント：{proposal.totalPoints.toLocaleString()}P</div>
-                                    <div>（延長：{proposal.extensionPoints.toLocaleString()}P / 15分）</div>
+                                    <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
+                                    <div>（延長：{proposal.extensionPoints?.toLocaleString()}P / 15分）</div>
+                                    {isAccepted && (
+                                        <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">承認済み</span>
+                                    )}
                                 </div>
                             </div>
                         );
                     }
                     const castIdStr = localStorage.getItem('castId');
                     const castId = castIdStr ? Number(castIdStr) : null;
-                    const isSent = msg.sender_cast_id && castId && msg.sender_cast_id === castId;
+                    const isSent = String(msg.sender_cast_id) === String(castId);
                     return (
                         <div key={msg.id || idx} className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
                             <div className={isSent ? 'bg-secondary text-white rounded-lg px-4 py-2 max-w-[80%]' : 'bg-white text-black rounded-lg px-4 py-2 max-w-[80%]'}>
@@ -148,6 +195,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                     />
                                 )}
                                 {msg.message}
+                                <div className="text-xs text-gray-400 mt-1 text-right">{msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''}</div>
                             </div>
                         </div>
                     );
@@ -155,7 +203,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
             </div>
 
             {/* Input area */}
-            <div className="w-full max-w-md flex flex-col px-4 py-2 border-b border-secondary bg-primary">
+            <div className="bottom-0 w-full max-w-md flex flex-col px-4 py-2 border-b border-secondary bg-primary">
                 <div className="flex items-center mb-2">
                     
                     <input
@@ -176,8 +224,17 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                     };
                                     if (newMessage.trim()) payload.message = newMessage.trim();
                                     if (attachedFile) payload.image = attachedFile;
-                                    const sent = await sendMessage(payload);
-                                    setMessages((prev) => [...prev, sent]);
+
+                                    // Optimistically add the message (text or image)
+                                    const optimisticId = `optimistic-${Date.now()}`;
+                                    // setMessages(prev => [...prev, optimisticMsg]);
+
+                                    // Send to backend
+                                    const realMsg = await sendMessage(payload);
+
+                                    // Replace optimistic message with real one
+                                    setMessages(prev => prev.map(m => m.id === optimisticId ? realMsg : m));
+
                                     setNewMessage('');
                                     setAttachedFile(null);
                                     setImagePreview(null);
@@ -275,7 +332,10 @@ const MessagePage: React.FC = () => {
                             <div
                                 key={message.id}
                                 className="flex items-center p-4 cursor-pointer hover:bg-secondary/10"
-                                onClick={() => setSelectedMessage(message)}
+                                onClick={() => {
+                                    setSelectedMessage(message);
+                                    setMessages(prevMsgs => prevMsgs.map(m => m.id === message.id ? { ...m, unread: false } : m));
+                                }}
                             >
                                 <img src={message.avatar} alt={message.name} className="w-12 h-12 rounded-full mr-4" />
                                 <div className="flex-1">
@@ -285,9 +345,14 @@ const MessagePage: React.FC = () => {
                                             {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
-                                    {/* <div className="flex items-center">
-                                        <p className="text-sm text-gray-300 truncate">{message.lastMessage}</p>
-                                    </div> */}
+                                    <div className="flex items-center">
+                                        {/* <p className="text-sm text-gray-300 truncate">{message.lastMessage}</p> */}
+                                        {message.unread && (
+                                            <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
+                                                NEW
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))

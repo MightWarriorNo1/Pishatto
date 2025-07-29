@@ -26,11 +26,11 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
             onClick={() => onTabChange('message')}
           >
             <MessageSquareMore />
-            {messageCount > 0 && (
+            {/* {messageCount > 0 && (
               <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                 {messageCount}
               </span>
-            )}
+            )} */}
             <span className="text-xs mt-1">メッセージ</span>
           </button>
           <button

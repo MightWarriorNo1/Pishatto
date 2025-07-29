@@ -1,32 +1,68 @@
-import React, { useState } from 'react';
-import { Heart, SlidersHorizontal, Bell, MessageCircleQuestionMark, ChevronLeft } from 'lucide-react';
-import { getRepeatGuests, RepeatGuest, getGuestProfileById, GuestProfile } from '../../services/api';
+import React, { useEffect, useState } from 'react';
+import { Heart, SlidersHorizontal, Bell, MessageCircleQuestionMark, ChevronLeft, MessageSquare, X } from 'lucide-react';
+import { getRepeatGuests, RepeatGuest, getGuestProfileById, GuestProfile, likeGuest, createChat, sendCastMessage, getLikeStatus, fetchRanking, recordGuestVisit } from '../../services/api';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 // GuestDetailPage component
 type GuestDetailPageProps = { onBack: () => void; guest: RepeatGuest };
+
 const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
     const [showEasyMessage, setShowEasyMessage] = useState(false);
     const [profile, setProfile] = useState<GuestProfile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [liked, setLiked] = useState(false);
+    const [messageLoading, setMessageLoading] = useState(false);
+    const castId = Number(localStorage.getItem('castId'));
     React.useEffect(() => {
         getGuestProfileById(guest.id).then(setProfile).finally(() => setLoading(false));
+        setLiked(false); // Reset like state on guest change
     }, [guest.id]);
+    
+    // Record visit when cast views guest profile
+    useEffect(() => {
+        if (castId && guest.id) {
+            recordGuestVisit(castId, guest.id);
+        }
+    }, [castId, guest.id]);
+    
+    useEffect(()=>{
+        likeStatus();
+    },[castId, guest.id]);
+    
     const avatarSrc = guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png';
     if (showEasyMessage) {
         return <EasyMessagePage onClose={() => setShowEasyMessage(false)} />
     }
+    const handleLike = async () => {
+        const res = await likeGuest(castId, guest.id);
+        if (res.liked) setLiked(true);
+    };
+
+    const likeStatus = async () => {
+        const res = await getLikeStatus(castId, guest.id);
+        if (res.liked) setLiked(true);
+        else setLiked(false);
+    };
+    const handleMessage = async () => {
+        setMessageLoading(true);
+        try {
+            const chatRes = await createChat(castId, guest.id);
+            const chatId = chatRes.chat.id;
+            await sendCastMessage(chatId, castId, '👍');
+        } finally {
+            setMessageLoading(false);
+        }
+    };
+
     return (
         <div className="max-w-md  bg-primary min-h-screen pb-8 auto">
-            {/* Header with back button */}
             <div className="flex items-center px-2 pt-2 pb-2">
                 <button onClick={onBack} className="text-2xl text-white font-bold">
                     <ChevronLeft />
                 </button>
             </div>
-            {/* Main image */}
             <div className="w-full h-48 bg-primary flex items-center justify-center border-b border-secondary">
-                <img src={avatarSrc} alt="guest_detail" className="object-contain h-full mx-auto" />
+                <img src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'} alt="guest_detail" className="object-contain h-full mx-auto" />
             </div>
             {/* Badge */}
             <div className="px-4 mt-2">
@@ -34,7 +70,7 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
             </div>
             {/* Profile card */}
             <div className="flex items-center px-4 py-2 mt-2 bg-primary rounded shadow border border-secondary">
-                <img src={avatarSrc} alt="guest_thumb" className="w-10 h-10 rounded mr-2 border-2 border-secondary" />
+                <img src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'} alt="guest_thumb" className="w-10 h-10 rounded mr-2 border-2 border-secondary" />
                 <div>
                     <div className="font-bold text-sm text-white">{profile ? profile.nickname : guest.nickname}</div>
                     <div className="text-xs text-white">{profile ? profile.occupation : ''}</div>
@@ -64,15 +100,24 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
             </div>
             {/* Like button */}
             <div className="px-4 py-2">
-                <button className="w-full border border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" onClick={() => setShowEasyMessage(true)}>
-                    <span className="mr-2">
-                        <Heart /></span>
-                    <span className="text-base">
-                    </span>いいね
-                </button>
+                {!liked ? (
+                    <button className="w-full border border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" onClick={handleLike}>
+                        <span className="mr-2">
+                            <Heart /></span>
+                        <span className="text-base">
+                        </span>いいね
+                    </button>
+                ) : (
+                    <button className="w-full border bg-secondary border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" onClick={handleMessage} disabled={messageLoading}>
+                        <span className="mr-2">
+                            <MessageSquare /></span>
+                        <span className="text-base">
+                        </span>メッセージ
+                    </button>
+                )}
             </div>
             {/* Recent post */}
-            <div className="px-4 pt-4">
+            {/* <div className="px-4 pt-4">
                 <div className="font-bold text-sm mb-1 text-white">最近のつぶやき</div>
                 <div className="flex items-center mb-1">
                     <img src={avatarSrc} alt="guest_thumb" className="w-6 h-6 rounded mr-2 border-2 border-secondary" />
@@ -81,67 +126,378 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
                     <span className="ml-auto text-white text-lg">❤ 1</span>
                 </div>
                 <div className="text-xs text-white">よろしくお願いします！</div>
+            </div> */}
+        </div>
+    );
+};
+
+// Filter Modal Component
+const FilterModal: React.FC<{ 
+    isOpen: boolean; 
+    onClose: () => void; 
+    filters: FilterOptions; 
+    onApplyFilters: (filters: FilterOptions) => void;
+}> = ({ isOpen, onClose, filters, onApplyFilters }) => {
+    const [localFilters, setLocalFilters] = useState<FilterOptions>(filters);
+
+    const handleApply = () => {
+        onApplyFilters(localFilters);
+        onClose();
+    };
+
+    const handleReset = () => {
+        const defaultFilters: FilterOptions = {
+            region: '全国',
+            ageRange: { min: 18, max: 80 },
+            category: 'gift',
+            timePeriod: 'current',
+            userType: 'guest',
+            minPoints: 0,
+            maxPoints: 10000
+        };
+        setLocalFilters(defaultFilters);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-primary border border-secondary rounded-lg p-6 w-80 max-h-[80vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-white">フィルター</h2>
+                    <button onClick={onClose} className="text-white">
+                        <X size={24} />
+                    </button>
+                </div>
+
+                {/* Region Filter */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-white mb-2">地域</label>
+                    <select
+                        value={localFilters.region}
+                        onChange={(e) => setLocalFilters({...localFilters, region: e.target.value})}
+                        className="w-full bg-primary border border-secondary rounded px-3 py-2 text-white"
+                    >
+                        <option value="全国">全国</option>
+                        <option value="北海道">北海道</option>
+                        <option value="東京都">東京都</option>
+                        <option value="大阪府">大阪府</option>
+                        <option value="愛知県">愛知県</option>
+                        <option value="福岡県">福岡県</option>
+                    </select>
+                </div>
+
+                {/* Age Range Filter */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-white mb-2">年齢範囲</label>
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="number"
+                            value={localFilters.ageRange.min}
+                            onChange={(e) => setLocalFilters({
+                                ...localFilters, 
+                                ageRange: {...localFilters.ageRange, min: parseInt(e.target.value) || 18}
+                            })}
+                            className="w-20 bg-primary border border-secondary rounded px-2 py-1 text-white text-center"
+                            min="18"
+                            max="80"
+                        />
+                        <span className="text-white">〜</span>
+                        <input
+                            type="number"
+                            value={localFilters.ageRange.max}
+                            onChange={(e) => setLocalFilters({
+                                ...localFilters, 
+                                ageRange: {...localFilters.ageRange, max: parseInt(e.target.value) || 80}
+                            })}
+                            className="w-20 bg-primary border border-secondary rounded px-2 py-1 text-white text-center"
+                            min="18"
+                            max="80"
+                        />
+                        <span className="text-white text-sm">歳</span>
+                    </div>
+                </div>
+
+                {/* Category Filter */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-white mb-2">カテゴリー</label>
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => setLocalFilters({...localFilters, category: 'gift'})}
+                            className={`px-3 py-1 rounded text-sm font-medium ${
+                                localFilters.category === 'gift' 
+                                    ? 'bg-secondary text-white' 
+                                    : 'bg-primary text-white border border-secondary'
+                            }`}
+                        >
+                            ギフト
+                        </button>
+                        <button
+                            onClick={() => setLocalFilters({...localFilters, category: 'reservation'})}
+                            className={`px-3 py-1 rounded text-sm font-medium ${
+                                localFilters.category === 'reservation' 
+                                    ? 'bg-secondary text-white' 
+                                    : 'bg-primary text-white border border-secondary'
+                            }`}
+                        >
+                            予約
+                        </button>
+                    </div>
+                </div>
+
+                {/* Time Period Filter */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-white mb-2">期間</label>
+                    <select
+                        value={localFilters.timePeriod}
+                        onChange={(e) => setLocalFilters({...localFilters, timePeriod: e.target.value})}
+                        className="w-full bg-primary border border-secondary rounded px-3 py-2 text-white"
+                    >
+                        <option value="current">今月</option>
+                        <option value="yesterday">昨日</option>
+                        <option value="lastWeek">先週</option>
+                        <option value="lastMonth">先月</option>
+                        <option value="allTime">全期間</option>
+                    </select>
+                </div>
+
+                {/* User Type Filter */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-white mb-2">ユーザータイプ</label>
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => setLocalFilters({...localFilters, userType: 'cast'})}
+                            className={`px-3 py-1 rounded text-sm font-medium ${
+                                localFilters.userType === 'cast' 
+                                    ? 'bg-secondary text-white' 
+                                    : 'bg-primary text-white border border-secondary'
+                            }`}
+                        >
+                            キャスト
+                        </button>
+                        <button
+                            onClick={() => setLocalFilters({...localFilters, userType: 'guest'})}
+                            className={`px-3 py-1 rounded text-sm font-medium ${
+                                localFilters.userType === 'guest' 
+                                    ? 'bg-secondary text-white' 
+                                    : 'bg-primary text-white border border-secondary'
+                            }`}
+                        >
+                            ゲスト
+                        </button>
+                    </div>
+                </div>
+
+                {/* Points Range Filter */}
+                <div className="mb-6">
+                    <label className="block text-sm font-medium text-white mb-2">ポイント範囲</label>
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="number"
+                            value={localFilters.minPoints}
+                            onChange={(e) => setLocalFilters({
+                                ...localFilters, 
+                                minPoints: parseInt(e.target.value) || 0
+                            })}
+                            className="w-20 bg-primary border border-secondary rounded px-2 py-1 text-white text-center"
+                            min="0"
+                        />
+                        <span className="text-white">〜</span>
+                        <input
+                            type="number"
+                            value={localFilters.maxPoints}
+                            onChange={(e) => setLocalFilters({
+                                ...localFilters, 
+                                maxPoints: parseInt(e.target.value) || 10000
+                            })}
+                            className="w-20 bg-primary border border-secondary rounded px-2 py-1 text-white text-center"
+                            min="0"
+                        />
+                        <span className="text-white text-sm">pt</span>
+                    </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-2">
+                    <button
+                        onClick={handleReset}
+                        className="flex-1 bg-primary border border-secondary text-white rounded py-2 font-medium"
+                    >
+                        リセット
+                    </button>
+                    <button
+                        onClick={handleApply}
+                        className="flex-1 bg-secondary text-white rounded py-2 font-medium"
+                    >
+                        適用
+                    </button>
+                </div>
             </div>
         </div>
     );
 };
 
-// RankingPage component (unchanged)
+// Filter Options Type
+interface FilterOptions {
+    region: string;
+    ageRange: { min: number; max: number };
+    category: string;
+    timePeriod: string;
+    userType: string;
+    minPoints: number;
+    maxPoints: number;
+}
+
+// Ranking Data Type
+interface RankingItem {
+    id: number;
+    rank: number;
+    name: string;
+    nickname?: string;
+    age: number | null;
+    avatar: string;
+    points: number;
+    region?: string;
+}
+
+// RankingPage component (updated with filters)
 const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [mainTab, setMainTab] = useState<'cast' | 'guest'>('guest');
     const [region, setRegion] = useState('全国');
     const [category, setCategory] = useState('ギフト');
     const [dateTab, setDateTab] = useState('昨日');
-    const rankingData: Record<string, Array<{ rank: number, name: string, age: number | null, avatar: string }>> = {
-        "今月": [
-            { rank: 1, name: "キンさん", age: 46, avatar: "/assets/avatar/avatar-1.png" },
-            { rank: 2, name: "タケシ", age: null, avatar: "/assets/avatar/2.jpg" },
-            { rank: 3, name: "リサ", age: 25, avatar: "/assets/avatar/avatar-2.png" },
-            { rank: 4, name: "マイク", age: 40, avatar: "/assets/avatar/man.png" },
-            { rank: 5, name: "エミ", age: 22, avatar: "/assets/avatar/female.png" },
-        ],
-        "昨日": [
-            { rank: 1, name: "さくら", age: 28, avatar: "/assets/avatar/1.jpg" },
-            { rank: 2, name: "ジョン", age: 32, avatar: "/assets/avatar/knight_3275232.png" },
-            { rank: 3, name: "R491TBD", age: null, avatar: "/assets/avatar/avatar-2.png" },
-            { rank: 4, name: "m(_ _)m", age: 34, avatar: "/assets/avatar/avatar-1.png" },
-            { rank: 5, name: "スカイ", age: null, avatar: "/assets/avatar/francesco-ZxNKxnR32Ng-unsplash.jpg" },
-        ],
-        "先週": [
-            { rank: 1, name: "リナ", age: 30, avatar: "/assets/avatar/ian-robinson-DfKZs6DOrw4-unsplash.jpg" },
-            { rank: 2, name: "タケシ", age: null, avatar: "/assets/avatar/2.jpg" },
-            { rank: 3, name: "R491TBD", age: null, avatar: "/assets/avatar/avatar-2.png" },
-            { rank: 4, name: "マイク", age: 40, avatar: "/assets/avatar/man.png" },
-            { rank: 5, name: "エミ", age: 22, avatar: "/assets/avatar/female.png" },
-        ],
-        "先月": [
-            { rank: 1, name: "アキラ", age: 35, avatar: "/assets/avatar/jf-brou-915UJQaxtrk-unsplash.jpg" },
-            { rank: 2, name: "ジョン", age: 32, avatar: "/assets/avatar/knight_3275232.png" },
-            { rank: 3, name: "リサ", age: 25, avatar: "/assets/avatar/avatar-2.png" },
-            { rank: 4, name: "m(_ _)m", age: 34, avatar: "/assets/avatar/avatar-1.png" },
-            { rank: 5, name: "スカイ", age: null, avatar: "/assets/avatar/francesco-ZxNKxnR32Ng-unsplash.jpg" },
-        ],
-        "全期間": [
-            { rank: 1, name: "ユウタ", age: 29, avatar: "/assets/avatar/harald-hofer-pKoKW6UQOuk-unsplash.jpg" },
-            { rank: 2, name: "タケシ", age: null, avatar: "/assets/avatar/2.jpg" },
-            { rank: 3, name: "リサ", age: 25, avatar: "/assets/avatar/avatar-2.png" },
-            { rank: 4, name: "マイク", age: 40, avatar: "/assets/avatar/man.png" },
-            { rank: 5, name: "エミ", age: 22, avatar: "/assets/avatar/female.png" },
-        ],
-    };
-    const categories = ['総合', 'パトフリー一覧', 'コパト', 'ギフト'];
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [rankingData, setRankingData] = useState<RankingItem[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [filters, setFilters] = useState<FilterOptions>({
+        region: '全国',
+        ageRange: { min: 18, max: 80 },
+        category: 'gift',
+        timePeriod: 'current',
+        userType: 'guest',
+        minPoints: 0,
+        maxPoints: 10000
+    });
+
+    const categories = ['ギフト', '予約'];
     const dateTabs = ['今月', '昨日', '先週', '先月', '全期間'];
-    const ranking = rankingData[dateTab] || [];
+
+    // Map frontend category names to backend
+    const getBackendCategory = (frontendCategory: string) => {
+        if (frontendCategory === 'ギフト') return 'gift';
+        if (frontendCategory === '予約') return 'reservation';
+        return 'gift';
+    };
+
+    // Map frontend date tabs to backend time periods
+    const getBackendTimePeriod = (frontendDateTab: string) => {
+        const mapping: Record<string, string> = {
+            '今月': 'current',
+            '昨日': 'yesterday',
+            '先週': 'lastWeek',
+            '先月': 'lastMonth',
+            '全期間': 'allTime'
+        };
+        return mapping[frontendDateTab] || 'current';
+    };
+
+    // Fetch ranking data from backend
+    const fetchRankingData = async () => {
+        setLoading(true);
+        try {
+            const backendCategory = getBackendCategory(category);
+            const backendTimePeriod = getBackendTimePeriod(dateTab);
+            
+            const response = await fetchRanking({
+                userType: mainTab,
+                timePeriod: backendTimePeriod,
+                category: backendCategory,
+                area: region
+            });
+
+            // Transform backend data to frontend format
+            const transformedData: RankingItem[] = response.data.map((item: any, index: number) => ({
+                id: item.id || item.user_id || index + 1,
+                rank: index + 1,
+                name: item.name || item.nickname || 'Unknown',
+                nickname: item.nickname,
+                age: item.age || null,
+                avatar: item.avatar || '/assets/avatar/female.png',
+                points: item.points || 0,
+                region: item.region || region
+            }));
+
+            // Apply filters
+            const filteredData = transformedData.filter(item => {
+                // Age filter
+                if (item.age && (item.age < filters.ageRange.min || item.age > filters.ageRange.max)) {
+                    return false;
+                }
+                
+                // Points filter
+                if (item.points < filters.minPoints || item.points > filters.maxPoints) {
+                    return false;
+                }
+
+                // Region filter (if not "全国")
+                if (filters.region !== '全国' && item.region && item.region !== filters.region) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            setRankingData(filteredData);
+        } catch (error) {
+            console.error('Failed to fetch ranking data:', error);
+            // Fallback to mock data if API fails
+            setRankingData([
+                { id: 1, rank: 1, name: "キンさん", age: 46, avatar: "/assets/avatar/avatar-1.png", points: 1000 },
+                { id: 2, rank: 2, name: "タケシ", age: null, avatar: "/assets/avatar/2.jpg", points: 800 },
+                { id: 3, rank: 3, name: "リサ", age: 25, avatar: "/assets/avatar/avatar-2.png", points: 600 },
+                { id: 4, rank: 4, name: "マイク", age: 40, avatar: "/assets/avatar/man.png", points: 400 },
+                { id: 5, rank: 5, name: "エミ", age: 22, avatar: "/assets/avatar/female.png", points: 200 },
+            ]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Apply filters
+    const handleApplyFilters = (newFilters: FilterOptions) => {
+        setFilters(newFilters);
+        // Update local state to reflect filter changes
+        setRegion(newFilters.region);
+        setCategory(newFilters.category === 'gift' ? 'ギフト' : '予約');
+        setDateTab(newFilters.timePeriod === 'current' ? '今月' : 
+                   newFilters.timePeriod === 'yesterday' ? '昨日' :
+                   newFilters.timePeriod === 'lastWeek' ? '先週' :
+                   newFilters.timePeriod === 'lastMonth' ? '先月' : '全期間');
+        setMainTab(newFilters.userType as 'cast' | 'guest');
+    };
+
+    // Fetch data when filters change
+    useEffect(() => {
+        fetchRankingData();
+    }, [mainTab, region, category, dateTab, filters]);
+
     return (
-        <div className="max-w-md mx-auto pb-8 bg-primary min-h-screen">
+        <div className="max-w-md pb-8 bg-primary min-h-screen">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-secondary">
                 <button onClick={onBack} className="text-2xl text-white font-bold">
                     <ChevronLeft />
                 </button>
                 <span className="text-lg font-bold text-white">ランキング</span>
-                <span></span>
+                <button 
+                    onClick={() => setShowFilterModal(true)}
+                    className="flex items-center bg-secondary text-white rounded-full px-3 py-1 text-sm font-bold"
+                >
+                    <SlidersHorizontal size={16} className="mr-1" />
+                    フィルター
+                </button>
             </div>
+
             {/* Main Tabs */}
             <div className="flex items-center space-x-2 px-4 py-3">
                 <button onClick={() => setMainTab('cast')} className={`px-4 py-2 rounded-lg font-bold ${mainTab === 'cast' ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}>キャスト</button>
@@ -158,16 +514,18 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <option value="東京都">東京都</option>
                         <option value="大阪府">大阪府</option>
                         <option value="愛知県">愛知県</option>
-                        {/* Add more regions as needed */}
+                        <option value="福岡県">福岡県</option>
                     </select>
                 </div>
             </div>
+
             {/* Category Buttons */}
             <div className="flex space-x-2 px-4 pb-2">
                 {categories.map(cat => (
                     <button key={cat} onClick={() => setCategory(cat)} className={`px-4 py-1 rounded-lg font-bold border border-secondary ${category === cat ? 'bg-secondary text-white' : 'bg-primary text-white'}`}>{cat}</button>
                 ))}
             </div>
+
             {/* Date Tabs */}
             <div className="px-4 mt-4 mx-auto w-full">
                 <div className='flex text-sm w-full'>
@@ -176,38 +534,77 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     ))}
                 </div>
             </div>
+
+            {/* Active Filters Display */}
+            {(filters.region !== '全国' || filters.ageRange.min !== 18 || filters.ageRange.max !== 80 || filters.minPoints > 0 || filters.maxPoints < 10000) && (
+                <div className="px-4 py-2 bg-secondary bg-opacity-20 border-b border-secondary">
+                    <div className="text-xs text-white">
+                        フィルター適用中: 
+                        {filters.region !== '全国' && ` 地域: ${filters.region}`}
+                        {(filters.ageRange.min !== 18 || filters.ageRange.max !== 80) && ` 年齢: ${filters.ageRange.min}-${filters.ageRange.max}歳`}
+                        {(filters.minPoints > 0 || filters.maxPoints < 10000) && ` ポイント: ${filters.minPoints}-${filters.maxPoints}pt`}
+                    </div>
+                </div>
+            )}
+
             {/* Ranking List */}
             <div className="pt-4">
-                {ranking.map((user, idx) => (
-                    user.rank === 1 ? (
-                        <div key={user.rank} className="flex flex-col items-center px-4 py-4">
-                            <div className="flex items-center mb-2 w-full">
-                                <div className="w-6 h-6 bg-secondary text-white flex items-center justify-center rounded font-bold mr-2">{user.rank}</div>
-                            </div>
-                            <div className="flex flex-col items-center w-full">
-                                <div className="w-28 h-28 rounded-full border-4 border-secondary overflow-hidden mb-2">
-                                    <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                        <div className="text-white">ローディング中...</div>
+                    </div>
+                ) : rankingData.length === 0 ? (
+                    <div className="flex items-center justify-center py-8">
+                        <div className="text-white">該当するランキングデータがありません</div>
+                    </div>
+                ) : (
+                    rankingData.map((user, idx) => (
+                        user.rank === 1 ? (
+                            <div key={user.id} className="flex flex-col items-center px-4 py-4">
+                                <div className="flex items-center mb-2 w-full">
+                                    <div className="w-6 h-6 bg-secondary text-white flex items-center justify-center rounded font-bold mr-2">{user.rank}</div>
+                                    <div className="text-xs text-white ml-auto">{user.points}pt</div>
                                 </div>
-                                <div className="text-lg font-bold text-white">{user.name}{user.age && `　${user.age}歳`}</div>
+                                <div className="flex flex-col items-center w-full">
+                                    <div className="w-28 h-28 rounded-full border-4 border-secondary overflow-hidden mb-2">
+                                        <img src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_BASE_URL}/${user.avatar}`) : '/assets/avatar/female.png'} alt={user.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="text-lg font-bold text-white">{user.name}{user.age && `　${user.age}歳`}</div>
+                                    {user.region && user.region !== '全国' && (
+                                        <div className="text-sm text-white opacity-70">{user.region}</div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    ) : (
-                        <div key={user.rank} className="flex items-center px-4 py-2 border-b border-secondary">
-                            <div className={`flex items-center justify-center w-8 h-8 text-lg font-bold ${user.rank === 2 ? 'text-white bg-primary border border-secondary rounded' : user.rank === 3 ? 'text-white bg-secondary rounded' : 'text-white bg-primary border border-secondary rounded'}`}>{user.rank}</div>
-                            <div className="mx-4">
-                                {user.avatar ? (
-                                    <img src={user.avatar} alt={user.name} className="w-16 h-16 rounded-full border-4 border-transparent" />
-                                ) : (
-                                    <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl text-white">👤</div>
-                                )}
+                        ) : (
+                            <div key={user.id} className="flex items-center px-4 py-2 border-b border-secondary">
+                                <div className={`flex items-center justify-center w-8 h-8 text-lg font-bold ${user.rank === 2 ? 'text-white bg-primary border border-secondary rounded' : user.rank === 3 ? 'text-white bg-secondary rounded' : 'text-white bg-primary border border-secondary rounded'}`}>{user.rank}</div>
+                                <div className="mx-4">
+                                    {user.avatar ? (
+                                        <img src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_BASE_URL}/${user.avatar}`) : '/assets/avatar/female.png'} alt={user.name} className="w-16 h-16 rounded-full border-4 border-transparent" />
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl text-white">👤</div>
+                                    )}
+                                </div>
+                                <div className="flex-1">
+                                    <div className="text-base font-bold text-white">{user.name}{user.age && `　${user.age}歳`}</div>
+                                    {user.region && user.region !== '全国' && (
+                                        <div className="text-sm text-white opacity-70">{user.region}</div>
+                                    )}
+                                </div>
+                                <div className="text-sm text-white">{user.points}pt</div>
                             </div>
-                            <div className="flex-1">
-                                <div className="text-base font-bold text-white">{user.name}{user.age && `　${user.age}歳`}</div>
-                            </div>
-                        </div>
-                    )
-                ))}
+                        )
+                    ))
+                )}
             </div>
+
+            {/* Filter Modal */}
+            <FilterModal
+                isOpen={showFilterModal}
+                onClose={() => setShowFilterModal(false)}
+                filters={filters}
+                onApplyFilters={handleApplyFilters}
+            />
         </div>
     );
 };

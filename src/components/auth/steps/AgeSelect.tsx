@@ -31,7 +31,7 @@ const AgeSelect: React.FC<AgeSelectProps> = ({
                 {ageOptions.map(opt => (
                     <button
                         key={opt}
-                        className={`px-4 py-3 rounded-full border font-bold text-lg ${selected === opt ? 'bg-primary text-white border-secondary' : 'bg-primary text-white border-secondary'}`}
+                        className={`px-4 py-3 rounded-full border font-bold text-lg ${selected === opt ? 'bg-secondary text-white border-secondary' : 'bg-primary text-white border-primary'}`}
                         onClick={() => setSelected(opt)}
                     >
                         {opt}

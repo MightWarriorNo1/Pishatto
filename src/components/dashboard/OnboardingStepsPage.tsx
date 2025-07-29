@@ -1,6 +1,34 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useUser } from '../../contexts/UserContext';
+import { getPaymentInfo } from '../../services/api';
 
 const OnboardingStepsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const { user } = useUser();
+    const [hasRegisteredCard, setHasRegisteredCard] = useState<boolean | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (user?.id) {
+            checkRegisteredCards();
+        } else {
+            setLoading(false);
+        }
+    }, [user?.id]);
+
+    const checkRegisteredCards = async () => {
+        if (!user?.id) return;
+
+        try {
+            const paymentInfo = await getPaymentInfo('guest', user.id);
+            setHasRegisteredCard(!!paymentInfo?.has_registered_cards);
+        } catch (error) {
+            console.error('Failed to check registered cards:', error);
+            setHasRegisteredCard(false);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
             {/* Top bar */}
@@ -31,7 +59,7 @@ const OnboardingStepsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
             </div>
             {/* Step 2: Credit card registration */}
-            <div className="bg-primary rounded-xl mx-4 mb-4 overflow-hidden border border-secondary">
+            <div className="relative bg-primary rounded-xl mx-4 mb-4 overflow-hidden border border-secondary">
                 <div className="flex items-center px-6 py-6">
                     <svg width="48" height="48" fill="none" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3" fill="#e5e7eb" /><rect x="2" y="10" width="20" height="2" fill="#fff" /><rect x="6" y="14" width="4" height="2" rx="1" fill="#fff" /></svg>
                     <div className="ml-4">
@@ -39,7 +67,18 @@ const OnboardingStepsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <div className="text-lg font-bold text-white">クレジットカード登録</div>
                     </div>
                 </div>
-                <div className="border-t border-secondary px-6 py-3 text-orange-400 font-bold cursor-pointer">登録する</div>
+                {hasRegisteredCard && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-primary bg-opacity-40 rounded-xl">
+                        <div className="text-white text-lg font-bold mb-2">クレジットカード登録</div>
+                        <div className="text-white text-xl font-bold flex items-center gap-2 mb-2">
+                            <svg width="28" height="28" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="12" fill="#fff" /><path d="M7 13l3 3 7-7" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                            登録済み
+                        </div>
+                    </div>
+                )}
+                {!hasRegisteredCard && (
+                    <div className="border-t border-secondary px-6 py-3 text-orange-400 font-bold cursor-pointer">登録する</div>
+                )}
             </div>
             {/* Step 3: Identity verification */}
             <div className="bg-primary rounded-xl mx-4 mb-4 overflow-hidden border border-secondary">

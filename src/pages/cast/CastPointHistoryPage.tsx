@@ -92,13 +92,12 @@ const history = [
     },
 ];
 
-const CastPointHistoryPage: React.FC = () => {
-    const navigate = useNavigate();
+const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
+        <div className="max-w-md min-h-screen bg-primary pb-8">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b border-secondary bg-primary">
-                <button className="mr-2 text-2xl text-white" onClick={() => navigate(-1)}>
+                <button className="mr-2 text-2xl text-white" onClick={onBack}>
                     <ChevronLeft />
                 </button>
                 <span className="text-lg font-bold flex-1 text-center text-white">売上履歴一覧</span>

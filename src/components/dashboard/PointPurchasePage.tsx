@@ -1,43 +1,98 @@
-import React, { useState } from 'react';
-import { purchasePoints } from '../../services/api';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
+import PayJPPaymentForm from '../payment/PayJPPaymentForm';
+import { ChevronLeft } from 'lucide-react';
+import { getPaymentInfo } from '../../services/api';
 
-const amounts = [1000, 3000, 5000, 10000];
+const amounts = [ 3000, 5000, 10000];
 
 const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
-  const { user } = useUser();
+  const navigate = useNavigate();
+  const { user, refreshUser } = useUser();
   const [selectedAmount, setSelectedAmount] = useState<number>(amounts[0]);
-  const [loading, setLoading] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [paymentLink, setPaymentLink] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const [hasRegisteredCard, setHasRegisteredCard] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const handlePurchase = async () => {
+  useEffect(() => {
+    checkRegisteredCards();
+  }, [user?.id]);
+
+  const handlePurchase = () => {
     if (!user) return;
-    setLoading(true);
+    setShowPaymentForm(true);
     setError(null);
-    setPaymentLink(null);
-    setStatus(null);
-    try {
-      const res = await purchasePoints(user.id, 'guest', selectedAmount);
-      if (res.payment_link) {
-        setPaymentLink(res.payment_link);
-        setStatus('支払いリンクが生成されました。リンクをクリックして決済を完了してください。');
-      } else {
-        setStatus('決済が完了しました。');
-      }
-    } catch (e) {
-      setError('ポイント購入に失敗しました');
-    } finally {
-      setLoading(false);
-    }
+    setPaymentStatus(null);
   };
+
+  const checkRegisteredCards = async () => {
+    if (!user?.id) return;
+
+    try {
+        const paymentInfo = await getPaymentInfo('guest', user.id);
+        console.log('paymentInfo', paymentInfo);
+        setHasRegisteredCard(!!paymentInfo?.card_count);
+    } catch (error) {
+        console.error('Failed to check registered cards:', error);
+        setHasRegisteredCard(false);
+    } finally {
+        setLoading(false);
+    }
+};
+
+  const handlePaymentSuccess = (payment: any) => {
+    setPaymentStatus('決済が完了しました！');
+    setShowPaymentForm(false);
+    // Refresh user data to update points
+    refreshUser();
+    
+    // Navigate to profile page after successful purchase
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 2000); // Wait 2 seconds to show success message
+  };
+
+  const handlePaymentError = (errorMessage: string) => {
+    setError(errorMessage);
+    setShowPaymentForm(false);
+  };
+
+  const handlePaymentCancel = () => {
+    setShowPaymentForm(false);
+    setError(null);
+  };
+
+  if (showPaymentForm) {
+    return (
+      <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
+        <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
+          <button onClick={handlePaymentCancel} className="mr-2 text-2xl text-white">&#60;</button>
+          <span className="text-lg font-bold flex-1 text-center text-white">決済</span>
+        </div>
+        <div className="p-6">
+          <PayJPPaymentForm
+            amount={selectedAmount}
+            onSuccess={handlePaymentSuccess}
+            onError={handlePaymentError}
+            onCancel={handlePaymentCancel}
+            userType="guest"
+            userId={user?.id}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
       <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
         {onBack && (
-          <button onClick={onBack} className="mr-2 text-2xl text-white">&#60;</button>
+          <button onClick={onBack} className="mr-2 text-2xl text-white">
+            <ChevronLeft />
+          </button>
         )}
         <span className="text-lg font-bold flex-1 text-center text-white">ポイント購入</span>
       </div>
@@ -54,20 +109,15 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             </button>
           ))}
         </div>
+        
         <button
           className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition mb-4"
           onClick={handlePurchase}
-          disabled={loading}
         >
-          {loading ? '購入中...' : '購入する'}
+          購入する
         </button>
         {error && <div className="text-red-400 text-center mb-2">{error}</div>}
-        {status && <div className="text-white text-center mb-2">{status}</div>}
-        {paymentLink && (
-          <div className="text-center mt-4">
-            <a href={paymentLink} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline font-bold">支払いリンクを開く</a>
-          </div>
-        )}
+        {paymentStatus && <div className="text-green-400 text-center mb-2">{paymentStatus}</div>}
       </div>
     </div>
   );

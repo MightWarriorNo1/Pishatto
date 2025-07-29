@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../../contexts/UserContext';
 import { guestLogin, fetchAllGuestPhones, getGuestProfile } from '../../../services/api';
+import { ChevronLeft } from 'lucide-react';
 
 interface PhoneVerificationData {
   phoneNumber?: string;
@@ -44,8 +45,16 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
     }
   }, [step, timeLeft]);
 
+  function isValidPhoneNumber(phone: string) {
+    // Japanese mobile: 10 or 11 digits, starts with 0
+    return /^\d{10,11}$/.test(phone);
+  }
   const handlePhoneSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidPhoneNumber(phoneNumber)) {
+      setError('無効な電話番号です');
+      return;
+    }
     updateFormData({ phoneNumber });
     setStep('code');
     setTimeLeft(30);
@@ -110,7 +119,8 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
                 type="tel"
                 value={phoneNumber}
                 placeholder='例) 09012345346'
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                maxLength={11}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
                 className="w-full text-lg border border-secondary rounded bg-primary text-white focus:ring-0 p-0 placeholder-secondary"
               />
             </div>
@@ -138,9 +148,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
       {/* Header */}
       <div className="flex items-center p-4 bg-primary">
         <button onClick={() => setStep('phone')} className="text-white">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+          <ChevronLeft />
         </button>
         <h1 className="flex-1 text-center text-lg font-medium mr-6 text-white">認証コードの入力</h1>
       </div>

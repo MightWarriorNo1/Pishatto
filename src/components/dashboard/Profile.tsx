@@ -152,12 +152,12 @@ const Profile: React.FC = () => {
                 </div>
             </div>
             {/* Coupon banner */}
-            <div className="bg-primary text-xs text-white px-4 py-2 border-b border-secondary flex items-center">
+            {/* <div className="bg-primary text-xs text-white px-4 py-2 border-b border-secondary flex items-center">
                 <button onClick={() => setShowNotification(true)} className="mr-2 text-white">
                     <Bell className="w-6 h-6" />
                 </button>
                 <span>最大30,000Pの紹介クーポンがもらえる特別な期間！</span>
-            </div>
+            </div> */}
             {/* Profile avatar and name */}
             <div className="flex flex-col items-center py-6">
                 <div className="relative">
@@ -183,6 +183,13 @@ const Profile: React.FC = () => {
                 <span className="mt-2 text-lg font-bold text-white">
                     {loading ? '読み込み中...' : user?.nickname || 'まこちゃん'}
                 </span>
+                {/* Points display */}
+                <div className="mt-2 flex items-center gap-2">
+                    <span className="text-sm text-gray-300">ポイント</span>
+                    <span className="text-xl font-bold text-white">
+                        {loading ? '---' : (user?.points || 0).toLocaleString()}P
+                    </span>
+                </div>
             </div>
             {/* Grade section */}
             <div className="bg-secondary text-white text-center py-2 font-bold">今期のグレード</div>
@@ -212,20 +219,20 @@ const Profile: React.FC = () => {
                         <ChevronRight />
                     </span>
                 </button>
-                <button onClick={() => setShowPaymentInfoSimple(true)} className="w-full flex hover:bg-secondary  items-center px-4 py-4 text-left">
-                    <span className="mr-3">
-                        <CreditCard className="w-6 h-6 text-white" />
-                    </span>
-                    <span className="flex-1 text-white">お支払い情報</span>
-                    <span className="text-white">
-                        <ChevronRight />
-                    </span>
-                </button>
                 <button onClick={() => setShowPointPurchase(true)} className="w-full flex hover:bg-secondary  items-center px-4 py-4 text-left">
                     <span className="mr-3">
                         <TicketPercent className="w-6 h-6 text-white" />
                     </span>
                     <span className="flex-1 text-white">ポイント購入</span>
+                    <span className="text-white">
+                        <ChevronRight />
+                    </span>
+                </button>
+                <button onClick={() => setShowPaymentInfoSimple(true)} className="w-full flex hover:bg-secondary  items-center px-4 py-4 text-left">
+                    <span className="mr-3">
+                        <CreditCard className="w-6 h-6 text-white" />
+                    </span>
+                    <span className="flex-1 text-white">お支払い情報</span>
                     <span className="text-white">
                         <ChevronRight />
                     </span>

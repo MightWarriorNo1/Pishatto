@@ -20,12 +20,11 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
   const [selectedLocation, setSelectedLocation] = useState(formData.favorite_area || '');
 
   const locations = [
-    '東京', '大阪', '福岡',
-    '名古屋', '札幌', '沖縄',
-    '神戸', '京都', '仙台',
-    '埼玉', '横浜', '金沢',
-    '静岡', '広島', '鹿児島',
-    '熊本'
+    '東京都',
+    '大阪府',
+    '愛知県',
+    '福岡県',
+    '北海道'
   ];
 
   const handleLocationSelect = (location: string) => {

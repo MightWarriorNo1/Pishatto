@@ -9,6 +9,9 @@ module.exports = {
         primary: '#09122C', // black
         secondary: '#BE3144', // high-end red
       },
+      fontFamily: {
+        sans: ['Noto Sans JP', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      },
     },
   },
   plugins: [

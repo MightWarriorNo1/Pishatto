@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCastList } from '../../services/api';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 interface CastProfile {
   id: number;
   name: string;
@@ -58,7 +59,7 @@ const NewCastSection: React.FC = () => {
               >
                 <div className="aspect-w-3 aspect-h-4 relative">
                   <img
-                    src={profile.avatar || profile.imageUrl || '/assets/avatar/female.png'}
+                    src={profile.avatar ? `${API_BASE_URL}/${profile.avatar}` : '/assets/avatar/female.png'}
                     alt={profile.nickname || profile.name || ''}
                     className="w-full h-full object-cover rounded-lg border border-secondary"
                   />

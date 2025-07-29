@@ -1,16 +1,30 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Image, Camera, FolderClosed, Gift, ChevronLeft, X } from 'lucide-react';
-import { sendMessage, getChatMessages, fetchAllGifts} from '../../services/api';
+import { sendMessage, getChatMessages, fetchAllGifts, fetchRanking, updateReservation, getChatById, getGuestReservations } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useChatMessages } from '../../hooks/useRealtime';
+import dayjs from 'dayjs';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 interface ChatScreenProps {
     chatId: number;
     onBack: () => void;
 }
 
+// Add Proposal type for clarity
+interface Proposal {
+    type: string;
+    date?: string;
+    people?: string;
+    duration?: string | number;
+    totalPoints?: number;
+    extensionPoints?: number;
+    reservationId?: number;
+    [key: string]: any;
+}
+
 const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
-    const { user } = useUser();
+    const { user, refreshUser } = useUser();
     const [showGift, setShowGift] = useState(false);
     const [showFile, setShowFile] = useState(false);
     const [input, setInput] = useState('');
@@ -21,7 +35,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [sending, setSending] = useState(false);
-    const [localMessages, setLocalMessages] = useState<any[]>([]);
+    const [localMessages] = useState<any[]>([]);
     const [messages, setMessages] = useState<any[]>([]);
     const [fetching, setFetching] = useState(true);
     const [fetchError, setFetchError] = useState<string | null>(null);
@@ -31,25 +45,27 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const [gifts, setGifts] = useState<any[]>([]);
     const [showGiftModal, setShowGiftModal] = useState(false);
     const [selectedGiftCategory, setSelectedGiftCategory] = useState('standard');
+    const [showProposalModal, setShowProposalModal] = useState(false);
+    const [selectedProposal, setSelectedProposal] = useState<any>(null);
+    const [proposalMsgId, setProposalMsgId] = useState<number | null>(null);
+    const [proposalActionLoading, setProposalActionLoading] = useState(false);
+    const [proposalActionError, setProposalActionError] = useState<string | null>(null);
+    const [acceptedProposals, setAcceptedProposals] = useState<number[]>([]);
+    const [reservationId, setReservationId] = useState<number | null>(null);
+    const [guestReservations, setGuestReservations] = useState<any[]>([]);
 
-    useChatMessages(chatId, (message) => {
-        setMessages((prev) => {
-            if (prev.some(m => m.id === message.id)) return prev;
-            return [ message,...prev];
-        });
-    });
-
+    /*eslint-disable*/
     useEffect(() => {
         setFetching(true);
         setFetchError(null);
         const fetchMessages = async () => {
-            if (!chatId || isNaN(Number(chatId))) {
+            if (!chatId || isNaN(Number(chatId)) || !user || typeof user.id !== 'number') {
                 setMessages([]);
                 setFetching(false);
                 return;
             }
             try {
-                const msgs = await getChatMessages(chatId);
+                const msgs = await getChatMessages(chatId, user.id, 'guest');
                 setMessages(Array.isArray(msgs) ? msgs : []);
                 setFetchError(null);
             } catch (e) {
@@ -60,6 +76,40 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         };
         fetchMessages();
     }, [chatId]);
+
+    useEffect(() => {
+        // Fetch reservation_id for this chat
+        getChatById(chatId).then(chat => {
+            if (chat && chat.reservation_id) setReservationId(chat.reservation_id);
+        });
+    }, [chatId]);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        getGuestReservations(user.id).then(setGuestReservations).catch(() => setGuestReservations([]));
+    }, [user?.id]);
+
+    useChatMessages(chatId, (message) => {
+        setMessages((prev) => {
+            // Remove optimistic message if real one matches (by image or message and sender_guest_id)
+            // Also check for duplicate messages by ID to prevent duplicates
+            const filtered = prev.filter(m => {
+                // Remove optimistic messages that match the real message
+                if (m.id && m.id.toString().startsWith('optimistic-') &&
+                    ((m.image && message.image && m.image === imagePreview) ||
+                        (m.message && message.message && m.message === message.message)) &&
+                    m.sender_guest_id === message.sender_guest_id) {
+                    return false;
+                }
+                // Remove duplicate messages by ID
+                if (m.id === message.id) {
+                    return false;
+                }
+                return true;
+            });
+            return [...filtered, message];
+        });
+    });
 
     useEffect(() => {
         fetchAllGifts().then(setGifts);
@@ -104,11 +154,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 };
                 if (input.trim()) payload.message = input.trim();
                 if (attachedFile) payload.image = attachedFile;
-                const sent = await sendMessage(payload);
-                // Patch the sender_guest_id or sender_cast_id for immediate alignment
-                if ('sender_guest_id' in sent) sent.sender_guest_id = user.id;
-                if ('sender_cast_id' in sent) sent.sender_cast_id = user.id;
-                setMessages((prev) => [...prev, sent]);
+
+                // Optimistically add the message (text or image)
+                const optimisticId = `optimistic-${Date.now()}`;
+                // setMessages(prev => [...prev, optimisticMsg]);
+
+                // Send to backend
+                const realMsg = await sendMessage(payload);
+
+                // Replace optimistic message with real one
+                setMessages(prev => prev.map(m => m.id === optimisticId ? realMsg : m));
+
                 setInput('');
                 setAttachedFile(null);
                 setImagePreview(null);
@@ -146,23 +202,36 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     <div className="text-center text-white py-10">メッセージがありません</div>
                 ) : (
                     (messages || []).map((msg, idx) => {
-                        const isSent = (user && (msg.sender_guest_id === user.id));
+                        const isSent = user && String(msg.sender_guest_id) === String(user.id);
                         const senderAvatar = msg.guest?.avatar || msg.cast?.avatar || '/assets/avatar/1.jpg';
                         const senderName = msg.guest?.nickname || msg.cast?.nickname || 'ゲスト/キャスト';
-                        let proposal = null;
+                        let proposal: Proposal | null = null;
                         try {
                             const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
                             if (parsed && parsed.type === 'proposal') proposal = parsed;
                         } catch (e) { }
                         if (proposal) {
+                            // Check if proposal is accepted by matching guest_id and scheduled_at
+                            const isAccepted = guestReservations.some(res =>
+                                res.guest_id === user?.id &&
+                                dayjs(res.scheduled_at).isSame(proposal?.date)
+                            ) || acceptedProposals.includes(msg.id);
                             return (
-                                <div key={msg.id || idx} className="flex justify-start mb-4">
-                                    <div className="bg-orange-600 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md">
+                                <div
+                                    key={msg.id || idx}
+                                    className={`flex justify-start mb-4${isAccepted ? '' : ' cursor-pointer'}`}
+                                    onClick={isAccepted ? undefined : () => { setShowProposalModal(true); setSelectedProposal(proposal); setProposalMsgId(msg.id); }}
+                                    style={isAccepted ? { opacity: 0.6, pointerEvents: 'none' } : {}}
+                                >
+                                    <div className="bg-orange-600 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative">
                                         <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
-                                        <div>人数：{proposal.people.replace(/名$/, '')}人</div>
+                                        <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
                                         <div>時間：{proposal.duration}</div>
-                                        <div>消費ポイント：{proposal.totalPoints.toLocaleString()}P</div>
-                                        <div>（延長：{proposal.extensionPoints.toLocaleString()}P / 15分）</div>
+                                        <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
+                                        <div>（延長：{proposal.extensionPoints?.toLocaleString()}P / 15分）</div>
+                                        {isAccepted && (
+                                            <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">承認済み</span>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -171,7 +240,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             <div key={msg.id || idx} className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
                                 {!isSent && (
                                     <img
-                                        src={senderAvatar}
+                                        src={senderAvatar ? `${API_BASE_URL}/${senderAvatar}` : '/assets/avatar/1.jpg'}
                                         alt="avatar"
                                         className="w-8 h-8 rounded-full mr-2 border border-secondary mt-1"
                                     />
@@ -201,7 +270,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                         )}
                                         {msg.message}
                                     </div>
-                                    <div className="text-xs text-gray-400 mt-1 text-right">{msg.created_at}</div>
+                                    <div className="text-xs text-gray-400 mt-1 text-right">{msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''}</div>
                                 </div>
                             </div>
                         );
@@ -286,9 +355,25 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                     sender_guest_id: user.id,
                                                     gift_id: gift.id,
                                                 });
-                                                setLocalMessages((prev) => [...prev, sent]);
-                                            } catch (e) {
-                                                setSendError('ギフトの送信に失敗しました');
+                                                // Ensure the sent message has the gift details
+                                                if (sent && !sent.gift && gift) {
+                                                    sent.gift = {
+                                                        id: gift.id,
+                                                        name: gift.name || gift.label,
+                                                        icon: gift.icon,
+                                                        points: gift.points
+                                                    };
+                                                }
+                                                // Add the sent message to the messages array immediately
+                                                setMessages((prev) => [...prev, sent]);
+                                                // Refresh user points after sending gift
+                                                refreshUser();
+                                            } catch (e: any) {
+                                                if (e.response?.data?.error === 'Insufficient points to send this gift') {
+                                                    setSendError(`ポイントが不足しています。必要: ${e.response.data.required_points}P、所持: ${e.response.data.available_points}P`);
+                                                } else {
+                                                    setSendError('ギフトの送信に失敗しました');
+                                                }
                                             } finally {
                                                 setSending(false);
                                             }
@@ -339,11 +424,39 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                 gift_id: gift.id,
                                             };
                                             const sent = await sendMessage(payload);
+                                            // Ensure the sent message has the gift details
+                                            if (sent && !sent.gift && gift) {
+                                                sent.gift = {
+                                                    id: gift.id,
+                                                    name: gift.name || gift.label,
+                                                    icon: gift.icon,
+                                                    points: gift.points
+                                                };
+                                            }
                                             if ('sender_guest_id' in sent) sent.sender_guest_id = user?.id;
                                             if ('sender_cast_id' in sent) sent.sender_cast_id = user?.id;
                                             setMessages((prev) => [...prev, sent]);
-                                        } catch (e) {
-                                            setSendError('ギフトの送信に失敗しました');
+
+                                            // Refresh user points after sending gift
+                                            refreshUser();
+
+                                            // Trigger ranking update by fetching current rankings
+                                            try {
+                                                await fetchRanking({
+                                                    userType: 'guest',
+                                                    timePeriod: 'current',
+                                                    category: 'gift',
+                                                    area: '全国'
+                                                });
+                                            } catch (error) {
+                                                console.log('Ranking refresh failed:', error);
+                                            }
+                                        } catch (e: any) {
+                                            if (e.response?.data?.error === 'Insufficient points to send this gift') {
+                                                setSendError(`ポイントが不足しています。必要: ${e.response.data.required_points}P、所持: ${e.response.data.available_points}P`);
+                                            } else {
+                                                setSendError('ギフトの送信に失敗しました');
+                                            }
                                         } finally {
                                             setSending(false);
                                         }
@@ -358,6 +471,68 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             ))}
                         </div>
                         <button className="text-white mt-2 hover:text-red-700 transition-all duration-200 font-medium" onClick={() => setShowGiftModal(false)}>閉じる</button>
+                    </div>
+                </div>
+            )}
+            {showProposalModal && selectedProposal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
+                        <h2 className="font-bold text-lg mb-4 text-black">予約変更の提案</h2>
+                        <div className="mb-4 text-black">
+                            <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
+                            <div>人数：{selectedProposal.people?.replace(/名$/, '')}人</div>
+                            <div>時間：{selectedProposal.duration}</div>
+                            <div>消費ポイント：{selectedProposal.totalPoints?.toLocaleString()}P</div>
+                            <div>（延長：{selectedProposal.extensionPoints?.toLocaleString()}P / 15分）</div>
+                        </div>
+                        {proposalActionError && <div className="text-red-500 mb-2">{proposalActionError}</div>}
+                        <div className="flex gap-4">
+                            <button
+                                className="px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
+                                disabled={proposalActionLoading}
+                                onClick={async () => {
+                                    setProposalActionLoading(true);
+                                    setProposalActionError(null);
+                                    try {
+                                        if (!reservationId) throw new Error('予約IDが見つかりません');
+                                        await updateReservation(reservationId, {
+                                            scheduled_at: selectedProposal.date,
+                                            duration: selectedProposal.duration ? parseInt(selectedProposal.duration as string, 10) : undefined,
+                                        });
+                                        // Update guestReservations state immediately to show "承認済み" badge
+                                        if (user?.id && selectedProposal.date) {
+                                            setGuestReservations(prev => [
+                                                ...prev,
+                                                {
+                                                    guest_id: user.id,
+                                                    scheduled_at: selectedProposal.date,
+                                                    // Add other required fields if needed
+                                                }
+                                            ]);
+                                        }
+                                        // Send system message to chat
+                                        // await sendMessage({
+                                        //     chat_id: chatId,
+                                        //     message: '予約変更が承認されました',
+                                        // });
+                                        if (proposalMsgId !== null && typeof proposalMsgId === 'number') {
+                                            setAcceptedProposals(prev => prev.includes(proposalMsgId) ? prev : [...prev, proposalMsgId]);
+                                        }
+                                        setShowProposalModal(false);
+                                        setSelectedProposal(null);
+                                        setProposalMsgId(null);
+                                    } catch (e: any) {
+                                        setProposalActionError(e.message || '予約の更新に失敗しました');
+                                    } finally {
+                                        setProposalActionLoading(false);
+                                    }
+                                }}
+                            >承認</button>
+                            <button
+                                className="px-4 py-2 bg-gray-400 text-white rounded font-bold"
+                                onClick={() => { setShowProposalModal(false); setSelectedProposal(null); setProposalMsgId(null); }}
+                            >拒否</button>
+                        </div>
                     </div>
                 </div>
             )}

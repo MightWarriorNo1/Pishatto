@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Share, Heart, Mail } from 'lucide-react';
-import { likeCast, recordCastVisit, getCastProfileWithExtras } from '../services/api';
+import { ChevronLeft, ChevronRight, Share, Heart, MessageSquare } from 'lucide-react';
+import { likeCast, getCastProfileById, createChat, sendGuestMessage, getLikeStatus, favoriteCast, unfavoriteCast, getFavorites } from '../services/api';
 import { useUser } from '../contexts/UserContext';
+import Toast from '../components/ui/Toast';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const CastDetail: React.FC = () => {
     //eslint-disable-next-line
     const { id } = useParams();
@@ -16,21 +18,23 @@ const CastDetail: React.FC = () => {
     const [titles, setTitles] = useState<any[]>([]);
     const [recommended, setRecommended] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [messageLoading, setMessageLoading] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastType, setToastType] = useState<'success' | 'error'>('success');
+    const [isFavorited, setIsFavorited] = useState(false);
 
-    useEffect(() => {
-        if (user && id) {
-            recordCastVisit(user.id, Number(id));
-        }
-    }, [user, id]);
+    useEffect(()=>{
+        likeStatus();
+        checkFavoriteStatus();
+    },[Number(id), Number(user?.id)]);
 
     useEffect(() => {
         if (id) {
             setLoading(true);
-            getCastProfileWithExtras(Number(id)).then((data) => {
+            getCastProfileById(Number(id)).then((data) => {
                 setCast(data.cast);
-                setBadges(data.badges || []);
-                setTitles(data.titles || []);
-                setRecommended(data.recommended || []);
+                console.log("cast", data.cast);
                 setLoading(false);
             });
         }
@@ -39,12 +43,70 @@ const CastDetail: React.FC = () => {
     const handleLike = async () => {
         if (!user || !id) return;
         const res = await likeCast(user.id, Number(id));
-        setLiked(res.liked);
+        if (res.liked) setLiked(true);
+        else setLiked(false);
     };
 
-    const handleMessageClick = () => {
-        navigate(`/cast/${id}/message`);
+    const likeStatus = async () => {
+        const res = await getLikeStatus(Number(id), Number(user?.id));
+        if (res.liked) setLiked(true);
+        else setLiked(false);
     };
+
+    const checkFavoriteStatus = async () => {
+        if (!user || !id) return;
+        try {
+            const favorites = await getFavorites(user.id);
+            const isInFavorites = favorites.casts?.some((favCast: any) => favCast.id === Number(id));
+            setIsFavorited(isInFavorites || false);
+        } catch (error) {
+            console.error('Error checking favorite status:', error);
+        }
+    };
+
+    const handleFavorite = async () => {
+        if (!user || !id) return;
+        try {
+            if (isFavorited) {
+                await unfavoriteCast(user.id, Number(id));
+                setIsFavorited(false);
+                setToastMessage('お気に入りから削除しました。');
+            } else {
+                await favoriteCast(user.id, Number(id));
+                setIsFavorited(true);
+                setToastMessage('お気に入りに追加しました。');
+            }
+            setToastType('success');
+            setShowToast(true);
+        } catch (error) {
+            setToastMessage('お気に入りの操作に失敗しました。');
+            setToastType('error');
+            setShowToast(true);
+        }
+    };
+
+    const handleMessage = async () => {
+        setMessageLoading(true);
+        try {
+            const chatRes = await createChat(cast.id,Number(user?.id));
+            const chatId = chatRes.chat.id;
+            await sendGuestMessage(chatId, Number(user?.id), '👍');
+            // await sendCastMessage(chatId, Number(id), '👍');
+            
+            // Show success toast
+            setToastMessage('メッセージを送信しました。');
+            setToastType('success');
+            setShowToast(true);
+        } catch (error) {
+            // Show error toast
+            setToastMessage('メッセージの送信に失敗しました。再度お試しください。');
+            setToastType('error');
+            setShowToast(true);
+        } finally {
+            setMessageLoading(false);
+        }
+    };
+
 
     // Mock image data
     const images = [
@@ -55,7 +117,6 @@ const CastDetail: React.FC = () => {
     ];
 
     const timePosted = '10時間前';
-    const points = '7,500P';
 
     if (loading) {
         return <div className="min-h-screen flex items-center justify-center bg-primary text-white">ローディング...</div>;
@@ -64,6 +125,13 @@ const CastDetail: React.FC = () => {
     return (
         <div className="min-h-screen flex justify-center bg-gray-400">
             <div className="w-full max-w-md relative bg-primary">
+                {/* Toast Notification */}
+                <Toast
+                    message={toastMessage}
+                    type={toastType}
+                    isVisible={showToast}
+                    onClose={() => setShowToast(false)}
+                />
                 {/* Header */}
                 <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-primary z-50">
                     <div className="flex items-center justify-between p-4">
@@ -75,16 +143,25 @@ const CastDetail: React.FC = () => {
                             <ChevronLeft />
                         </button>
                         <div className="text-lg font-medium text-white">なの💫</div>
-                        <button type="button" className="text-2xl text-white">
-                            <Share />
-                        </button>
+                        <div className="flex items-center space-x-2">
+                            <button 
+                                type="button" 
+                                className="text-2xl text-white hover:text-yellow-400 transition-colors"
+                                onClick={handleFavorite}
+                            >
+                                <Heart className={`w-6 h-6 ${isFavorited ? 'fill-secondary text-secondary' : 'text-white'}`} />
+                            </button>
+                            <button type="button" className="text-2xl text-white">
+                                <Share />
+                            </button>
+                        </div>
                     </div>
                 </div>
                 {/* Main Image View */}
                 <div className="pt-16 bg-primary">
                     <div className="relative w-full h-full">
                         <img
-                            src={images[currentImageIndex]}
+                            src={cast.avatar ? `${API_BASE_URL}/${cast.avatar}` : '/assets/avatar/female.png'}
                             alt="Cast"
                             className="w-full h-full object-contain"
                         />
@@ -109,7 +186,7 @@ const CastDetail: React.FC = () => {
                 <div className="w-full max-w-md bg-primary border-t border-secondary">
                     <div className="p-4">
                         {/* Thumbnails */}
-                        <div className="flex gap-2 mb-4 overflow-x-auto">
+                        {/* <div className="flex gap-2 mb-4 overflow-x-auto">
                             {images.map((img, index) => (
                                 <button
                                     type="button"
@@ -120,7 +197,7 @@ const CastDetail: React.FC = () => {
                                     <img src={img} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
                                 </button>
                             ))}
-                        </div>
+                        </div> */}
                         {/* Time Posted */}
                         <div className="text-sm text-white mb-2">
                             {timePosted}
@@ -128,7 +205,7 @@ const CastDetail: React.FC = () => {
                         {/* Points Info */}
                         <div className="flex justify-between items-center">
                             <div className="text-sm text-white">30分あたりのポイント</div>
-                            <div className="text-xl font-bold text-white">{points}</div>
+                            <div className="text-xl font-bold text-white">{cast.grade_points || '0'}</div>
                         </div>
                     </div>
                 </div>
@@ -205,24 +282,23 @@ const CastDetail: React.FC = () => {
                         </div>
                     </div>
                     {/* Like Button */}
-                    <button
-                        type="button"
-                        className={`w-full mt-6 p-3 bg-secondary border rounded-lg flex items-center justify-center gap-2 ${liked ? 'text-white border-secondary' : 'text-white border-secondary'}`}
-                        onClick={handleLike}
-                    >
-                        <Heart size={24} fill={liked ? '#e3342f' : 'none'} color={liked ? '#e3342f' : undefined} />
-                        <span>いいね</span>
-                    </button>
-                    {liked && (
-                        <button
-                            type="button"
-                            className="w-full mt-4 p-3 rounded-lg flex items-center justify-center gap-2 bg-secondary text-white text-lg font-bold"
-                            onClick={handleMessageClick}
-                        >
-                            <Mail />
-                            メッセージを送る
-                        </button>
-                    )}
+                    <div className="px-4 py-2">
+                        {!liked ? (
+                        <button className="w-full border border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" onClick={handleLike}>
+                                <span className="mr-2">
+                                    <Heart /></span>
+                                <span className="text-base">
+                                </span>いいね
+                            </button>
+                        ) : (
+                            <button className="w-full border bg-secondary border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" onClick={handleMessage} disabled={messageLoading}>
+                                <span className="mr-2">
+                                    <MessageSquare /></span>
+                                <span className="text-base">
+                                </span>メッセージ
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,18 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { FiStar } from 'react-icons/fi';
+import { useUser } from '../../contexts/UserContext';
+import { getFavorites, unfavoriteCast } from '../../services/api';
 
-interface FavoriteProfile {
-  id: number;
-  name: string;
-  age: number;
-  imageUrl: string;
-  rating: number;
-  price: number;
-  duration: number;
-}
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 const FavoritesSection: React.FC = () => {
-  const favorites: FavoriteProfile[] = [];
+  const { user } = useUser();
+  const [favorites, setFavorites] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user) {
+      setLoading(true);
+      getFavorites(user.id).then((data) => {
+        setFavorites(data.casts || []);
+        setLoading(false);
+      });
+    }
+  }, [user]);
+
+  const handleUnfavorite = async (castId: number) => {
+    if (!user) return;
+    await unfavoriteCast(user.id, castId);
+    setFavorites(favorites.filter((c) => c.id !== castId));
+  };
+
+  if (loading) {
+    return <div className="text-white">ローディング...</div>;
+  }
 
   if (favorites.length === 0) {
     return (
@@ -38,30 +54,25 @@ const FavoritesSection: React.FC = () => {
     <div className="bg-primary rounded-lg shadow p-4 mb-4 border border-secondary">
       <h2 className="font-bold text-lg mb-2 text-white">お気に入り</h2>
       {favorites.map((profile) => (
-        <div key={profile.id} className="bg-primary rounded-lg shadow p-3 border border-secondary">
-          <div className="flex space-x-4">
-            <div className="w-24 h-24">
+        <div key={profile.id} className="bg-primary rounded-lg shadow p-3 border border-secondary mb-2">
+          <div className="flex space-x-4 items-center">
+            <div className="w-16 h-16">
               <img
-                src={profile.imageUrl}
-                alt={profile.name}
+                src={profile.avatar ? `${API_BASE_URL}/${profile.avatar}` : '/assets/avatar/female.png'}
+                alt={profile.nickname}
                 className="w-full h-full object-cover rounded border border-secondary"
               />
             </div>
             <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="font-medium text-white">{profile.name}</span>
-                  <span className="text-sm text-white ml-2">{profile.age}歳</span>
-                </div>
-                <div className="flex items-center text-white">
-                  <FiStar className="w-4 h-4 fill-current" />
-                  <span className="ml-1">{profile.rating}</span>
-                </div>
-              </div>
-              <div className="text-white text-sm mt-2">
-                {profile.price.toLocaleString()}円 / {profile.duration}分
-              </div>
+              <span className="font-medium text-white">{profile.nickname}</span>
             </div>
+            <button
+              className="ml-2 text-yellow-400 hover:text-yellow-600"
+              onClick={() => handleUnfavorite(profile.id)}
+              title="お気に入り解除"
+            >
+              <FiStar className="w-6 h-6" />
+            </button>
           </div>
         </div>
       ))}
