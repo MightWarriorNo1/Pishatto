@@ -4,7 +4,7 @@ import { useUser } from '../../contexts/UserContext';
 import { ChevronLeft } from 'lucide-react';
 import { useReservationUpdates } from '../../hooks/useRealtime';
 import dayjs from 'dayjs';
-import Toast from '../../components/ui/Toast';
+import FeedbackModal from '../feedback/FeedbackModal';
 
 const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const { user } = useUser();
@@ -60,6 +60,7 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             reservationId={r.id}
                             scheduled_at={r.scheduled_at}
                             duration={r.duration}
+                            userId={user?.id}
                             onReservationUpdate={data => setReservations(prev => prev.map(rr => rr.id === r.id ? { ...rr, ...data } : rr))}
                         />
                     </div>
@@ -72,7 +73,7 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 export default MyOrderPage;
 
 // Timer component for guest-side display
-const ReservationTimer: React.FC<{ started_at?: string; ended_at?: string; points_earned?: number; reservationId?: number; scheduled_at?: string; duration?: number; onReservationUpdate?: (data: Partial<Reservation>) => void }> = ({ started_at, ended_at, points_earned, reservationId, scheduled_at, duration, onReservationUpdate }) => {
+const ReservationTimer: React.FC<{ started_at?: string; ended_at?: string; points_earned?: number; reservationId?: number; scheduled_at?: string; duration?: number; onReservationUpdate?: (data: Partial<Reservation>) => void; userId?: number }> = ({ started_at, ended_at, points_earned, reservationId, scheduled_at, duration, onReservationUpdate, userId }) => {
     const [currentTime, setCurrentTime] = React.useState<Date>(new Date());
     const [finished, setFinished] = React.useState(false);
     const [exceededAt, setExceededAt] = React.useState<number | null>(null);
@@ -80,11 +81,6 @@ const ReservationTimer: React.FC<{ started_at?: string; ended_at?: string; point
     const [successMsg, setSuccessMsg] = React.useState<string | null>(null);
     const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
     const [showFeedbackModal, setShowFeedbackModal] = React.useState(false);
-    const [feedbackText, setFeedbackText] = React.useState('');
-    const [feedbackRating, setFeedbackRating] = React.useState<number | null>(null);
-    const [badges] = React.useState<any[]>([]);
-    const [selectedBadgeId, setSelectedBadgeId] = React.useState<number | null>(null);
-    const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     React.useEffect(() => {
         if (finished) return;
@@ -94,11 +90,7 @@ const ReservationTimer: React.FC<{ started_at?: string; ended_at?: string; point
         return () => clearInterval(interval);
     }, [finished]);
 
-    // React.useEffect(() => {
-    //     if (showFeedbackModal) {
-    //         fetchAllBadges().then(setBadges);
-    //     }
-    // }, [showFeedbackModal]);
+
 
     // Use scheduled_at and duration for planned times
     const scheduled = scheduled_at ? new Date(scheduled_at) : undefined;
@@ -164,20 +156,7 @@ const ReservationTimer: React.FC<{ started_at?: string; ended_at?: string; point
         }
     };
 
-    const handleSubmitFeedback = async () => {
-        if (!reservationId) return;
-        try {
-            await updateReservation(reservationId, {
-                feedback_text: feedbackText,
-                feedback_rating: feedbackRating ?? undefined,
-                // feedback_badge_id: selectedBadgeId ?? undefined,
-            });
-            setToast({ message: 'フィードバックを送信しました。ありがとうございました！', type: 'success' });
-            setShowFeedbackModal(false);
-        } catch (e: any) {
-            setToast({ message: e?.response?.data?.message || 'フィードバック送信に失敗しました', type: 'error' });
-        }
-    };
+
 
     // Render
     return (
@@ -212,53 +191,15 @@ const ReservationTimer: React.FC<{ started_at?: string; ended_at?: string; point
                     {typeof localPoints === 'number' && <div><b>獲得ポイント:</b> <span className="font-bold">{localPoints}P</span></div>}
                 </>
             )}
-            {showFeedbackModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center border border-secondary min-w-[320px] max-w-[90vw]">
-                        <h2 className="font-bold text-lg mb-4 text-primary">フィードバックを送信</h2>
-                        <textarea
-                            className="w-full border border-secondary rounded p-2 mb-3 text-primary"
-                            rows={3}
-                            placeholder="キャストへの感想やフィードバックを入力してください"
-                            value={feedbackText}
-                            onChange={e => setFeedbackText(e.target.value)}
-                        />
-                        <div className="mb-3 w-full">
-                            <div className="mb-1 text-primary font-bold">評価 (1-5):</div>
-                            <div className="flex gap-2">
-                                {[1, 2, 3, 4, 5].map(r => (
-                                    <button
-                                        key={r}
-                                        className={`w-8 h-8 rounded-full border ${feedbackRating === r ? 'bg-yellow-400 text-white' : 'bg-gray-200 text-primary'}`}
-                                        onClick={() => setFeedbackRating(r)}
-                                        type="button"
-                                    >{r}</button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="mb-3 w-full">
-                            <div className="mb-1 text-primary font-bold">バッジを選択 (任意):</div>
-                            <div className="flex flex-wrap gap-2">
-                                {badges.map(badge => (
-                                    <button
-                                        key={badge.id}
-                                        className={`px-3 py-1 rounded-full border ${selectedBadgeId === badge.id ? 'bg-pink-500 text-white' : 'bg-gray-200 text-primary'}`}
-                                        onClick={() => setSelectedBadgeId(badge.id)}
-                                        type="button"
-                                    >{badge.icon ? <img src={badge.icon} alt={badge.name} className="inline w-5 h-5 mr-1" /> : null}{badge.name}</button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="flex gap-4 mt-4">
-                            <button className="bg-secondary text-white px-4 py-2 rounded" onClick={() => setShowFeedbackModal(false)}>キャンセル</button>
-                            <button className="bg-pink-500 text-white px-4 py-2 rounded font-bold" onClick={handleSubmitFeedback}>送信</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {toast && (
-                <Toast show message={toast.message} type={toast.type} onClose={() => setToast(null)} />
-            )}
+            <FeedbackModal
+                isOpen={showFeedbackModal}
+                onClose={() => setShowFeedbackModal(false)}
+                reservationId={reservationId || 0}
+                castId={1} // This should be passed from the reservation data
+                guestId={userId || 0}
+                onSuccess={() => setShowFeedbackModal(false)}
+            />
+
         </div>
     );
 }; 

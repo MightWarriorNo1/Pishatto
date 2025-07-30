@@ -1,12 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { FiStar } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import { getFavorites, unfavoriteCast } from '../../services/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
+// Utility function to get the first available avatar from comma-separated string
+const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+  if (!avatarString) {
+    return '/assets/avatar/female.png';
+  }
+  
+  // Split by comma and get the first non-empty avatar
+  const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+  
+  if (avatars.length === 0) {
+    return '/assets/avatar/female.png';
+  }
+  
+  return `${API_BASE_URL}/${avatars[0]}`;
+};
+
 const FavoritesSection: React.FC = () => {
   const { user } = useUser();
+  const navigate = useNavigate();
   const [favorites, setFavorites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,6 +42,10 @@ const FavoritesSection: React.FC = () => {
     if (!user) return;
     await unfavoriteCast(user.id, castId);
     setFavorites(favorites.filter((c) => c.id !== castId));
+  };
+
+  const handleAvatarClick = (castId: number) => {
+    navigate(`/cast/${castId}`);
   };
 
   if (loading) {
@@ -58,9 +80,10 @@ const FavoritesSection: React.FC = () => {
           <div className="flex space-x-4 items-center">
             <div className="w-16 h-16">
               <img
-                src={profile.avatar ? `${API_BASE_URL}/${profile.avatar}` : '/assets/avatar/female.png'}
+                src={getFirstAvatarUrl(profile.avatar)}
                 alt={profile.nickname}
-                className="w-full h-full object-cover rounded border border-secondary"
+                className="w-full h-full object-cover rounded border border-secondary cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => handleAvatarClick(profile.id)}
               />
             </div>
             <div className="flex-1">

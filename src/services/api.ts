@@ -53,32 +53,51 @@ export interface GuestProfileUpdateData {
 }
 
 export interface GuestProfile {
-  id: number;
-  phone: string;
-  line_id?: string;
-  nickname: string;
-  age: string;
-  shiatsu: string;
-  location: string;
-  avatar?: string;
-  birth_year?: number;
-  height?: number;
-  residence?: string;
-  birthplace?: string;
-  annual_income?: string;
-  education?: string;
-  occupation?: string;
-  alcohol?: 'never' | 'sometimes' | 'often';
-  tobacco?: 'never' | 'sometimes' | 'often';
-  siblings?: string;
-  cohabitant?: string;
-  pressure?: 'weak' | 'medium' | 'strong';
-  favorite_area?: string;
-  interests?: GuestInterest[];
-  points?: number;
-  payment_info?: string;
-  created_at: string;
-  updated_at: string;
+    id: number;
+    phone: string;
+    line_id?: string;
+    nickname: string;
+    age: string;
+    shiatsu: string;
+    location: string;
+    avatar?: string;
+    birth_year?: number;
+    height?: number;
+    residence?: string;
+    birthplace?: string;
+    annual_income?: string;
+    education?: string;
+    occupation?: string;
+    alcohol?: 'never' | 'sometimes' | 'often';
+    tobacco?: 'never' | 'sometimes' | 'often';
+    siblings?: string;
+    cohabitant?: string;
+    pressure?: 'weak' | 'medium' | 'strong';
+    favorite_area?: string;
+    interests?: GuestInterest[];
+    points?: number;
+    payment_info?: string;
+    identity_verification_completed?: 'pending' | 'success' | 'failed';
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Notification {
+    id: number;
+    user_id: number;
+    user_type: 'guest' | 'cast';
+    type: string;
+    reservation_id?: number;
+    cast_id?: number;
+    message: string;
+    read: boolean;
+    created_at: string;
+    updated_at: string;
+    cast?: {
+        id: number;
+        nickname: string;
+        avatar?: string;
+    };
 }
 
 export interface Reservation {
@@ -215,6 +234,11 @@ export const guestUpdateProfile = async (data: GuestProfileUpdateData) => {
 
 export const createReservation = async (data: Reservation) => {
   const response = await api.post('/guest/reservation', data);
+  return response.data;
+};
+
+export const cancelReservation = async (reservationId: number) => {
+  const response = await api.post(`/reservations/${reservationId}/cancel`);
   return response.data;
 };
 
@@ -365,7 +389,7 @@ export const getCastPassportData = async (castId: number) => {
   return response.data;
 };
 
-export const getNotifications = async (userType: 'guest' | 'cast', userId: number) => {
+export const getNotifications = async (userType: 'guest' | 'cast', userId: number): Promise<Notification[]> => {
   const response = await api.get(`/notifications/${userType}/${userId}`);
   return response.data.notifications;
 };
@@ -377,6 +401,11 @@ export const markNotificationRead = async (id: number) => {
 
 export const markAllNotificationsRead = async (userType: 'guest' | 'cast', userId: number) => {
   const response = await api.post(`/notifications/read-all/${userType}/${userId}`);
+  return response.data;
+};
+
+export const deleteNotification = async (id: number) => {
+  const response = await api.delete(`/notifications/${id}`);
   return response.data;
 };
 
@@ -534,6 +563,16 @@ export const uploadCastAvatar = async (file: File) => {
   return response.data;
 };
 
+export const deleteCastAvatar = async (castId: number, avatarIndex: number) => {
+  const response = await api.delete('/cast/avatar-delete', {
+    data: {
+      cast_id: castId,
+      avatar_index: avatarIndex,
+    },
+  });
+  return response.data;
+};
+
 export const likeGuest = async (cast_id: number, guest_id: number) => {
   console.log("likeGuest", cast_id, guest_id);
   const response = await api.post('/guests/like', { cast_id, guest_id });
@@ -570,13 +609,16 @@ export const getLikeStatus = async (cast_id: number, guest_id: number) => {
 };
 
 export const fetchRanking = async (params: { userType: string; timePeriod: string; category: string; area: string }) => {
-  console.log(params);
   const response = await api.get('/ranking', { params });
   return response.data;
 };
 
 export const updateRanking = async (params: { userType: string; timePeriod: string; category: string; area: string }) => {
-  const response = await api.post('/ranking/recalculate-all', { params });
+  const response = await api.post('/ranking/recalculate', { 
+    period: params.timePeriod,
+    region: params.area,
+    category: params.category
+  });
   return response.data;
 };
 
@@ -620,6 +662,50 @@ export const fetchAllBadges = async () => {
   return response.data.badges;
 };
 
+export interface FeedbackData {
+  reservation_id: number;
+  cast_id: number;
+  guest_id: number;
+  comment?: string;
+  rating?: number;
+  badge_id?: number;
+}
+
+export const submitFeedback = async (feedbackData: FeedbackData) => {
+  const response = await api.post('/feedback', feedbackData);
+  return response.data;
+};
+
+export const getReservationFeedback = async (reservationId: number) => {
+  const response = await api.get(`/feedback/reservation/${reservationId}`);
+  return response.data.feedback;
+};
+
+export const getCastFeedback = async (castId: number) => {
+  const response = await api.get(`/feedback/cast/${castId}`);
+  return response.data;
+};
+
+export const getGuestFeedback = async (guestId: number) => {
+  const response = await api.get(`/feedback/guest/${guestId}`);
+  return response.data.feedback;
+};
+
+export const updateFeedback = async (feedbackId: number, feedbackData: Partial<FeedbackData>) => {
+  const response = await api.put(`/feedback/${feedbackId}`, feedbackData);
+  return response.data;
+};
+
+export const deleteFeedback = async (feedbackId: number) => {
+  const response = await api.delete(`/feedback/${feedbackId}`);
+  return response.data;
+};
+
+export const getCastFeedbackStats = async (castId: number) => {
+  const response = await api.get(`/feedback/cast/${castId}/stats`);
+  return response.data.stats;
+};
+
 export const completeReservation = async (reservationId: number, feedback: {
   feedback_text?: string;
   feedback_rating?: number;
@@ -639,6 +725,26 @@ export const processCastImmediatePayment = async (castId: number, data: {
   payjp_token: string;
 }) => {
   const response = await api.post(`/casts/${castId}/immediate-payment`, data);
+  return response.data;
+};
+
+export const uploadIdentity = async (file: File, user_id: number) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('user_id', String(user_id));
+  const response = await api.post('/identity/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const sendSmsVerificationCode = async (phoneNumber: string) => {
+  const response = await api.post('/sms/send-code', { phone: phoneNumber });
+  return response.data;
+};
+
+export const verifySmsCode = async (phoneNumber: string, code: string) => {
+  const response = await api.post('/sms/verify-code', { phone: phoneNumber, code });
   return response.data;
 };
 

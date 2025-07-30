@@ -1,26 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { getCastProfileById, castUpdateProfile, uploadCastAvatar } from '../../services/api';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, X, Plus } from 'lucide-react';
 
 const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () => void }> = ({ onBack, onProfileUpdate }) => {
-    const navigate = useNavigate();
     const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
     const castId = Number(localStorage.getItem('castId'));
     const [form, setForm] = useState({
         nickname: '',
         avatar: '',
-        birth_year: '',
         height: '',
         residence: '',
-        birthplace: '',
         profile_text: '',
     });
     const [initialLoading, setInitialLoading] = useState(true);
     const [avatarUploading, setAvatarUploading] = useState(false);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [avatarPreview, setAvatarPreview] = useState<string>('/assets/avatar/avatar-1.png');
+    const [avatars, setAvatars] = useState<string[]>([]);
     const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
     const [success, setSuccess] = useState(false);
 
@@ -29,13 +25,19 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
             setForm({
                 nickname: data.cast.nickname || '',
                 avatar: data.cast.avatar || '',
-                birth_year: data.cast.birth_year ? data.cast.birth_year.toString() : '',
                 height: data.cast.height ? data.cast.height.toString() : '',
                 residence: data.cast.residence || '',
-                birthplace: data.cast.birthplace || '',
                 profile_text: data.cast.profile_text || '',
             });
-            setAvatarPreview(data.cast.avatar ? `${API_BASE_URL}/${data.cast.avatar}` : '/assets/avatar/avatar-1.png');
+            
+            // Parse multiple avatars from comma-separated string
+            if (data.cast.avatar) {
+                const avatarArray = data.cast.avatar.split(',').map((avatar: string) => avatar.trim()).filter((avatar: string) => avatar);
+                setAvatars(avatarArray);
+            } else {
+                setAvatars([]);
+            }
+            
             setInitialLoading(false);
         }).catch(() => {
             setError('プロフィールの取得に失敗しました');
@@ -47,34 +49,37 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            // Set preview immediately for better UX
-            const previewUrl = URL.createObjectURL(file);
-            setAvatarPreview(previewUrl);
             setAvatarUploading(true);
             setError(null);
             
             try {
                 const res = await uploadCastAvatar(file);
-                setForm(f => ({ ...f, avatar: res.path }));
-                // Update preview to use the uploaded image URL
-                setAvatarPreview(`${API_BASE_URL}/${res.path}`);
+                setAvatars(prev => [...prev, res.path]);
+                // Update form avatar field with comma-separated string
+                const newAvatarString = [...avatars, res.path].join(',');
+                setForm(f => ({ ...f, avatar: newAvatarString }));
             } catch (err) {
                 setError('アバターのアップロードに失敗しました');
-                // Revert to previous avatar on error
-                setAvatarPreview(form.avatar ? `${API_BASE_URL}/${form.avatar}` : '/assets/avatar/avatar-1.png');
             } finally {
                 setAvatarUploading(false);
             }
         }
     };
 
+    const handleDeleteAvatar = (index: number) => {
+        const newAvatars = avatars.filter((_, i) => i !== index);
+        setAvatars(newAvatars);
+        // Update form avatar field with comma-separated string
+        const newAvatarString = newAvatars.join(',');
+        setForm(f => ({ ...f, avatar: newAvatarString }));
+    };
+
     const validate = () => {
         const errors: { [key: string]: string } = {};
         if (!form.nickname.trim()) errors.nickname = 'ニックネームは必須です';
-        if (!form.birth_year || isNaN(Number(form.birth_year))) errors.birth_year = '生年は必須です';
         if (!form.height || isNaN(Number(form.height))) errors.height = '身長は必須です';
         return errors;
     };
@@ -92,7 +97,6 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
             await castUpdateProfile({
                 id: castId,
                 ...form,
-                birth_year: form.birth_year ? Number(form.birth_year) : undefined,
                 height: form.height ? Number(form.height) : undefined,
             });
             setSuccess(true);
@@ -125,31 +129,45 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
                 <span className="text-lg font-bold text-white">プロフィール編集</span>
             </div>
             <form onSubmit={handleSubmit} className="p-4">
-                <div className="flex flex-col items-center mb-4">
-                    <div className="relative">
-                        <img
-                            src={avatarPreview}
-                            alt="avatar preview"
-                            className="w-24 h-24 rounded-full object-cover border-2 border-secondary mb-2"
-                            onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
-                        />
-                        {avatarUploading && (
-                            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
-                                <div className="text-white text-xs">アップロード中...</div>
+                <div className="mb-6">
+                    <label className="block text-white mb-3 font-medium">アバター画像</label>
+                    <div className="flex flex-wrap gap-3 mb-4">
+                        {avatars.map((avatar, index) => (
+                            <div key={index} className="relative">
+                                <img
+                                    src={`${API_BASE_URL}/${avatar}`}
+                                    alt={`Avatar ${index + 1}`}
+                                    className="w-20 h-20 rounded-lg object-cover border-2 border-secondary"
+                                    onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => handleDeleteAvatar(index)}
+                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                                >
+                                    <X size={12} />
+                                </button>
                             </div>
-                        )}
+                        ))}
+                        <label className="w-20 h-20 border-2 border-dashed border-secondary rounded-lg flex items-center justify-center cursor-pointer hover:border-secondary/70 transition-colors">
+                            <div className="text-center">
+                                <Plus size={20} className="text-secondary mx-auto mb-1" />
+                                <span className="text-secondary text-xs">追加</span>
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleAvatarUpload}
+                                disabled={avatarUploading}
+                            />
+                        </label>
                     </div>
-                    <label className="text-white mb-2 cursor-pointer">
-                        アバター画像を選択
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleAvatarChange}
-                            disabled={avatarUploading}
-                        />
-                    </label>
+                    {avatarUploading && (
+                        <div className="text-secondary text-sm text-center">アップロード中...</div>
+                    )}
                 </div>
+
                 <label className="block text-white mb-2">ニックネーム</label>
                 <input
                     type="text"
@@ -160,16 +178,7 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
                     disabled={avatarUploading || saving}
                 />
                 {validationErrors.nickname && <div className="text-red-400 text-xs mb-2">{validationErrors.nickname}</div>}
-                <label className="block text-white mb-2">生年</label>
-                <input
-                    type="number"
-                    name="birth_year"
-                    value={form.birth_year}
-                    onChange={handleChange}
-                    className="w-full mb-1 p-2 rounded text-primary"
-                    disabled={avatarUploading || saving}
-                />
-                {validationErrors.birth_year && <div className="text-red-400 text-xs mb-2">{validationErrors.birth_year}</div>}
+               
                 <label className="block text-white mb-2">身長</label>
                 <input
                     type="number"
@@ -189,15 +198,7 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
                     className="w-full mb-4 p-2 rounded text-primary"
                     disabled={avatarUploading || saving}
                 />
-                <label className="block text-white mb-2">出身地</label>
-                <input
-                    type="text"
-                    name="birthplace"
-                    value={form.birthplace}
-                    onChange={handleChange}
-                    className="w-full mb-4 p-2 rounded text-primary"
-                    disabled={avatarUploading || saving}
-                />
+                
                 <label className="block text-white mb-2">プロフィール</label>
                 <textarea
                     name="profile_text"
@@ -210,7 +211,7 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
                 {success && <div className="text-green-500 text-center mb-2">プロフィールを更新しました！</div>}
                 <button 
                     type="submit" 
-                    className="w-full h-10 rounded-lg bg-secondary text-white font-bold hover:bg-red-700 transition disabled:opacity-50" 
+                    className="w-full h-16 rounded-lg bg-secondary text-lg text-white font-bold hover:bg-red-700 transition disabled:opacity-50" 
                     disabled={avatarUploading || saving}
                 >
                     {saving ? '保存中...' : '保存'}

@@ -1,6 +1,7 @@
+/*eslint-disable */
 import React, { useEffect, useState } from 'react';
-import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import CastGiftBoxPage from './CastGiftBoxPage';
 import CastActivityRecordPage from './CastActivityRecordPage';
 import CastFriendReferralPage from './CastFriendReferralPage';
@@ -11,6 +12,38 @@ import CastPointHistoryPage from './CastPointHistoryPage';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
+// Utility function to get the first available avatar from comma-separated string
+// const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+//     if (!avatarString) {
+//         return '/assets/avatar/avatar-1.png';
+//     }
+    
+//     // Split by comma and get the first non-empty avatar
+//     const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+    
+//     if (avatars.length === 0) {
+//         return '/assets/avatar/avatar-1.png';
+//     }
+    
+//     return `${API_BASE_URL}/${avatars[0]}`;
+// };
+
+// Utility function to get all avatar URLs from comma-separated string
+const getAllAvatarUrls = (avatarString: string | null | undefined): string[] => {
+    if (!avatarString) {
+        return ['/assets/avatar/avatar-1.png'];
+    }
+    
+    // Split by comma and get all non-empty avatars
+    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+    
+    if (avatars.length === 0) {
+        return ['/assets/avatar/avatar-1.png'];
+    }
+    
+    return avatars.map(avatar => `${API_BASE_URL}/${avatar}`);
+};
+
 interface Badge {
     id: number;
     name: string;
@@ -18,7 +51,7 @@ interface Badge {
     description: string;
 }
 
-interface Gift {
+interface GiftProps {
     id: number;
     name: string;
     category: string;
@@ -36,7 +69,7 @@ interface CastProfile {
     birthplace: string;
     profile_text: string;
     badges: Badge[];
-    receivedGifts: Gift[];
+    receivedGifts: GiftProps[];
 }
 
 interface PointsData {
@@ -54,15 +87,8 @@ interface PassportData {
     description: string;
 }
 
-const campaignImages = [
-    "/assets/avatar/2.jpg",
-    "/assets/avatar/AdobeStock_1067731649_Preview.jpeg",
-    // Add more image paths as needed
-];
-
 const CastProfilePage: React.FC = () => {
-    const [current, setCurrent] = useState(0);
-    const navigate = useNavigate();
+    const [currentAvatarIndex, setCurrentAvatarIndex] = useState(0);
     const [showGiftBox, setShowGiftBox] = useState(false);
     const [showActivityRecord, setShowActivityRecord] = useState(false);
     const [showFriendReferral, setShowFriendReferral] = useState(false);
@@ -79,6 +105,8 @@ const CastProfilePage: React.FC = () => {
         try {
             const data = await getCastProfileById(castId);
             setCast(data.cast);
+            // Reset avatar index when cast data changes
+            setCurrentAvatarIndex(0);
         } catch (error) {
             console.error('Failed to fetch cast profile:', error);
         }
@@ -123,6 +151,42 @@ const CastProfilePage: React.FC = () => {
         fetchCastProfile();
     };
 
+    // Avatar navigation functions
+    const handlePreviousAvatar = () => {
+        if (cast && cast.avatar) {
+            const avatarUrls = getAllAvatarUrls(cast.avatar);
+            setCurrentAvatarIndex(prev => 
+                prev === 0 ? avatarUrls.length - 1 : prev - 1
+            );
+        }
+    };
+
+    const handleNextAvatar = () => {
+        if (cast && cast.avatar) {
+            const avatarUrls = getAllAvatarUrls(cast.avatar);
+            setCurrentAvatarIndex(prev => 
+                prev === avatarUrls.length - 1 ? 0 : prev + 1
+            );
+        }
+    };
+
+    // Get current avatar URL
+    const getCurrentAvatarUrl = (): string => {
+        if (!cast || !cast.avatar) {
+            return '/assets/avatar/avatar-1.png';
+        }
+        
+        const avatarUrls = getAllAvatarUrls(cast.avatar);
+        return avatarUrls[currentAvatarIndex] || '/assets/avatar/avatar-1.png';
+    };
+
+    // Check if multiple avatars exist
+    const hasMultipleAvatars = (): boolean => {
+        if (!cast || !cast.avatar) return false;
+        const avatarUrls = getAllAvatarUrls(cast.avatar);
+        return avatarUrls.length > 1;
+    };
+
     if (showGiftBox) return <CastGiftBoxPage onBack={() => setShowGiftBox(false)} />;
     if (showActivityRecord) return <CastActivityRecordPage onBack={() => setShowActivityRecord(false)} />;
     if (showFriendReferral) return <CastFriendReferralPage onBack={() => setShowFriendReferral(false)} />;
@@ -132,7 +196,7 @@ const CastProfilePage: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="max-w-md mx-auto bg-primary min-h-screen pb-24 flex items-center justify-center">
+            <div className="max-w-md bg-primary min-h-screen pb-24 flex items-center justify-center">
                 <div className="text-white text-lg">読み込み中...</div>
             </div>
         );
@@ -157,35 +221,45 @@ const CastProfilePage: React.FC = () => {
             </div>
             {/* Campaign/Event Banners */}
             <div className="px-4 pt-2 flex flex-col items-center">
-                <div className="rounded-lg overflow-hidden mb-2 w-full border-2 border-secondary">
+                <div className="rounded-lg overflow-hidden mb-2 w-full border-2 border-secondary relative">
                     <img
-                        src={cast && cast.avatar ? `${API_BASE_URL}/${cast.avatar}` : '/assets/avatar/avatar-1.png'}
-                        alt={`campaign-${current}`}
-                        className="w-full h-16 object-cover"
+                        src={getCurrentAvatarUrl()}
+                        alt={`avatar-${currentAvatarIndex}`}
+                        className="w-full h-64 object-cover"
+                        onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
                     />
-                </div>
-                {/* Dots */}
-                <div className="flex justify-center items-center space-x-1 mt-1">
-                    {campaignImages.map((_, idx) => (
-                        <button
-                            key={idx}
-                            className={`w-2 h-2 rounded-full ${current === idx ? 'bg-secondary' : 'bg-gray-700'}`}
-                            onClick={() => setCurrent(idx)}
-                            style={{ transition: 'background 0.2s' }}
-                            aria-label={`Go to slide ${idx + 1}`}
-                        />
-                    ))}
+                    {/* Avatar Navigation Buttons */}
+                    {hasMultipleAvatars() && (
+                        <>
+                            <button
+                                onClick={handlePreviousAvatar}
+                                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
+                                aria-label="Previous avatar"
+                            >
+                                <ChevronLeft size={20} />
+                            </button>
+                            <button
+                                onClick={handleNextAvatar}
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
+                                aria-label="Next avatar"
+                            >
+                                <ChevronRight size={20} />
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
             {/* Top row: avatar, name, pencil */}
             <div className="w-full flex flex-row justify-between items-center px-4 py-4 text-left cursor-pointer transition">
                 <div className="flex items-center">
-                    <img
-                        src={cast && cast.avatar ? `${API_BASE_URL}/${cast.avatar}` : '/assets/avatar/avatar-1.png'}
-                        alt="profile"
-                        className="w-10 h-10 rounded-full mr-2 border-2 border-secondary"
-                        onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
-                    />
+                    <div className="relative">
+                        <img
+                            src={getCurrentAvatarUrl()}
+                            alt="profile"
+                            className="w-10 h-10 rounded-full mr-2 border-2 border-secondary object-cover"
+                            onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
+                        />
+                    </div>
                     <span className="font-bold text-lg text-white">{cast ? cast.nickname : '◎ えま◎'}</span>
                 </div>
                 <button className="text-white  hover:text-secondary" onClick={() => setShowEdit(true)}>
@@ -225,7 +299,7 @@ const CastProfilePage: React.FC = () => {
                 <button className="w-full py-2 rounded-lg bg-secondary text-white font-bold hover:bg-red-700 transition" onClick={() => setShowPointHistory(true)}>所持ポイント確認・精算</button>
             </div>
             {/* Passport/Partner Shop Cards */}
-            <div className="bg-primary border border-secondary rounded-lg mx-4 my-2 p-4">
+            {/* <div className="bg-primary border border-secondary rounded-lg mx-4 my-2 p-4">
                 <div className="font-bold text-base mb-2 text-white">pishattoパスポート</div>
                 <div className="flex space-x-2 overflow-x-auto overflow-y-auto">
                     {passportData.length > 0 ? (
@@ -255,7 +329,7 @@ const CastProfilePage: React.FC = () => {
                         </>
                     )}
                 </div>
-            </div>
+            </div> */}
             {/* Menu List */}
             <div className="bg-primary border border-secondary rounded-lg mx-4 my-2 p-2 divide-y divide-gray-800">
                 <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-secondary transition" onClick={() => setShowGiftBox(true)}>

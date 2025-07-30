@@ -1,5 +1,6 @@
+/*eslint-disable */
 import React, { useEffect, useState } from 'react';
-import { Heart, SlidersHorizontal, Bell, MessageCircleQuestionMark, ChevronLeft, MessageSquare, X } from 'lucide-react';
+import { Heart, SlidersHorizontal, Bell, ChevronLeft, MessageSquare, X } from 'lucide-react';
 import { getRepeatGuests, RepeatGuest, getGuestProfileById, GuestProfile, likeGuest, createChat, sendCastMessage, getLikeStatus, fetchRanking, recordGuestVisit } from '../../services/api';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -29,7 +30,6 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
         likeStatus();
     },[castId, guest.id]);
     
-    const avatarSrc = guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png';
     if (showEasyMessage) {
         return <EasyMessagePage onClose={() => setShowEasyMessage(false)} />
     }
@@ -752,13 +752,13 @@ const CastSearchPage: React.FC = () => {
                 ))}
             </div>
             {/* Floating yellow button */}
-            <button
+            {/* <button
                 className="fixed left-1/2 -translate-x-1/2 bottom-20 z-30 bg-secondary text-white rounded-full px-8 py-4 shadow-lg font-bold text-lg flex items-center hover:bg-red-700 transition"
                 onClick={() => setShowEasyMessage(true)}
             >
                 <span className="mr-2">
                     <MessageCircleQuestionMark /></span>らくらく
-            </button>
+            </button> */}
         </div>
     );
 };

@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react';
 import { getCastImmediatePaymentData, processCastImmediatePayment, getCastProfileById, getCastPointsData } from '../../services/api';
 import CardRegistrationForm from '../../components/payment/CardRegistrationForm';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 interface ImmediatePaymentData {
     total_points: number;
     immediate_points: number;
@@ -256,7 +257,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
                     <div className="flex items-center mb-3">
                         {castProfile.avatar && (
                             <img
-                                src={`${process.env.REACT_APP_API_URL?.replace('/api', '')}/avatars/${castProfile.avatar}`}
+                                src={`${API_BASE_URL}/${castProfile.avatar}`}
                                 alt={castProfile.nickname}
                                 className="w-12 h-12 rounded-full mr-3"
                             />

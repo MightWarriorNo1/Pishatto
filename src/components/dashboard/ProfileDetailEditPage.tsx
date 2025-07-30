@@ -33,10 +33,6 @@ const fields = [
     '同居人',
 ];
 
-const initialValues: { [key: string]: string } = fields.reduce((acc, cur) => {
-    acc[cur] = '未選択';
-    return acc;
-}, {} as { [key: string]: string });
 
 const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack }) => {
     const { user, setUser, phone } = useUser();
@@ -76,16 +72,16 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
         setMessage(null);
         try {
             const payload: any = { phone };
-            if (values['身長'] !== '未選択') payload.height = Number(values['身長']);
-            if (values['居住地'] !== '未選択') payload.residence = values['居住地'];
-            if (values['出身地'] !== '未選択') payload.birthplace = values['出身地'];
-            if (values['学歴'] !== '未選択') payload.education = values['学歴'];
-            if (values['年収'] !== '未選択') payload.annual_income = values['年収'];
-            if (values['お仕事'] !== '未選択') payload.occupation = values['お仕事'];
-            if (values['お酒'] !== '未選択') payload.alcohol = values['お酒'];
-            if (values['タバコ'] !== '未選択') payload.tobacco = values['タバコ'];
-            if (values['兄弟姉妹'] !== '未選択') payload.siblings = values['兄弟姉妹'];
-            if (values['同居人'] !== '未選択') payload.cohabitant = values['同居人'];
+            payload.height = Number(values['身長']);
+            payload.residence = values['居住地'];
+            payload.birthplace = values['出身地'];
+            payload.education = values['学歴'];
+            payload.annual_income = values['年収'];
+            payload.occupation = values['お仕事'];
+            payload.alcohol = values['お酒'];
+            payload.tobacco = values['タバコ'];
+            payload.siblings = values['兄弟姉妹'];
+            payload.cohabitant = values['同居人'];
             const response = await guestUpdateProfile(payload);
             if (response.guest) setUser(response.guest);
             setMessage('保存しました');

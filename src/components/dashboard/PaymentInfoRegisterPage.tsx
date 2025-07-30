@@ -3,6 +3,7 @@ import { useUser } from '../../contexts/UserContext';
 import CardManagementPage from '../payment/CardManagementPage';
 import CardRegistrationForm from '../payment/CardRegistrationForm';
 import { getPaymentInfo } from '../../services/api';
+import {ChevronLeft} from 'lucide-react';
 
 interface PaymentInfoRegisterPageProps {
   onBack?: () => void;
@@ -25,11 +26,9 @@ const PaymentInfoRegisterPage: React.FC<PaymentInfoRegisterPageProps> = ({ onBac
     setError(null);
     getPaymentInfo(userType, userId)
       .then((info) => {
-        // If payment info exists, show card management page
         if (info) {
           setShowCardForm(false);
         } else {
-          // If no payment info, show card registration form
           setShowCardForm(true);
         }
       })
@@ -38,7 +37,10 @@ const PaymentInfoRegisterPage: React.FC<PaymentInfoRegisterPageProps> = ({ onBac
   }, [userType, userId]);
 
   const handleCardRegistered = () => {
-    setShowCardForm(false);
+    // Go back to the steps requirement screen after successful card registration
+    if (onBack) {
+      onBack();
+    }
   };
 
   if (loading) {
@@ -95,7 +97,9 @@ const PaymentInfoRegisterPage: React.FC<PaymentInfoRegisterPageProps> = ({ onBac
     <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
       <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
         {onBack && (
-          <button onClick={onBack} className="mr-2 text-2xl text-white">&#60;</button>
+          <button onClick={onBack} className="mr-2 text-2xl text-white">
+            <ChevronLeft />
+          </button>
         )}
         <span className="text-lg font-bold flex-1 text-center text-white">支払い情報登録</span>
       </div>

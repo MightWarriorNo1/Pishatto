@@ -3,6 +3,7 @@ import { useUser } from '../../contexts/UserContext';
 import PayJPService, { CardData, PaymentData } from '../../services/payjp';
 import { purchasePoints, getPaymentInfo } from '../../services/api';
 import CardRegistrationForm from './CardRegistrationForm';
+import { ChevronLeft } from 'lucide-react';
 
 interface PayJPPaymentFormProps {
   amount: number;
@@ -202,7 +203,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
             onClick={() => setShowCardRegistration(false)}
             className="text-white hover:text-gray-300 mr-2"
           >
-            ← 戻る
+            <ChevronLeft className="text-white hover:text-gray-300" />
           </button>
           <h2 className="text-xl font-bold text-white">カード登録</h2>
         </div>

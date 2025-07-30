@@ -1,11 +1,29 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import { getFootprints } from '../../services/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
+// Utility function to get the first available avatar from comma-separated string
+const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+  if (!avatarString) {
+    return '/assets/avatar/female.png';
+  }
+  
+  // Split by comma and get the first non-empty avatar
+  const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+  
+  if (avatars.length === 0) {
+    return '/assets/avatar/female.png';
+  }
+  
+  return `${API_BASE_URL}/${avatars[0]}`;
+};
+
 const FootprintsSection: React.FC = () => {
   const { user } = useUser();
+  const navigate = useNavigate();
   const [footprints, setFootprints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +45,10 @@ const FootprintsSection: React.FC = () => {
         });
     }
   }, [user]);
+
+  const handleAvatarClick = (castId: number) => {
+    navigate(`/cast/${castId}`);
+  };
 
   if (loading) {
     return <div className="text-white">ローディング...</div>;
@@ -58,9 +80,10 @@ const FootprintsSection: React.FC = () => {
           <div className="flex space-x-4 items-center">
             <div className="w-16 h-16">
               <img
-                src={item.avatar ? `${API_BASE_URL}/${item.avatar}` : '/assets/avatar/female.png'}
+                src={getFirstAvatarUrl(item.avatar)}
                 alt={item.nickname || ''}
-                className="w-full h-full object-cover rounded border border-secondary"
+                className="w-full h-full object-cover rounded border border-secondary cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => handleAvatarClick(item.id)}
                 onError={(e) => {
                   e.currentTarget.src = '/assets/avatar/female.png';
                 }}

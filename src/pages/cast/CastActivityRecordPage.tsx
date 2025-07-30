@@ -1,85 +1,142 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
-import CastDashboardLayout from '../../components/cast/dashboard/CastDashboardLayout';
+import { getPointTransactions } from '../../services/api';
 
-const mockRecords = [
-    {
-        date: '2025年03月10日 16:01',
-        desc: '合流ポイント',
-        points: '+112,320P',
-        avatar: '/assets/avatar/1.jpg',
-        positive: true,
-    },
-    {
-        date: '2025年03月06日 20:36',
-        desc: 'ギフト受け取り',
-        points: '+21,600P',
-        avatar: '/assets/avatar/AdobeStock_1067731649_Preview.jpeg',
-        positive: true,
-    },
-    {
-        date: '2025年03月01日 00:01',
-        desc: '振込手数料',
-        points: '-654P',
-        avatar: '/assets/icons/profile_badge.png',
-        positive: false,
-    },
-    {
-        date: '2025年03月01日 00:01',
-        desc: '【3月定期振込】2月…',
-        points: '-900,721P',
-        avatar: '/assets/icons/profile_badge.png',
-        positive: false,
-    },
-    {
-        date: '2025年02月27日 16:00',
-        desc: '合流ポイント',
-        points: '+55,112P',
-        avatar: '',
-        positive: true,
-    },
-    {
-        date: '2025年02月24日 16:09',
-        desc: '合流ポイント',
-        points: '+86,970P',
-        avatar: '/assets/avatar/1.jpg',
-        positive: true,
-    },
-    {
-        date: '2025年02月22日 16:07',
-        desc: '合流ポイント',
-        points: '+35,362P',
-        avatar: '',
-        positive: true,
-    },
-    {
-        date: '2025年02月22日 16:03',
-        desc: '合流ポイント',
-        points: '+126,107P',
-        avatar: '/assets/avatar/AdobeStock_1190678828_Preview.jpeg',
-        positive: true,
-    },
-    {
-        date: '2025年02月21日 16:05',
-        desc: '合流ポイント',
-        points: '+56,550P',
-        avatar: '/assets/avatar/AdobeStock_1537463438_Preview.jpeg',
-        positive: true,
-    },
-    {
-        date: '2025年02月18日 16:06',
-        desc: '合流ポイント',
-        points: '+69,498P',
-        avatar: '/assets/avatar/AdobeStock_1537463446_Preview.jpeg',
-        positive: true,
-    },
-];
+interface PointTransaction {
+    id: number;
+    guest_id?: number;
+    cast_id?: number;
+    type: string;
+    amount: number;
+    reservation_id?: number;
+    description: string;
+    gift_type?: string;
+    created_at: string;
+    guest?: {
+        id: number;
+        nickname: string;
+        avatar?: string;
+    };
+    cast?: {
+        id: number;
+        nickname: string;
+        avatar?: string;
+    };
+    reservation?: {
+        id: number;
+        duration?: number;
+    };
+}
 
 const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const [transactions, setTransactions] = useState<PointTransaction[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const castId = Number(localStorage.getItem('castId'));
+
+    useEffect(() => {
+        const fetchTransactions = async () => {
+            if (!castId) {
+                setError('Cast ID not found');
+                setLoading(false);
+                return;
+            }
+
+            try {
+                setLoading(true);
+                const response = await getPointTransactions('cast', castId);
+                if (response.success) {
+                    setTransactions(response.transactions);
+                } else {
+                    setError('Failed to fetch transactions');
+                }
+            } catch (err) {
+                setError('Error fetching transaction data');
+                console.error('Error fetching transactions:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTransactions();
+    }, [castId]);
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ja-JP', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        }).replace(/\//g, '年').replace(/:/g, ':').replace(/\s/, ' ');
+    };
+
+    const getTransactionDescription = (transaction: PointTransaction) => {
+        if (transaction.type === 'transfer') {
+            return transaction.description || '予約完了';
+        } else if (transaction.type === 'gift') {
+            return 'ギフト受け取り';
+        } else if (transaction.type === 'payout') {
+            return '振込';
+        } else if (transaction.type === 'purchase') {
+            return 'ポイント購入';
+        } else {
+            return transaction.description || 'その他';
+        }
+    };
+
+    const getTransactionAvatar = (transaction: PointTransaction) => {
+        if (transaction.guest?.avatar) {
+            return transaction.guest.avatar;
+        } else if (transaction.cast?.avatar) {
+            return transaction.cast.avatar;
+        }
+        return '';
+    };
+
+    if (loading) {
+        return (
+            <div className='max-w-md bg-primary min-h-screen pb-24'>
+                <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
+                    <button
+                        className="mr-2 text-2xl text-white"
+                        onClick={onBack}
+                    >
+                        <ChevronLeft />
+                    </button>
+                    <span className="text-lg font-bold flex-1 text-center text-white">売上履歴一覧</span>
+                </div>
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-white">読み込み中...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className='max-w-md bg-primary min-h-screen pb-24'>
+                <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
+                    <button
+                        className="mr-2 text-2xl text-white"
+                        onClick={onBack}
+                    >
+                        <ChevronLeft />
+                    </button>
+                    <span className="text-lg font-bold flex-1 text-center text-white">売上履歴一覧</span>
+                </div>
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-white">{error}</div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className='max-w-md  bg-primary min-h-screen pb-24'>
             {/* Top bar */}
-            <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
+            <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
                 <button
                     className="mr-2 text-2xl text-white"
                     onClick={onBack}
@@ -89,24 +146,36 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <span className="text-lg font-bold flex-1 text-center text-white">売上履歴一覧</span>
             </div>
             {/* List */}
-            <div className="divide-y divide-red-600">
-                {mockRecords.map((item, idx) => (
-                    <div key={idx} className="flex items-center px-4 py-3 bg-primary">
-                        {item.avatar ? (
-                            <img src={item.avatar} alt="avatar" className="w-10 h-10 rounded-full object-cover mr-3 border border-secondary" />
-                        ) : (
-                            <div className="w-10 h-10 rounded-full bg-secondary mr-3" />
-                        )}
-                        <div className="flex-1">
-                            <div className="text-xs text-white">{item.date}</div>
-                            <div className="text-base text-white">{item.desc}</div>
-                        </div>
-                        <div className={`text-lg font-bold ml-2 ${item.positive ? 'text-white' : 'text-white'}`}>{item.points}</div>
+            <div className="divide-y divide-red-600 mt-16">
+                {transactions.length === 0 ? (
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-white">取引履歴がありません</div>
                     </div>
-                ))}
+                ) : (
+                    transactions.map((transaction) => (
+                        <div key={transaction.id} className="flex items-center px-4 py-3 bg-primary">
+                            {getTransactionAvatar(transaction) ? (
+                                <img 
+                                    src={getTransactionAvatar(transaction)} 
+                                    alt="avatar" 
+                                    className="w-10 h-10 rounded-full object-cover mr-3 border border-secondary" 
+                                />
+                            ) : (
+                                <div className="w-10 h-10 rounded-full bg-secondary mr-3" />
+                            )}
+                            <div className="flex-1">
+                                <div className="text-xs text-white">{formatDate(transaction.created_at)}</div>
+                                <div className="text-base text-white">{getTransactionDescription(transaction)}</div>
+                            </div>
+                            <div className={`text-lg font-bold ml-2 ${transaction.amount >= 0 ? 'text-white' : 'text-white'}`}>
+                                {transaction.amount >= 0 ? '+' : ''}{transaction.amount.toLocaleString()}P
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
             {/* 明細書リンク */}
-            <div className="px-4 py-4 text-center text-white font-bold border-b border-secondary cursor-pointer">支払い明細書を確認する</div>
+            {/* <div className="px-4 py-4 text-center text-white font-bold border-b border-secondary cursor-pointer">支払い明細書を確認する</div> */}
         </div>
     );
 };

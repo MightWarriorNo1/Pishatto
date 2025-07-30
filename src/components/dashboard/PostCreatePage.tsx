@@ -4,9 +4,11 @@ import { X } from 'lucide-react';
 interface PostCreatePageProps {
     onClose: () => void;
     onSubmit: (content: string, image?: File | null) => void;
+    userType?: 'guest' | 'cast';
+    userId?: number;
 }
 
-const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit }) => {
+const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, userType, userId }) => {
     const [content, setContent] = useState('');
     const [image, setImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);

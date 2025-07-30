@@ -1,20 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCastList } from '../../services/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+// Utility function to get the first available avatar from comma-separated string
+const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+    if (!avatarString) {
+        return '/assets/avatar/female.png';
+    }
+    
+    // Split by comma and get the first non-empty avatar
+    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+    
+    if (avatars.length === 0) {
+        return '/assets/avatar/female.png';
+    }
+    
+    return `${API_BASE_URL}/${avatars[0]}`;
+};
+
 interface CastProfile {
   id: number;
-  name: string;
-  age: number;
-  location: string;
-  isPremium: boolean;
-  imageUrl: string;
-  created_at?: string;
-  avatar?: string;
+  name?: string;
   nickname?: string;
+  avatar?: string;
   birth_year?: number;
+  location?: string;
   favorite_area?: string;
+  isPremium?: boolean;
 }
 
 const NewCastSection: React.FC = () => {
@@ -24,14 +38,17 @@ const NewCastSection: React.FC = () => {
 
   useEffect(() => {
     setLoading(true);
-    getCastList({}).then((data) => {
+    getCastList({}).then((data: any) => {
       // Filter to only casts registered today
       const today = new Date().toISOString().slice(0, 10);
-      const newCasts = (data.casts || []).filter((profile: CastProfile) => {
-        if (!profile.created_at) return false;
-        return profile.created_at.slice(0, 10) === today;
-      });
-      setCastProfiles(newCasts);
+      const todayCasts = data.casts?.filter((cast: any) => {
+        const castDate = new Date(cast.created_at).toISOString().slice(0, 10);
+        return castDate === today;
+      }) || [];
+      setCastProfiles(todayCasts);
+      setLoading(false);
+    }).catch((error) => {
+      console.error('Failed to fetch new cast profiles:', error);
       setLoading(false);
     });
   }, []);
@@ -59,7 +76,7 @@ const NewCastSection: React.FC = () => {
               >
                 <div className="aspect-w-3 aspect-h-4 relative">
                   <img
-                    src={profile.avatar ? `${API_BASE_URL}/${profile.avatar}` : '/assets/avatar/female.png'}
+                    src={getFirstAvatarUrl(profile.avatar)}
                     alt={profile.nickname || profile.name || ''}
                     className="w-full h-full object-cover rounded-lg border border-secondary"
                   />
@@ -70,9 +87,9 @@ const NewCastSection: React.FC = () => {
                   )}
                 </div>
                 <div className="p-2">
-                  <div className="flex flex-col gap-1 text-xs">
+                  <div className="flex flex-col gap-1 text-xs items-center">
                     <span className="text-white">{profile.nickname || profile.name || ''}</span>
-                    <span className="text-white">{profile.age || profile.birth_year || '-'}歳</span>
+                    <span className="text-white">{profile.birth_year ? new Date().getFullYear() - profile.birth_year + '歳' : ''}</span>
                     <span className="text-white">{profile.location || profile.favorite_area || ''}</span>
                   </div>
                 </div>

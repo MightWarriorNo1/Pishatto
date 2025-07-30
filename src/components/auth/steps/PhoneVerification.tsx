@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../../contexts/UserContext';
-import { guestLogin, fetchAllGuestPhones, getGuestProfile } from '../../../services/api';
+import { fetchAllGuestPhones, getGuestProfile, sendSmsVerificationCode, verifySmsCode } from '../../../services/api';
 import { ChevronLeft } from 'lucide-react';
 
 interface PhoneVerificationData {
@@ -23,14 +22,15 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
   updateFormData,
   formData,
 }) => {
-  const navigate = useNavigate();
   const { setUser, setPhone } = useUser();
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [phoneNumber, setPhoneNumber] = useState(formData.phoneNumber || '');
   const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(30);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [allPhones, setAllPhones] = useState<string[]>([]);
+  const [displayedCode, setDisplayedCode] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllGuestPhones().then(setAllPhones);
@@ -46,18 +46,51 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
   }, [step, timeLeft]);
 
   function isValidPhoneNumber(phone: string) {
-    // Japanese mobile: 10 or 11 digits, starts with 0
-    return /^\d{10,11}$/.test(phone);
+    // Allow international format with + or Japanese format
+    // International: + followed by 7-15 digits
+    // Japanese: 10-11 digits, may start with 0
+    const internationalPattern = /^\+[1-9]\d{7,14}$/;
+    const japanesePattern = /^0\d{9,10}$/;
+    
+    return internationalPattern.test(phone) || japanesePattern.test(phone);
   }
-  const handlePhoneSubmit = (e: React.FormEvent) => {
+
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidPhoneNumber(phoneNumber)) {
       setError('無効な電話番号です');
       return;
     }
-    updateFormData({ phoneNumber });
-    setStep('code');
-    setTimeLeft(30);
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Send SMS verification code via Twilio
+      const response = await sendSmsVerificationCode(phoneNumber);
+      if (response.success) {
+        updateFormData({ phoneNumber });
+        setStep('code');
+        setTimeLeft(30);
+        
+        // Show verification code in development mode
+        if (response.code) {
+          console.log('Development mode - Verification code:', response.code);
+          setDisplayedCode(response.code);
+        } else {
+          // Fallback: generate a test code for development
+          const testCode = Math.floor(100000 + Math.random() * 900000).toString();
+          console.log('Fallback test code generated:', testCode);
+          setDisplayedCode(testCode);
+        }
+      } else {
+        setError(response.message || 'SMS送信に失敗しました');
+      }
+    } catch (err: any) {
+      setError('SMS送信に失敗しました。もう一度お試しください。');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCodeChange = (index: number, value: string) => {
@@ -65,6 +98,8 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
       const newCode = [...verificationCode];
       newCode[index] = value;
       setVerificationCode(newCode);
+
+      console.log("VERIFICATION CODE", verificationCode);
 
       // Auto-focus next input
       if (value !== '' && index < 5) {
@@ -80,22 +115,78 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
   const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = verificationCode.join('');
-    updateFormData({ verificationCode: code });
-    setError(null);
-    // Normalize all phones for comparison
-    const normalizedPhones = allPhones.map(normalizePhone);
-    const normalizedInput = normalizePhone(phoneNumber);
-    if (normalizedPhones.includes(normalizedInput)) {
-      setPhone(phoneNumber);
-      try {
-        const { guest } = await getGuestProfile(phoneNumber);
-        if (guest) setUser(guest);
-        window.location.href = '/dashboard';
-      } catch (e) { /* handle error if needed */ }
-      
+    
+    if (code.length !== 6) {
+      setError('6桁の認証コードを入力してください');
       return;
     }
-    onNext();
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Verify SMS code via Twilio
+      const response = await verifySmsCode(phoneNumber, code);
+      
+      if (response.success) {
+        updateFormData({ verificationCode: code });
+        
+        // Check if user exists
+        const normalizedPhones = allPhones.map(normalizePhone);
+        const normalizedInput = normalizePhone(phoneNumber);
+        
+        if (normalizedPhones.includes(normalizedInput)) {
+          setPhone(phoneNumber);
+          try {
+            const { guest } = await getGuestProfile(phoneNumber);
+            if (guest) setUser(guest);
+            window.location.href = '/dashboard';
+          } catch (e) { 
+            setError('ユーザー情報の取得に失敗しました');
+          }
+          return;
+        }
+        
+        onNext();
+      } else {
+        setError(response.message || '認証コードが正しくありません');
+      }
+    } catch (err: any) {
+      setError('認証に失敗しました。もう一度お試しください。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (timeLeft > 0) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await sendSmsVerificationCode(phoneNumber);
+      
+      if (response.success) {
+        setTimeLeft(30);
+        // Show verification code in development mode for resend
+        if (response.code) {
+          console.log('Development mode - Verification code (resend):', response.code);
+          setDisplayedCode(response.code);
+        } else {
+          // Fallback: generate a test code for development
+          const testCode = Math.floor(100000 + Math.random() * 900000).toString();
+          console.log('Fallback test code generated (resend):', testCode);
+          setDisplayedCode(testCode);
+        }
+      } else {
+        setError(response.message || 'SMS再送に失敗しました');
+      }
+    } catch (err: any) {
+      setError('SMS再送に失敗しました。もう一度お試しください。');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (step === 'phone') {
@@ -118,31 +209,34 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
               <input
                 type="tel"
                 value={phoneNumber}
-                placeholder='例) 09012345346'
-                maxLength={11}
-                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder='例) 09012345346 または +15005550006'
+                maxLength={13}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))}
                 className="w-full text-lg border border-secondary rounded bg-primary text-white focus:ring-0 p-0 placeholder-secondary"
+                disabled={loading}
               />
             </div>
             <div className="text-xs text-white mt-2">※ハイフンなし</div>
             <div className="text-xs text-white mt-4 leading-relaxed">
               pishattoは、携帯電話番号の認証のため、SMS(テキスト)が送信されます。これには、SMS料金及びデータ料金がかかる場合があります。
             </div>
+            {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
           </div>
         </div>
         {/* Fixed Bottom Button */}
         <div className="p-4">
           <button
             onClick={handlePhoneSubmit}
-            disabled={!phoneNumber}
-            className={`w-full py-4 text-center text-white rounded-lg ${phoneNumber ? 'bg-secondary hover:bg-red-500' : 'bg-primary border border-secondary text-white'}`}
+            disabled={!phoneNumber || loading}
+            className={`w-full py-4 text-center text-white rounded-lg ${phoneNumber && !loading ? 'bg-secondary hover:bg-red-500' : 'bg-primary border border-secondary text-white'}`}
           >
-            SMS認証コードを送信する
+            {loading ? '送信中...' : 'SMS認証コードを送信する'}
           </button>
         </div>
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-primary flex flex-col">
       {/* Header */}
@@ -168,14 +262,28 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
                   value={digit}
                   onChange={(e) => handleCodeChange(index, e.target.value)}
                   className="w-[45px] h-[45px] text-center text-lg border border-secondary rounded-md bg-primary text-white focus:outline-none focus:border-secondary"
+                  disabled={loading}
                 />
               ))}
             </div>
+            
+            {/* Display verification code for testing */}
+            {displayedCode && (
+              <div className="mb-4 p-3 bg-secondary/20 border border-secondary rounded-lg">
+                <div className="text-xs text-white mb-1">テスト用認証コード:</div>
+                <div className="text-lg font-mono text-white text-center">{displayedCode}</div>
+              </div>
+            )}
+            
             {/* Resend Code */}
             <div className="bg-primary rounded-lg p-3 text-center">
-              <div className="text-sm text-white">
+              <button
+                onClick={handleResendCode}
+                disabled={timeLeft > 0 || loading}
+                className={`text-sm ${timeLeft > 0 || loading ? 'text-gray-500' : 'text-white hover:text-red-400'}`}
+              >
                 認証コードを再送する {timeLeft > 0 ? `(${timeLeft}秒)` : ''}
-              </div>
+              </button>
               {error && <div className="text-red-500 text-center mt-2">{error}</div>}
             </div>
             {/* SMS not received notice */}
@@ -192,10 +300,10 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
       <div className="p-4">
         <button
           onClick={handleCodeSubmit}
-          disabled={verificationCode.some(digit => digit === '')}
-          className={`w-full py-4 text-center text-white rounded-lg ${verificationCode.every(digit => digit !== '') ? 'bg-secondary hover:bg-red-400' : 'bg-primary border border-secondary text-white'}`}
+          disabled={verificationCode.some(digit => digit === '') || loading}
+          className={`w-full py-4 text-center text-white rounded-lg ${verificationCode.every(digit => digit !== '') && !loading ? 'bg-secondary hover:bg-red-400' : 'bg-primary border border-secondary text-white'}`}
         >
-          認証する
+          {loading ? '認証中...' : '認証する'}
         </button>
       </div>
     </div>

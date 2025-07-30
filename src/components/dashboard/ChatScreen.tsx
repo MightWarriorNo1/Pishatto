@@ -6,6 +6,23 @@ import { useChatMessages } from '../../hooks/useRealtime';
 import dayjs from 'dayjs';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+// Utility function to get the first available avatar from comma-separated string
+const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+    if (!avatarString) {
+        return '/assets/avatar/1.jpg';
+    }
+    
+    // Split by comma and get the first non-empty avatar
+    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+    
+    if (avatars.length === 0) {
+        return '/assets/avatar/1.jpg';
+    }
+    
+    return `${API_BASE_URL}/${avatars[0]}`;
+};
+
 interface ChatScreenProps {
     chatId: number;
     onBack: () => void;
@@ -53,6 +70,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const [acceptedProposals, setAcceptedProposals] = useState<number[]>([]);
     const [reservationId, setReservationId] = useState<number | null>(null);
     const [guestReservations, setGuestReservations] = useState<any[]>([]);
+    const [castInfo, setCastInfo] = useState<any>(null);
+    const [castLoading, setCastLoading] = useState(true);
 
     /*eslint-disable*/
     useEffect(() => {
@@ -78,9 +97,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     }, [chatId]);
 
     useEffect(() => {
-        // Fetch reservation_id for this chat
+        // Fetch reservation_id and cast information for this chat
+        setCastLoading(true);
         getChatById(chatId).then(chat => {
             if (chat && chat.reservation_id) setReservationId(chat.reservation_id);
+            if (chat && chat.cast) setCastInfo(chat.cast);
+        }).catch(() => {
+            setCastInfo(null);
+        }).finally(() => {
+            setCastLoading(false);
         });
     }, [chatId]);
 
@@ -178,20 +203,56 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
 
     return (
         <div className="bg-primary min-h-screen flex flex-col relative">
-            {/* Top bar */}
-            <div className="flex items-center px-4 py-3 border-b border-secondary bg-primary">
+            {/* Top bar (fixed) */}
+            <div className="fixed items-center flex px-4 py-3 border-b border-secondary bg-primary h-16">
                 <button onClick={onBack} className="mr-2">
                     <ChevronLeft size={30} />
                 </button>
                 <img
-                    src="/assets/avatar/1.jpg"
+                    src={castInfo?.avatar ? getFirstAvatarUrl(castInfo.avatar) : '/assets/avatar/1.jpg'}
                     alt="avatar"
                     className="w-8 h-8 rounded-full mr-2 border border-secondary"
+                    onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = '/assets/avatar/1.jpg';
+                    }}
                 />
-                <span className="font-bold text-white text-base truncate">pishattoコンシェルジュ 11歳</span>
+                <div className="flex flex-col">
+                    {castLoading ? (
+                        <span className="font-bold text-white text-base truncate">読み込み中...</span>
+                    ) : (
+                        <>
+                            <span className="font-bold text-white text-base truncate">{castInfo?.nickname || 'キャスト'}</span>
+                            <div className="flex items-center gap-2">
+                                {castInfo?.birth_year && (
+                                    <span className="text-xs text-gray-300">
+                                        {new Date().getFullYear() - castInfo.birth_year}歳
+                                    </span>
+                                )}
+                                {castInfo?.height && (
+                                    <span className="text-xs text-gray-300">
+                                        {castInfo.height}cm
+                                    </span>
+                                )}
+                                {castInfo?.residence && (
+                                    <span className="text-xs text-gray-300">
+                                        {castInfo.residence}
+                                    </span>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
-            {/* Chat history */}
-            <div className="flex-1 overflow-y-auto px-4 pb-32">
+            {/* Chat history (scrollable, between header and input) */}
+            <div
+                className="flex-1 overflow-y-auto px-4"
+                style={{
+                    marginTop: '4rem', // header height (h-16 = 4rem)
+                    marginBottom: '5.5rem', // input bar height (py-2 + px-4 + border + input height)
+                    minHeight: 0,
+                }}
+            >
                 {fetching ? (
                     <div className="flex justify-center items-center h-40 text-white">ローディング...</div>
                 ) : fetchError ? (
@@ -240,14 +301,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             <div key={msg.id || idx} className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
                                 {!isSent && (
                                     <img
-                                        src={senderAvatar ? `${API_BASE_URL}/${senderAvatar}` : '/assets/avatar/1.jpg'}
+                                        src={senderAvatar ? getFirstAvatarUrl(senderAvatar) : '/assets/avatar/1.jpg'}
                                         alt="avatar"
                                         className="w-8 h-8 rounded-full mr-2 border border-secondary mt-1"
                                     />
                                 )}
                                 <div>
-                                    {!isSent && <div className="text-xs text-gray-400 mb-1">{senderName}</div>}
-                                    <div className={isSent ? 'bg-secondary text-white rounded-lg px-4 py-2' : 'bg-white text-black rounded-lg px-4 py-2'}>
+                                    {!isSent && (
+                                        <div className="text-xs text-gray-400 mb-1 flex items-center">
+                                            <span>{senderName}</span>
+                                            {msg.cast && (
+                                                <span className="ml-2 px-1 py-0.5 bg-blue-500 text-white text-xs rounded">キャスト</span>
+                                            )}
+                                        </div>
+                                    )}
+                                    <div className={`${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''}`}>
                                         {msg.gift_id && msg.gift && (
                                             <div className="flex items-center mb-1">
                                                 <span className="text-3xl mr-2">

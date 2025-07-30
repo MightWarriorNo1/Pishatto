@@ -33,7 +33,6 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
     try {
         const paymentInfo = await getPaymentInfo('guest', user.id);
-        console.log('paymentInfo', paymentInfo);
         setHasRegisteredCard(!!paymentInfo?.card_count);
     } catch (error) {
         console.error('Failed to check registered cards:', error);
@@ -69,7 +68,9 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     return (
       <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
         <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
-          <button onClick={handlePaymentCancel} className="mr-2 text-2xl text-white">&#60;</button>
+          <button onClick={handlePaymentCancel} className="mr-2 text-2xl text-white">
+            <ChevronLeft />
+          </button>
           <span className="text-lg font-bold flex-1 text-center text-white">決済</span>
         </div>
         <div className="p-6">

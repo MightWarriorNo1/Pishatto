@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import StepIndicator from './StepIndicator';
+import { ChevronLeft } from 'lucide-react';
 
 const ageOptions = ['20代前半', '20代後半', '30代前半', '30代後半'];
 
@@ -24,7 +25,10 @@ const AgeSelect: React.FC<AgeSelectProps> = ({
         }
     };
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary p-6">
+        <div className="max-w-md mx-auto min-h-screen bg-primary">
+            <button onClick={onBack} className="text-white text-xl">
+                <ChevronLeft />
+            </button>
             <StepIndicator totalSteps={6} currentStep={4} />
             <h1 className="text-xl font-bold mb-4 text-white">年齢を選択</h1>
             <div className="flex flex-col gap-3 mb-6">

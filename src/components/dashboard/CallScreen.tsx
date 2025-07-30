@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Clock, Flag, HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import StepRequirementScreen from './StepRequirementScreen';
 import { createReservation, fetchRanking, getGuestChats } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
@@ -8,6 +9,23 @@ import MyOrderPage from './MyOrderPage';
 import React from 'react'; // Added for React.useEffect
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+// Utility function to get the first available avatar from comma-separated string
+const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+    if (!avatarString) {
+        return '/assets/avatar/avatar-1.png';
+    }
+    
+    // Split by comma and get the first non-empty avatar
+    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+    
+    if (avatars.length === 0) {
+        return '/assets/avatar/avatar-1.png';
+    }
+    
+    return `${APP_BASE_URL}/${avatars[0]}`;
+};
+
 // Add interface for applied cast data
 interface AppliedCast {
     id: number;
@@ -338,7 +356,7 @@ function OrderFinalConfirmationScreen({
     selectedCastSkills: string[];
     // onReservationSuccess: () => void;
 }) {
-    const { user } = useUser();
+    const { user, refreshUser } = useUser();
     const [reservationMessage, setReservationMessage] = useState<string | null>(null);
 
     // Calculate total cost
@@ -374,7 +392,7 @@ function OrderFinalConfirmationScreen({
                 scheduledTime = new Date(now.getTime() + minutes * 60 * 1000);
             }
 
-            await createReservation({
+            const response = await createReservation({
                 guest_id: user.id,
                 scheduled_at: toMysqlDatetime(scheduledTime),
                 location: selectedArea,
@@ -382,7 +400,14 @@ function OrderFinalConfirmationScreen({
                 details: `VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, プレミアム:${counts[2]}人, シチュ: ${selectedSituations.join(',')}, タイプ: ${selectedCastTypes.join(',')}, スキル: ${selectedCastSkills.join(',')}`,
                 time: selectedTime, // store the selected time
             });
-            setReservationMessage('予約が完了しました');
+            
+            // Update user points after successful reservation
+            if (response.points_deducted && response.remaining_points) {
+                // Refresh user data to get updated point balance
+                await refreshUser();
+            }
+            
+            setReservationMessage(`予約が完了しました (${response.points_deducted?.toLocaleString()}P 消費)`);
 
             // Trigger ranking update by fetching current rankings
             try {
@@ -399,10 +424,16 @@ function OrderFinalConfirmationScreen({
             // Navigate to main call screen after reservation
             // onReservationSuccess();
             onConfirmed();
-        } catch {
-            setReservationMessage('予約に失敗しました');
+        } catch (error: any) {
+            if (error.response?.data?.message === 'Insufficient points') {
+                setReservationMessage(`ポイントが不足しています。必要: ${error.response.data.required_points?.toLocaleString()}P, 所持: ${error.response.data.available_points?.toLocaleString()}P`);
+            } else {
+                setReservationMessage('予約に失敗しました');
+            }
         }
     };
+
+    
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
             {/* Back and Title */}
@@ -540,6 +571,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
     const [selectedTime, setSelectedTime] = useState('30分後');
     const [selectedArea, setSelectedArea] = useState('東京都');
     const [counts, setCounts] = useState([1, 1, 0]);
+    const navigate=useNavigate()
     const [selectedDuration, setSelectedDuration] = useState('1時間');
     const [selectedSituations, setSelectedSituations] = useState<string[]>([]);
     const [selectedCastTypes, setSelectedCastTypes] = useState<string[]>([]);
@@ -552,8 +584,11 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
     // Add state for applied casts
     const [appliedCasts, setAppliedCasts] = useState<AppliedCast[]>([]);
     const [loadingAppliedCasts, setLoadingAppliedCasts] = useState(false);
-    const { user } = useUser();
+    const { user} = useUser();
 
+    const handleCastClick=(castId:number)=>{
+        navigate(`/cast/${castId}`)
+    }
     // Fetch applied casts when component mounts
     useEffect(() => {
         const fetchAppliedCasts = async () => {
@@ -675,7 +710,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
                     </div>
                     <span className="ml-4 text-white text-sm">待機キャスト数</span>
                 </div>
-                <button className="w-full bg-secondary text-white py-2 rounded-lg font-bold mt-2 hover:bg-red-700 transition" onClick={() => onStartOrder && onStartOrder()}>人数を決める</button>
+                <button className="w-full bg-secondary text-white py-2 rounded-lg font-bold mt-2 hover:bg-red-700 transition">人数を決める</button>
             </div>
             {/* Choose Call */}
             <div className="bg-primary mt-3 px-4 py-4 rounded-lg mx-2 border border-secondary">
@@ -707,16 +742,17 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
                     <span className="font-bold text-base text-white">今日会えるキャスト</span>
                     <button className="text-white text-sm">すべて見る &gt;</button>
                 </div>
-                <div className="flex overflow-x-auto">
+                <div className="flex flex-row align-middle overflow-x-auto">
                     {loadingAppliedCasts ? (
                         <div className="text-white text-sm">読み込み中...</div>
                     ) : appliedCasts.length > 0 ? (
                         appliedCasts.map((cast, idx) => (
-                            <div key={cast.id} className="bg-primary rounded-lg shadow p-2 min-w-[120px] flex-shrink-0 border border-secondary mr-2">
+                            <div key={cast.id} className="bg-primary rounded-lg shadow p-2 min-w-[120px] text-center flex-shrink-0 border border-secondary mr-2 cursor-pointer" onClick={()=>handleCastClick(cast.cast_id)}>
                                 <img
-                                    src={`${APP_BASE_URL}/${cast.avatar}`}
+                                    src={getFirstAvatarUrl(cast.avatar)}
                                     alt={cast.cast_nickname}
-                                    className="w-20 h-20 rounded-lg object-cover mb-1 border-2 border-secondary"
+                                    className="w-20 h-20 rounded-lg object-cover mb-1 border-2 border-secondary mx-auto"
+                                    onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
                                 />
                                 <div className="text-xs font-bold mb-1">
                                     <span className="bg-secondary text-white px-1 rounded">プレミアム</span>

@@ -1,3 +1,4 @@
+/*eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { Clock3, UserRound, MessageCircle } from 'lucide-react';
 import TopNavigationBar from '../../components/cast/dashboard/TopNavigationBar';
@@ -5,7 +6,7 @@ import TabBar from '../../components/cast/dashboard/TabBar';
 import FilterBar from '../../components/cast/dashboard/FilterBar';
 import CallCard from '../../components/cast/dashboard/CallCard';
 import BottomNavigationBar from '../../components/cast/dashboard/BottomNavigationBar';
-import FloatingActionButton from '../../components/cast/dashboard/FloatingActionButton';
+// import FloatingActionButton from '../../components/cast/dashboard/FloatingActionButton';
 import CastSearchPage from './CastSearchPage';
 import CastTimelinePage from './CastTimelinePage';
 import CastProfilePage from './CastProfilePage';
@@ -14,7 +15,7 @@ import FeedbackForm from '../../components/feedback/FeedbackForm';
 import { Reservation, getAllReservations, getAllChats, fetchRanking } from '../../services/api';
 import { applyReservation, startReservation, stopReservation } from '../../services/api';
 import { ChatRefreshProvider, useChatRefresh } from '../../contexts/ChatRefreshContext';
-import { useTweets, useReservationUpdates } from '../../hooks/useRealtime';
+import { useTweets } from '../../hooks/useRealtime';
 import echo from '../../services/echo';
 
 // Modal component for call details (unchanged)
@@ -88,70 +89,70 @@ const ApplicationCompletionModal = ({ onClose }: { onClose: () => void }) => (
 );
 
 // --- ReservationTimer (guest style, inline for now) ---
-const ReservationTimer: React.FC<{ started_at?: string; ended_at?: string; scheduled_at?: string; duration?: number; }> = ({ started_at, ended_at, scheduled_at, duration }) => {
-    const [currentTime, setCurrentTime] = React.useState<Date>(new Date());
-    React.useEffect(() => {
-        // Stop timer if both started_at and ended_at are present
-        if (started_at && ended_at) return;
+// const ReservationTimer: React.FC<{ started_at?: string; ended_at?: string; scheduled_at?: string; duration?: number; }> = ({ started_at, ended_at, scheduled_at, duration }) => {
+//     const [currentTime, setCurrentTime] = React.useState<Date>(new Date());
+//     React.useEffect(() => {
+//         // Stop timer if both started_at and ended_at are present
+//         if (started_at && ended_at) return;
         
-        const interval = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [started_at, ended_at]);
-    const scheduled = scheduled_at ? new Date(scheduled_at) : undefined;
-    const plannedEnd = (scheduled && duration) ? new Date(scheduled.getTime() + duration * 60 * 60 * 1000) : undefined;
-    const started = started_at ? new Date(started_at) : undefined;
-    const ended = ended_at ? new Date(ended_at) : undefined;
-    const now = currentTime;
-    let state: 'before' | 'during' | 'after' = 'before';
+//         const interval = setInterval(() => {
+//             setCurrentTime(new Date());
+//         }, 1000);
+//         return () => clearInterval(interval);
+//     }, [started_at, ended_at]);
+//     const scheduled = scheduled_at ? new Date(scheduled_at) : undefined;
+//     const plannedEnd = (scheduled && duration) ? new Date(scheduled.getTime() + duration * 60 * 60 * 1000) : undefined;
+//     const started = started_at ? new Date(started_at) : undefined;
+//     const ended = ended_at ? new Date(ended_at) : undefined;
+//     const now = currentTime;
+//     let state: 'before' | 'during' | 'after' = 'before';
     
-    // If both started_at and ended_at are present, the reservation is finished
-    if (started && ended) {
-        state = 'after';
-    } else if (started && !ended) {
-        // Reservation is in progress
-        if (now >= started) state = 'during';
-    } else if (plannedEnd && now > plannedEnd && !ended) {
-        // Past planned end time but not ended
-        state = 'during';
-    }
-    const format = (d: Date) => d.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const diff = (a: Date, b: Date) => {
-        let ms = Math.abs(a.getTime() - b.getTime());
-        let h = Math.floor(ms / 3600000);
-        let m = Math.floor((ms % 3600000) / 60000);
-        let s = Math.floor((ms % 60000) / 1000);
-        return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-    };
-    return (
-        <div className="text-primary text-lg mt-2 space-y-1">
-            {state === 'before' && scheduled && plannedEnd && (
-                <>
-                    <div><b>現在時刻:</b> {format(now)}</div>
-                    <div><b>予約開始:</b> {format(scheduled)}</div>
-                    <div><b>予約終了:</b> {format(plannedEnd)}</div>
-                    <div className="font-mono text-blue-600">開始まで: {diff(scheduled, now)}</div>
-                </>
-            )}
-            {state === 'during' && scheduled && plannedEnd && (
-                <>
-                    <div><b>予約開始:</b> {format(scheduled)}</div>
-                    <div><b>予約終了:</b> {format(plannedEnd)}</div>
-                    <div><b>現在時刻:</b> {format(now)}</div>
-                    <div className="font-mono text-green-600">経過: {diff(now, scheduled)}</div>
-                </>
-            )}
-            {state === 'after' && scheduled && plannedEnd && (
-                <>
-                    <div><b>予約開始:</b> {format(scheduled)}</div>
-                    <div><b>予約終了:</b> {format(plannedEnd)}</div>
-                    {ended && <div><b>終了時刻:</b> {format(ended)}</div>}
-                </>
-            )}
-        </div>
-    );
-};
+//     // If both started_at and ended_at are present, the reservation is finished
+//     if (started && ended) {
+//         state = 'after';
+//     } else if (started && !ended) {
+//         // Reservation is in progress
+//         if (now >= started) state = 'during';
+//     } else if (plannedEnd && now > plannedEnd && !ended) {
+//         // Past planned end time but not ended
+//         state = 'during';
+//     }
+//     const format = (d: Date) => d.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+//     const diff = (a: Date, b: Date) => {
+//         let ms = Math.abs(a.getTime() - b.getTime());
+//         let h = Math.floor(ms / 3600000);
+//         let m = Math.floor((ms % 3600000) / 60000);
+//         let s = Math.floor((ms % 60000) / 1000);
+//         return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+//     };
+//     return (
+//         <div className="text-primary text-lg mt-2 space-y-1">
+//             {state === 'before' && scheduled && plannedEnd && (
+//                 <>
+//                     <div><b>現在時刻:</b> {format(now)}</div>
+//                     <div><b>予約開始:</b> {format(scheduled)}</div>
+//                     <div><b>予約終了:</b> {format(plannedEnd)}</div>
+//                     <div className="font-mono text-blue-600">開始まで: {diff(scheduled, now)}</div>
+//                 </>
+//             )}
+//             {state === 'during' && scheduled && plannedEnd && (
+//                 <>
+//                     <div><b>予約開始:</b> {format(scheduled)}</div>
+//                     <div><b>予約終了:</b> {format(plannedEnd)}</div>
+//                     <div><b>現在時刻:</b> {format(now)}</div>
+//                     <div className="font-mono text-green-600">経過: {diff(now, scheduled)}</div>
+//                 </>
+//             )}
+//             {state === 'after' && scheduled && plannedEnd && (
+//                 <>
+//                     <div><b>予約開始:</b> {format(scheduled)}</div>
+//                     <div><b>予約終了:</b> {format(plannedEnd)}</div>
+//                     {ended && <div><b>終了時刻:</b> {format(ended)}</div>}
+//                 </>
+//             )}
+//         </div>
+//     );
+// };
 
 const ReservationTimerModal: React.FC<{
     timerCall: any;
@@ -171,7 +172,7 @@ const ReservationTimerModal: React.FC<{
     const started = timerCall.started_at ? new Date(timerCall.started_at) : undefined;
     const scheduled = timerCall.scheduled_at ? new Date(timerCall.scheduled_at) : undefined;
     const plannedEnd = (scheduled && timerCall.duration) ? new Date(scheduled.getTime() + timerCall.duration * 60 * 60 * 1000) : undefined;
-    const ended = exitedInfo ? exitedInfo.ended : plannedEnd;
+    // const ended = exitedInfo ? exitedInfo.ended : plannedEnd;
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-300 bg-opacity-40">
             <div className="bg-primary rounded-2xl shadow-xl max-w-md w-full mx-2 p-6 relative animate-fadeIn flex flex-col items-center border-4 border-secondary">
@@ -229,6 +230,7 @@ const CastDashboardInner: React.FC = () => {
     const [exitedInfo, setExitedInfo] = useState<{ ended: Date; exceeded?: number } | null>(null);
     const [showFeedbackForm, setShowFeedbackForm] = useState(false);
     const [currentReservationId, setCurrentReservationId] = useState<number | null>(null);
+    const [isMessageDetailOpen, setIsMessageDetailOpen] = useState(false);
 
     useTweets((tweet) => {
       if (mainPage !== 3) {
@@ -408,43 +410,45 @@ const CastDashboardInner: React.FC = () => {
                                     onSortChange={setSelectedSort}
                                     totalCount={tabFilteredCalls.length}
                                 />
-                                <div className="flex-1 grid grid-cols-2 gap-2 p-2 bg-primary">
-                                    {tabFilteredCalls.map((call, idx) => (
-                                        <div
-                                            key={idx}
-                                            onClick={() => !call.closed && call.active !== false && setSelectedCall(call)}
-                                            className={
-                                                call.closed || call.active === false
-                                                    ?  'opacity-50 cursor-not-allowed'
-                                                    : 'cursor-pointer'
-                                            }
-                                        >
-                                            <CallCard
-                                                {...call}
-                                                location={call.location || ''}
-                                                duration={call.duration || 0}
-                                                type={call.type || ''}
-                                                greyedOut={call.closed || call.active === false}
-                                                started_at={call.started_at}
-                                                ended_at={call.ended_at}
-                                                points_earned={call.points_earned}
-                                                isOwnReservation={call.cast_id === castId}
-                                                onStart={call.cast_id === castId && !call.started_at && typeof call.id === 'number' ? async () => {
-                                                    const updated = await startReservation(call.id as number, castId);
-                                                    setReservations(prev => prev.map(r => r.id === call.id ? { ...r, ...updated } : r));
-                                                } : undefined}
-                                                onStop={call.cast_id === castId && call.started_at && !call.ended_at && typeof call.id === 'number' ? async () => {
-                                                    const updated = await stopReservation(call.id as number, castId);
-                                                    setReservations(prev => prev.map(r => r.id === call.id ? { ...r, ...updated } : r));
-                                                } : undefined}
-                                            />
-                                        </div>
-                                    ))}
+                                <div className="flex-1 bg-primary border-t border-secondary">
+                                    <div className="grid grid-cols-2 gap-2 p-2 bg-primary">
+                                        {tabFilteredCalls.map((call, idx) => (
+                                            <div
+                                                key={idx}
+                                                onClick={() => !call.closed && call.active !== false && setSelectedCall(call)}
+                                                className={
+                                                    call.closed || call.active === false
+                                                        ?  'opacity-50 cursor-not-allowed'
+                                                        : 'cursor-pointer'
+                                                }
+                                            >
+                                                <CallCard
+                                                    {...call}
+                                                    location={call.location || ''}
+                                                    duration={call.duration || 0}
+                                                    type={call.type || ''}
+                                                    greyedOut={call.closed || call.active === false}
+                                                    started_at={call.started_at}
+                                                    ended_at={call.ended_at}
+                                                    points_earned={call.points_earned}
+                                                    isOwnReservation={call.cast_id === castId}
+                                                    onStart={call.cast_id === castId && !call.started_at && typeof call.id === 'number' ? async () => {
+                                                        const updated = await startReservation(call.id as number, castId);
+                                                        setReservations(prev => prev.map(r => r.id === call.id ? { ...r, ...updated } : r));
+                                                    } : undefined}
+                                                    onStop={call.cast_id === castId && call.started_at && !call.ended_at && typeof call.id === 'number' ? async () => {
+                                                        const updated = await stopReservation(call.id as number, castId);
+                                                        setReservations(prev => prev.map(r => r.id === call.id ? { ...r, ...updated } : r));
+                                                    } : undefined}
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </>
                         )}
                         {mainPage === 1 && <CastSearchPage />}
-                        {mainPage === 2 && <MessagePage />}
+                        {mainPage === 2 && <MessagePage setIsMessageDetailOpen={setIsMessageDetailOpen} />}
                         {mainPage === 3 && <CastTimelinePage />}
                         {mainPage === 4 && <CastProfilePage />}
                     </>
@@ -525,9 +529,11 @@ const CastDashboardInner: React.FC = () => {
                 )}
             </div>
             {/* Bottom Navigation Bar - fixed and centered */}
-            <div className="w-full max-w-md fixed bottom-0 left-1/2 -translate-x-1/2 z-20">
-                <BottomNavigationBar selected={mainPage} onTabChange={setMainPage} messageBadgeCount={unreadCount} tweetBadgeCount={tweetBadgeCount} />
-            </div>
+            {(!isMessageDetailOpen) && (
+                <div className="w-full max-w-md fixed bottom-0 left-1/2 -translate-x-1/2 z-20">
+                    <BottomNavigationBar selected={mainPage} onTabChange={setMainPage} messageBadgeCount={unreadCount} tweetBadgeCount={tweetBadgeCount} />
+                </div>
+            )}
         </div>
     );
 };

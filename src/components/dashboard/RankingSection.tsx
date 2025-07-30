@@ -4,6 +4,22 @@ import { fetchRanking } from '../../services/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
+// Utility function to get the first available avatar from comma-separated string
+const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+    if (!avatarString) {
+        return '/assets/avatar/female.png';
+    }
+    
+    // Split by comma and get the first non-empty avatar
+    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+    
+    if (avatars.length === 0) {
+        return '/assets/avatar/female.png';
+    }
+    
+    return `${API_BASE_URL}/${avatars[0]}`;
+};
+
 interface RankingProfile {
   id: number;
   name: string;
@@ -59,7 +75,7 @@ const RankingSection: React.FC = () => {
             >
               <div className="relative">
                 <img
-                  src={profile.avatar ? `${API_BASE_URL}/${profile.avatar}` : '/assets/avatar/female.png'}
+                  src={profile.avatar ? getFirstAvatarUrl(profile.avatar) : '/assets/avatar/female.png'}
                   alt={profile.name}
                   className="w-full aspect-square object-cover rounded border border-secondary"
                 />

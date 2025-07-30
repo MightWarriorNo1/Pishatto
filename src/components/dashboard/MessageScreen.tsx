@@ -141,6 +141,14 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                         chats.map(chat => {
                             // Find notification for this chat
                             const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
+                            
+                            // Get the first avatar from comma-separated string
+                            const getAvatarSrc = () => {
+                                if (!chat.avatar) return '/assets/avatar/1.jpg';
+                                const avatars = chat.avatar.split(',').map((avatar: string) => avatar.trim());
+                                return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/1.jpg';
+                            };
+                            
                             return (
                                 <button
                                     key={chat.id}
@@ -157,20 +165,28 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                 >
                                     <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
                                         <img
-                                            src={chat.avatar ? `${API_BASE_URL}/${chat.avatar}` : '/assets/avatar/1.jpg'}
+                                            src={getAvatarSrc()}
                                             alt="avatar"
                                             className="w-12 h-12 rounded-full mr-3 border border-secondary"
                                         />
                                         <div className="flex-1">
                                             <div className="flex items-center">
-                                                <span className="font-bold text-white text-base mr-2">グループチャット {chat.id}</span>
+                                                <span className="font-bold text-white text-base mr-2">
+                                                    {chat.cast_nickname || `グループチャット ${chat.id}`}
+                                                </span>
                                                 {chat.unread > 0 && (
                                                     <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
                                                         {chat.unread}
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="text-sm text-white">ゲスト: {chat.guest_id}, キャスト: {chat.cast_id}</div>
+                                            <div className="text-sm text-white">
+                                                {chat.created_at && (
+                                                    <div className="text-xs text-gray-400 mt-1">
+                                                        作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </button>

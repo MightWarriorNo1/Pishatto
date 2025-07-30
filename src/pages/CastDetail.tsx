@@ -1,3 +1,4 @@
+/*eslint-disable */
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Share, Heart, MessageSquare } from 'lucide-react';
@@ -34,7 +35,20 @@ const CastDetail: React.FC = () => {
             setLoading(true);
             getCastProfileById(Number(id)).then((data) => {
                 setCast(data.cast);
+                setBadges(data.badges || []);
+                setTitles(data.titles || []);
+                setRecommended(data.recommended || []);
                 console.log("cast", data.cast);
+                console.log("badges", data.badges);
+                
+                // Only show badges that the cast has actually received
+                // The backend should return only the badges assigned to this cast
+                if (data.badges && data.badges.length > 0) {
+                    console.log("Cast received badges:", data.badges);
+                } else {
+                    console.log("Cast has no badges");
+                }
+                
                 setLoading(false);
             });
         }
@@ -108,13 +122,16 @@ const CastDetail: React.FC = () => {
     };
 
 
-    // Mock image data
-    const images = [
-        '/assets/avatar/female.png',
-        '/assets/avatar/man.png',
-        '/assets/avatar/female.png',
-        '/assets/avatar/female.png',
-    ];
+    // Parse multiple avatars from comma-separated string
+    const getAvatarUrls = () => {
+        if (cast?.avatar) {
+            return cast.avatar.split(',').map((avatar: string) => avatar.trim()).filter((avatar: string) => avatar);
+        }
+        return [];
+    };
+
+    const avatarUrls = getAvatarUrls();
+    const images = avatarUrls.length > 0 ? avatarUrls.map((url: string) => `${API_BASE_URL}/${url}`) : ['/assets/avatar/female.png'];
 
     const timePosted = '10時間前';
 
@@ -159,45 +176,61 @@ const CastDetail: React.FC = () => {
                 </div>
                 {/* Main Image View */}
                 <div className="pt-16 bg-primary">
-                    <div className="relative w-full h-full">
+                    <div className="rounded-lg overflow-hidden mb-2 w-full border-2 border-secondary relative">
                         <img
-                            src={cast.avatar ? `${API_BASE_URL}/${cast.avatar}` : '/assets/avatar/female.png'}
+                            src={images[currentImageIndex]}
                             alt="Cast"
-                            className="w-full h-full object-contain"
+                            className="w-full h-64 object-cover"
+                            onError={(e) => {
+                                e.currentTarget.src = '/assets/avatar/female.png';
+                            }}
                         />
+                    
+                        
                         {/* Image Navigation Buttons */}
-                        <button
-                            type="button"
-                            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-primary/50 rounded-full p-2"
-                            onClick={() => setCurrentImageIndex((prev) => Math.max(0, prev - 1))}
-                        >
-                            <ChevronLeft />
-                        </button>
-                        <button
-                            type="button"
-                            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-primary/50 rounded-full p-2"
-                            onClick={() => setCurrentImageIndex((prev) => Math.min(images.length - 1, prev + 1))}
-                        >
-                            <ChevronRight />
-                        </button>
+                        {images.length > 1 && (
+                            <>
+                                <button
+                                    type="button"
+                                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-primary/50 hover:bg-primary/70 rounded-full p-2 text-white transition-colors"
+                                    onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                                >
+                                    <ChevronLeft className="w-5 h-5" />
+                                </button>
+                                <button
+                                    type="button"
+                                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-primary/50 hover:bg-primary/70 rounded-full p-2 text-white transition-colors"
+                                    onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                                >
+                                    <ChevronRight className="w-5 h-5" />
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
                 {/* Thumbnails and Info */}
                 <div className="w-full max-w-md bg-primary border-t border-secondary">
                     <div className="p-4">
                         {/* Thumbnails */}
-                        {/* <div className="flex gap-2 mb-4 overflow-x-auto">
-                            {images.map((img, index) => (
-                                <button
-                                    type="button"
-                                    key={index}
-                                    onClick={() => setCurrentImageIndex(index)}
-                                    className={`w-16 h-16 flex-shrink-0 ${currentImageIndex === index ? 'border-2 border-secondary' : ''}`}
-                                >
-                                    <img src={img} alt={`Thumbnail ${index + 1}`} className="w-full h-full object-cover" />
-                                </button>
-                            ))}
-                        </div> */}
+                        {images.length > 1 && (
+                            <div className="flex gap-2 mb-4 overflow-x-auto">
+                                {images.map((img: string, index: number) => (
+                                    <button
+                                        type="button"
+                                        key={index}
+                                        onClick={() => setCurrentImageIndex(index)}
+                                        className={`w-16 h-16 flex-shrink-0 rounded-lg ${currentImageIndex === index ? 'border-2 border-secondary' : 'border border-gray-600'}`}
+                                    >
+                                        <img 
+                                            src={img} 
+                                            alt={`Thumbnail ${index + 1}`} 
+                                            className="w-full h-full object-cover rounded-lg" 
+                                            onError={e => (e.currentTarget.src = '/assets/avatar/female.png')}
+                                        />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                         {/* Time Posted */}
                         <div className="text-sm text-white mb-2">
                             {timePosted}
@@ -251,7 +284,7 @@ const CastDetail: React.FC = () => {
                                                 </div>
                                             )}
                                         </div>
-                                        <div className="text-sm mt-1 text-white">{badge.name || badge.label || ''}</div>
+                                        <div className="text-sm mt-1 text-white">{badge.name || ''}</div>
                                     </div>
                                 ))
                             )}
@@ -284,18 +317,22 @@ const CastDetail: React.FC = () => {
                     {/* Like Button */}
                     <div className="px-4 py-2">
                         {!liked ? (
-                        <button className="w-full border border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" onClick={handleLike}>
+                            <button className="w-full bg-secondary text-white rounded-lg py-4 flex items-center justify-center font-bold text-lg hover:bg-red-700 transition" onClick={handleLike}>
                                 <span className="mr-2">
-                                    <Heart /></span>
+                                    <Heart />
+                                </span>
                                 <span className="text-base">
-                                </span>いいね
+                                    いいね
+                                </span>
                             </button>
                         ) : (
-                            <button className="w-full border bg-secondary border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" onClick={handleMessage} disabled={messageLoading}>
+                            <button className="w-full border bg-secondary border-secondary text-white rounded-lg py-4 flex items-center justify-center font-bold text-lg hover:bg-red-700 transition" onClick={handleMessage} disabled={messageLoading}>
                                 <span className="mr-2">
-                                    <MessageSquare /></span>
+                                    <MessageSquare />
+                                </span>
                                 <span className="text-base">
-                                </span>メッセージ
+                                    メッセージ
+                                </span>
                             </button>
                         )}
                     </div>

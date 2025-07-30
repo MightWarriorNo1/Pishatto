@@ -1,7 +1,9 @@
+/*eslint-disable */
 import React, { useState, useEffect } from 'react';
+import {useNavigate} from 'react-router-dom';
 import PostCreatePage from './PostCreatePage';
 import { Bell, Plus, SlidersHorizontal, Heart } from 'lucide-react';
-import { fetchAllTweets, createTweet, likeTweet, getTweetLikeCount, getTweetLikeStatus } from '../../services/api';
+import { fetchAllTweets, createTweet, likeTweet, getTweetLikeStatus } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useTweets } from '../../hooks/useRealtime';
 
@@ -10,6 +12,7 @@ const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
 
 const Timeline: React.FC = () => {
     const { user } = useUser();
+    const navigate = useNavigate();
     const [showPostCreate, setShowPostCreate] = useState(false);
     const [tweets, setTweets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -66,6 +69,14 @@ const Timeline: React.FC = () => {
         });
     });
 
+    const handleAvatarClick = (tweet: any) => {
+        if (tweet.cast?.id) {
+            navigate(`/cast/${tweet.cast.id}`);
+        } else if (tweet.guest?.id) {
+            navigate(`/guest/${tweet.guest.id}`);
+        }
+    };
+
     const handleAddTweet = async (content: string, image?: File | null) => {
         if (!user) return;
         try {
@@ -84,7 +95,7 @@ const Timeline: React.FC = () => {
         setLikeCounts((prev) => ({ ...prev, [tweetId]: res.count }));
     };
 
-    if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} />;
+    if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} userType="guest" userId={user?.id} />;
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-20 relative">
             {/* Top bar */}
@@ -107,18 +118,19 @@ const Timeline: React.FC = () => {
                     <div className="text-gray-400 py-10 text-center">つぶやきがありません</div>
                 ) : (
                     tweets.map((tweet, idx) => (
-                        <div key={tweet.id || idx} className="bg-primary rounded-lg shadow-sm p-4 flex flex-col border border-secondary">
+                        <div key={tweet.id || idx} className="bg-primary rounded-lg shadow-sm p-4 flex flex-col border border-secondary cursor-pointer" >
                             <div className="flex items-center mb-1">
                                 <img
                                     src={
                                         tweet.guest?.avatar
                                             ? `${APP_BASE_URL}/${tweet.guest.avatar}`
                                             : tweet.cast?.avatar
-                                                ? `${APP_BASE_URL}/${tweet.cast.avatar}`
+                                                ? `${APP_BASE_URL}/${tweet.cast.avatar.split(',')[0].trim()}`
                                                 : '/assets/avatar/avatar-1.png'
                                     }
                                     alt={tweet.guest?.nickname || tweet.cast?.nickname || ''}
-                                    className="w-10 h-10 rounded-full object-cover mr-2 border border-secondary"
+                                    className="w-10 h-10 rounded-full object-cover mr-2 border border-secondary cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => handleAvatarClick(tweet)}
                                 />
                                 <div className="flex flex-col flex-1">
                                     <span className="font-bold text-sm text-white">{tweet.guest?.nickname || tweet.cast?.nickname || 'ゲスト/キャスト'}</span>
@@ -134,7 +146,7 @@ const Timeline: React.FC = () => {
                                             : `${IMAGE_BASE_URL}/storage/${tweet.image}`
                                     }
                                     alt="tweet"
-                                    className="max-h-48 rounded my-2 border border-secondary"
+                                    className="max-h-48 rounded my-2 border border-secondary object-cover"
                                 />
                             )}
                             {/* Like button and count */}

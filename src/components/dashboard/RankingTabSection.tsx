@@ -1,7 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { fetchRanking } from '../../services/api';
 
-const API_BASE_URL=process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+// Utility function to get the first available avatar from comma-separated string
+const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+    if (!avatarString) {
+        return '/assets/avatar/avatar-1.png';
+    }
+    
+    // Split by comma and get the first non-empty avatar
+    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+    
+    if (avatars.length === 0) {
+        return '/assets/avatar/avatar-1.png';
+    }
+    
+    return `${API_BASE_URL}/${avatars[0]}`;
+};
 
 type UserType = 'cast' | 'guest';
 type TimePeriod = 'current' | 'yesterday' | 'lastWeek' | 'lastMonth' | 'allTime';
@@ -204,7 +220,7 @@ const RankingTabSection: React.FC = () => {
                 <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-white text-base font-bold mr-2">{idx + 1}</div>
                 <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-400 border-2 border-secondary mr-2">
                   <img
-                    src={`${API_BASE_URL}/${item.avatar}` || '/assets/avatar/avatar-1.png'}
+                    src={getFirstAvatarUrl(item.avatar)}
                     alt={item.name || item.nickname || ''}
                     className="w-full h-full object-cover"
                   />

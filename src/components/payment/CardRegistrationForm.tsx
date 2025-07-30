@@ -94,7 +94,6 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
           setError(response.error || 'カード登録中にエラーが発生しました');
         }
       } catch (apiError: any) {
-        console.error('API Error:', apiError);
         if (apiError.response?.status === 500) {
           setError('サーバーエラーが発生しました。データベースの設定を確認してください。');
         } else {
@@ -125,7 +124,9 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
 
         {success && (
           <div className="bg-green-600 rounded-lg p-3 text-center">
-            <p className="text-white text-sm">{success}</p>
+            <p className="text-white text-sm">
+              
+            </p>
           </div>
         )}
 

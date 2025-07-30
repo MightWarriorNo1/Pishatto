@@ -124,9 +124,9 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     />;
 
     return (
-        <div className="max-w-md min-h-screen bg-primary">
-            {/* Header */}  
-            <div className="flex items-center px-4 py-3 border-b border-secondary">
+        <div className="max-w-md min-h-screen bg-primary relative">
+            {/* Header (fixed) */}  
+            <div className="fixed h-16 flex items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button onClick={onBack} className="mr-2">
                     <ChevronLeft className="text-white" size={24} />
                 </button>
@@ -136,9 +136,15 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                 </div>
             </div>
 
-            {/* Messages area */}
-            {/* <div className="h-[calc(100vh-180px)] overflow-y-auto"> */}
-            <div className="p-4">
+            {/* Messages area (scrollable between header and input) */}
+            <div
+                className="overflow-y-auto px-4"
+                style={{
+                    marginTop: '4rem', // header height (h-16 = 4rem)
+                    marginBottom: '5.5rem', // input area height
+                    minHeight: 0,
+                }}
+            >
                 {(messages || []).map((msg, idx) => {
                     let proposal: Proposal | null = null;
                     try {
@@ -202,10 +208,9 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                 })}
             </div>
 
-            {/* Input area */}
-            <div className="bottom-0 w-full max-w-md flex flex-col px-4 py-2 border-b border-secondary bg-primary">
+            {/* Input area (fixed at bottom) */}
+            <div className="fixed bottom-0 w-full max-w-md flex flex-col px-4 py-2 border-t border-secondary bg-primary" style={{height: '5.5rem'}}>
                 <div className="flex items-center mb-2">
-                    
                     <input
                         className="flex-1 border-none outline-none text-lg bg-primary text-white placeholder-red-400"
                         placeholder="メッセージを入力..."
@@ -276,10 +281,18 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     );
 };
 
-const MessagePage: React.FC = () => {
+interface MessagePageProps {
+    setIsMessageDetailOpen?: (open: boolean) => void;
+}
+
+const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => {
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (setIsMessageDetailOpen) setIsMessageDetailOpen(!!selectedMessage);
+    }, [selectedMessage, setIsMessageDetailOpen]);
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -318,47 +331,51 @@ const MessagePage: React.FC = () => {
 
     return (
         <div className="max-w-md min-h-screen bg-primary pb-20">
-            <div className="border-b border-secondary">
+            {/* Fixed Header */}
+            <div className="fixed top-0 left-0 right-0 max-w-md mx-auto bg-primary z-20 border-b border-secondary">
                 <h1 className="text-lg font-bold text-center py-3 text-white">メッセージ</h1>
             </div>
-            {loading ? (
-                <div className="text-center text-white py-10">ローディング...</div>
-            ) : (
-                <div className="divide-y divide-secondary">
-                    {messages.length === 0 ? (
-                        <div className="text-center text-gray-400 py-10">メッセージがありません</div>
-                    ) : (
-                        messages.map((message) => (
-                            <div
-                                key={message.id}
-                                className="flex items-center p-4 cursor-pointer hover:bg-secondary/10"
-                                onClick={() => {
-                                    setSelectedMessage(message);
-                                    setMessages(prevMsgs => prevMsgs.map(m => m.id === message.id ? { ...m, unread: false } : m));
-                                }}
-                            >
-                                <img src={message.avatar} alt={message.name} className="w-12 h-12 rounded-full mr-4" />
-                                <div className="flex-1">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <span className="font-bold text-white">{message.name}</span>
-                                        <span className="text-xs text-gray-400">
-                                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center">
-                                        {/* <p className="text-sm text-gray-300 truncate">{message.lastMessage}</p> */}
-                                        {message.unread && (
-                                            <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
-                                                NEW
+            {/* Content with top margin to account for fixed header */}
+            <div className="pt-16">
+                {loading ? (
+                    <div className="text-center text-white py-10">ローディング...</div>
+                ) : (
+                    <div className="divide-y divide-secondary">
+                        {messages.length === 0 ? (
+                            <div className="text-center text-gray-400 py-10">メッセージがありません</div>
+                        ) : (
+                            messages.map((message) => (
+                                <div
+                                    key={message.id}
+                                    className="flex items-center p-4 cursor-pointer hover:bg-secondary/10"
+                                    onClick={() => {
+                                        setSelectedMessage(message);
+                                        setMessages(prevMsgs => prevMsgs.map(m => m.id === message.id ? { ...m, unread: false } : m));
+                                    }}
+                                >
+                                    <img src={message.avatar} alt={message.name} className="w-12 h-12 rounded-full mr-4" />
+                                    <div className="flex-1">
+                                        <div className="flex justify-between items-center mb-1">
+                                            <span className="font-bold text-white">{message.name}</span>
+                                            <span className="text-xs text-gray-400">
+                                                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
-                                        )}
+                                        </div>
+                                        <div className="flex items-center">
+                                            {/* <p className="text-sm text-gray-300 truncate">{message.lastMessage}</p> */}
+                                            {message.unread && (
+                                                <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
+                                                    NEW
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            )}
+                            ))
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

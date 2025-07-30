@@ -5,6 +5,7 @@ import RegisterSteps from './components/auth/RegisterSteps';
 import CastLoginOptions from './components/cast/auth/CastLoginOptions';
 import Dashboard from './components/dashboard/Dashboard';
 import CastDetail from './pages/CastDetail';
+import GuestDetail from './pages/GuestDetail';
 import CastDashboard from './pages/cast/CastDashboard';
 import CastGradeDetailPage from './pages/cast/CastGradeDetailPage';
 import CastProfilePage from './pages/cast/CastProfilePage';
@@ -25,6 +26,7 @@ const App: React.FC = () => {
           <Route path="/cast/login" element={<CastLoginWrapper />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/cast/:id" element={<CastDetail />} />
+          <Route path="/guest/:id" element={<GuestDetail />} />
           <Route path="/cast/dashboard" element={<CastDashboard />} />
           <Route path="/cast/grade-detail" element={<CastGradeDetailPage />} />
           <Route path="/cast/profile" element={<CastProfilePage />} />

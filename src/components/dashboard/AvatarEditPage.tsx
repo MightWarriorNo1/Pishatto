@@ -1,9 +1,25 @@
 import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import ProfileDetailEditPage from './ProfileDetailEditPage';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+// Utility function to get the first available avatar from comma-separated string
+const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+    if (!avatarString) {
+        return '/assets/avatar/AdobeStock_1095142160_Preview.jpeg';
+    }
+    
+    // Split by comma and get the first non-empty avatar
+    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+    
+    if (avatars.length === 0) {
+        return '/assets/avatar/AdobeStock_1095142160_Preview.jpeg';
+    }
+    
+    return `${API_BASE_URL}/${avatars[0]}`;
+};
 
 interface AvatarEditPageProps {
     onBack: () => void;
@@ -13,7 +29,7 @@ const PreviewProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const { user } = useUser();
     const getAvatarUrl = () => {
         if (user?.avatar) {
-            return `${API_BASE_URL}/${user.avatar}`;
+            return getFirstAvatarUrl(user.avatar);
         }
         return '/assets/avatar/2.jpg';
     };
@@ -21,7 +37,7 @@ const PreviewProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
             {/* Large avatar image with back button */}
             <div className="relative">
-                <img src={getAvatarUrl()} alt="avatar" className="w-full h-64 object-cover" />
+                <img src={getAvatarUrl()} alt="avatar" className="w-full h-full object-cover" />
                 <button onClick={onBack} className="absolute top-4 left-4 bg-primary bg-opacity-70 rounded-full p-2 text-2xl shadow text-white border border-secondary">
                     <ChevronLeft />
                 </button>
@@ -31,7 +47,7 @@ const PreviewProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <span className="bg-secondary text-white text-xs rounded px-2 py-1 font-bold">最近入会</span>
             </div>
             {/* Profile card */}
-            <div className="flex items-center gap-3 px-4 mt-4">
+            <div className="flex items-center gap-3 px-4 mt-4 ">
                 <img src={getAvatarUrl()} alt="avatar" className="w-14 h-14 rounded-full object-cover border-2 border-secondary shadow" />
                 <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -43,7 +59,7 @@ const PreviewProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
             </div>
             {/* Profile details */}
-            <div className="grid grid-cols-2 gap-y-2 text-sm">
+            <div className="grid grid-cols-2 gap-y-2 text-sm px-4 mt-4">
                 <div className="text-white">身長：</div><div className="font-bold text-white">{user?.height || ''}</div>
                 <div className="text-white">居住地：</div><div className="font-bold text-white">{user?.residence || ''}</div>
                 <div className="text-white">出身地：</div><div className="font-bold text-white">{user?.birthplace || ''}</div>
@@ -66,7 +82,7 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
 
     const getAvatarUrl = () => {
         if (user?.avatar) {
-            return `${API_BASE_URL}/${user.avatar}`;
+            return getFirstAvatarUrl(user.avatar);
         }
         return '/assets/avatar/AdobeStock_1095142160_Preview.jpeg'; // Default avatar
     };
@@ -115,7 +131,7 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
                     </button>
                 </div>
             </div>
-            {/* Nickname */}
+
             <div className="bg-primary px-4 py-3 border-b border-secondary">
                 <div className="text-xs text-white font-bold mb-1">ニックネーム</div>
                 <div className="flex items-center justify-between">
@@ -149,4 +165,4 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
     );
 };
 
-export default AvatarEditPage; 
+export default AvatarEditPage;
