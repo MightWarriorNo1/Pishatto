@@ -82,7 +82,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center border border-gray-200 min-w-[320px] max-w-[90vw] max-h-[90vh] overflow-y-auto">
+        <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center border border-gray-200 min-w-[420px] max-w-[420px] max-h-[90vh] overflow-y-auto">
           <h2 className="font-bold text-xl mb-6 text-gray-800">フィードバックを送信</h2>
           
           {/* Comment Section */}

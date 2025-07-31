@@ -1,11 +1,39 @@
-import React from 'react';
+/*eslint-disable */
+import React, { useState , useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
+import { useUser } from '../../contexts/UserContext';
+import { getPaymentInfo } from '../../services/api';
 
 interface PaymentInfoSimplePageProps {
     onBack: () => void;
 }
 
 const PaymentInfoSimplePage: React.FC<PaymentInfoSimplePageProps> = ({ onBack }) => {
+    const { user } = useUser();
+    const [paymentInfo, setPaymentInfo] = useState<any>(null);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+
+    const getPaymentInfoData = async () => {
+        setIsLoading(true);
+        try {
+            const paymentInfo = await getPaymentInfo('guest', user?.id || 0);
+            console.log("PAYMENT INFO", paymentInfo);
+            setPaymentInfo(paymentInfo);
+        } catch (error) {
+            console.error("Error fetching payment info:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.id) {
+            getPaymentInfoData();
+        }
+    }, [user?.id]);
+
+    console.log("PAYMENT INFO", paymentInfo);
+
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary">
             {/* Top bar */}
@@ -17,7 +45,16 @@ const PaymentInfoSimplePage: React.FC<PaymentInfoSimplePageProps> = ({ onBack })
             </div>
             {/* Add payment info section */}
             <div className="bg-primary border-b border-secondary">
-                <div className="text-white font-bold px-4 py-4 border-b border-secondary">お支払い情報を追加する</div>
+                <div className="text-white text-center font-bold px-4 py-4 border-b border-secondary">
+                    {isLoading ? (
+                        <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            読み込み中...
+                        </div>
+                    ) : (
+                        paymentInfo?.card_count > 0 ? "支払い情報は既に登録されています。" : "お支払い情報を登録する"
+                    )}
+                </div>
             </div>
             {/* Explanatory text */}
             <div className="px-4 py-4 text-xs text-white">

@@ -7,11 +7,12 @@ import {ChevronLeft} from 'lucide-react';
 
 interface PaymentInfoRegisterPageProps {
   onBack?: () => void;
+  onCardRegistered?: () => void;
   userType?: 'guest' | 'cast';
   userId?: number;
 }
 
-const PaymentInfoRegisterPage: React.FC<PaymentInfoRegisterPageProps> = ({ onBack, userType = 'guest', userId }) => {
+const PaymentInfoRegisterPage: React.FC<PaymentInfoRegisterPageProps> = ({ onBack, onCardRegistered, userType = 'guest', userId }) => {
   const [showCardForm, setShowCardForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +38,10 @@ const PaymentInfoRegisterPage: React.FC<PaymentInfoRegisterPageProps> = ({ onBac
   }, [userType, userId]);
 
   const handleCardRegistered = () => {
+    // Notify parent that card was registered successfully
+    if (onCardRegistered) {
+      onCardRegistered();
+    }
     // Go back to the steps requirement screen after successful card registration
     if (onBack) {
       onBack();

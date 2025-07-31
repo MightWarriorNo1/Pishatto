@@ -45,22 +45,22 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
     }
   }, [step, timeLeft]);
 
-  function isValidPhoneNumber(phone: string) {
-    // Allow international format with + or Japanese format
-    // International: + followed by 7-15 digits
-    // Japanese: 10-11 digits, may start with 0
-    const internationalPattern = /^\+[1-9]\d{7,14}$/;
-    const japanesePattern = /^0\d{9,10}$/;
-    
-    return internationalPattern.test(phone) || japanesePattern.test(phone);
-  }
+  // function isValidPhoneNumber(phone: string) {
+  //   // Allow international format with + or Japanese format
+  //   // International: + followed by 7-15 digits
+  //   // Japanese: 10-11 digits, may start with 0
+  //   const internationalPattern = /^\+[1-9]\d{7,14}$/;
+  //   const japanesePattern = /^0\d{9,10}$/;
+
+  //   return internationalPattern.test(phone) || japanesePattern.test(phone);
+  // }
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isValidPhoneNumber(phoneNumber)) {
-      setError('無効な電話番号です');
-      return;
-    }
+    // if (!isValidPhoneNumber(phoneNumber)) {
+    //   setError('無効な電話番号です');
+    //   return;
+    // }
 
     setLoading(true);
     setError(null);
@@ -72,7 +72,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
         updateFormData({ phoneNumber });
         setStep('code');
         setTimeLeft(30);
-        
+
         // Show verification code in development mode
         if (response.code) {
           console.log('Development mode - Verification code:', response.code);
@@ -115,7 +115,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
   const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = verificationCode.join('');
-    
+
     if (code.length !== 6) {
       setError('6桁の認証コードを入力してください');
       return;
@@ -127,26 +127,26 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
     try {
       // Verify SMS code via Twilio
       const response = await verifySmsCode(phoneNumber, code);
-      
+
       if (response.success) {
         updateFormData({ verificationCode: code });
-        
+
         // Check if user exists
         const normalizedPhones = allPhones.map(normalizePhone);
         const normalizedInput = normalizePhone(phoneNumber);
-        
+
         if (normalizedPhones.includes(normalizedInput)) {
           setPhone(phoneNumber);
           try {
             const { guest } = await getGuestProfile(phoneNumber);
             if (guest) setUser(guest);
             window.location.href = '/dashboard';
-          } catch (e) { 
+          } catch (e) {
             setError('ユーザー情報の取得に失敗しました');
           }
           return;
         }
-        
+
         onNext();
       } else {
         setError(response.message || '認証コードが正しくありません');
@@ -160,13 +160,13 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
 
   const handleResendCode = async () => {
     if (timeLeft > 0) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await sendSmsVerificationCode(phoneNumber);
-      
+
       if (response.success) {
         setTimeLeft(30);
         // Show verification code in development mode for resend
@@ -209,7 +209,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
               <input
                 type="tel"
                 value={phoneNumber}
-                placeholder='例) 09012345346 または +15005550006'
+                placeholder='例) +15005550006'
                 maxLength={13}
                 onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))}
                 className="w-full text-lg border border-secondary rounded bg-primary text-white focus:ring-0 p-0 placeholder-secondary"
@@ -266,7 +266,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
                 />
               ))}
             </div>
-            
+
             {/* Display verification code for testing */}
             {displayedCode && (
               <div className="mb-4 p-3 bg-secondary/20 border border-secondary rounded-lg">
@@ -274,7 +274,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
                 <div className="text-lg font-mono text-white text-center">{displayedCode}</div>
               </div>
             )}
-            
+
             {/* Resend Code */}
             <div className="bg-primary rounded-lg p-3 text-center">
               <button

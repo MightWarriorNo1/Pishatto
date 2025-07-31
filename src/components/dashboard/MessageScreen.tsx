@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FiBell } from 'react-icons/fi';
+import { FiBell, FiStar } from 'react-icons/fi';
 import ChatScreen from './ChatScreen';
 import { useChatRefresh } from '../../contexts/ChatRefreshContext';
-import { getGuestChats, getNotifications, markNotificationRead } from '../../services/api';
+import { getGuestChats, getNotifications, markNotificationRead, getCastProfileById, favoriteChat, unfavoriteChat, getFavoriteChats, isChatFavorited } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useNotifications } from '../../hooks/useRealtime';
 
@@ -18,22 +18,151 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const [selectedTab, setSelectedTab] = useState<'all' | 'favorite'>('all');
     const [chats, setChats] = useState<any[]>([]);
     const [messageNotifications, setMessageNotifications] = useState<any[]>([]);
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [castProfiles, setCastProfiles] = useState<{[key: number]: any}>({});
+    const [favoritedChatIds, setFavoritedChatIds] = useState<Set<number>>(new Set());
     const { user } = useUser();
     const { refreshKey } = useChatRefresh();
     useEffect(() => {
-        getGuestChats(userId, 'guest')
-            .then(chats => setChats(chats || []));
+            const loadChatsAndFavorites = async () => {
+        try {
+            // Fetch chats and favorites in parallel
+            const [chatsData, favoritesData] = await Promise.all([
+                getGuestChats(userId, 'guest'),
+                user ? getFavoriteChats(user.id) : Promise.resolve({ chats: [] })
+            ]);
+
+            const chats = chatsData || [];
+            setChats(chats);
+
+            // Set favorited chat IDs
+            const favoriteChats = favoritesData.chats || [];
+            const favoritedIds = new Set<number>(favoriteChats.map((chat: any) => chat.id as number));
+            setFavoritedChatIds(favoritedIds);
+
+            // Also check favorite status for each chat to ensure accuracy
+            if (user && chats.length > 0) {
+                const favoriteStatusPromises = chats.map(async (chat: any) => {
+                    try {
+                        const status = await isChatFavorited(chat.id, user.id);
+                        return { chatId: chat.id, favorited: status.favorited };
+                    } catch (error) {
+                        console.error(`Error checking favorite status for chat ${chat.id}:`, error);
+                        return { chatId: chat.id, favorited: false };
+                    }
+                });
+
+                const favoriteStatuses = await Promise.all(favoriteStatusPromises);
+                const actualFavoritedIds = new Set<number>(
+                    favoriteStatuses
+                        .filter(status => status.favorited)
+                        .map(status => status.chatId)
+                );
+                setFavoritedChatIds(actualFavoritedIds);
+            }
+
+                // Fetch cast profiles for each chat
+                if (chats.length > 0) {
+                    const uniqueCastIds = Array.from(new Set(chats.map((chat: any) => chat.cast_id).filter(Boolean))) as number[];
+                    const profilePromises = uniqueCastIds.map((castId: number) => 
+                        getCastProfileById(castId)
+                            .then(profile => ({ castId, profile }))
+                            .catch(error => {
+                                console.error(`Failed to fetch cast profile for cast ID ${castId}:`, error);
+                                return { castId, profile: null };
+                            })
+                    );
+                    
+                    Promise.all(profilePromises).then(results => {
+                        const profilesMap: {[key: number]: any} = {};
+                        results.forEach(({ castId, profile }) => {
+                            if (profile) {
+                                profilesMap[castId] = profile;
+                            }
+                        });
+                        setCastProfiles(profilesMap);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading chats and favorites:', error);
+            }
+        };
+
+        loadChatsAndFavorites();
+
         // Fetch message notifications
         if (user) {
             getNotifications('guest', user.id).then((notifications) => {
                 const messageNotifs = (notifications || []).filter((n: any) => n.type === 'message');
                 setMessageNotifications(messageNotifs);
-                // Only call onNotificationCountChange if not in message tab
-                // (Dashboard.tsx now handles clearing count on tab switch)
             });
         }
     }, [userId, refreshKey, user]);
 
+    // Filter chats based on search query
+    const filteredChats = chats.filter(chat => {
+        if (!searchQuery.trim()) return true;
+        
+        const query = searchQuery.toLowerCase();
+        
+        // Filter by nickname
+        const nickname = chat.cast_nickname?.toLowerCase() || '';
+        if (nickname.includes(query)) return true;
+        
+        // Filter by age using cast profile
+        const castProfile = castProfiles[chat.cast_id];
+        if (castProfile) {
+            const age = (new Date().getFullYear() - castProfile.cast.birth_year).toString();
+            if (age.includes(query)) return true;
+        }
+        
+        return false;
+    });
+
+    // Filter favorite chats based on search query - use main chats filtered by favorite status
+    const filteredFavoriteChats = chats.filter(chat => {
+        // First filter by favorite status
+        if (!favoritedChatIds.has(chat.id)) return false;
+        
+        // Then filter by search query
+        if (!searchQuery.trim()) return true;
+        
+        const query = searchQuery.toLowerCase();
+        
+        // Filter by nickname
+        const nickname = chat.cast_nickname?.toLowerCase() || '';
+        if (nickname.includes(query)) return true;
+        
+        // Filter by age using cast profile
+        const castProfile = castProfiles[chat.cast_id];
+        if (castProfile) {
+            const age = (new Date().getFullYear() - castProfile.cast.birth_year).toString();
+            if (age.includes(query)) return true;
+        }
+        
+        return false;
+    });
+    // Handle star toggle
+    const handleStarToggle = async (chatId: number, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent chat opening
+        if (!user) return;
+
+        try {
+            if (favoritedChatIds.has(chatId)) {
+                await unfavoriteChat(user.id, chatId);
+                setFavoritedChatIds(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(chatId);
+                    return newSet;
+                });
+            } else {
+                await favoriteChat(user.id, chatId);
+                setFavoritedChatIds(prev => new Set(Array.from(prev).concat([chatId])));
+            }
+        } catch (error) {
+            console.error('Error toggling star:', error);
+        }
+    };
 
     // Listen for real-time notifications
     useNotifications(user?.id ?? '', (notification) => {
@@ -103,44 +232,24 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
             <div className="px-4 mt-3">
                 <input
                     type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full px-4 py-2 rounded-full border border-secondary bg-primary text-white text-sm placeholder-red-500"
-                    placeholder="ニックネームで検索"
+                    placeholder="ニックネーム・年齢で検索"
                 />
             </div>
             {/* Message list */}
             <div className="px-4 mt-4">
                 {selectedTab === 'all' ? (
-                    chats.length === 0 ? (
-                        <div className="text-white text-center py-8">グループチャットがありません</div>
+                    filteredChats.length === 0 ? (
+                        <div className="text-white text-center py-8">
+                            {searchQuery.trim() ? '検索結果がありません' : 'グループチャットがありません'}
+                        </div>
                     ) : (
-                        // chats.map(chat => (
-                        //     <button key={chat.id} className="w-full" onClick={() => setShowChat(chat.id)}>
-                        //         <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
-                        //             <img
-                        //                 src={chat.avatar || '/assets/avatar/1.jpg'}
-                        //                 alt="avatar"
-                        //                 className="w-12 h-12 rounded-full mr-3 border border-secondary"
-                        //             />
-                        //             <div className="flex-1">
-                        //                 <div className="flex items-center">
-                        //                     <span className="font-bold text-white text-base mr-2">グループチャット {chat.id}</span>
-                        //                     {chat.unread > 0 && (
-                        //                         <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
-                        //                             {chat.unread}
-                        //                         </span>
-                        //                     )}
-                        //                 </div>
-                        //                 <div className="text-sm text-white">ゲスト: {chat.guest_id}, キャスト: {chat.cast_id}</div>
-                        //             </div>
-                        //             <div className="text-sm text-white bg-secondary rounded-full px-2 py-0.5">
-                        //                 {messageNotifications.length}
-                        //             </div>
-                        //         </div>
-                        //     </button>
-                        // ))
-                        chats.map(chat => {
+                        filteredChats.map(chat => {
                             // Find notification for this chat
                             const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
+                            const isFavorited = favoritedChatIds.has(chat.id);
                             
                             // Get the first avatar from comma-separated string
                             const getAvatarSrc = () => {
@@ -150,53 +259,131 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                             };
                             
                             return (
-                                <button
-                                    key={chat.id}
-                                    className="w-full"
-                                    onClick={async () => {
-                                        setShowChat(chat.id);
-                                        // Immediately set unread to 0 for this chat in local state
-                                        setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
-                                        if (chatNotif) {
-                                            await markNotificationRead(chatNotif.id);
-                                            setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));
-                                        }
-                                    }}
-                                >
-                                    <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
-                                        <img
-                                            src={getAvatarSrc()}
-                                            alt="avatar"
-                                            className="w-12 h-12 rounded-full mr-3 border border-secondary"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="flex items-center">
-                                                <span className="font-bold text-white text-base mr-2">
-                                                    {chat.cast_nickname || `グループチャット ${chat.id}`}
-                                                </span>
-                                                {chat.unread > 0 && (
-                                                    <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
-                                                        {chat.unread}
+                                <div key={chat.id} className="relative">
+                                    <button
+                                        className="w-full"
+                                        onClick={async () => {
+                                            setShowChat(chat.id);
+                                            // Immediately set unread to 0 for this chat in local state
+                                            setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
+                                            if (chatNotif) {
+                                                await markNotificationRead(chatNotif.id);
+                                                setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));
+                                            }
+                                        }}
+                                    >
+                                        <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
+                                            <img
+                                                src={getAvatarSrc()}
+                                                alt="avatar"
+                                                className="w-12 h-12 rounded-full mr-3 border border-secondary"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="flex items-center">
+                                                    <span className="font-bold text-white text-base mr-2">
+                                                        {chat.cast_nickname || `グループチャット ${chat.id}`}
                                                     </span>
-                                                )}
-                                            </div>
-                                            <div className="text-sm text-white">
-                                                {chat.created_at && (
-                                                    <div className="text-xs text-gray-400 mt-1">
-                                                        作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
-                                                    </div>
-                                                )}
+                                                    {chat.unread > 0 && (
+                                                        <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
+                                                            {chat.unread}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-sm text-white">
+                                                    {chat.created_at && (
+                                                        <div className="text-xs text-gray-400 mt-1">
+                                                            作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </button>
+                                    </button>
+                                    {/* Star button */}
+                                    <button
+                                        onClick={(e) => handleStarToggle(chat.id, e)}
+                                        className="absolute top-2 right-2 p-1 rounded-full bg-primary border border-secondary hover:bg-secondary transition-colors"
+                                    >
+                                        <FiStar 
+                                            className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`} 
+                                        />
+                                    </button>
+                                </div>
                             );
                         })
                     )
                 ) : (
-                    <div className="flex flex-col gap-3">
-                        <div className="text-white text-center py-8">お気に入りのキャストがいません</div>
-                    </div>
+                    filteredFavoriteChats.length === 0 ? (
+                        <div className="text-white text-center py-8">
+                            {searchQuery.trim() ? '検索結果がありません' : 'お気に入りのチャットがありません'}
+                        </div>
+                    ) : (
+                        filteredFavoriteChats.map(chat => {
+                            // Find notification for this chat
+                            const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
+                            const isFavorited = favoritedChatIds.has(chat.id);
+                            
+                            // Get the first avatar from comma-separated string
+                            const getAvatarSrc = () => {
+                                if (!chat.avatar) return '/assets/avatar/1.jpg';
+                                const avatars = chat.avatar.split(',').map((avatar: string) => avatar.trim());
+                                return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/1.jpg';
+                            };
+                            
+                            return (
+                                <div key={chat.id} className="relative">
+                                    <button
+                                        className="w-full"
+                                        onClick={async () => {
+                                            setShowChat(chat.id);
+                                            // Immediately set unread to 0 for this chat in local state
+                                            setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
+                                            if (chatNotif) {
+                                                await markNotificationRead(chatNotif.id);
+                                                setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));
+                                            }
+                                        }}
+                                    >
+                                        <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
+                                            <img
+                                                src={getAvatarSrc()}
+                                                alt="avatar"
+                                                className="w-12 h-12 rounded-full mr-3 border border-secondary"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="flex items-center">
+                                                    <span className="font-bold text-white text-base mr-2">
+                                                        {chat.cast_nickname || `グループチャット ${chat.id}`}
+                                                    </span>
+                                                    {chat.unread > 0 && (
+                                                        <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
+                                                            {chat.unread}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-sm text-white">
+                                                    {chat.created_at && (
+                                                        <div className="text-xs text-gray-400 mt-1">
+                                                            作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </button>
+                                    {/* Star button */}
+                                    <button
+                                        onClick={(e) => handleStarToggle(chat.id, e)}
+                                        className="absolute top-2 right-2 p-1 rounded-full bg-primary border border-secondary hover:bg-secondary transition-colors"
+                                    >
+                                        <FiStar 
+                                            className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`} 
+                                        />
+                                    </button>
+                                </div>
+                            );
+                        })
+                    )
                 )}
             </div>
         </div>

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronLeft, Gift } from 'lucide-react';
 import { fetchCastReceivedGifts } from '../../services/api';
-import { useNavigate } from 'react-router-dom';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
@@ -10,7 +9,7 @@ const CastGiftBoxPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [gifts, setGifts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const castId = Number(localStorage.getItem('castId'));
-    
+
     useEffect(() => {
         if (!castId) return;
         fetchCastReceivedGifts(castId)
@@ -23,7 +22,7 @@ const CastGiftBoxPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             {/* Top bar */}
             <div className="flex items-center px-4 pt-4 pb-2 border-b bg-primary border-secondary">
                 <button className="mr-2 text-2xl text-white" onClick={onBack}>
-                    <ChevronLeft size={24}/>
+                    <ChevronLeft size={24} />
                 </button>
                 <span className="flex-1 text-center text-base font-bold text-white">ギフトボックス</span>
             </div>
@@ -49,7 +48,7 @@ const CastGiftBoxPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     <span className="text-xs text-white/50">{gift.date ? new Date(gift.date).toLocaleString('ja-JP') : ''}</span>
                                 </div>
                                 <div className="text-sm text-white flex items-center">
-                                    {gift.gift_icon && <img src={gift.gift_icon.startsWith('/') ? gift.gift_icon : `${IMAGE_BASE_URL}/storage/${gift.gift_icon}`} alt="gift" className="w-5 h-5 mr-1 inline-block" />} {gift.gift_name}
+                                    {gift.gift_icon} {gift.gift_name}
                                 </div>
                             </div>
                             <div className="text-white font-bold text-lg ml-2">+{gift.points}P</div>

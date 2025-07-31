@@ -10,14 +10,14 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
   if (!avatarString) {
     return '/assets/avatar/female.png';
   }
-  
+
   // Split by comma and get the first non-empty avatar
   const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-  
+
   if (avatars.length === 0) {
     return '/assets/avatar/female.png';
   }
-  
+
   return `${API_BASE_URL}/${avatars[0]}`;
 };
 
@@ -28,6 +28,7 @@ const FootprintsSection: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  console.log("Footprints", footprints);
   useEffect(() => {
     if (user) {
       setLoading(true);
@@ -47,7 +48,16 @@ const FootprintsSection: React.FC = () => {
   }, [user]);
 
   const handleAvatarClick = (castId: number) => {
-    navigate(`/cast/${castId}`);
+    console.log('Avatar clicked for cast ID:', castId);
+    if (!castId) {
+      console.error('Cast ID is missing or invalid');
+      return;
+    }
+    try {
+      navigate(`/cast/${castId}`);
+    } catch (error) {
+      console.error('Navigation error:', error);
+    }
   };
 
   if (loading) {
@@ -83,7 +93,7 @@ const FootprintsSection: React.FC = () => {
                 src={getFirstAvatarUrl(item.avatar)}
                 alt={item.nickname || ''}
                 className="w-full h-full object-cover rounded border border-secondary cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => handleAvatarClick(item.id)}
+                onClick={() => handleAvatarClick(item.cast_id)}
                 onError={(e) => {
                   e.currentTarget.src = '/assets/avatar/female.png';
                 }}

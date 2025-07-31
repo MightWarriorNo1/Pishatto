@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Calendar, Image} from 'lucide-react';
+import { ChevronLeft, Calendar, Image, Search, Filter} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import MessageProposalPage from './MessageProposalPage';
 import { sendMessage, getChatMessages,getChatById, getGuestReservations } from '../../../services/api';
 import { getCastChats } from '../../../services/api';
@@ -14,6 +15,7 @@ interface Message {
     lastMessage: string;
     timestamp: Date;
     unread: boolean;
+    guestAge?: string; // This now stores birth year from backend
 }
 
 interface MessageDetailProps {
@@ -32,6 +34,7 @@ interface Proposal {
   }
 
 const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
+    const navigate = useNavigate();
     const [messageProposal, setMessageProposal] = useState(false);
     const [newMessage, setNewMessage] = useState('');
     const [sending, setSending] = useState(false);
@@ -101,7 +104,14 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
         }
     };
 
+    const handleAvatarClick = () => {
+        if (guestId) {
+            navigate(`/guest/${guestId}`);
+        }
+    };
+
     if (messageProposal) return <MessageProposalPage 
+        chatId={Number(message.id)}
         onBack={() => setMessageProposal(false)}
         onProposalSend={async (proposal) => {
             setSending(true);
@@ -131,14 +141,19 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     <ChevronLeft className="text-white" size={24} />
                 </button>
                 <div className="flex items-center">
-                    <img src={`${message.avatar}`} alt={message.name} className="w-8 h-8 rounded-full mr-2" />
+                    <img 
+                        src={`${message.avatar}`} 
+                        alt={message.name} 
+                        className="w-8 h-8 rounded-full mr-2 cursor-pointer hover:opacity-80 transition-opacity" 
+                        onClick={handleAvatarClick}
+                    />
                     <span className="text-lg font-bold text-white">{message.name}</span>
                 </div>
             </div>
 
             {/* Messages area (scrollable between header and input) */}
             <div
-                className="overflow-y-auto px-4"
+                className="overflow-y-auto px-4 py-4"
                 style={{
                     marginTop: '4rem', // header height (h-16 = 4rem)
                     marginBottom: '5.5rem', // input area height
@@ -157,7 +172,6 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                             res.guest_id === guestId &&
                             dayjs(res.scheduled_at).isSame(proposal?.date)
                         );
-                        console.log("IS ACCEPTED", isAccepted);
                         return (
                             <div key={msg.id || idx} className="flex justify-end mb-4">
                                 <div className={`bg-orange-500 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative ${isAccepted ? 'opacity-50' : ''}`}>
@@ -178,30 +192,34 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     const isSent = String(msg.sender_cast_id) === String(castId);
                     return (
                         <div key={msg.id || idx} className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
-                            <div className={isSent ? 'bg-secondary text-white rounded-lg px-4 py-2 max-w-[80%]' : 'bg-white text-black rounded-lg px-4 py-2 max-w-[80%]'}>
-                                {/* Gift display */}
-                                {msg.gift_id && msg.gift && (
-                                    <div className="flex items-center mb-1">
-                                        <span className="text-3xl mr-2">
-                                            <img src={`${IMAGE_BASE_URL}/storage/${msg.gift.icon}`} alt="gift" className="w-10 h-10" />
-                                        </span>
-                                        <span className="font-bold">{msg.gift.name}</span>
-                                        <span className="ml-2 text-xs text-primary font-bold">{msg.gift.points}P</span>
-                                    </div>
-                                )}
-                                {msg.image && (
-                                    <img
-                                        src={
-                                            msg.image.startsWith('http')
-                                                ? msg.image
-                                                : `${IMAGE_BASE_URL}/storage/${msg.image}`
-                                        }
-                                        alt="sent"
-                                        className="max-w-full max-h-40 rounded mb-2"
-                                    />
-                                )}
-                                {msg.message}
-                                <div className="text-xs text-gray-400 mt-1 text-right">{msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''}</div>
+                            <div className="flex flex-col">
+                                <div className={isSent ? 'w-full bg-secondary text-white rounded-lg px-4 py-2' : 'w-full bg-white text-black rounded-lg px-4 py-2'}>
+                                    {/* Gift display */}
+                                    {msg.gift_id && msg.gift && (
+                                        <div className="flex items-center mb-1">
+                                            <span className="text-3xl mr-2">
+                                                {msg.gift.icon}
+                                            </span>
+                                            <span className="font-bold">{msg.gift.name}</span>
+                                            <span className="ml-2 text-xs text-primary font-bold">{msg.gift.points}P</span>
+                                        </div>
+                                    )}
+                                    {msg.image && (
+                                        <img
+                                            src={
+                                                msg.image.startsWith('http')
+                                                    ? msg.image
+                                                    : `${IMAGE_BASE_URL}/storage/${msg.image}`
+                                            }
+                                            alt="sent"
+                                            className="max-w-full max-h-40 rounded mb-2"
+                                        />
+                                    )}
+                                    {msg.message}
+                                </div>
+                                <div className={`text-xs text-gray-400 mt-1 ${isSent ? 'text-right' : 'text-left'}`}>
+                                    {msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''}
+                                </div>
                             </div>
                         </div>
                     );
@@ -289,6 +307,9 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
+    const [filterNickname, setFilterNickname] = useState('');
+    const [filterAge, setFilterAge] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
 
     useEffect(() => {
         if (setIsMessageDetailOpen) setIsMessageDetailOpen(!!selectedMessage);
@@ -306,6 +327,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
                     return;
                 }
                 const chats = await getCastChats(castId);
+                console.log('Raw chats data from backend:', chats);
                 // Map chat data to Message interface
                 const mapped = (chats || []).map((chat: any) => ({
                     id: chat.id,
@@ -314,6 +336,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
                     lastMessage: chat.last_message || '',
                     timestamp: chat.updated_at ? new Date(chat.updated_at) : new Date(),
                     unread: !!chat.unread,
+                    guestAge: chat.guest_age || '', // Backend returns 'guest_age' but it contains birth year
                 }));
                 setMessages(mapped);
             } catch (err) {
@@ -325,6 +348,25 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
         fetchMessages();
     }, []);
 
+    // Filter messages based on nickname and age
+    const filteredMessages = messages.filter(message => {
+        const nicknameMatch = !filterNickname || 
+            message.name.toLowerCase().includes(filterNickname.toLowerCase());
+        
+        // Calculate age from birth year if available
+        let guestAge = null;
+        if (message.guestAge) {
+            const currentYear = new Date().getFullYear();
+            guestAge = currentYear - Number(message.guestAge);
+            console.log(`Guest: ${message.name}, Birth Year: ${message.guestAge}, Calculated Age: ${guestAge}`);
+        }
+        
+        const ageMatch = !filterAge || 
+            (guestAge && guestAge.toString().includes(filterAge));
+        
+        return nicknameMatch && ageMatch;
+    });
+
     if (selectedMessage) {
         return <MessageDetail message={selectedMessage} onBack={() => setSelectedMessage(null)} />;
     }
@@ -335,16 +377,95 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
             <div className="fixed top-0 left-0 right-0 max-w-md mx-auto bg-primary z-20 border-b border-secondary">
                 <h1 className="text-lg font-bold text-center py-3 text-white">メッセージ</h1>
             </div>
-            {/* Content with top margin to account for fixed header */}
-            <div className="pt-16">
+
+            {/* Filter Bar - Fixed under header */}
+            <div className="fixed top-16 left-0 right-0 max-w-md mx-auto bg-primary z-10 border-b border-secondary">
+                <div className="flex items-center px-4 py-2">
+                    <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="ニックネームで検索..."
+                            value={filterNickname}
+                            onChange={(e) => setFilterNickname(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-secondary text-white rounded-lg border-none outline-none placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+                        />
+                        {filterNickname && (
+                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                                    {filteredMessages.length}/{messages.length}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`ml-2 p-2 rounded-lg transition-colors ${
+                            showFilters || filterAge ? 'bg-secondary text-white' : 'bg-secondary/50 text-gray-400'
+                        }`}
+                        title="フィルター"
+                    >
+                        <Filter size={20} />
+                    </button>
+                </div>
+                
+                {/* Age Filter - Expandable */}
+                {showFilters && (
+                    <div className="px-4 pb-2">
+                        <div className="flex items-center">
+                            <input
+                                type="text"
+                                placeholder="年齢で検索 (例: 20, 30)"
+                                value={filterAge}
+                                onChange={(e) => setFilterAge(e.target.value)}
+                                className="flex-1 px-3 py-2 bg-secondary text-white rounded-lg border-none outline-none placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+                            />
+                            {(filterNickname || filterAge) && (
+                                <button
+                                    onClick={() => {
+                                        setFilterNickname('');
+                                        setFilterAge('');
+                                    }}
+                                    className="ml-2 px-3 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
+                                    title="フィルターをクリア"
+                                >
+                                    クリア
+                                </button>
+                            )}
+                        </div>
+                        {filterAge && (
+                            <div className="mt-2 text-xs text-gray-400">
+                                年齢フィルター: {filterAge} ({filteredMessages.length}件)
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Content with top margin to account for fixed header and filter bar */}
+            <div className="pt-32">
                 {loading ? (
                     <div className="text-center text-white py-10">ローディング...</div>
                 ) : (
                     <div className="divide-y divide-secondary">
-                        {messages.length === 0 ? (
-                            <div className="text-center text-gray-400 py-10">メッセージがありません</div>
+                        {/* Show total count when no filters */}
+                        {!filterNickname && !filterAge && messages.length > 0 && (
+                            <div className="px-4 py-2 text-xs text-gray-400 text-center">
+                                全{messages.length}件のメッセージ
+                            </div>
+                        )}
+                        
+                        {filteredMessages.length === 0 ? (
+                            <div className="text-center text-gray-400 py-10">
+                                {messages.length === 0 ? 'メッセージがありません' : '検索結果がありません'}
+                                {(filterNickname || filterAge) && (
+                                    <div className="mt-2 text-sm">
+                                        フィルターを変更してください
+                                    </div>
+                                )}
+                            </div>
                         ) : (
-                            messages.map((message) => (
+                            filteredMessages.map((message) => (
                                 <div
                                     key={message.id}
                                     className="flex items-center p-4 cursor-pointer hover:bg-secondary/10"

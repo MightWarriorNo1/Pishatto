@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { getPointTransactions } from '../../services/api';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000/api"; 
+
 interface PointTransaction {
     id: number;
     guest_id?: number;
@@ -90,7 +92,9 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         if (transaction.guest?.avatar) {
             return transaction.guest.avatar;
         } else if (transaction.cast?.avatar) {
-            return transaction.cast.avatar;
+            // Handle multiple avatars - get the first one
+            const avatars = transaction.cast.avatar.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+            return avatars.length > 0 ? avatars[0] : '';
         }
         return '';
     };
@@ -156,7 +160,7 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                         <div key={transaction.id} className="flex items-center px-4 py-3 bg-primary">
                             {getTransactionAvatar(transaction) ? (
                                 <img 
-                                    src={getTransactionAvatar(transaction)} 
+                                    src={`${API_BASE_URL}/${getTransactionAvatar(transaction)}`} 
                                     alt="avatar" 
                                     className="w-10 h-10 rounded-full object-cover mr-3 border border-secondary" 
                                 />

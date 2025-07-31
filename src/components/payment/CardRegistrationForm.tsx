@@ -125,7 +125,7 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
         {success && (
           <div className="bg-green-600 rounded-lg p-3 text-center">
             <p className="text-white text-sm">
-              
+              {success}
             </p>
           </div>
         )}

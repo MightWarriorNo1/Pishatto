@@ -9,6 +9,8 @@ import CastImmediatePaymentPage from './CastImmediatePaymentPage';
 import { getCastProfileById, getCastPointsData, getCastPassportData } from '../../services/api';
 import CastProfileEditPage from './CastProfileEditPage';
 import CastPointHistoryPage from './CastPointHistoryPage';
+import CastNotificationPage from './CastNotificationPage';
+import QRCodeModal from '../../components/dashboard/QRCodeModal';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -96,6 +98,8 @@ const CastProfilePage: React.FC = () => {
     const castId = Number(localStorage.getItem('castId'));
     const [showEdit, setShowEdit] = useState(false);
     const [showPointHistory, setShowPointHistory] = useState(false);
+    const [showNotification, setShowNotification] = useState(false);
+    const [showQRCode, setShowQRCode] = useState(false);
     const [cast, setCast] = useState<CastProfile | null>(null);
     const [pointsData, setPointsData] = useState<PointsData | null>(null);
     const [passportData, setPassportData] = useState<PassportData[]>([]);
@@ -187,12 +191,16 @@ const CastProfilePage: React.FC = () => {
         return avatarUrls.length > 1;
     };
 
+
+
     if (showGiftBox) return <CastGiftBoxPage onBack={() => setShowGiftBox(false)} />;
     if (showActivityRecord) return <CastActivityRecordPage onBack={() => setShowActivityRecord(false)} />;
     if (showFriendReferral) return <CastFriendReferralPage onBack={() => setShowFriendReferral(false)} />;
     if (showImmediatePayment) return <CastImmediatePaymentPage onBack={() => setShowImmediatePayment(false)} />;
     if (showEdit) return <CastProfileEditPage onBack={() => setShowEdit(false)} onProfileUpdate={handleProfileUpdate} />;
     if (showPointHistory) return <CastPointHistoryPage onBack={() => setShowPointHistory(false)} />;
+    if (showNotification) return <CastNotificationPage onBack={() => setShowNotification(false)} />;
+    if (showQRCode) return <QRCodeModal onClose={() => setShowQRCode(false)} />;
 
     if (loading) {
         return (
@@ -206,17 +214,20 @@ const CastProfilePage: React.FC = () => {
         <div className="max-w-md mx-auto bg-primary min-h-screen pb-24">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2 bg-primary border-b border-secondary">
-                <span className="text-2xl text-white">
+                <button 
+                    onClick={() => setShowNotification(true)} 
+                    className="text-2xl text-white hover:text-secondary transition-colors"
+                >
                     <Bell />
-                </span>
+                </button>
                 <span className="text-xl font-bold text-white">マイページ</span>
                 <div className="flex items-center space-x-2">
-                    <span className="text-2xl text-white">
+                    <button 
+                        onClick={() => setShowQRCode(true)} 
+                        className="text-2xl text-white hover:text-secondary transition-colors"
+                    >
                         <QrCode />
-                    </span>
-                    <span className="text-2xl text-white">
-                        <Settings />
-                    </span>
+                    </button>
                 </div>
             </div>
             {/* Campaign/Event Banners */}

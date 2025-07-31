@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { getGuestProfileById, getCastProfileById } from '../../services/api';
 
 interface PostCreatePageProps {
     onClose: () => void;
@@ -8,11 +9,70 @@ interface PostCreatePageProps {
     userId?: number;
 }
 
+interface UserProfile {
+    id: number;
+    nickname: string;
+    avatar?: string;
+}
+
 const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, userType, userId }) => {
     const [content, setContent] = useState('');
     const [image, setImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [loading, setLoading] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+    // Utility function to get the first available avatar from comma-separated string
+    const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+        if (!avatarString) {
+            return '/assets/avatar/2.jpg';
+        }
+        
+        // Split by comma and get the first non-empty avatar
+        const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+        
+        if (avatars.length === 0) {
+            return '/assets/avatar/2.jpg';
+        }
+        
+        return `${API_BASE_URL}/${avatars[0]}`;
+    };
+
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            if (!userType || !userId) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                let profile;
+                if (userType === 'guest') {
+                    profile = await getGuestProfileById(userId);
+                } else if (userType === 'cast') {
+                    const response = await getCastProfileById(userId);
+                    profile = response.cast;
+                }
+
+                if (profile) {
+                    setUserProfile({
+                        id: profile.id,
+                        nickname: profile.nickname,
+                        avatar: profile.avatar
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to fetch user profile:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserProfile();
+    }, [userType, userId]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -53,8 +113,21 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
             </div>
             {/* User info */}
             <div className="flex items-center gap-2 px-4 mt-4">
-                <img src="/assets/avatar/2.jpg" alt="avatar" className="w-8 h-8 rounded-full object-cover" />
-                <span className="font-bold text-white">まこちゃん</span>
+                {loading ? (
+                    <div className="w-8 h-8 rounded-full bg-gray-300 animate-pulse"></div>
+                ) : (
+                    <img 
+                        src={userProfile?.avatar ? getFirstAvatarUrl(userProfile.avatar) : '/assets/avatar/2.jpg'} 
+                        alt="avatar" 
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => {
+                            e.currentTarget.src = '/assets/avatar/2.jpg';
+                        }}
+                    />
+                )}
+                <span className="font-bold text-white">
+                    {loading ? '読み込み中...' : userProfile?.nickname || 'ユーザー'}
+                </span>
             </div>
             {/* Textarea */}
             <textarea

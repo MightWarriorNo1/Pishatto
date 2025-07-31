@@ -115,7 +115,7 @@ const CastTimelinePage: React.FC = () => {
                 </div>
             </div>
             {/* Posts - with top margin to account for fixed header */}
-            <div className="px-4 flex flex-col gap-4 pt-24">
+            <div className="px-4 flex flex-col gap-4 pt-28">
                 {loading ? (
                     <div className="text-white py-10 text-center">ローディング...</div>
                 ) : error ? (
@@ -137,7 +137,7 @@ const CastTimelinePage: React.FC = () => {
                                     />
                                 <div className="flex flex-col flex-1">
                                     <span className="font-bold text-sm text-white">{tweet.guest?.nickname || tweet.cast?.nickname || 'ゲスト/キャスト'}</span>
-                                    <span className="text-xs text-white">{new Date(tweet.created_at).toLocaleString()}</span>
+                                    <span className="text-xs text-white">{new Date(tweet.created_at + 'Z').toLocaleString('ja-JP')}</span>
                                 </div>
                             </div>
                             <div className="text-white text-sm whitespace-pre-line mt-1">{tweet.content}</div>

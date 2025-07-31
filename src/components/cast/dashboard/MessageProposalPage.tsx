@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
-import { Calendar, Ellipsis, Heart, Video, Gift, Image, ChevronLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Heart, ChevronLeft } from 'lucide-react';
+import { getChatById, getReservationById, getGuestProfileById } from '../../../services/api';
+import { useNavigate } from 'react-router-dom';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 function formatJPDate(date: Date) {
     const days = ['日', '月', '火', '水', '木', '金', '土'];
@@ -15,17 +19,7 @@ function formatTime(date: Date) {
     return `${h}:${min}`;
 }
 
-function formatJPDateTimeInput(value: string) {
-    if (!value) return '';
-    const days = ['日', '月', '火', '水', '木', '金', '土'];
-    const date = new Date(value);
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    const w = days[date.getDay()];
-    const h = String(date.getHours()).padStart(2, '0');
-    const min = String(date.getMinutes()).padStart(2, '0');
-    return `${m}月${d}日 (${w}) ${h}:${min}`;
-}
+
 
 const parsePeople = (val: string) => {
     const match = val.match(/(\d+)/);
@@ -50,13 +44,83 @@ const calcPoints = (people: string, duration: string) => {
     return 9000 * numPeople * units;
 };
 
-const MessageProposalPage: React.FC<{ onBack: () => void; onProposalSend?: (proposal: any) => void }> = ({ onBack, onProposalSend }) => {
+interface GuestData {
+    id: number;
+    nickname: string;
+    avatar?: string;
+}
+
+
+
+const MessageProposalPage: React.FC<{ 
+    onBack: () => void; 
+    onProposalSend?: (proposal: any) => void;
+    chatId: number;
+}> = ({ onBack, onProposalSend, chatId }) => {
+    const navigate = useNavigate();
     const [date, setDate] = useState('');
     const [people, setPeople] = useState('1名');
     const [duration, setDuration] = useState('2時間');
+    const [guestData, setGuestData] = useState<GuestData | null>(null);
+    const [loading, setLoading] = useState(true);
     const now = new Date();
     const jpDate = formatJPDate(now);
     const jpTime = formatTime(now);
+
+    // Fetch chat, reservation, and guest data
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                
+                // Get chat data to find reservation_id
+                const chat = await getChatById(chatId);
+                if (!chat || !chat.reservation_id) {
+                    console.error('No reservation found for this chat');
+                    return;
+                }
+
+                // Get reservation data
+                const reservation = await getReservationById(chat.reservation_id);
+                if (reservation) {
+                    // Parse details to extract number of people
+                    if (reservation.details) {
+                        let number = 0;
+                        const matches = reservation.details.match(/(\d+)人/g);
+                        const numbers = matches ? matches.map((match: string) => parseInt(match.replace('人', ''), 10)) : [];
+                        for(let i = 0; i < numbers.length; i++) {
+                            number+=numbers[i];
+                        }
+                        setPeople(`${number}人`);
+                    }
+                    
+                    // Set duration based on reservation
+                    if (reservation.duration) {
+                        const hours = Math.floor(reservation.duration);
+                        setDuration(`${hours}時間`);
+                    }
+                }
+
+                // Get guest data
+                if (chat.guest_id) {
+                    const guest = await getGuestProfileById(chat.guest_id);
+                    if (guest) {
+                        setGuestData({
+                            id: guest.id,
+                            nickname: guest.nickname,
+                            avatar: guest.avatar
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [chatId]);
 
     const totalPoints = calcPoints(people, duration);
 
@@ -72,6 +136,14 @@ const MessageProposalPage: React.FC<{ onBack: () => void; onProposalSend?: (prop
         }
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-primary flex flex-col items-center justify-center">
+                <div className="text-white text-lg">読み込み中...</div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-primary flex flex-col items-center pb-24">
             {/* Top Bar */}
@@ -81,17 +153,21 @@ const MessageProposalPage: React.FC<{ onBack: () => void; onProposalSend?: (prop
                     <button onClick={onBack} className="mr-2">
                         <ChevronLeft className="text-white" size={24} />
                     </button>
-                    <img src="/assets/avatar/1.jpg" alt="avatar" className="w-9 h-9 rounded-full mr-2 border border-secondary" />
-                    <span className="font-semibold text-lg flex flex-row text-white">あや <span className="text-white">
-                        <Heart />
-                    </span></span>
-                </div>
-                <div className="flex items-center space-x-4">
-                    <span className="inline-block w-6 h-6 rounded text-white">
-                        <Video />
-                    </span>
-                    <span className="inline-block w-6 h-6 rounded text-white">
-                        <Ellipsis />
+                    <img 
+                        src={guestData?.avatar ? `${API_BASE_URL}/${guestData.avatar}` : "/assets/avatar/1.jpg"} 
+                        alt="avatar" 
+                        className="w-9 h-9 rounded-full mr-2 border border-secondary cursor-pointer" 
+                        onClick={() => {
+                            if (guestData?.id) {
+                                navigate(`/guest/${guestData.id}`);
+                            }
+                        }}
+                    />
+                    <span className="font-semibold text-lg flex flex-row text-white">
+                        {guestData?.nickname || 'ゲスト'} 
+                        <span className="text-white">
+                            <Heart />
+                        </span>
                     </span>
                 </div>
             </div>
@@ -100,7 +176,11 @@ const MessageProposalPage: React.FC<{ onBack: () => void; onProposalSend?: (prop
                 <span className="text-xs text-white mb-4 text-center w-full">{jpDate}</span>
                 <div className="flex items-center justify-center w-full mt-2">
                     <span className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
-                        <img src='/assets/avatar/avatar-2.png' className="w-12 h-12 rounded-full object-cover" alt="avatar" />
+                        <img 
+                            src={guestData?.avatar ? `${API_BASE_URL}/${guestData.avatar}` : '/assets/avatar/avatar-2.png'} 
+                            className="w-12 h-12 rounded-full object-cover" 
+                            alt="avatar" 
+                        />
                     </span>
                 </div>
                 <span className="text-xs text-white mt-2">{jpTime}</span>

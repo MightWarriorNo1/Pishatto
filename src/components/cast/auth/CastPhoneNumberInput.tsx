@@ -20,10 +20,10 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
     const [verificationCode, setVerificationCode] = useState<string | null>(null);
 
     const handleSendSMS = async () => {
-        if (!isValidPhoneNumber(phone)) {
-            setError('無効な電話番号です');
-            return;
-        }
+        // if (!isValidPhoneNumber(phone)) {
+        //     setError('無効な電話番号です');
+        //     return;
+        // }
 
         setLoading(true);
         setError(null);

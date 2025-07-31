@@ -257,7 +257,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
                     <div className="flex items-center mb-3">
                         {castProfile.avatar && (
                             <img
-                                src={`${API_BASE_URL}/${castProfile.avatar}`}
+                                src={`${API_BASE_URL}/${castProfile.avatar.split(',')[0].trim()}`}
                                 alt={castProfile.nickname}
                                 className="w-12 h-12 rounded-full mr-3"
                             />
@@ -317,14 +317,16 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
                     </div>
                 </div>
 
-                <button
-                    className={`w-full bg-secondary text-white font-bold py-3 rounded-lg text-lg mb-4 hover:bg-red-700 transition ${processingPayment ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    onClick={handleApplyPayment}
-                    disabled={processingPayment}
-                >
-                    {processingPayment ? '処理中...' :
-                        castProfile.payjp_customer_id ? 'すぐ入金申請' : 'カード登録して申請'}
-                </button>
+                {castProfile.points && castProfile.points > 0 && (
+                    <button
+                        className={`w-full bg-secondary text-white font-bold py-3 rounded-lg text-lg mb-4 hover:bg-red-700 transition ${processingPayment ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={handleApplyPayment}
+                        disabled={processingPayment}
+                    >
+                        {processingPayment ? '処理中...' :
+                            castProfile.payjp_customer_id ? 'すぐ入金申請' : 'カード登録して申請'}
+                    </button>
+                )}
 
                 <div className="text-xs text-white mb-2">
                     すぐ入金申請について (2021年3月1日より改訂)<br />

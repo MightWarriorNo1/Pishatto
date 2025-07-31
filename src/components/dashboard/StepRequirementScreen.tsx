@@ -12,17 +12,6 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     const [hasRegisteredCard, setHasRegisteredCard] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (user?.id) {
-            checkRegisteredCards();
-        } else {
-            setLoading(false);
-        }
-    }, [user?.id]);
-
-    if (showPaymentInfoRegister) return <PaymentInfoRegisterPage onBack={() => setShowPaymentInfoRegister(false)} />;
-    if (showIdentityVerification) return <IdentityVerificationScreen onBack={() => setShowIdentityVerification(false)} />;
-
     const checkRegisteredCards = async () => {
         if (!user?.id) return;
 
@@ -36,6 +25,47 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (user?.id) {
+            checkRegisteredCards();
+        } else {
+            setLoading(false);
+        }
+    }, [user?.id]);
+
+    // Refresh card status when component becomes visible again
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden && user?.id) {
+                checkRegisteredCards();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
+    const handlePaymentInfoBack = () => {
+        setShowPaymentInfoRegister(false);
+        // Refresh card status when returning from payment info registration
+        if (user?.id) {
+            checkRegisteredCards();
+        }
+    };
+
+    if (showPaymentInfoRegister) return <PaymentInfoRegisterPage 
+        onBack={handlePaymentInfoBack} 
+        onCardRegistered={() => {
+            // Immediately update the card status when registration is successful
+            setHasRegisteredCard(true);
+        }}
+        userType="guest"
+        userId={user?.id}
+    />;
+    if (showIdentityVerification) return <IdentityVerificationScreen onBack={() => setShowIdentityVerification(false)} />;
 
 
     return (

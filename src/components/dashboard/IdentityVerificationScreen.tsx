@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { uploadIdentity, getGuestProfileById } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 
+const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 // Loading spinner component
 const LoadingSpinner: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' }) => {
     const sizeClasses = {
@@ -25,6 +26,7 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [verificationStatus, setVerificationStatus] = useState<'pending' | 'success' | 'failed' | null>(null);
+    const [verificationImage,setVerificationImage] = useState<string | null>(null);
     const [isLoadingStatus, setIsLoadingStatus] = useState(true);
 
     // Upload image to backend and get URL or success
@@ -44,6 +46,8 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
             const res = await uploadIdentity(selectedFile, user.id);
             if (!res.success) throw new Error('アップロードに失敗しました');
             setSubmitted(true);
+            // Refresh verification status after successful upload
+            await getIdentityVerificationStatus();
         } catch (err: any) {
             setError(err.message || 'アップロードに失敗しました');
         } finally {
@@ -56,6 +60,10 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
         setIsLoadingStatus(true);
         try {
             const res = await getGuestProfileById(user.id);
+            console.log("Res", res);
+            console.log("Res.identity_verification", res.identity_verification);
+            setVerificationImage(res.identity_verification);
+            console.log("Verification Image", verificationImage);
             setVerificationStatus(res.identity_verification_completed);
         } catch (error) {
             console.error('Failed to fetch verification status:', error);
@@ -68,18 +76,30 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
         getIdentityVerificationStatus();
     }, [user?.id]);
 
+    // Clear preview when verification image exists (already verified)
+    useEffect(() => {
+        if (verificationImage && verificationStatus === 'success') {
+            setPreviewUrl(null);
+            setSelectedFile(null);
+        }
+        // Don't clear preview for pending status - keep showing the uploaded image
+    }, [verificationImage, verificationStatus]);
+
     // Show loading screen while fetching initial status
     if (isLoadingStatus) {
         return (
-            <div className="max-w-md mx-auto min-h-screen bg-primary flex items-center justify-center">
-                <div className="text-center">
-                    <LoadingSpinner size="lg" />
+            <div className="max-w-md items-center min-h-screen bg-primary flex flex-col justify-center">
+                <LoadingSpinner size="lg" />
+                <div className="text-center mt-4">
                     <div className="text-white mt-4 text-sm">読み込み中...</div>
                 </div>
             </div>
         );
     }
 
+    console.log("Verification Status", verificationStatus);
+    console.log("Verification Image", verificationImage);
+    console.log("Preview URL", previewUrl);
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
             {/* Top bar */}
@@ -124,14 +144,14 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                     <span className="text-xs mt-1">マイナンバー</span>
                 </div>
             </div>
-            {/* Image upload and preview - hide if verificationStatus is 'success' */}
-            {verificationStatus !== 'success' && (
+            {/* Image upload and preview - show for failed, pending, or null status */}
+            {(verificationStatus === 'failed' || verificationStatus === 'pending' || verificationStatus === null) && (
                 <div className="flex flex-col items-center mb-4">
                     <div className="relative">
                         <img
-                            src={previewUrl || '/assets/avatar/avatar-1.png'}
+                            src={previewUrl || (verificationImage ? `${APP_BASE_URL}/storage/${verificationImage}` : '/assets/avatar/avatar-1.png')}
                             alt="avatar preview"
-                            className="w-24 h-24 rounded-full object-cover border-2 border-secondary mb-2"
+                            className="w-32 h-32 object-cover border-2 border-secondary"
                             onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
                         />
                         {avatarUploading && (
@@ -144,28 +164,28 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                         )}
                     </div>
                     <label className="text-white mb-2 cursor-pointer">
-                        アバター画像を選択
+                        IDカードの画像をアップロード
                         <input
                             type="file"
                             accept="image/*"
                             className="hidden"
                             onChange={handleAvatarChange}
-                            disabled={avatarUploading || submitted || verificationStatus === 'pending'}
+                            disabled={avatarUploading || submitted || verificationStatus === 'failed'}
                         />
                     </label>
                     {error && <div className="text-red-500 text-xs mb-2">{error}</div>}
                 </div>
             )}
             {/* Info box */}
-            <div className="mx-4 border border-secondary rounded-xl bg-primary py-4 px-4 mb-24 flex flex-col items-center">
+            <div className="mx-4 border border-secondary rounded-xl bg-primarypx-4 mb-24 flex flex-col items-center">
                 <Lock className="text-white mb-2" />
                 <div className="font-bold mb-1 text-white">お客様情報は厳重に管理しています</div>
                 <div className="text-xs text-white text-center">提出いただいた証明書の画像は本人確認のみに使用し、<br />他の目的には一切使用しません。</div>
             </div>
             {/* Start button and status messages */}
             <div className="px-4">
-                {/* Show button only if not pending or success */}
-                {verificationStatus !== 'pending' && verificationStatus !== 'success' && (
+                {/* Show button for failed status or null status (initial state) */}
+                {(verificationStatus === 'failed' || verificationStatus === null) && (
                     <button
                         className="w-full bg-primary text-white py-3 rounded-lg font-bold text-lg disabled:opacity-50 flex items-center justify-center"
                         onClick={handleSubmit}
@@ -184,7 +204,6 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                 {/* Show pending message if status is pending */}
                 {verificationStatus === 'pending' && (
                     <div className="mt-4 text-center text-white font-bold flex items-center justify-center">
-                        <LoadingSpinner size="sm" />
                         <span className="ml-2">管理者が承認するまでお待ちください。</span>
                     </div>
                 )}

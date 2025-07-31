@@ -246,7 +246,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             </div>
             {/* Chat history (scrollable, between header and input) */}
             <div
-                className="flex-1 overflow-y-auto px-4"
+                className="flex-1 overflow-y-auto px-4 py-4"
                 style={{
                     marginTop: '4rem', // header height (h-16 = 4rem)
                     marginBottom: '5.5rem', // input bar height (py-2 + px-4 + border + input height)
@@ -319,7 +319,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                         {msg.gift_id && msg.gift && (
                                             <div className="flex items-center mb-1">
                                                 <span className="text-3xl mr-2">
-                                                    <img src={`${IMAGE_BASE_URL}/storage/${msg.gift.icon}`} alt="gift" className="w-10 h-10" />
+                                                    {msg.gift.icon}
                                                 </span>
                                                 <span className="font-bold">{msg.gift.name}</span>
                                                 <span className="ml-2 text-xs text-primary font-bold">{msg.gift.points}P</span>
@@ -448,7 +448,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                         }}
                                     >
                                         <span className="text-3xl mb-1">
-                                            <img src={`${APP_BASE_URL}/${gift.icon}`} alt="gift" className="w-5 h-5" />
+                                            {gift.icon}
                                         </span>
                                         <span className="text-xs">{gift.label}</span>
                                     </button>
@@ -463,7 +463,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             )}
             {showGiftModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                    <div className="bg-primary rounded-2xl shadow-lg p-6 flex flex-col items-center border border-secondary min-w-[320px] max-w-[90vw]">
+                    <div className="bg-primary rounded-2xl shadow-lg p-6 flex flex-col items-center border border-secondary min-w-[420px] max-w-[420px]">
                         <h2 className="font-bold text-lg mb-4 text-white">ギフトを選択</h2>
                         <div className="flex gap-2 mb-4">
                             {['standard', 'regional', 'grade', 'mygift'].map(cat => (
@@ -531,7 +531,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                     }}
                                 >
                                     <span className="text-3xl mb-1">
-                                        <img src={`${IMAGE_BASE_URL}/storage/${gift.icon}`} alt="gift" className="w-10 h-10" />
+                                        {gift.icon}
                                     </span>
                                     <span className="text-xs">{gift.name}</span>
                                     <span className="text-xs text-yellow-300 font-bold">{gift.points}P</span>

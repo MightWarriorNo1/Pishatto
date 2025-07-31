@@ -16,13 +16,13 @@ interface PaymentData {
   refunded_at?: string;
 }
 
-interface PointHistoryProps {
+interface PaymentHistoryProps {
   onBack?: () => void;
   userType?: 'guest' | 'cast';
   userId?: number;
 }
 
-const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest', userId }) => {
+const PaymentHistory: React.FC<PaymentHistoryProps> = ({ onBack, userType = 'guest', userId }) => {
   const [payments, setPayments] = useState<PaymentData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,4 +113,4 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
   );
 };
 
-export default PointHistory; 
+export default PaymentHistory; 

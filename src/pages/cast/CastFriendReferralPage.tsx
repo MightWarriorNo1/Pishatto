@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ChevronLeft } from 'lucide-react';
-import CastDashboardLayout from '../../components/cast/dashboard/CastDashboardLayout';
+// import CastDashboardLayout from '../../components/cast/dashboard/CastDashboardLayout';
 
 const CastFriendReferralPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-    const [invoice, setInvoice] = useState('');
-    const [name, setName] = useState('')
+    // const [invoice, setInvoice] = useState('');
+    // const [name, setName] = useState('')
     return (
         <div className='max-w-md  bg-primary min-h-screen pb-24'>
             {/* Top bar */}
@@ -13,10 +13,10 @@ const CastFriendReferralPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                     <ChevronLeft />
                 </button>
                 <span className="flex-1 text-center text-base font-bold text-white">インボイス番号登録</span>
-                <button className="text-white font-bold">保存</button>
+                {/* <button className="text-white font-bold">保存</button> */}
             </div>
             {/* Form */}
-            <div className="px-4 pt-6">
+            {/* <div className="px-4 pt-6">
                 <div className="mb-4">
                     <div className="flex items-center justify-between mb-1">
                         <label className="text-sm font-bold text-white">インボイス番号 <span className="text-white">*</span></label>
@@ -46,7 +46,7 @@ const CastFriendReferralPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 <div className="text-xs text-white/50 mt-8 mb-2">
                     *1 本サービスでは利用規約上、登録するユーザーを個人と定義しております。個人で登録いただいたインボイス登録番号をご入力ください。
                 </div>
-            </div>
+            </div> */}
         </div>
     );
 };

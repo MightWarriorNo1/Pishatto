@@ -10,6 +10,7 @@ interface UserContextType {
   phone: string | null;
   setPhone: (phone: string | null) => void;
   refreshUser: () => void;
+  updateUser: (updates: Partial<GuestProfile>) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -32,6 +33,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       localStorage.setItem('phone', newPhone);
     } else {
       localStorage.removeItem('phone');
+    }
+  };
+
+  const updateUser = (updates: Partial<GuestProfile>) => {
+    if (user) {
+      setUser({ ...user, ...updates });
     }
   };
 
@@ -61,7 +68,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   }, [phone]);
 
   return (
-    <UserContext.Provider value={{ user, interests, loading, setUser, setInterests, phone, setPhone, refreshUser }}>
+    <UserContext.Provider value={{ user, interests, loading, setUser, setInterests, phone, setPhone, refreshUser, updateUser }}>
       {children}
     </UserContext.Provider>
   );

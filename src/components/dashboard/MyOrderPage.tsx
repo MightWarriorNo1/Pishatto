@@ -189,6 +189,12 @@ const ReservationTimer: React.FC<{ started_at?: string; ended_at?: string; point
                     {ended && <div><b>終了時刻:</b> {format(ended)}</div>}
                     {exceededAt && <div className="font-mono text-red-600">超過: {diff(new Date(exceededAt + plannedEnd.getTime()), plannedEnd)}</div>}
                     {typeof localPoints === 'number' && <div><b>獲得ポイント:</b> <span className="font-bold">{localPoints}P</span></div>}
+                    <button 
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold transition-colors mt-2"
+                        onClick={() => setShowFeedbackModal(true)}
+                    >
+                        フィードバックを送信
+                    </button>
                 </>
             )}
             <FeedbackModal
@@ -199,7 +205,6 @@ const ReservationTimer: React.FC<{ started_at?: string; ended_at?: string; point
                 guestId={userId || 0}
                 onSuccess={() => setShowFeedbackModal(false)}
             />
-
         </div>
     );
 }; 

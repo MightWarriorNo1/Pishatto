@@ -1,7 +1,7 @@
 /*eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { Bell, ChevronLeft, ChevronRight, CreditCard, HelpCircle, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User, Trash2 } from 'lucide-react';
-import PointHistory from './PointHistory';
+import PaymentHistory from './PaymentHistory';
 import GradeDetail from './GradeDetail';
 import AvatarEditPage from './AvatarEditPage';
 import NotificationSettingsPage from './NotificationSettingsPage';
@@ -9,8 +9,9 @@ import PaymentInfoSimplePage from './PaymentInfoSimplePage';
 import PointPurchasePage from './PointPurchasePage';
 import IdentityVerificationScreen from './IdentityVerificationScreen';
 import HelpPage from '../help/HelpPage';
+import QRCodeModal from './QRCodeModal';
 import { useUser } from '../../contexts/UserContext';
-import { getNotifications, deleteNotification, Notification } from '../../services/api';
+import { getNotifications, deleteNotification, Notification, createChat, sendGuestMessage } from '../../services/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -36,6 +37,7 @@ function NotificationScreen({ onBack }: { onBack: () => void }) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [sendingMessage, setSendingMessage] = useState<number | null>(null);
 
     const newsList = [
         { date: '2025/2/18', message: '最大30,000Pの紹介クーポンがもらえる特別な期間！' },
@@ -76,6 +78,37 @@ function NotificationScreen({ onBack }: { onBack: () => void }) {
         }
     };
 
+    const handleSendMessage = async (notification: Notification) => {
+        console.log("NOTIFICATION", notification);
+        console.log("USER", user);
+        if (!user?.id || !notification.cast) {
+            alert('メッセージを送信できませんでした。');
+            return;
+        }
+
+        try {
+            setSendingMessage(notification.id);
+            
+            // Create a chat with the cast
+            const chatResponse = await createChat(notification.cast.id, user.id);
+            const chatId = chatResponse.chat.id;
+            
+            // Send an initial message
+            await sendGuestMessage(chatId, user.id, 'こんにちは！');
+            
+            // Mark notification as read
+            await deleteNotification(notification.id);
+            setNotifications(prev => prev.filter(n => n.id !== notification.id));
+        
+            alert('メッセージを送信しました！');
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            alert('メッセージの送信に失敗しました。');
+        } finally {
+            setSendingMessage(null);
+        }
+    };
+
     const formatTimeAgo = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();
@@ -88,18 +121,18 @@ function NotificationScreen({ onBack }: { onBack: () => void }) {
     };
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary pb-4">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-4">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b">
                 <button onClick={onBack} className="mr-2 text-2xl text-gray-500">
-                    <ChevronLeft />
+                    <ChevronLeft className="w-6 h-6 text-white" />
                 </button>
                 <span className="text-lg font-bold flex-1 text-center">お知らせ</span>
             </div>
             {/* Tabs */}
             <div className="flex border-b">
-                <button className={`flex-1 py-3 font-bold ${tab === '通知' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`} onClick={() => setTab('通知')}>通知</button>
-                <button className={`flex-1 py-3 font-bold ${tab === 'ニュース' ? 'border-b-2 border-black text-black' : 'text-gray-400'}`} onClick={() => setTab('ニュース')}>ニュース</button>
+                <button className={`flex-1 py-3 font-bold ${tab === '通知' ? 'border-b-2 border-white text-white' : 'text-gray-400'}`} onClick={() => setTab('通知')}>通知</button>
+                <button className={`flex-1 py-3 font-bold ${tab === 'ニュース' ? 'border-b-2 border-white text-white' : 'text-gray-400'}`} onClick={() => setTab('ニュース')}>ニュース</button>
             </div>
             {/* Notification list */}
             {tab === '通知' && (
@@ -119,7 +152,7 @@ function NotificationScreen({ onBack }: { onBack: () => void }) {
                                     <img 
                                         src={notification.cast.avatar ? `${API_BASE_URL}/${notification.cast.avatar}` : '/assets/avatar/2.jpg'} 
                                         alt={notification.cast.nickname} 
-                                        className="w-14 h-14 rounded-full object-cover"
+                                        className="w-14 h-14 rounded-full object-cover border-2 border-white"
                                         onError={(e) => {
                                             e.currentTarget.src = '/assets/avatar/2.jpg';
                                         }}
@@ -137,10 +170,27 @@ function NotificationScreen({ onBack }: { onBack: () => void }) {
                                     <div className="text-sm text-gray-700 mb-2">
                                         {notification.message}
                                     </div>
-                                    <button className="w-full bg-orange-500 text-white rounded font-bold py-2 flex items-center justify-center gap-2">
-                                        <svg width="20" height="20" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M22 7l-10 7L2 7" /></svg>
-                                        メッセージを送る
-                                    </button>
+                                    {/* Only show send message button for certain notification types */}
+                                    {!notification.message.includes('新しいメッセージが届きました') && 
+                                     !notification.message.includes('予約がキャストにマッチされました') && (
+                                        <button 
+                                            onClick={() => handleSendMessage(notification)}
+                                            disabled={sendingMessage === notification.id}
+                                            className="w-full bg-orange-500 text-white rounded font-bold py-2 flex items-center justify-center gap-2 disabled:opacity-50"
+                                        >
+                                            {sendingMessage === notification.id ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                                                    送信中...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <svg width="20" height="20" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M22 7l-10 7L2 7" /></svg>
+                                                    メッセージを送る
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
                                 <button 
                                     onClick={() => handleDeleteNotification(notification.id)}
@@ -179,7 +229,7 @@ function NotificationScreen({ onBack }: { onBack: () => void }) {
 const Profile: React.FC = () => {
     const { user, loading } = useUser();
     const [showNotification, setShowNotification] = useState(false);
-    const [showPointHistory, setShowPointHistory] = useState(false);
+    const [showPaymentHistory, setShowPaymentHistory] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const [showGradeDetail, setShowGradeDetail] = useState(false);
     const [showAvatarEdit, setShowAvatarEdit] = useState(false);
@@ -187,6 +237,7 @@ const Profile: React.FC = () => {
     const [showPaymentInfoSimple, setShowPaymentInfoSimple] = useState(false);
     const [showPointPurchase, setShowPointPurchase] = useState(false);
     const [showIdentityVerification, setShowIdentityVerification] = useState(false);
+    const [showQRCode, setShowQRCode] = useState(false);
 
     // Get avatar URL
     const getAvatarUrl = () => {
@@ -195,10 +246,8 @@ const Profile: React.FC = () => {
         }
         return '/assets/avatar/2.jpg'; // Default avatar
     };
-
-    console.log('AVATAR', user?.avatar);
     if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
-    if (showPointHistory) return <PointHistory onBack={() => setShowPointHistory(false)} />;
+    if (showPaymentHistory) return <PaymentHistory onBack={() => setShowPaymentHistory(false)} userType="guest" userId={user?.id} />;
     if (showGradeDetail) return <GradeDetail onBack={() => setShowGradeDetail(false)} />;
     if (showAvatarEdit) return <AvatarEditPage onBack={() => setShowAvatarEdit(false)} />;
     if (showNotificationSettings) return <NotificationSettingsPage onBack={() => setShowNotificationSettings(false)} />;
@@ -206,6 +255,7 @@ const Profile: React.FC = () => {
     if (showPointPurchase) return <PointPurchasePage onBack={() => setShowPointPurchase(false)} />;
     if (showIdentityVerification) return <IdentityVerificationScreen onBack={() => setShowIdentityVerification(false)} />;
     if (showHelp) return <HelpPage onBack={() => setShowHelp(false)} />;
+    if (showQRCode) return <QRCodeModal onClose={() => setShowQRCode(false)} />;
 
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-20">
@@ -216,7 +266,7 @@ const Profile: React.FC = () => {
                 </button>
                 <span className="text-lg font-bold text-white">マイページ</span>
                 <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => alert('QRコードを開く')} className="text-white">
+                    <button type="button" onClick={() => setShowQRCode(true)} className="text-white">
                         <QrCode className="w-6 h-6" />
                     </button>
                     <button onClick={() => setShowNotificationSettings(true)} className="text-white">
@@ -283,7 +333,7 @@ const Profile: React.FC = () => {
             </div>
             {/* Settings/Options menu */}
             <div className="bg-primary mt-4 rounded-lg shadow mx-2 divide-y divide-secondary">
-                <button onClick={() => setShowPointHistory(true)} className="w-full flex hover:bg-secondary items-center px-4 py-4 text-left">
+                <button onClick={() => setShowPaymentHistory(true)} className="w-full flex hover:bg-secondary items-center px-4 py-4 text-left">
                     <span className="mr-3">
                         <TicketCheck />
                     </span>

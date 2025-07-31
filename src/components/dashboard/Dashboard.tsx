@@ -26,6 +26,7 @@ const Dashboard: React.FC = () => {
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
   const [latestNotification] = useState<any>(null);
   const [tweetCount, setTweetCount] = useState(0);
+  const [hasSearchResults, setHasSearchResults] = useState(false);
   const prevTab = React.useRef(activeBottomTab);
 
   // useEffect(() => {
@@ -48,7 +49,6 @@ const Dashboard: React.FC = () => {
   // });
 
   useTweets((tweet) => {
-    // Only increment if not on tweet tab
     if (activeBottomTab !== 'tweet') {
       setTweetCount((c) => c + 1);
     }
@@ -136,8 +136,11 @@ const Dashboard: React.FC = () => {
       {/* Show TopNavigation and search tabs only when in search mode */}
       {activeBottomTab === 'search' && (
         <>
-          <TopNavigation activeTab={activeSearchTab} onTabChange={setActiveSearchTab} />
-          <div className="max-w-md mx-auto pb-16 pt-24">
+          <TopNavigation 
+            activeTab={activeSearchTab} 
+            onTabChange={setActiveSearchTab}
+          />
+          <div className={`max-w-md mx-auto pb-16 ${hasSearchResults ? 'pt-4' : 'pt-28'}`}>
             {renderSearchTabContent()}
           </div>
         </>

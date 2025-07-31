@@ -199,6 +199,7 @@ export const getGuestProfile = async (phone: string): Promise<{ guest: GuestProf
 
 export const getGuestProfileById = async (id: number) => {
   const response = await api.get(`/guest/profile/id/${id}`);
+  console.log("RESPONSE", response.data);
   return response.data.guest;
 };
 
@@ -448,8 +449,11 @@ export const purchasePoints = async (user_id: number, user_type: 'guest' | 'cast
   return response.data;
 };
 
-export const getPointHistory = async (user_type: 'guest' | 'cast', user_id: number) => {
+export const getPaymentHistory = async (user_type: 'guest' | 'cast', user_id: number) => {
   const response = await api.get(`/payments/history/${user_type}/${user_id}`);
+  if (response.data.success === false) {
+    throw new Error(response.data.error || '支払い履歴の取得に失敗しました');
+  }
   return response.data.payments;
 };
 
@@ -563,6 +567,23 @@ export const uploadCastAvatar = async (file: File) => {
   return response.data;
 };
 
+export const uploadGuestAvatar = async (file: File, phone: string) => {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  formData.append('phone', phone);
+  const response = await api.post('/users/avatar', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const deleteGuestAvatar = async (phone: string) => {
+  const response = await api.delete('/users/avatar', {
+    data: { phone }
+  });
+  return response.data;
+};
+
 export const deleteCastAvatar = async (castId: number, avatarIndex: number) => {
   const response = await api.delete('/cast/avatar-delete', {
     data: {
@@ -657,6 +678,29 @@ export const unfavoriteCast = async (guest_id: number, cast_id: number) => {
   return response.data;
 };
 
+// Chat favorites API functions
+export const favoriteChat = async (guest_id: number, chat_id: number) => {
+  const response = await api.post('/chats/favorite', { guest_id, chat_id });
+  return response.data;
+};
+
+export const unfavoriteChat = async (guest_id: number, chat_id: number) => {
+  const response = await api.post('/chats/unfavorite', { guest_id, chat_id });
+  return response.data;
+};
+
+export const getFavoriteChats = async (guestId: number) => {
+  const response = await api.get(`/chats/favorites/${guestId}`);
+  return response.data;
+};
+
+export const isChatFavorited = async (chatId: number, guestId: number) => {
+  console.log("IS CHAT FAVORITED", chatId, guestId);
+  const response = await api.get(`/chats/${chatId}/favorited/${guestId}`);
+  console.log("IS CHAT FAVORITED RESPONSE", response.data);
+  return response.data;
+};
+
 export const fetchAllBadges = async () => {
   const response = await api.get('/badges');
   return response.data.badges;
@@ -712,6 +756,11 @@ export const completeReservation = async (reservationId: number, feedback: {
   feedback_badge_id?: number;
 }) => {
   const response = await api.post(`/reservations/${reservationId}/complete`, feedback);
+  return response.data;
+};
+
+export const refundUnusedPoints = async (reservationId: number) => {
+  const response = await api.post(`/reservations/${reservationId}/refund`);
   return response.data;
 };
 

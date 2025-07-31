@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Share, Heart, MessageSquare } from 'lucide-react';
-import { likeCast, getCastProfileById, createChat, sendGuestMessage, getLikeStatus, favoriteCast, unfavoriteCast, getFavorites } from '../services/api';
+import { likeCast, getCastProfileById, createChat, sendGuestMessage, getLikeStatus, favoriteCast, unfavoriteCast, getFavorites, getCastList } from '../services/api';
 import { useUser } from '../contexts/UserContext';
 import Toast from '../components/ui/Toast';
 
@@ -18,6 +18,8 @@ const CastDetail: React.FC = () => {
     const [badges, setBadges] = useState<any[]>([]);
     const [titles, setTitles] = useState<any[]>([]);
     const [recommended, setRecommended] = useState<any[]>([]);
+    const [allCasts, setAllCasts] = useState<any[]>([]);
+    const [randomCasts, setRandomCasts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [messageLoading, setMessageLoading] = useState(false);
     const [showToast, setShowToast] = useState(false);
@@ -25,9 +27,28 @@ const CastDetail: React.FC = () => {
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [isFavorited, setIsFavorited] = useState(false);
 
+    // Function to fetch all casts and get 3 random ones (excluding current cast)
+    const fetchAllCastsAndGetRandom = async () => {
+        try {
+            const response = await getCastList({});
+            const allCastsData = response.casts || [];
+            setAllCasts(allCastsData);
+            
+            // Filter out the current cast and get 3 random ones
+            const otherCasts = allCastsData.filter((castItem: any) => castItem.id !== Number(id));
+            const shuffled = [...otherCasts].sort(() => 0.5 - Math.random());
+            const selectedCasts = shuffled.slice(0, 3);
+            setRandomCasts(selectedCasts);
+        } catch (error) {
+            console.error('Error fetching all casts:', error);
+            setRandomCasts([]);
+        }
+    };
+
     useEffect(()=>{
         likeStatus();
         checkFavoriteStatus();
+        fetchAllCastsAndGetRandom();
     },[Number(id), Number(user?.id)]);
 
     useEffect(() => {
@@ -38,8 +59,6 @@ const CastDetail: React.FC = () => {
                 setBadges(data.badges || []);
                 setTitles(data.titles || []);
                 setRecommended(data.recommended || []);
-                console.log("cast", data.cast);
-                console.log("badges", data.badges);
                 
                 // Only show badges that the cast has actually received
                 // The backend should return only the badges assigned to this cast
@@ -92,10 +111,14 @@ const CastDetail: React.FC = () => {
             }
             setToastType('success');
             setShowToast(true);
+            // Auto-hide toast after 10 seconds
+            setTimeout(() => setShowToast(false), 10000);
         } catch (error) {
             setToastMessage('お気に入りの操作に失敗しました。');
             setToastType('error');
             setShowToast(true);
+            // Auto-hide toast after 10 seconds
+            setTimeout(() => setShowToast(false), 10000);
         }
     };
 
@@ -111,13 +134,35 @@ const CastDetail: React.FC = () => {
             setToastMessage('メッセージを送信しました。');
             setToastType('success');
             setShowToast(true);
+            // Auto-hide toast after 10 seconds
+            setTimeout(() => setShowToast(false), 10000);
         } catch (error) {
             // Show error toast
             setToastMessage('メッセージの送信に失敗しました。再度お試しください。');
             setToastType('error');
             setShowToast(true);
+            // Auto-hide toast after 10 seconds
+            setTimeout(() => setShowToast(false), 10000);
         } finally {
             setMessageLoading(false);
+        }
+    };
+
+    const handleShare = async () => {
+        try {
+            const profileUrl = window.location.href;
+            await navigator.clipboard.writeText(profileUrl);
+            setToastMessage('プロフィールページのURLをクリップボードにコピーしました。');
+            setToastType('success');
+            setShowToast(true);
+            // Auto-hide toast after 10 seconds
+            setTimeout(() => setShowToast(false), 5000);
+        } catch (error) {
+            setToastMessage('URLのコピーに失敗しました。');
+            setToastType('error');
+            setShowToast(true);
+            // Auto-hide toast after 10 seconds
+            setTimeout(() => setShowToast(false), 5000);
         }
     };
 
@@ -130,6 +175,17 @@ const CastDetail: React.FC = () => {
         return [];
     };
 
+    // Get first avatar from multiple avatars
+    const getFirstAvatar = (avatarString: string) => {
+        if (avatarString) {
+            const avatars = avatarString.split(',').map((avatar: string) => avatar.trim()).filter((avatar: string) => avatar);
+            return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/female.png';
+        }
+        return '/assets/avatar/female.png';
+    };
+
+
+
     const avatarUrls = getAvatarUrls();
     const images = avatarUrls.length > 0 ? avatarUrls.map((url: string) => `${API_BASE_URL}/${url}`) : ['/assets/avatar/female.png'];
 
@@ -141,8 +197,7 @@ const CastDetail: React.FC = () => {
 
     return (
         <div className="min-h-screen flex justify-center bg-gray-400">
-            <div className="w-full max-w-md relative bg-primary">
-                {/* Toast Notification */}
+            <div className="w-full max-w-md items-center  mx-auto relative bg-primary">
                 <Toast
                     message={toastMessage}
                     type={toastType}
@@ -159,7 +214,7 @@ const CastDetail: React.FC = () => {
                         >
                             <ChevronLeft />
                         </button>
-                        <div className="text-lg font-medium text-white">なの💫</div>
+                        <div className="text-lg font-medium text-white">{cast?.nickname || 'なの💫'}</div>
                         <div className="flex items-center space-x-2">
                             <button 
                                 type="button" 
@@ -168,7 +223,11 @@ const CastDetail: React.FC = () => {
                             >
                                 <Heart className={`w-6 h-6 ${isFavorited ? 'fill-secondary text-secondary' : 'text-white'}`} />
                             </button>
-                            <button type="button" className="text-2xl text-white">
+                            <button 
+                                type="button" 
+                                className="text-2xl text-white hover:text-secondary transition-colors"
+                                onClick={handleShare}
+                            >
                                 <Share />
                             </button>
                         </div>
@@ -301,14 +360,22 @@ const CastDetail: React.FC = () => {
                         <div className='flex items-center text-white font-bold rounded-lg px-2 h-12 text-lg'>
                             おすすめキャスト
                         </div>
-                        <div className='flex flex-row gap-2'>
-                            {recommended.length === 0 ? (
+                        <div className='flex flex-row gap-4 justify-center'>
+                            {randomCasts.length === 0 ? (
                                 <div className="text-white text-sm">おすすめキャストはありません</div>
                             ) : (
-                                recommended.map((rec) => (
+                                randomCasts.map((rec) => (
                                     <div key={rec.id} className="flex flex-col items-center cursor-pointer" onClick={() => navigate(`/cast/${rec.id}`)}>
-                                        <img src={rec.avatar || '/assets/avatar/female.png'} alt={rec.nickname || ''} className="w-20 h-20 rounded-full object-cover mb-2 border-2 border-secondary" />
-                                        <span className="font-bold text-sm mb-1 text-white">{rec.nickname || ''}</span>
+                                        <img 
+                                            src={getFirstAvatar(rec.avatar)} 
+                                            alt={rec.nickname || ''} 
+                                            className="w-20 h-20 object-cover mb-2 border-2 border-secondary"
+                                            onError={(e) => {
+                                                e.currentTarget.src = '/assets/avatar/female.png';
+                                            }}
+                                        />
+                                        <span className="font-bold text-sm mb-1 text-white text-center">{rec.nickname || ''}</span>
+                                        <span className="text-xs text-gray-300">{rec.birth_year ? (new Date().getFullYear() - rec.birth_year) : ''}歳</span>
                                     </div>
                                 ))
                             )}

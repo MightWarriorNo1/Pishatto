@@ -109,7 +109,7 @@ const Timeline: React.FC = () => {
                 </button>
             </div>
             {/* Posts */}
-            <div className="px-4 flex flex-col gap-4">
+            <div className="px-4 flex flex-col gap-4 py-6">
                 {loading ? (
                     <div className="text-white py-10 text-center">ローディング...</div>
                 ) : error ? (
@@ -134,7 +134,7 @@ const Timeline: React.FC = () => {
                                 />
                                 <div className="flex flex-col flex-1">
                                     <span className="font-bold text-sm text-white">{tweet.guest?.nickname || tweet.cast?.nickname || 'ゲスト/キャスト'}</span>
-                                    <span className="text-xs text-white">{new Date(tweet.created_at).toLocaleString()}</span>
+                                    <span className="text-xs text-white">{new Date(tweet.created_at + 'Z').toLocaleString('ja-JP')}</span>
                                 </div>
                             </div>
                             <div className="text-white text-sm whitespace-pre-line mt-1">{tweet.content}</div>
