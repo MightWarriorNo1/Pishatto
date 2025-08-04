@@ -3,6 +3,7 @@ import { X, Share2, Download, Copy, Camera } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useUser } from '../../contexts/UserContext';
 import QRCodeScanner from './QRCodeScanner';
+import { shareContent } from '../../utils/clipboard';
 
 interface QRCodeModalProps {
   onClose: () => void;
@@ -27,11 +28,21 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ onClose }) => {
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const success = await shareContent({
+        title: `${user?.nickname || 'User'}'s Profile`,
+        text: `Check out ${user?.nickname || 'this user'}'s profile!`,
+        url: shareUrl,
+      });
+      
+      if (success) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        alert('URLのコピーに失敗しました。手動でコピーしてください。');
+      }
     } catch (err) {
       console.error('Failed to copy link:', err);
+      alert('URLのコピーに失敗しました。手動でコピーしてください。');
     }
   };
 

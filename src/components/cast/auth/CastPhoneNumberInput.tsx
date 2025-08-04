@@ -8,8 +8,8 @@ interface CastPhoneNumberInputProps {
 }
 
 function isValidPhoneNumber(phone: string) {
-    // Japanese mobile: 10 or 11 digits, starts with 0
-    return /^\+?[1-9]\d{1,14}$/.test(phone);
+    // Japanese mobile: 10 or 11 digits, must start with 0
+    return /^0\d{9,10}$/.test(phone);
 }
 
 const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) => {
@@ -20,10 +20,10 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
     const [verificationCode, setVerificationCode] = useState<string | null>(null);
 
     const handleSendSMS = async () => {
-        // if (!isValidPhoneNumber(phone)) {
-        //     setError('無効な電話番号です');
-        //     return;
-        // }
+        if (!isValidPhoneNumber(phone)) {
+            setError('電話番号は0で始まる10桁または11桁の数字で入力してください');
+            return;
+        }
 
         setLoading(true);
         setError(null);
@@ -77,10 +77,10 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
                             className="w-full border border-secondary rounded-lg px-4 py-3 text-white placeholder-red-400 focus:outline-none focus:ring-2 focus:ring-red-600 mb-1 bg-primary"
                             placeholder="例）09012345346"
                             value={phone}
-                            onChange={e => setPhone(e.target.value.replace(/[^0-9+]/g, ''))}
-                            maxLength={15}
+                            onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                            maxLength={11}
                         />
-                        <div className="text-xs text-white mb-4">※ハイフンなし</div>
+                        <div className="text-xs text-white mb-4">※ハイフンなし、0で始まる番号を入力してください</div>
                         <div className="text-xs text-white">
                             pishattoは、携帯電話番号の認証のため、SMS(テキスト)が送信されます。これには、SMS料金及びデータ料金がかかる場合があります。
                         </div>

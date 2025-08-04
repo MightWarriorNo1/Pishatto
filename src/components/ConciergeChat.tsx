@@ -19,7 +19,7 @@ const ConciergeChat: React.FC<ConciergeChatProps> = ({ onClick }) => {
             const userType = localStorage.getItem('userType') as 'guest' | 'cast' || 'guest';
             loadMessages(user.id, userType);
         }
-    }, [user?.id, loadMessages]);
+    }, [user?.id]); // Removed loadMessages from dependencies since it is now memoized
     return (
         <div className="relative">
             <button

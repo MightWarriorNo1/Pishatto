@@ -45,22 +45,17 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
     }
   }, [step, timeLeft]);
 
-  // function isValidPhoneNumber(phone: string) {
-  //   // Allow international format with + or Japanese format
-  //   // International: + followed by 7-15 digits
-  //   // Japanese: 10-11 digits, may start with 0
-  //   const internationalPattern = /^\+[1-9]\d{7,14}$/;
-  //   const japanesePattern = /^0\d{9,10}$/;
-
-  //   return internationalPattern.test(phone) || japanesePattern.test(phone);
-  // }
+  function isValidPhoneNumber(phone: string) {
+    // Japanese mobile: 10 or 11 digits, must start with 0
+    return /^0\d{9,10}$/.test(phone);
+  }
 
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // if (!isValidPhoneNumber(phoneNumber)) {
-    //   setError('無効な電話番号です');
-    //   return;
-    // }
+    if (!isValidPhoneNumber(phoneNumber)) {
+      setError('電話番号は0で始まる10桁または11桁の数字で入力してください');
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -209,8 +204,8 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
               <input
                 type="tel"
                 value={phoneNumber}
-                placeholder='例) +15005550006'
-                maxLength={13}
+                placeholder='例) 07542132114'
+                maxLength={11}
                 onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))}
                 className="w-full text-lg border border-secondary rounded bg-primary text-white focus:ring-0 p-0 placeholder-secondary"
                 disabled={loading}

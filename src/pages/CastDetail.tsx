@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Share, Heart, MessageSquare } from 'lucide-r
 import { likeCast, getCastProfileById, createChat, sendGuestMessage, getLikeStatus, favoriteCast, unfavoriteCast, getFavorites, getCastList, getCastBadges } from '../services/api';
 import { useUser } from '../contexts/UserContext';
 import Toast from '../components/ui/Toast';
+import { shareContent } from '../utils/clipboard';
 
 // Interface for badge data
 interface Badge {
@@ -184,17 +185,27 @@ const CastDetail: React.FC = () => {
     const handleShare = async () => {
         try {
             const profileUrl = window.location.href;
-            await navigator.clipboard.writeText(profileUrl);
-            setToastMessage('プロフィールページのURLをクリップボードにコピーしました。');
-            setToastType('success');
+            const success = await shareContent({
+                title: `${cast?.nickname || 'Cast'}のプロフィール`,
+                text: `${cast?.nickname || 'Cast'}のプロフィールをチェックしてみてください！`,
+                url: profileUrl,
+            });
+            
+            if (success) {
+                setToastMessage('プロフィールをシェアしました。');
+                setToastType('success');
+            } else {
+                setToastMessage('URLのコピーに失敗しました。手動でコピーしてください。');
+                setToastType('error');
+            }
+            
             setShowToast(true);
-            // Auto-hide toast after 10 seconds
             setTimeout(() => setShowToast(false), 5000);
         } catch (error) {
-            setToastMessage('URLのコピーに失敗しました。');
+            console.error('Share error:', error);
+            setToastMessage('URLのコピーに失敗しました。手動でコピーしてください。');
             setToastType('error');
             setShowToast(true);
-            // Auto-hide toast after 10 seconds
             setTimeout(() => setShowToast(false), 5000);
         }
     };

@@ -29,6 +29,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const [isLoading, setIsLoading] = useState(true);
     const { user } = useUser();
     const { refreshKey } = useChatRefresh();
+    
     useEffect(() => {
             const loadChatsAndFavorites = async () => {
         setIsLoading(true);
@@ -222,16 +223,6 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                     ))}
                 </div>
             )} */}
-            {/* Campaign banner */}
-            <div className="bg-primary px-4 py-2 border-b border-secondary">
-                <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-sm flex items-center p-3 text-white">
-                    <div className="flex-1">
-                        <div className="text-sm font-bold">2/18 | 春のW紹介キャンペーン</div>
-                        <div className="text-xs">最大30,000Pの紹介クーポンがもらえる!?</div>
-                    </div>
-                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-            </div>
             {/* Tabs */}
             <div className="flex items-center px-4 mt-2">
                 <button

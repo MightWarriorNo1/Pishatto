@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { getConciergeMessages, sendConciergeMessage, markConciergeAsRead, ConciergeMessage as ApiConciergeMessage } from '../services/api';
 
 interface ConciergeMessage {
@@ -38,7 +38,7 @@ export const ConciergeProvider: React.FC<ConciergeProviderProps> = ({ children }
     const [currentUserId, setCurrentUserId] = useState<number | null>(null);
     const [currentUserType, setCurrentUserType] = useState<'guest' | 'cast' | null>(null);
 
-    const loadMessages = async (userId: number, userType: 'guest' | 'cast') => {
+    const loadMessages = useCallback(async (userId: number, userType: 'guest' | 'cast') => {
         try {
             setCurrentUserId(userId);
             setCurrentUserType(userType);
@@ -59,9 +59,9 @@ export const ConciergeProvider: React.FC<ConciergeProviderProps> = ({ children }
         } catch (error) {
             console.error('Error loading concierge messages:', error);
         }
-    };
+    }, []);
 
-    const sendMessage = async (userId: number, userType: 'guest' | 'cast', messageText: string) => {
+    const sendMessage = useCallback(async (userId: number, userType: 'guest' | 'cast', messageText: string) => {
         try {
             const response = await sendConciergeMessage(userId, userType, messageText);
             if (response.success) {
@@ -86,9 +86,9 @@ export const ConciergeProvider: React.FC<ConciergeProviderProps> = ({ children }
         } catch (error) {
             console.error('Error sending concierge message:', error);
         }
-    };
+    }, []);
 
-    const addMessage = (message: Omit<ConciergeMessage, 'id' | 'timestamp'>) => {
+    const addMessage = useCallback((message: Omit<ConciergeMessage, 'id' | 'timestamp'>) => {
         const newMessage: ConciergeMessage = {
             ...message,
             id: messages.length + 1,
@@ -101,9 +101,9 @@ export const ConciergeProvider: React.FC<ConciergeProviderProps> = ({ children }
         if (!message.isConcierge) {
             setUnreadCount(prev => prev + 1);
         }
-    };
+    }, [messages.length]);
 
-    const markAsRead = async () => {
+    const markAsRead = useCallback(async () => {
         if (currentUserId && currentUserType) {
             try {
                 await markConciergeAsRead(currentUserId, currentUserType);
@@ -112,11 +112,11 @@ export const ConciergeProvider: React.FC<ConciergeProviderProps> = ({ children }
                 console.error('Error marking concierge as read:', error);
             }
         }
-    };
+    }, [currentUserId, currentUserType]);
 
-    const getUnreadCount = () => {
+    const getUnreadCount = useCallback(() => {
         return unreadCount;
-    };
+    }, [unreadCount]);
 
     const value: ConciergeContextType = {
         messages,

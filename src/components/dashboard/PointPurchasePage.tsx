@@ -5,7 +5,7 @@ import PayJPPaymentForm from '../payment/PayJPPaymentForm';
 import { ChevronLeft } from 'lucide-react';
 import { getPaymentInfo } from '../../services/api';
 
-const amounts = [ 3000, 5000, 10000];
+const amounts = [1000, 3000, 5000, 10000,30000,50000];
 
 const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const navigate = useNavigate();
@@ -99,7 +99,7 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       </div>
       <div className="p-6">
         <h2 className="font-bold text-xl mb-4 text-white">購入ポイントを選択</h2>
-        <div className="flex gap-3 mb-6">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           {amounts.map(amount => (
             <button
               key={amount}

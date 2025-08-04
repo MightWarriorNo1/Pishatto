@@ -44,7 +44,7 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
         };
         
         loadData();
-    }, [user?.id, loadMessages, markAsRead]);
+    }, [user?.id]); // Removed loadMessages and markAsRead from dependencies since they are now memoized
 
     const handleSendMessage = async () => {
         if (!message.trim() || !user?.id) return;
