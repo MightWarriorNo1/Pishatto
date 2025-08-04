@@ -60,7 +60,7 @@ const RankingTabSection: React.FC = () => {
   }, [userType, timePeriod, selectedCategory, selectedArea]);
 
   return (
-    <div className="flex flex-col bg-primary min-h-[calc(100vh-10rem)] relative">
+    <div className="flex flex-col bg-gradient-to-br from-primary via-primary to-secondary min-h-[calc(100vh-10rem)] relative">
       <div className="px-4 pt-4">
         <div className="flex">
           <button

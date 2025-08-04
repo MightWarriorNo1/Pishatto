@@ -116,7 +116,7 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
     if (error && !avatarUploading && !saving) return <div className="text-center text-red-500">{error}</div>;
 
     return (
-        <div className="max-w-md bg-primary min-h-screen pb-24">
+        <div className="max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24">
             <div className="flex items-center p-4">
                 <button
                     type="button"

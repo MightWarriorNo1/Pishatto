@@ -2,9 +2,19 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Share, Heart, MessageSquare } from 'lucide-react';
-import { likeCast, getCastProfileById, createChat, sendGuestMessage, getLikeStatus, favoriteCast, unfavoriteCast, getFavorites, getCastList } from '../services/api';
+import { likeCast, getCastProfileById, createChat, sendGuestMessage, getLikeStatus, favoriteCast, unfavoriteCast, getFavorites, getCastList, getCastBadges } from '../services/api';
 import { useUser } from '../contexts/UserContext';
 import Toast from '../components/ui/Toast';
+
+// Interface for badge data
+interface Badge {
+    id: number;
+    name: string;
+    icon: string;
+    description?: string;
+    count: number;
+    received_at?: string;
+}
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const CastDetail: React.FC = () => {
@@ -15,7 +25,8 @@ const CastDetail: React.FC = () => {
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [liked, setLiked] = useState(false);
     const [cast, setCast] = useState<any>(null);
-    const [badges, setBadges] = useState<any[]>([]);
+    const [badges, setBadges] = useState<Badge[]>([]);
+    const [badgesLoading, setBadgesLoading] = useState(false);
     const [titles, setTitles] = useState<any[]>([]);
     const [recommended, setRecommended] = useState<any[]>([]);
     const [allCasts, setAllCasts] = useState<any[]>([]);
@@ -45,6 +56,32 @@ const CastDetail: React.FC = () => {
         }
     };
 
+    // Function to fetch cast badges with counts
+    const fetchCastBadges = async (castId: number) => {
+        try {
+            setBadgesLoading(true);
+            const badgesData = await getCastBadges(castId);
+            console.log("Cast badges data:", badgesData);
+            
+            // Process badges to include count information
+            const processedBadges: Badge[] = badgesData.map((badge: any) => ({
+                id: badge.id,
+                name: badge.name,
+                icon: badge.icon,
+                description: badge.description,
+                count: badge.count || 1, // Get count directly from badge object
+                received_at: badge.received_at
+            }));
+            
+            setBadges(processedBadges);
+        } catch (error) {
+            console.error('Error fetching cast badges:', error);
+            setBadges([]);
+        } finally {
+            setBadgesLoading(false);
+        }
+    };
+
     useEffect(()=>{
         likeStatus();
         checkFavoriteStatus();
@@ -54,19 +91,15 @@ const CastDetail: React.FC = () => {
     useEffect(() => {
         if (id) {
             setLoading(true);
+            console.log("Fetching cast profile for ID:", id);
             getCastProfileById(Number(id)).then((data) => {
+                console.log("Cast data:", data);
                 setCast(data.cast);
-                setBadges(data.badges || []);
                 setTitles(data.titles || []);
                 setRecommended(data.recommended || []);
                 
-                // Only show badges that the cast has actually received
-                // The backend should return only the badges assigned to this cast
-                if (data.badges && data.badges.length > 0) {
-                    console.log("Cast received badges:", data.badges);
-                } else {
-                    console.log("Cast has no badges");
-                }
+                // Fetch badges separately to get proper count information
+                fetchCastBadges(Number(id));
                 
                 setLoading(false);
             });
@@ -197,7 +230,7 @@ const CastDetail: React.FC = () => {
 
     return (
         <div className="min-h-screen flex justify-center bg-gray-400">
-            <div className="w-full max-w-md items-center  mx-auto relative bg-primary">
+            <div className="w-full max-w-md items-center  mx-auto relative bg-gradient-to-br from-primary via-primary to-secondary">
                 <Toast
                     message={toastMessage}
                     type={toastType}
@@ -205,12 +238,12 @@ const CastDetail: React.FC = () => {
                     onClose={() => setShowToast(false)}
                 />
                 {/* Header */}
-                <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-primary z-50">
+                <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-gradient-to-br from-primary via-primary to-secondary z-50">
                     <div className="flex items-center justify-between p-4">
                         <button
                             type="button"
                             onClick={() => navigate(-1)}
-                            className="text-2xl text-white"
+                            className="text-2xl text-white hover:text-secondary transition-colors"
                         >
                             <ChevronLeft />
                         </button>
@@ -234,7 +267,7 @@ const CastDetail: React.FC = () => {
                     </div>
                 </div>
                 {/* Main Image View */}
-                <div className="pt-16 bg-primary">
+                <div className="pt-16 bg-gradient-to-br from-primary via-primary to-secondary">
                     <div className="rounded-lg overflow-hidden mb-2 w-full border-2 border-secondary relative">
                         <img
                             src={images[currentImageIndex]}
@@ -268,7 +301,7 @@ const CastDetail: React.FC = () => {
                     </div>
                 </div>
                 {/* Thumbnails and Info */}
-                <div className="w-full max-w-md bg-primary border-t border-secondary">
+                <div className="w-full max-w-md bg-gradient-to-br from-primary via-primary to-secondary border-t border-secondary">
                     <div className="p-4">
                         {/* Thumbnails */}
                         {images.length > 1 && (
@@ -302,7 +335,7 @@ const CastDetail: React.FC = () => {
                     </div>
                 </div>
                 {/* Achievements Section */}
-                <div className="bg-primary mt-2 p-4 border-t-4 border-secondary">
+                <div className="bg-gradient-to-br from-primary via-primary to-secondary mt-2 p-4 border-t-4 border-secondary">
                     {/* Trophy Section */}
                     <div className="mb-6">
                         <h3 className="text-lg font-bold mb-4 text-white">獲得した称号</h3>
@@ -325,42 +358,60 @@ const CastDetail: React.FC = () => {
                         </div>
                     </div>
                     {/* Badges Section */}
-                    <div className="border-t border-secondary">
+                    <div className="border-t border-secondary pt-4">
                         <h3 className="text-lg font-bold mb-4 text-white">ゲストから受け取ったバッジ</h3>
-                        <div className="grid grid-cols-4 gap-4">
-                            {badges.length === 0 ? (
-                                <div className="text-white text-sm col-span-4">バッジはありません</div>
-                            ) : (
-                                badges.map((badge, idx) => (
-                                    <div key={idx} className="text-center">
-                                        <div className="relative inline-block">
-                                            <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl text-white">
-                                                {badge.icon || '🏅'}
-                                            </div>
-                                            {badge.count > 1 && (
-                                                <div className="absolute -top-1 -right-1 bg-secondary text-white text-xs rounded-full px-1">
-                                                    ×{badge.count}
+                        {badgesLoading ? (
+                            <div className="text-center py-8">
+                                <div className="text-white text-sm">バッジを読み込み中...</div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex flex-row gap-4 overflow-x-auto">
+                                    {badges.length === 0 ? (
+                                        <div className="text-white text-sm col-span-4 text-center py-4">バッジはありません</div>
+                                    ) : (
+                                        badges.map((badge, idx) => (
+                                            <div key={badge.id || idx} className="text-center">
+                                                <div className="relative inline-block">
+                                                    <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl text-white shadow-lg">
+                                                        {badge.icon || '🏅'}
+                                                    </div>
+                                                    {badge.count > 1 && (
+                                                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-2 py-1 font-bold min-w-[20px] text-center">
+                                                            {badge.count}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                            )}
+                                                <div className="text-sm mt-2 text-white font-medium">{badge.name || ''}</div>
+                                                {/* {badge.description && (
+                                                    <div className="text-xs text-gray-300 mt-1 px-1">{badge.description}</div>
+                                                )} */}
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                {/* {badges.length > 0 && (
+                                    <div className="mt-4 text-center">
+                                        <div className="text-sm text-gray-300">
+                                            合計 {badges.reduce((total, badge) => total + (badge.count || 1), 0)} 個のバッジを獲得
                                         </div>
-                                        <div className="text-sm mt-1 text-white">{badge.name || ''}</div>
                                     </div>
-                                ))
-                            )}
-                        </div>
+                                )} */}
+                            </>
+                        )}
                     </div>
                 </div>
                 {/* Self Introduction Section */}
-                <div className="bg-primary mt-2 p-4">
+                <div className="bg-gradient-to-br from-primary via-primary to-secondary mt-2 p-4">
                     <h3 className="text-lg font-bold mb-4 text-white">自己紹介</h3>
                     <div className="space-y-4 text-sm text-white">
                         <p>{cast?.profile_text || '自己紹介はありません'}</p>
                     </div>
-                    <div className="mb-8 overflow-x-auto mt-4">
-                        <div className='flex items-center text-white font-bold rounded-lg px-2 h-12 text-lg'>
+                    <div className="mb-8 mt-4">
+                        <div className='flex items-center text-white font-bold rounded-lg h-12 text-lg'>
                             おすすめキャスト
                         </div>
-                        <div className='flex flex-row gap-4 justify-center'>
+                        <div className='flex flex-row gap-4 justify-center overflow-x-auto'>
                             {randomCasts.length === 0 ? (
                                 <div className="text-white text-sm">おすすめキャストはありません</div>
                             ) : (
@@ -369,13 +420,13 @@ const CastDetail: React.FC = () => {
                                         <img 
                                             src={getFirstAvatar(rec.avatar)} 
                                             alt={rec.nickname || ''} 
-                                            className="w-20 h-20 object-cover mb-2 border-2 border-secondary"
+                                            className="w-32 h-32 object-cover mb-2 border-2 border-secondary"
                                             onError={(e) => {
                                                 e.currentTarget.src = '/assets/avatar/female.png';
                                             }}
                                         />
                                         <span className="font-bold text-sm mb-1 text-white text-center">{rec.nickname || ''}</span>
-                                        <span className="text-xs text-gray-300">{rec.birth_year ? (new Date().getFullYear() - rec.birth_year) : ''}歳</span>
+                                        <span className="text-xs text-gray-300">{rec.birth_year ? (new Date().getFullYear() - rec.birth_year)+'歳' : ''}</span>
                                     </div>
                                 ))
                             )}

@@ -39,13 +39,11 @@ const NewCastSection: React.FC = () => {
   useEffect(() => {
     setLoading(true);
     getCastList({}).then((data: any) => {
-      // Filter to only casts registered today
-      const today = new Date().toISOString().slice(0, 10);
-      const todayCasts = data.casts?.filter((cast: any) => {
-        const castDate = new Date(cast.created_at).toISOString().slice(0, 10);
-        return castDate === today;
-      }) || [];
-      setCastProfiles(todayCasts);
+      // Get the 5 most recently created casts
+      const recentCasts = data.casts
+        ?.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5) || [];
+      setCastProfiles(recentCasts);
       setLoading(false);
     }).catch((error) => {
       console.error('Failed to fetch new cast profiles:', error);
@@ -60,7 +58,7 @@ const NewCastSection: React.FC = () => {
   return (
     <div>
       <h2 className="font-bold text-lg mb-2 text-white">新着キャスト</h2>
-      <div className="bg-primary rounded-lg shadow p-4 mb-4 border border-secondary">
+      <div className="bg-white/10 rounded-lg shadow p-4 mb-4 border border-secondary">
         
         {loading ? (
           <div className="text-white">ローディング...</div>
@@ -71,7 +69,7 @@ const NewCastSection: React.FC = () => {
             {castProfiles.map((profile) => (
               <div
                 key={profile.id}
-                className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary min-w-[120px] max-w-[120px] flex-shrink-0"
+                className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:opacity-75 border border-secondary min-w-[120px] max-w-[120px] flex-shrink-0"
                 onClick={() => handleCastClick(profile.id)}
               >
                 <div className="aspect-w-3 aspect-h-4 relative">

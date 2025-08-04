@@ -54,7 +54,7 @@ const FavoritesSection: React.FC = () => {
 
   if (favorites.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 bg-primary rounded-lg border border-secondary">
+      <div className="flex flex-col items-center justify-center py-12 px-4 bg-primary rounded-lg ">
         <div className="w-48 h-48 mb-6">
           <img
             src="/assets/avatar/image-1.png"
@@ -73,10 +73,10 @@ const FavoritesSection: React.FC = () => {
   }
 
   return (
-    <div className="bg-primary rounded-lg shadow p-4 mb-4 border border-secondary">
+    <div className="bg-primary rounded-lg shadow p-4 mb-4">
       <h2 className="font-bold text-lg mb-2 text-white">お気に入り</h2>
       {favorites.map((profile) => (
-        <div key={profile.id} className="bg-primary rounded-lg shadow p-3 border border-secondary mb-2">
+        <div key={profile.id} className="bg-white/10 rounded-lg shadow p-3 border border-secondary mb-2">
           <div className="flex space-x-4 items-center">
             <div className="w-16 h-16">
               <img

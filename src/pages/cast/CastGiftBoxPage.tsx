@@ -17,10 +17,10 @@ const CastGiftBoxPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             .finally(() => setLoading(false));
     }, [castId]);
 
-    return (
-        <div className='max-w-md  bg-primary min-h-screen pb-24'>
+    return (    
+        <div className='max-w-md  bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
             {/* Top bar */}
-            <div className="flex items-center px-4 pt-4 pb-2 border-b bg-primary border-secondary">
+            <div className="flex items-center px-4 pt-4 pb-2 border-b bg-gradient-to-br from-primary via-primary to-secondary border-secondary">
                 <button className="mr-2 text-2xl text-white" onClick={onBack}>
                     <ChevronLeft size={24} />
                 </button>

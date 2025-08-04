@@ -5,6 +5,7 @@ import { Bell, SlidersHorizontal, Plus, Heart } from 'lucide-react';
 import { fetchAllTweets, fetchUserTweets, createTweet, likeTweet, getTweetLikeStatus } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import PostCreatePage from '../../components/dashboard/PostCreatePage';
+import CastNotificationPage from './CastNotificationPage';
 import { useTweets } from '../../hooks/useRealtime';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -21,7 +22,7 @@ const CastTimelinePage: React.FC = () => {
     const [likeStatuses, setLikeStatuses] = useState<{ [tweetId: number]: boolean }>({});
     const [likeCounts, setLikeCounts] = useState<{ [tweetId: number]: number }>({});
     const castId = Number(localStorage.getItem('castId')) || null;
-
+    const [showNotification, setShowNotification] = useState(false);
     const loadTweets = async () => {
         setLoading(true);
         setError(null);
@@ -94,13 +95,14 @@ const CastTimelinePage: React.FC = () => {
         }
     };
     if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} userType="cast" userId={castId || undefined} />;
+    if (showNotification) return <CastNotificationPage onBack={() => setShowNotification(false)} />;
     return (
-        <div className="max-w-md pb-20 min-h-screen bg-primary">
+        <div className="max-w-md pb-20 min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
             {/* Fixed Header */}
             <div className="fixed top-0 left-0 right-0 max-w-md mx-auto bg-primary z-20">
                 {/* Header */}
                 <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                    <span className="text-2xl text-white">
+                    <span className="text-2xl text-white hover:text-secondary transition-colors cursor-pointer" onClick={() => setShowNotification(true)}>
                         <Bell />
                     </span>
                     <span className="text-xl font-bold text-white">つぶやき</span>
@@ -124,7 +126,7 @@ const CastTimelinePage: React.FC = () => {
                     <div className="text-gray-400 py-10 text-center">つぶやきがありません</div>
                 ) : (
                     tweets.map((tweet, idx) => (
-                        <div key={tweet.id || idx} className="bg-primary rounded-lg shadow-sm p-4 flex flex-col border border-secondary cursor-pointer" >
+                        <div key={tweet.id || idx} className="bg-white/10 rounded-lg shadow-sm p-4 flex flex-col border border-secondary cursor-pointer" >
                             <div className="flex items-center mb-1">
                                 <img src={
                                         tweet.guest?.avatar

@@ -13,7 +13,7 @@ import CastProfilePage from './CastProfilePage';
 import MessagePage from '../../components/cast/dashboard/MessagePage';
 import FeedbackForm from '../../components/feedback/FeedbackForm';
 import { Reservation, getAllReservations, getAllChats, fetchRanking } from '../../services/api';
-import { applyReservation, startReservation, stopReservation } from '../../services/api';
+import { applyReservation, startReservation, stopReservation, getCastApplications } from '../../services/api';
 import { ChatRefreshProvider, useChatRefresh } from '../../contexts/ChatRefreshContext';
 import { useTweets } from '../../hooks/useRealtime';
 import echo from '../../services/echo';
@@ -222,6 +222,7 @@ const CastDashboardInner: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [showApplicationComplete, setShowApplicationComplete] = useState(false);
     const [chats, setChats] = useState<any[]>([]);
+    const [reservationApplications, setReservationApplications] = useState<any[]>([]);
     const { refreshChats } = useChatRefresh();
     const [tweetBadgeCount, setTweetBadgeCount] = useState(0);
     const prevMainPage = React.useRef(mainPage);
@@ -262,6 +263,13 @@ const CastDashboardInner: React.FC = () => {
         getAllChats()
             .then(chats => setChats(chats || []));
 
+        // Fetch reservation applications for the current cast
+        const castId = Number(localStorage.getItem('castId'));
+        if (castId) {
+            getCastApplications(castId)
+                .then(applications => setReservationApplications(applications || []));
+        }
+
         return () => clearInterval(interval);
     }, []);
     
@@ -293,6 +301,11 @@ const CastDashboardInner: React.FC = () => {
         return chats.some(chat => chat.reservation_id === reservationId && chat.cast_id === castId);
     };
 
+    const isReservationApplied = (reservationId: number | undefined) => {
+        if (typeof reservationId !== 'number') return false;
+        return reservationApplications.some(app => app.reservation_id === reservationId);
+    };
+
     type CallWithActive = Reservation & {
         title: string;
         time: string;
@@ -302,7 +315,8 @@ const CastDashboardInner: React.FC = () => {
         extra: string;
         closed: boolean;
         active: boolean;
-        cast_id?: number; 
+        cast_id?: number;
+        isApplied?: boolean;
     };
 
     const calls: CallWithActive[] = reservations
@@ -319,10 +333,16 @@ const CastDashboardInner: React.FC = () => {
       return false;
     }
     
+    // Hide completed reservations (those that have ended)
+    if (isCompleted) {
+      return false;
+    }
+    
     return true;
   })
   .map((r) => {
         const alreadyInChat = isReservationInChat(r.id); // Only disable if THIS cast has applied
+        const isApplied = isReservationApplied(r.id); // Check if cast has applied
         const inactive = (r as any).active === false || alreadyInChat;
         return {
             ...r,
@@ -336,6 +356,7 @@ const CastDashboardInner: React.FC = () => {
             extra: '',
             closed: false,
             active: !inactive,
+            isApplied: isApplied, // Add this flag for styling
         };
     });
 
@@ -382,7 +403,7 @@ const CastDashboardInner: React.FC = () => {
     } else if (selectedTab === 2) {
         tabFilteredCalls = sortedCalls.filter(call => isFuture(call.scheduled_at));
     } else if (selectedTab === 3) {
-        tabFilteredCalls = sortedCalls.filter(call => isReservationInChat(call.id));
+        tabFilteredCalls = sortedCalls.filter(call => isReservationInChat(call.id) || isReservationApplied(call.id));
     }
 
     // Calculate unread message count for badge
@@ -410,14 +431,14 @@ const CastDashboardInner: React.FC = () => {
                                     onSortChange={setSelectedSort}
                                     totalCount={tabFilteredCalls.length}
                                 />
-                                <div className="flex-1 bg-primary border-t border-secondary">
-                                    <div className="grid grid-cols-2 gap-2 p-2 bg-primary">
+                                <div className="flex-1 bg-gradient-to-br from-primary via-primary to-secondary border-t border-secondary">
+                                    <div className="grid grid-cols-2 gap-2 p-2">
                                         {tabFilteredCalls.map((call, idx) => (
                                             <div
                                                 key={idx}
-                                                onClick={() => !call.closed && call.active !== false && setSelectedCall(call)}
+                                                onClick={() => !call.closed && call.active !== false && !call.isApplied && setSelectedCall(call)}
                                                 className={
-                                                    call.closed || call.active === false
+                                                    call.closed || call.active === false || call.isApplied
                                                         ?  'opacity-50 cursor-not-allowed'
                                                         : 'cursor-pointer'
                                                 }
@@ -427,7 +448,7 @@ const CastDashboardInner: React.FC = () => {
                                                     location={call.location || ''}
                                                     duration={call.duration || 0}
                                                     type={call.type || ''}
-                                                    greyedOut={call.closed || call.active === false}
+                                                    greyedOut={call.closed || call.active === false || call.isApplied}
                                                     started_at={call.started_at}
                                                     ended_at={call.ended_at}
                                                     points_earned={call.points_earned}
@@ -480,17 +501,18 @@ const CastDashboardInner: React.FC = () => {
                         call={selectedCall}
                         onClose={() => setSelectedCall(null)}
                         onApply={async () => {
-                            // Immediately match reservation and create group
+                            // Apply for reservation (pending admin approval)
                             try {
                                 await applyReservation(selectedCall.id, castId);
                                 // Update the reservation's active status in local state immediately
                                 setReservations(prev => prev.map(r => r.id === selectedCall.id ? { ...r, active: false } : r));
                                 setSelectedCall((call: any) => call ? { ...call, active: false } : call);
-                                // Refresh chats so the disabled state updates immediately
-                                refreshChats();
-                                const updatedChats = await getAllChats();
-                                setChats(updatedChats || []);
                                 setShowApplicationComplete(true);
+                                
+                                // Refresh reservation applications
+                                const applications = await getCastApplications(castId);
+                                setReservationApplications(applications || []);
+                                
                                 // Refresh ranking after successful application
                                 fetchRanking({
                                     userType: 'cast',
@@ -499,7 +521,7 @@ const CastDashboardInner: React.FC = () => {
                                     area: '全国'
                                 });
                             } catch (e) {
-                                alert('マッチングに失敗しました');
+                                alert('応募に失敗しました');
                             }
                         }}
                     />
@@ -529,7 +551,7 @@ const CastDashboardInner: React.FC = () => {
                 )}
             </div>
             {/* Bottom Navigation Bar - fixed and centered */}
-            {(!isMessageDetailOpen) && (
+            {(!isMessageDetailOpen) && (  
                 <div className="w-full max-w-md fixed bottom-0 left-1/2 -translate-x-1/2 z-20">
                     <BottomNavigationBar selected={mainPage} onTabChange={setMainPage} messageBadgeCount={unreadCount} tweetBadgeCount={tweetBadgeCount} />
                 </div>

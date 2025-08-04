@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import {useNavigate} from 'react-router-dom';
 import PostCreatePage from './PostCreatePage';
-import { Bell, Plus, SlidersHorizontal, Heart } from 'lucide-react';
-import { fetchAllTweets, createTweet, likeTweet, getTweetLikeStatus } from '../../services/api';
+import NotificationScreen from './NotificationScreen';
+import { Bell, Plus, SlidersHorizontal, Heart, Trash2 } from 'lucide-react';
+import { fetchAllTweets, fetchUserTweets, createTweet, likeTweet, getTweetLikeStatus, deleteTweet } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useTweets } from '../../hooks/useRealtime';
 
@@ -14,18 +15,29 @@ const Timeline: React.FC = () => {
     const { user } = useUser();
     const navigate = useNavigate();
     const [showPostCreate, setShowPostCreate] = useState(false);
+    const [showNotification, setShowNotification] = useState(false);
     const [tweets, setTweets] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [likeStatuses, setLikeStatuses] = useState<{ [tweetId: number]: boolean }>({});
     const [likeCounts, setLikeCounts] = useState<{ [tweetId: number]: number }>({});
     const castId = Number(localStorage.getItem('castId')) || null;
+    const [tab, setTab] = useState<'all' | 'cast'>('all');
 
     const loadTweets = async () => {
         setLoading(true);
         setError(null);
         try {
-            const data = await fetchAllTweets();
+            let data;
+            if (tab === 'cast' && (user?.id || castId)) {
+                // Load user's own tweets when "ゲスト専用" tab is selected
+                const userType = user ? 'guest' : 'cast';
+                const userId = user ? user.id : (castId || 0);
+                data = await fetchUserTweets(userType, userId);
+            } else {
+                // Load all tweets for "みんなのつぶやき" tab
+                data = await fetchAllTweets();
+            }
             setTweets(data);
         } catch (e) {
             setError('つぶやきの取得に失敗しました');
@@ -55,7 +67,7 @@ const Timeline: React.FC = () => {
 
     useEffect(() => {
         loadTweets();
-    }, []);
+    }, [tab, user, castId]);
 
     useEffect(() => {
         if (tweets.length > 0 && (user || castId)) fetchLikes(tweets);
@@ -95,18 +107,52 @@ const Timeline: React.FC = () => {
         setLikeCounts((prev) => ({ ...prev, [tweetId]: res.count }));
     };
 
+    const handleDeleteTweet = async (tweetId: number) => {
+        if (!confirm('このつぶやきを削除しますか？')) return;
+        
+        try {
+            await deleteTweet(tweetId);
+            // Remove the deleted tweet from the state
+            setTweets((prev) => prev.filter(tweet => tweet.id !== tweetId));
+            // Remove from like statuses and counts
+            setLikeStatuses((prev) => {
+                const newStatuses = { ...prev };
+                delete newStatuses[tweetId];
+                return newStatuses;
+            });
+            setLikeCounts((prev) => {
+                const newCounts = { ...prev };
+                delete newCounts[tweetId];
+                return newCounts;
+            });
+        } catch (e) {
+            alert('削除に失敗しました');
+        }
+    };
+
+    // Check if the current user is the author of the tweet
+    const isCurrentUserTweet = (tweet: any) => {
+        if (user && tweet.guest?.id === user.id) return true;
+        return false;
+    };
+
     if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} userType="guest" userId={user?.id} />;
+    if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary pb-20 relative">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20 relative">
             {/* Top bar */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary">
-                <div className="text-white">
+                <button onClick={() => setShowNotification(true)} className="text-white cursor-pointer">
                     <Bell />
-                </div>
+                </button>
                 <span className="text-lg font-bold mx-auto text-white">つぶやき</span>
                 <button className="absolute right-4 top-3 text-white">
                     <SlidersHorizontal />
                 </button>
+            </div>
+            <div className="flex items-center border-b border-secondary">
+                <button onClick={() => setTab('all')} className={`flex-1 py-3 text-center   font-bold text-base ${tab === 'all' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>みんなのつぶやき</button>
+                <button onClick={() => setTab('cast')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'cast' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>ゲスト専用</button>
             </div>
             {/* Posts */}
             <div className="px-4 flex flex-col gap-4 py-6">
@@ -118,7 +164,7 @@ const Timeline: React.FC = () => {
                     <div className="text-gray-400 py-10 text-center">つぶやきがありません</div>
                 ) : (
                     tweets.map((tweet, idx) => (
-                        <div key={tweet.id || idx} className="bg-primary rounded-lg shadow-sm p-4 flex flex-col border border-secondary cursor-pointer" >
+                        <div key={tweet.id || idx} className="bg-white/10 rounded-lg shadow-sm p-4 flex flex-col border border-secondary cursor-pointer" >
                             <div className="flex items-center mb-1">
                                 <img
                                     src={
@@ -126,7 +172,7 @@ const Timeline: React.FC = () => {
                                             ? `${APP_BASE_URL}/${tweet.guest.avatar}`
                                             : tweet.cast?.avatar
                                                 ? `${APP_BASE_URL}/${tweet.cast.avatar.split(',')[0].trim()}`
-                                                : '/assets/avatar/avatar-1.png'
+                                                : '/assets/avatar/female.png'
                                     }
                                     alt={tweet.guest?.nickname || tweet.cast?.nickname || ''}
                                     className="w-10 h-10 rounded-full object-cover mr-2 border border-secondary cursor-pointer hover:opacity-80 transition-opacity"
@@ -136,6 +182,19 @@ const Timeline: React.FC = () => {
                                     <span className="font-bold text-sm text-white">{tweet.guest?.nickname || tweet.cast?.nickname || 'ゲスト/キャスト'}</span>
                                     <span className="text-xs text-white">{new Date(tweet.created_at + 'Z').toLocaleString('ja-JP')}</span>
                                 </div>
+                                {/* Delete button - only show for user's own tweets */}
+                                {isCurrentUserTweet(tweet) && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteTweet(tweet.id);
+                                        }}
+                                        className="text-red-400 hover:text-red-300 transition-colors p-1"
+                                        title="削除"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
                             </div>
                             <div className="text-white text-sm whitespace-pre-line mt-1">{tweet.content}</div>
                             {tweet.image && (

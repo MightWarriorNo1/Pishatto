@@ -28,7 +28,6 @@ const FootprintsSection: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  console.log("Footprints", footprints);
   useEffect(() => {
     if (user) {
       setLoading(true);
@@ -83,10 +82,10 @@ const FootprintsSection: React.FC = () => {
   }
 
   return (
-    <div className="bg-primary rounded-lg shadow p-4 mb-4 border border-secondary">
+    <div className="bg-primary rounded-lg shadow p-4 mb-4">
       <h2 className="font-bold text-lg mb-2 text-white">足あと（あなたのプロフィールを見たキャスト）</h2>
       {footprints.map((item) => (
-        <div key={item.id} className="bg-primary rounded-lg shadow p-3 border border-secondary mb-2">
+        <div key={item.id} className="bg-white/10 rounded-lg shadow p-3 border border-secondary mb-2">
           <div className="flex space-x-4 items-center">
             <div className="w-16 h-16">
               <img

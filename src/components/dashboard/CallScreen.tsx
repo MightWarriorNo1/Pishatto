@@ -13,7 +13,7 @@ const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     if (!avatarString) {
-        return '/assets/avatar/avatar-1.png';
+        return '/assets/avatar/female.png';
     }
     
     // Split by comma and get the first non-empty avatar
@@ -672,8 +672,9 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
         />
     );
     if (showStepRequirement) return <StepRequirementScreen onBack={() => setShowStepRequirement(false)} />;
+
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary pb-20">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20">
             <div className="bg-secondary text-white px-4 py-2 text-lg font-bold">今すぐ呼ぶ</div>
             <div className="flex flex-row items-center justify-between text-white px-4 py-2 text-md font-bold">
                 <div>
@@ -737,7 +738,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
                 </button>
             </div>
             {/* 今日会えるキャスト */}
-            <div className="mt-4 px-4">
+            <div className="my-4 px-4">
                 <div className="flex items-center justify-between mb-2">
                     <span className="font-bold text-base text-white">今日会えるキャスト</span>
                     <button className="text-white text-sm">すべて見る &gt;</button>
@@ -752,7 +753,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder }) => {
                                     src={getFirstAvatarUrl(cast.avatar)}
                                     alt={cast.cast_nickname}
                                     className="w-20 h-20 rounded-lg object-cover mb-1 border-2 border-secondary mx-auto"
-                                    onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
+                                    onError={e => (e.currentTarget.src = '/assets/avatar/female.png')}
                                 />
                                 <div className="text-xs font-bold mb-1">
                                     <span className="bg-secondary text-white px-1 rounded">プレミアム</span>

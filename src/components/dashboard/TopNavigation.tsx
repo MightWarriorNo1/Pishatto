@@ -266,7 +266,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
               </div>
             )}
           </div>
-          <button className="ml-4" onClick={() => setShowQRCode(true)}>
+          <button className="ml-4 hover:text-secondary" onClick={() => setShowQRCode(true)}>
             <QrCode />
           </button>
         </div>

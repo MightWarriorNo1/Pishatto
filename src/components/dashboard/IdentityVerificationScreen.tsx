@@ -96,15 +96,11 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
             </div>
         );
     }
-
-    console.log("Verification Status", verificationStatus);
-    console.log("Verification Image", verificationImage);
-    console.log("Preview URL", previewUrl);
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-br-to from-primary via-primary to-secondary overflow-y-auto pb-8">
             {/* Top bar */}
             <div className="flex justify-center items-center px-4 pt-6 pb-6">
-                <button onClick={onBack} className="mr-2 text-2xl text-white">
+                <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary">
                     <ChevronLeft />
                 </button>
                 <span className="flex-1 text-center text-base font-bold text-white">本人認証</span>
@@ -170,14 +166,14 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                             accept="image/*"
                             className="hidden"
                             onChange={handleAvatarChange}
-                            disabled={avatarUploading || submitted || verificationStatus === 'failed'}
+                            disabled={avatarUploading || submitted}
                         />
                     </label>
                     {error && <div className="text-red-500 text-xs mb-2">{error}</div>}
                 </div>
             )}
             {/* Info box */}
-            <div className="mx-4 border border-secondary rounded-xl bg-primarypx-4 mb-24 flex flex-col items-center">
+            <div className="mx-4 border border-secondary rounded-xl bg-primary px-4 mb-4 flex flex-col items-center">
                 <Lock className="text-white mb-2" />
                 <div className="font-bold mb-1 text-white">お客様情報は厳重に管理しています</div>
                 <div className="text-xs text-white text-center">提出いただいた証明書の画像は本人確認のみに使用し、<br />他の目的には一切使用しません。</div>

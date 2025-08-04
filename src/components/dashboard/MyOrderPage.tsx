@@ -27,7 +27,7 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     });
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br bg-primary via-primary to-secondary pb-24">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
                 <button onClick={onBack} className="mr-2 text-2xl text-white">

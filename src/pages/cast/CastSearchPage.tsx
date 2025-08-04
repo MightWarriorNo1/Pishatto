@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Heart, SlidersHorizontal, Bell, ChevronLeft, MessageSquare, X } from 'lucide-react';
 import { getRepeatGuests, RepeatGuest, getGuestProfileById, GuestProfile, likeGuest, createChat, sendCastMessage, getLikeStatus, fetchRanking, recordGuestVisit } from '../../services/api';
+import CastNotificationPage from './CastNotificationPage';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 // GuestDetailPage component
@@ -55,7 +56,7 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
     };
 
     return (
-        <div className="max-w-md  bg-primary min-h-screen pb-8 auto">
+        <div className="max-w-md  bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-8 auto">
             <div className="flex items-center px-2 pt-2 pb-2">
                 <button onClick={onBack} className="text-2xl text-white font-bold">
                     <ChevronLeft />
@@ -482,7 +483,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }, [mainTab, region, category, dateTab, filters]);
 
     return (
-        <div className="max-w-md pb-8 bg-primary min-h-screen">
+        <div className="max-w-md pb-8 bg-gradient-to-br from-primary via-primary to-secondary min-h-screen">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-secondary">
                 <button onClick={onBack} className="text-2xl text-white font-bold">
@@ -542,7 +543,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         フィルター適用中: 
                         {filters.region !== '全国' && ` 地域: ${filters.region}`}
                         {(filters.ageRange.min !== 18 || filters.ageRange.max !== 80) && ` 年齢: ${filters.ageRange.min}-${filters.ageRange.max}歳`}
-                        {(filters.minPoints > 0 || filters.maxPoints < 10000) && ` ポイント: ${filters.minPoints}-${filters.maxPoints}pt`}
+                        {(filters.minPoints > 0 || filters.maxPoints < 10000) && ` ポイント: ${filters.minPoints}-${filters.maxPoints}P`}
                     </div>
                 </div>
             )}
@@ -612,7 +613,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 // Add EasyMessagePage component
 const EasyMessagePage: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
-        <div className="max-w-md mx-auto bg-primary min-h-screen pb-8 relative">
+        <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-8 relative">
             {/* Header with close button */}
             <div className="flex items-center px-4 pt-4 pb-2">
                 <button onClick={onClose} className="text-2xl text-white font-bold">×</button>
@@ -672,6 +673,7 @@ const CastSearchPage: React.FC = () => {
     const [selectedGuest, setSelectedGuest] = useState<RepeatGuest | null>(null);
     const [repeatGuests, setRepeatGuests] = useState<RepeatGuest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showNotification, setShowNotification]=useState(false);
     const [showEasyMessage, setShowEasyMessage] = useState(false);
     React.useEffect(() => {
         getRepeatGuests().then(setRepeatGuests).finally(() => setLoading(false));
@@ -685,11 +687,14 @@ const CastSearchPage: React.FC = () => {
     if (showEasyMessage) {
         return <EasyMessagePage onClose={() => setShowEasyMessage(false)} />;
     }
+    if (showNotification) {
+        return <CastNotificationPage     onBack={() => setShowNotification(false)} />;
+    }
     return (
-        <div className="flex-1 max-w-md pb-20 bg-primary">
+        <div className="flex-1 max-w-md pb-20 bg-gradient-to-br from-primary via-primary to-secondary">
             {/* Top bar with filter and crown */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
-                <span className="text-white">
+                <span className="text-white hover:text-secondary transition-colors cursor-pointer" onClick={() => setShowNotification(true)}>
                     <Bell />
                 </span>
                 <button className="flex items-center bg-secondary text-white rounded-full px-4 py-1 font-bold text-base"><span className="mr-2">

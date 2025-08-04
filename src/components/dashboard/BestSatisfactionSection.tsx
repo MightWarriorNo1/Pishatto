@@ -2,53 +2,36 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiStar } from 'react-icons/fi';
-import { fetchRanking } from '../../services/api';
+import { getTopSatisfactionCasts } from '../../services/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
-interface RankingProfile {
+interface SatisfactionCast {
   id: number;
-  name: string;
+  nickname: string;
   avatar?: string;
-  points: number;
-  gift_count: number;
-  // Mock rating and price for display purposes
-  rating: number;
-  price: number;
-  duration: number;
+  average_rating: number;
+  feedback_count: number;
+  grade_points: number;
 }
 
 const BestSatisfactionSection: React.FC = () => {
   const navigate = useNavigate();
-  const [profiles, setProfiles] = useState<RankingProfile[]>([]);
+  const [casts, setCasts] = useState<SatisfactionCast[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    // Get current month's ranking for casts by gifts (top 2 for best satisfaction)
-    fetchRanking({
-      userType: 'cast',
-      timePeriod: 'current',
-      category: 'gift',
-      area: '全国'
-    }).then((data) => {
-      const rankingData = data.data || [];
-      // Transform ranking data to satisfaction format with mock ratings
-      const satisfactionData = rankingData.slice(0, 2).map((cast: any, index: number) => ({
-        id: cast.id,
-        name: cast.name,
-        avatar: cast.avatar,
-        points: cast.points,
-        gift_count: cast.gift_count || 0,
-        // Mock rating based on position (4.8-4.9 range for top 2)
-        rating: 4.9 - (index * 0.1),
-        // Mock price (18000-20000 range)
-        price: 18000 + (index * 2000),
-        duration: 30
+    // Get top 5 casts with highest average feedback ratings
+    getTopSatisfactionCasts().then((data: SatisfactionCast[]) => {
+      // Transform data to include mock price and duration
+      const satisfactionData = data.map((cast: SatisfactionCast) => ({
+        ...cast,
       }));
-      setProfiles(satisfactionData);
+      console.log(satisfactionData);
+      setCasts(satisfactionData);
       setLoading(false);
-    }).catch((error) => {
+    }).catch((error: any) => {
       console.error('Failed to fetch best satisfaction data:', error);
       setLoading(false);
     });
@@ -59,41 +42,41 @@ const BestSatisfactionSection: React.FC = () => {
   };
 
   return (
-    <div className="bg-primary rounded-lg shadow p-4 mb-4 border border-secondary">
+    <div className="bg-white/10 rounded-lg shadow p-4 mb-4 border border-secondary">
       <h2 className="font-bold text-lg mb-2 text-white">最高満足度</h2>
       {loading ? (
         <div className="text-white">ローディング...</div>
-      ) : profiles.length === 0 ? (
+      ) : casts.length === 0 ? (
         <div className="text-white">データがありません</div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
-          {profiles.map((profile) => (
+        <div className="flex gap-3 overflow-x-auto">
+          {casts.map((cast: SatisfactionCast) => (
             <div 
-              key={profile.id} 
-              className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer"
-              onClick={() => handleCastClick(profile.id)}
+              key={cast.id} 
+              className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer min-w-[120px] max-w-[120px] flex-shrink-0"
+              onClick={() => handleCastClick(cast.id)}
             >
               <div className="flex space-x-3">
                 <div className="w-full">
                   <img
-                    src={profile.avatar ? `${API_BASE_URL}/${profile.avatar}` : '/assets/avatar/female.png'}
-                    alt={profile.name}
-                    className="w-full h-full object-cover rounded-lg border border-secondary"
+                    src={cast.avatar ? `${API_BASE_URL}/${cast.avatar}` : '/assets/avatar/female.png'}
+                    alt={cast.nickname}
+                    className="w-full h-24 object-cover rounded-lg border border-secondary"
                   />
                 </div>
               </div>
               <div className="mt-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm text-white">{profile.name}</span>
+                  <span className="font-medium text-sm text-white">{cast.nickname}</span>
                   <div className="flex items-center text-white">
                     <FiStar className="w-3 h-3" />
-                    <span className="ml-1 text-xs">{profile.rating.toFixed(1)}</span>
+                    <span className="ml-1 text-xs">{cast.average_rating.toFixed(1)}</span>
                   </div>
                 </div>
                 <div className="text-white text-xs mt-1">
-                  <div>ギフト {profile.gift_count}件</div>
+                  <div>レビュー {cast.feedback_count}件</div>
                   <div className="mt-1">
-                    {profile.price.toLocaleString()}円 / {profile.duration}分
+                    {cast.grade_points}円/30分
                   </div>
                 </div>
               </div>

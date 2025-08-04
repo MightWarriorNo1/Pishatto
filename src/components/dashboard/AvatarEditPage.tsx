@@ -35,7 +35,7 @@ const PreviewProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         return '/assets/avatar/2.jpg';
     };
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-br-to from-primary via-primary to-secondary pb-8">
             {/* Large avatar image with back button */}
             <div className="relative">
                 <img src={getAvatarUrl()} alt="avatar" className="w-full h-full object-cover" />
@@ -207,7 +207,7 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
     if (showProfileDetailEdit) return <ProfileDetailEditPage onBack={() => setShowProfileDetailEdit(false)} />;
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-br-to from-primary via-primary to-secondary pb-8">
             {/* Hidden file input */}
             <input
                 ref={fileInputRef}

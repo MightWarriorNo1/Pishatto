@@ -11,6 +11,7 @@ import CastGradeDetailPage from './pages/cast/CastGradeDetailPage';
 import CastProfilePage from './pages/cast/CastProfilePage';
 import CastMessageDetailPage from './pages/cast/CastMessageDetailPage';
 import { UserProvider } from './contexts/UserContext';
+import { ConciergeProvider } from './contexts/ConciergeContext';
 
 const CastLoginWrapper: React.FC = () => {
   return <CastLoginOptions onNext={() => {}} />;
@@ -19,20 +20,22 @@ const CastLoginWrapper: React.FC = () => {
 const App: React.FC = () => {
   return (
     <UserProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<RoleSelectPage />} />
-          <Route path="/register" element={<RegisterSteps />} />
-          <Route path="/cast/login" element={<CastLoginWrapper />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/cast/:id" element={<CastDetail />} />
-          <Route path="/guest/:id" element={<GuestDetail />} />
-          <Route path="/cast/dashboard" element={<CastDashboard />} />
-          <Route path="/cast/grade-detail" element={<CastGradeDetailPage />} />
-          <Route path="/cast/profile" element={<CastProfilePage />} />
-          <Route path="/cast/:id/message" element={<CastMessageDetailPage />} />
-        </Routes>
-      </Router>
+      <ConciergeProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<RoleSelectPage />} />
+            <Route path="/register" element={<RegisterSteps />} />
+            <Route path="/cast/login" element={<CastLoginWrapper />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/cast/:id" element={<CastDetail />} />
+            <Route path="/guest/:id" element={<GuestDetail />} />
+            <Route path="/cast/dashboard" element={<CastDashboard />} />
+            <Route path="/cast/grade-detail" element={<CastGradeDetailPage />} />
+            <Route path="/cast/profile" element={<CastProfilePage />} />
+            <Route path="/cast/:id/message" element={<CastMessageDetailPage />} />
+          </Routes>
+        </Router>
+      </ConciergeProvider>
     </UserProvider>
   );
 };

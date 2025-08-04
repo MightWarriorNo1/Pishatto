@@ -215,7 +215,12 @@ const GuestDetail: React.FC = () => {
                                 key={index} 
                                 className="bg-secondary text-white text-xs rounded px-2 py-1"
                             >
-                                {interest.category}: {interest.tag}
+                                {typeof interest === 'string' 
+                                    ? interest 
+                                    : typeof interest === 'object' && interest.category && interest.tag
+                                        ? `${interest.category}: ${interest.tag}`
+                                        : JSON.stringify(interest)
+                                }
                             </span>
                         ))}
                     </div>

@@ -410,6 +410,21 @@ export const deleteNotification = async (id: number) => {
   return response.data;
 };
 
+export interface AdminNews {
+  id: number;
+  title: string;
+  content: string;
+  target_type: 'all' | 'guest' | 'cast';
+  published_at: string;
+  created_at: string;
+}
+
+export const getAdminNews = async (userType: 'guest' | 'cast', userId?: number): Promise<AdminNews[]> => {
+  const url = userId ? `/admin-news/${userType}/${userId}` : `/admin-news/${userType}`;
+  const response = await api.get(url);
+  return response.data.news;
+};
+
 export const createChargeDirect = async (
   card: string, 
   amount: number, 
@@ -529,7 +544,31 @@ export const fetchAllGuestPhones = async (): Promise<string[]> => {
 
 export const applyReservation = async (reservation_id: number, cast_id: number) => {
   console.log("applyReservation", reservation_id, cast_id);
-  return api.post('/reservation/match', { reservation_id, cast_id });
+  return api.post('/reservation-applications/apply', { reservation_id, cast_id });
+};
+
+export const approveReservationApplication = async (applicationId: number, adminId: number) => {
+  return api.post(`/reservation-applications/${applicationId}/approve`, { admin_id: adminId });
+};
+
+export const rejectReservationApplication = async (applicationId: number, adminId: number, rejectionReason?: string) => {
+  return api.post(`/reservation-applications/${applicationId}/reject`, { 
+    admin_id: adminId, 
+    rejection_reason: rejectionReason 
+  });
+};
+
+export const getPendingApplications = async () => {
+  return api.get('/reservation-applications/pending');
+};
+
+export const getReservationApplications = async (reservationId: number) => {
+  return api.get(`/reservation-applications/reservation/${reservationId}`);
+};
+
+export const getCastApplications = async (castId: number) => {
+  const response = await api.get(`/reservation-applications/cast/${castId}`);
+  return response.data.applications;
 };
 
 export const startReservation = async (reservation_id: number, cast_id: number) => {
@@ -706,6 +745,11 @@ export const fetchAllBadges = async () => {
   return response.data.badges;
 };
 
+export const getCastBadges = async (castId: number) => {
+  const response = await api.get(`/badges/${castId}`);
+  return response.data.badges;
+};
+
 export interface FeedbackData {
   reservation_id: number;
   cast_id: number;
@@ -748,6 +792,16 @@ export const deleteFeedback = async (feedbackId: number) => {
 export const getCastFeedbackStats = async (castId: number) => {
   const response = await api.get(`/feedback/cast/${castId}/stats`);
   return response.data.stats;
+};
+
+export const getTopSatisfactionCasts = async () => {
+  const response = await api.get('/feedback/top-satisfaction');
+  return response.data.casts;
+};
+
+export const getAllSatisfactionCasts = async () => {
+  const response = await api.get('/feedback/all-satisfaction');
+  return response.data.casts;
 };
 
 export const completeReservation = async (reservationId: number, feedback: {
@@ -795,6 +849,80 @@ export const sendSmsVerificationCode = async (phoneNumber: string) => {
 export const verifySmsCode = async (phoneNumber: string, code: string) => {
   const response = await api.post('/sms/verify-code', { phone: phoneNumber, code });
   return response.data;
+};
+
+// Concierge API functions
+export interface ConciergeMessage {
+  id: number;
+  text: string;
+  is_concierge: boolean;
+  timestamp: string;
+  created_at: string;
+}
+
+export interface ConciergeInfo {
+  welcome_message: {
+    title: string;
+    subtitle: string;
+    content: string[];
+  };
+  concierge_info: {
+    name: string;
+    age: string;
+    avatar: string;
+  };
+}
+
+export const getConciergeMessages = async (userId: number, userType: 'guest' | 'cast') => {
+  try {
+    const response = await api.get('/concierge/messages', {
+      params: {
+        user_id: userId,
+        user_type: userType
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching concierge messages:', error);
+    throw error;
+  }
+};
+
+export const sendConciergeMessage = async (userId: number, userType: 'guest' | 'cast', message: string) => {
+  try {
+    const response = await api.post('/concierge/messages', {
+      user_id: userId,
+      user_type: userType,
+      message: message
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error sending concierge message:', error);
+    throw error;
+  }
+};
+
+export const markConciergeAsRead = async (userId: number, userType: 'guest' | 'cast') => {
+  try {
+    const response = await api.post('/concierge/mark-read', {
+      user_id: userId,
+      user_type: userType
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error marking concierge as read:', error);
+    throw error;
+  }
+};
+
+export const getConciergeInfo = async (): Promise<ConciergeInfo> => {
+  try {
+    const response = await api.get('/concierge/info');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching concierge info:', error);
+    throw error;
+  }
 };
 
 export default api; 

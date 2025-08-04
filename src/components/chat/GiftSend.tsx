@@ -1,13 +1,26 @@
 
 import React, { useState } from 'react';
+import { useUser } from '../../contexts/UserContext';
 
 const gifts = ['🎁', '🍰', '🌸', '🏅'];
 
 const GiftSend: React.FC = () => {
     const [show, setShow] = useState(false);
+    const { user } = useUser();
+    
     return (
         <div>
-            <button className="text-white text-2xl font-semibold hover:text-red-700 transition-all duration-200" onClick={() => setShow(true)}>ギフトを送る</button>
+            <button 
+                className={`text-2xl font-semibold transition-all duration-200 ${
+                    user && user.points && user.points > 0 
+                        ? 'text-white hover:text-red-700' 
+                        : 'text-gray-500 cursor-not-allowed'
+                }`} 
+                onClick={() => setShow(true)}
+                disabled={!user || !user.points || user.points <= 0}
+            >
+                ギフトを送る
+            </button>
             {show && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary bg-opacity-80">
                     <div className="bg-primary rounded-2xl shadow-lg p-8 flex flex-col items-center border border-secondary">

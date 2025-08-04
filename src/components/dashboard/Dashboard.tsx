@@ -132,7 +132,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-primary">
+    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
       {/* Show TopNavigation and search tabs only when in search mode */}
       {activeBottomTab === 'search' && (
         <>

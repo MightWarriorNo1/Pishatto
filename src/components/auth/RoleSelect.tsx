@@ -7,7 +7,7 @@ interface RoleSelectProps {
 
 const RoleSelect: React.FC<RoleSelectProps> = ({ onSelect }) => {
     return (
-        <div className="flex flex-col min-h-screen bg-primary">
+        <div className="flex flex-col min-h-screen bg-gradient-to-br from-primary to-secondary">
             <div className="flex-1 flex items-center justify-center">
                 <div className="w-full px-4 space-y-6">
                     <div className="p-2 text-center text-xs text-white">

@@ -94,10 +94,10 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
     };
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary relative">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-br-to from-primary via-primary to-secondary relative">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
-                <button onClick={onBack} className="mr-2 text-2xl text-white">
+                <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary transition-colors">
                     <ChevronLeft />
                 </button>
                 <span className="text-lg font-bold flex-1 text-center text-white">基本情報</span>
@@ -107,7 +107,7 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
             {fields.map((label) => (
                 <div
                     key={label}
-                    className="flex items-center justify-between px-4 py-4 bg-primary cursor-pointer"
+                    className="flex items-center justify-between px-4 py-4 bg-gradient-br-to from-primary via-primary to-secondary cursor-pointer"
                     onClick={() => openPicker(label)}
                 >
                     <span className="text-white">{label}</span>

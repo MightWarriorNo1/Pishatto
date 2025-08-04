@@ -152,14 +152,6 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ onClose }) => {
           </button>
         </div>
 
-        {/* Scan Button */}
-        <button
-          onClick={handleScanQR}
-          className="w-full bg-green-600 text-white py-3 px-4 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-green-700 transition-colors mb-3"
-        >
-          <Camera className="w-5 h-5" />
-          QRコードをスキャン
-        </button>
 
         {/* Download Button */}
         <button

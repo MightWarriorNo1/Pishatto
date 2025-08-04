@@ -124,9 +124,9 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <div className="max-w-md min-h-screen bg-primary pb-8">
+    <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
       {/* Top bar */}
-      <div className="flex items-center px-4 py-3 border-b border-secondary bg-primary">
+      <div className="flex items-center px-4 py-3 border-b border-secondary bg-gradient-to-br from-primary via-primary to-secondary">
         <button className="mr-2 text-2xl text-white" onClick={onBack}>
           <ChevronLeft />
         </button>

@@ -1,7 +1,6 @@
 
 import React from 'react';
-import { Search, MessageSquareMore, Hand, Clock4, User } from 'lucide-react'
-
+import { Search, MessageCircle, Hand, Clock9, UserRound } from 'lucide-react'
 interface BottomNavigationProps {
   activeTab: 'search' | 'message' | 'call' | 'tweet' | 'mypage';
   onTabChange: (tab: 'search' | 'message' | 'call' | 'tweet' | 'mypage') => void;
@@ -11,57 +10,59 @@ interface BottomNavigationProps {
 
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange, messageCount = 0, tweetCount = 0 }) => {
   return (
-    <div className="fixed max-w-md mx-auto bottom-0 left-0 right-0 bg-secondary border-t border-secondary z-50">
-      <div className="max-w-md mx-auto px-4 py-2">
-        <div className="flex justify-between items-center">
-          <button
-            className={`flex flex-col items-center ${activeTab === 'search' ? 'text-primary' : 'text-white'}`}
-            onClick={() => onTabChange('search')}
-          >
+    <div className="fixed max-w-md mx-auto bottom-0 left-0 right-0 z-50">
+      <div className="rounded-b-3xl shadow p-4 flex flex-row items-center bg-secondary border-t border-secondary">
+        <button
+          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'search' ? 'text-primary font-bold' : 'text-white'}`}
+          onClick={() => onTabChange('search')}
+        >
+          <span className="relative text-2xl mb-1">
             <Search />
-            <span className="text-xs mt-1">探す</span>
-          </button>
-          <button
-            className={`relative flex flex-col items-center ${activeTab === 'message' ? 'text-primary' : 'text-white'}`}
-            onClick={() => onTabChange('message')}
-          >
-            <MessageSquareMore />
-            {/* {messageCount > 0 && (
-              <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
-                {messageCount}
-              </span>
-            )} */}
-            <span className="text-xs mt-1">メッセージ</span>
-          </button>
-          <button
-            className={`flex flex-col items-center ${activeTab === 'call' ? 'text-primary' : 'text-white'}`}
-            onClick={() => onTabChange('call')}
-          >
+          </span>
+          <span>探す</span>
+        </button>
+        <button
+          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'message' ? 'text-primary font-bold' : 'text-white'}`}
+          onClick={() => onTabChange('message')}
+        >
+          <span className="relative text-2xl mb-1">
+            <MessageCircle />
+            {messageCount > 0 && (
+              <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{messageCount}</span>
+            )}
+          </span>
+          <span>メッセージ</span>
+        </button>
+        <button
+          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'call' ? 'text-primary font-bold' : 'text-white'}`}
+          onClick={() => onTabChange('call')}
+        >
+          <span className="relative text-2xl mb-1">
             <Hand />
-            <span className="text-xs mt-1">呼ぶ</span>
-          </button>
-          <button
-            className={`flex flex-col items-center ${activeTab === 'tweet' ? 'text-primary' : 'text-white'}`}
-            onClick={() => onTabChange('tweet')}
-          >
-            <span className="relative">
-              <Clock4 />
-              {tweetCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
-                  {tweetCount}
-                </span>
-              )}
-            </span>
-            <span className="text-xs mt-1">つぶやき</span>
-          </button>
-          <button
-            className={`flex flex-col items-center ${activeTab === 'mypage' ? 'text-primary' : 'text-white'}`}
-            onClick={() => onTabChange('mypage')}
-          >
-            <User />
-            <span className="text-xs mt-1">マイページ</span>
-          </button>
-        </div>
+          </span>
+          <span>呼ぶ</span>
+        </button>
+        <button
+          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'tweet' ? 'text-primary font-bold' : 'text-white'}`}
+          onClick={() => onTabChange('tweet')}
+        >
+          <span className="relative text-2xl mb-1">
+            <Clock9 />
+            {tweetCount > 0 && (
+              <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{tweetCount}</span>
+            )}
+          </span>
+          <span>つぶやき</span>
+        </button>
+        <button
+          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'mypage' ? 'text-primary font-bold' : 'text-white'}`}
+          onClick={() => onTabChange('mypage')}
+        >
+          <span className="relative text-2xl mb-1">
+            <UserRound />
+          </span>
+          <span>マイページ</span>
+        </button>
       </div>
     </div>
   );

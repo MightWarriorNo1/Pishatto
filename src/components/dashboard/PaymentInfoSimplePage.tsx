@@ -35,10 +35,10 @@ const PaymentInfoSimplePage: React.FC<PaymentInfoSimplePageProps> = ({ onBack })
     console.log("PAYMENT INFO", paymentInfo);
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-br-to from-primary via-primary to-secondary relative">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
-                <button onClick={onBack} className="mr-2 text-2xl text-white">
+                <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary transition-colors">
                     <ChevronLeft />
                 </button>
                 <span className="text-lg font-bold flex-1 text-center text-white">お支払い情報</span>

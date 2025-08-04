@@ -16,6 +16,14 @@ interface UserProfile {
 }
 
 const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, userType, userId }) => {
+    console.log('PostCreatePage: Component initialized with props:', { userType, userId });
+    
+    // Validate required props
+    if (!onClose || !onSubmit) {
+        console.error('PostCreatePage: Missing required props onClose or onSubmit');
+        return null;
+    }
+    
     const [content, setContent] = useState('');
     const [image, setImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -43,7 +51,10 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
 
     useEffect(() => {
         const fetchUserProfile = async () => {
+            console.log('PostCreatePage: fetchUserProfile called with userType:', userType, 'userId:', userId);
+            
             if (!userType || !userId) {
+                console.log('PostCreatePage: Missing userType or userId, setting loading to false');
                 setLoading(false);
                 return;
             }
@@ -51,11 +62,15 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
             try {
                 let profile;
                 if (userType === 'guest') {
+                    console.log('PostCreatePage: Fetching guest profile for userId:', userId);
                     profile = await getGuestProfileById(userId);
                 } else if (userType === 'cast') {
+                    console.log('PostCreatePage: Fetching cast profile for userId:', userId);
                     const response = await getCastProfileById(userId);
                     profile = response.cast;
                 }
+
+                console.log('PostCreatePage: Profile received:', profile);
 
                 if (profile) {
                     setUserProfile({
@@ -63,9 +78,23 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
                         nickname: profile.nickname,
                         avatar: profile.avatar
                     });
+                } else {
+                    // Set default profile if API doesn't return data
+                    console.log('PostCreatePage: No profile data, setting default');
+                    setUserProfile({
+                        id: userId,
+                        nickname: 'ユーザー',
+                        avatar: undefined
+                    });
                 }
             } catch (error) {
-                console.error('Failed to fetch user profile:', error);
+                console.error('PostCreatePage: Failed to fetch user profile:', error);
+                // Set default profile on error
+                setUserProfile({
+                    id: userId,
+                    nickname: 'ユーザー',
+                    avatar: undefined
+                });
             } finally {
                 setLoading(false);
             }
@@ -95,8 +124,11 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
         if (content.trim()) onSubmit(content, image);
     };
 
-    return (
-        <div className="max-w-md min-h-screen bg-primary flex flex-col">
+    console.log('PostCreatePage: Rendering component with userProfile:', userProfile, 'loading:', loading);
+    
+    try {
+        return (
+            <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col">
             {/* Top bar */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-secondary bg-primary">
                 <button onClick={onClose} className="text-3xl text-white font-bold">
@@ -117,7 +149,7 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
                     <div className="w-8 h-8 rounded-full bg-gray-300 animate-pulse"></div>
                 ) : (
                     <img 
-                        src={userProfile?.avatar ? getFirstAvatarUrl(userProfile.avatar) : '/assets/avatar/2.jpg'} 
+                        src={userProfile?.avatar ? getFirstAvatarUrl(userProfile.avatar) : '/assets/avatar/female.png'} 
                         alt="avatar" 
                         className="w-8 h-8 rounded-full object-cover"
                         onError={(e) => {
@@ -172,7 +204,31 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
                 </div>
             )}
         </div>
-    );
+        );
+    } catch (error) {
+        console.error('PostCreatePage: Error rendering component:', error);
+        return (
+            <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col">
+                <div className="flex items-center justify-between px-4 py-4 border-b border-secondary bg-primary">
+                    <button onClick={onClose} className="text-3xl text-white font-bold">
+                        <X />
+                    </button>
+                    <span className="flex-1 text-center text-lg font-bold text-white">エラーが発生しました</span>
+                </div>
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-white text-center">
+                        <p>投稿画面の読み込みに失敗しました</p>
+                        <button 
+                            onClick={onClose}
+                            className="mt-4 px-4 py-2 bg-secondary text-white rounded"
+                        >
+                            閉じる
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 };
 
 export default PostCreatePage; 

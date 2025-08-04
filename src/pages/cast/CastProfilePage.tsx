@@ -211,9 +211,9 @@ const CastProfilePage: React.FC = () => {
     }
 
     return (
-        <div className="max-w-md mx-auto bg-primary min-h-screen pb-24">
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 pt-4 pb-2 bg-primary border-b border-secondary">
+        <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-8">
+            {/* Fixed Header */}
+            <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 flex items-center justify-between px-4 pt-4 pb-4 bg-primary border-b border-secondary">
                 <button 
                     onClick={() => setShowNotification(true)} 
                     className="text-2xl text-white hover:text-secondary transition-colors"
@@ -230,6 +230,8 @@ const CastProfilePage: React.FC = () => {
                     </button>
                 </div>
             </div>
+            {/* Spacer to prevent content from being hidden behind fixed header */}
+            <div className="h-16"></div>
             {/* Campaign/Event Banners */}
             <div className="px-4 pt-2 flex flex-col items-center">
                 <div className="rounded-lg overflow-hidden mb-2 w-full border-2 border-secondary relative">
@@ -283,7 +285,7 @@ const CastProfilePage: React.FC = () => {
                 </Link>
             </div>
             {/* Points Section */}
-            <div className="bg-primary border border-secondary rounded-lg mx-4 my-2 p-4">
+            <div className="bg-gradient-to-br from-primary via-primary to-secondary border border-secondary rounded-lg mx-4 my-2 p-4">
                 <div className="flex items-center mb-2">
                     <span className="text-xs font-medium text-white mr-2">今月の総売上ポイント</span>
                     <span className="text-xs text-white">
@@ -342,7 +344,7 @@ const CastProfilePage: React.FC = () => {
                 </div>
             </div> */}
             {/* Menu List */}
-            <div className="bg-primary border border-secondary rounded-lg mx-4 my-2 p-2 divide-y divide-gray-800">
+            <div className="bg-white/10 border border-secondary rounded-lg mx-4 my-2 p-2 divide-y divide-gray-800">
                 <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-secondary transition" onClick={() => setShowGiftBox(true)}>
                     <span className="text-xl mr-3 text-white">
                         <Gift />
@@ -381,7 +383,7 @@ const CastProfilePage: React.FC = () => {
                 </div>
             </div>
             {/* Info/Warning Box */}
-            <div className="bg-gray-900 border border-secondary rounded-lg mx-4 my-2 p-4 text-xs text-white">
+            <div className="bg-white/10 border border-secondary rounded-lg mx-4 my-2 p-4 text-xs text-white">
                 <div className="mb-2">通報・クレーム・低評価など以外にも、以下の事例等が確認された場合、アカウントが凍結となりサービスの利用ができなくなります。</div>
                 <ul className="list-disc pl-5 mb-2">
                     <li>中抜き、現金の授受行為</li>
@@ -394,8 +396,6 @@ const CastProfilePage: React.FC = () => {
                 </ul>
                 <div>残念ながら毎月一定のキャストが該当してしまっています。日本一笑顔を作り、日本一稼げるサービスを一緒につくっていきましょう。</div>
             </div>
-            {/* Bottom bar space */}
-            <div className="h-20" />
         </div>
     );
 };

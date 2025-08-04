@@ -101,7 +101,7 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
     if (loading) {
         return (
-            <div className='max-w-md bg-primary min-h-screen pb-24'>
+            <div className='max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
                 <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
                     <button
                         className="mr-2 text-2xl text-white"
@@ -138,7 +138,7 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
     }
 
     return (
-        <div className='max-w-md  bg-primary min-h-screen pb-24'>
+        <div className='max-w-md  bg-gradient-to-br from-primary  via-primary to-secondary min-h-screen pb-24'>
             {/* Top bar */}
             <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
                 <button

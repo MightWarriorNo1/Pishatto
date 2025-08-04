@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { FiBell, FiStar } from 'react-icons/fi';
 import ChatScreen from './ChatScreen';
+import ConciergeChat from '../ConciergeChat';
+import ConciergeDetailPage from '../../pages/ConciergeDetailPage';
 import { useChatRefresh } from '../../contexts/ChatRefreshContext';
 import { getGuestChats, getNotifications, markNotificationRead, getCastProfileById, favoriteChat, unfavoriteChat, getFavoriteChats, isChatFavorited } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useNotifications } from '../../hooks/useRealtime';
+import NotificationScreen from './NotificationScreen';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 interface MessageScreenProps {
@@ -21,10 +24,14 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [castProfiles, setCastProfiles] = useState<{[key: number]: any}>({});
     const [favoritedChatIds, setFavoritedChatIds] = useState<Set<number>>(new Set());
+    const [showNotification, setShowNotification] = useState(false);
+    const [showConcierge, setShowConcierge] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const { user } = useUser();
     const { refreshKey } = useChatRefresh();
     useEffect(() => {
             const loadChatsAndFavorites = async () => {
+        setIsLoading(true);
         try {
             // Fetch chats and favorites in parallel
             const [chatsData, favoritesData] = await Promise.all([
@@ -73,7 +80,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                             })
                     );
                     
-                    Promise.all(profilePromises).then(results => {
+                    await Promise.all(profilePromises).then(results => {
                         const profilesMap: {[key: number]: any} = {};
                         results.forEach(({ castId, profile }) => {
                             if (profile) {
@@ -85,6 +92,8 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                 }
             } catch (error) {
                 console.error('Error loading chats and favorites:', error);
+            } finally {
+                setIsLoading(false);
             }
         };
 
@@ -187,10 +196,16 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         return <ChatScreen chatId={showChat} onBack={() => setShowChat(null)} />;
     } 
 
+    if (showConcierge) {
+        return <ConciergeDetailPage onBack={() => setShowConcierge(false)} />;
+    }
+
+    if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
+
     return (
-        <div className="bg-primary min-h-screen flex flex-col">
+        <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col">
             {/* Top bar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-secondary">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-secondary cursor-pointer" onClick={() => setShowNotification(true)}>
                 <FiBell className="w-6 h-6 text-white" />
                 <div className="font-bold text-lg text-white">メッセージ一覧</div>
                 <div className="w-6 h-6" /> {/* Placeholder for right icon */}
@@ -208,11 +223,15 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                 </div>
             )} */}
             {/* Campaign banner */}
-            {/* <div className="bg-primary px-4 py-2 border-b border-secondary">
-                <div className="bg-primary rounded-lg shadow-sm flex items-center p-2">
-                    <img src="/assets/icons/logo_call.png" alt='logo_call' />
+            <div className="bg-primary px-4 py-2 border-b border-secondary">
+                <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-lg shadow-sm flex items-center p-3 text-white">
+                    <div className="flex-1">
+                        <div className="text-sm font-bold">2/18 | 春のW紹介キャンペーン</div>
+                        <div className="text-xs">最大30,000Pの紹介クーポンがもらえる!?</div>
+                    </div>
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
                 </div>
-            </div> */}
+            </div>
             {/* Tabs */}
             <div className="flex items-center px-4 mt-2">
                 <button
@@ -238,153 +257,178 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                     placeholder="ニックネーム・年齢で検索"
                 />
             </div>
-            {/* Message list */}
-            <div className="px-4 mt-4">
-                {selectedTab === 'all' ? (
-                    filteredChats.length === 0 ? (
-                        <div className="text-white text-center py-8">
-                            {searchQuery.trim() ? '検索結果がありません' : 'グループチャットがありません'}
-                        </div>
-                    ) : (
-                        filteredChats.map(chat => {
-                            // Find notification for this chat
-                            const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
-                            const isFavorited = favoritedChatIds.has(chat.id);
-                            
-                            // Get the first avatar from comma-separated string
-                            const getAvatarSrc = () => {
-                                if (!chat.avatar) return '/assets/avatar/1.jpg';
-                                const avatars = chat.avatar.split(',').map((avatar: string) => avatar.trim());
-                                return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/1.jpg';
-                            };
-                            
-                            return (
-                                <div key={chat.id} className="relative">
-                                    <button
-                                        className="w-full"
-                                        onClick={async () => {
-                                            setShowChat(chat.id);
-                                            // Immediately set unread to 0 for this chat in local state
-                                            setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
-                                            if (chatNotif) {
-                                                await markNotificationRead(chatNotif.id);
-                                                setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));
-                                            }
-                                        }}
-                                    >
-                                        <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
-                                            <img
-                                                src={getAvatarSrc()}
-                                                alt="avatar"
-                                                className="w-12 h-12 rounded-full mr-3 border border-secondary"
-                                            />
-                                            <div className="flex-1">
-                                                <div className="flex items-center">
-                                                    <span className="font-bold text-white text-base mr-2">
-                                                        {chat.cast_nickname || `グループチャット ${chat.id}`}
-                                                    </span>
-                                                    {chat.unread > 0 && (
-                                                        <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
-                                                            {chat.unread}
+            {/* Loading indicator */}
+            {isLoading ? (
+                <div className="flex-1 flex items-center justify-center">
+                    <div className="text-white text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                        <div className="text-lg">読み込み中...</div>
+                    </div>
+                </div>
+            ) : (
+                /* Message list */
+                <div className="px-4 mt-4">
+                    {/* Concierge Chat - Always show at top */}
+                    <ConciergeChat 
+                        onClick={() => setShowConcierge(true)}
+                    />
+                    
+                    {selectedTab === 'all' ? (
+                        filteredChats.length === 0 ? (
+                            <div className="text-white text-center py-8">
+                                {searchQuery.trim() ? '検索結果がありません' : 'グループチャットがありません'}
+                            </div>
+                        ) : (
+                            filteredChats.map(chat => {
+                                // Find notification for this chat
+                                const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
+                                const isFavorited = favoritedChatIds.has(chat.id);
+                                
+                                // Get the first avatar from comma-separated string
+                                const getAvatarSrc = () => {
+                                    if (!chat.avatar) return '/assets/avatar/female.png';
+                                    const avatars = chat.avatar.split(',').map((avatar: string) => avatar.trim());
+                                    return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/1.jpg';
+                                };
+                                
+                                return (
+                                    <div key={chat.id} className="relative">
+                                        <button
+                                            className="w-full"
+                                            onClick={async () => {
+                                                setShowChat(chat.id);
+                                                // Immediately set unread to 0 for this chat in local state
+                                                setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
+                                                if (chatNotif) {
+                                                    await markNotificationRead(chatNotif.id);
+                                                    setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));
+                                                }
+                                            }}
+                                        >
+                                            <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
+                                                <img
+                                                    src={getAvatarSrc()}
+                                                    alt="avatar"
+                                                    className="w-12 h-12 rounded-full mr-3 border border-secondary"
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="flex items-center">
+                                                        <span className="font-bold text-white text-base mr-2">
+                                                            {chat.cast_nickname || `グループチャット ${chat.id}`}
                                                         </span>
-                                                    )}
-                                                </div>
-                                                <div className="text-sm text-white">
-                                                    {chat.created_at && (
-                                                        <div className="text-xs text-gray-400 mt-1">
-                                                            作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
-                                                        </div>
-                                                    )}
+                                                        {chat.unread > 0 && (
+                                                            <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
+                                                                {chat.unread}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-sm text-white">
+                                                        {chat.created_at && (
+                                                            <div className="text-xs text-gray-400 mt-1">
+                                                                作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </button>
-                                    {/* Star button */}
-                                    <button
-                                        onClick={(e) => handleStarToggle(chat.id, e)}
-                                        className="absolute top-2 right-2 p-1 rounded-full bg-primary border border-secondary hover:bg-secondary transition-colors"
-                                    >
-                                        <FiStar 
-                                            className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`} 
-                                        />
-                                    </button>
-                                </div>
-                            );
-                        })
-                    )
-                ) : (
-                    filteredFavoriteChats.length === 0 ? (
-                        <div className="text-white text-center py-8">
-                            {searchQuery.trim() ? '検索結果がありません' : 'お気に入りのチャットがありません'}
-                        </div>
-                    ) : (
-                        filteredFavoriteChats.map(chat => {
-                            // Find notification for this chat
-                            const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
-                            const isFavorited = favoritedChatIds.has(chat.id);
-                            
-                            // Get the first avatar from comma-separated string
-                            const getAvatarSrc = () => {
-                                if (!chat.avatar) return '/assets/avatar/1.jpg';
-                                const avatars = chat.avatar.split(',').map((avatar: string) => avatar.trim());
-                                return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/1.jpg';
-                            };
-                            
-                            return (
-                                <div key={chat.id} className="relative">
-                                    <button
-                                        className="w-full"
-                                        onClick={async () => {
-                                            setShowChat(chat.id);
-                                            // Immediately set unread to 0 for this chat in local state
-                                            setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
-                                            if (chatNotif) {
-                                                await markNotificationRead(chatNotif.id);
-                                                setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));
-                                            }
-                                        }}
-                                    >
-                                        <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
-                                            <img
-                                                src={getAvatarSrc()}
-                                                alt="avatar"
-                                                className="w-12 h-12 rounded-full mr-3 border border-secondary"
+                                        </button>
+                                        {/* Star button */}
+                                        <button
+                                            onClick={(e) => handleStarToggle(chat.id, e)}
+                                            className="absolute top-2 right-2 p-1 rounded-full bg-primary border border-secondary hover:bg-secondary transition-colors"
+                                        >
+                                            <FiStar 
+                                                className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`} 
                                             />
-                                            <div className="flex-1">
-                                                <div className="flex items-center">
-                                                    <span className="font-bold text-white text-base mr-2">
-                                                        {chat.cast_nickname || `グループチャット ${chat.id}`}
-                                                    </span>
-                                                    {chat.unread > 0 && (
-                                                        <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
-                                                            {chat.unread}
+                                        </button>
+                                    </div>
+                                );
+                            })
+                        )
+                    ) : (
+                        filteredFavoriteChats.length === 0 ? (
+                            <div className="text-white text-center py-8">
+                                {searchQuery.trim() ? '検索結果がありません' : 'お気に入りのチャットがありません'}
+                            </div>
+                        ) : (
+                            filteredFavoriteChats.map(chat => {
+                                // Find notification for this chat
+                                const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
+                                const isFavorited = favoritedChatIds.has(chat.id);
+                                
+                                // Get the first avatar from comma-separated string
+                                const getAvatarSrc = () => {
+                                    if (!chat.avatar) return '/assets/avatar/female.png';
+                                    const avatars = chat.avatar.split(',').map((avatar: string) => avatar.trim());
+                                    return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/1.jpg';
+                                };
+                                
+                                return (
+                                    <div key={chat.id} className="relative">
+                                        <button
+                                            className="w-full"
+                                            onClick={async () => {
+                                                setShowChat(chat.id);
+                                                // Immediately set unread to 0 for this chat in local state
+                                                setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
+                                                if (chatNotif) {
+                                                    await markNotificationRead(chatNotif.id);
+                                                    setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));
+                                                }
+                                            }}
+                                        >
+                                            <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
+                                                <img
+                                                    src={getAvatarSrc()}
+                                                    alt="avatar"
+                                                    className="w-12 h-12 rounded-full mr-3 border border-secondary"
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="flex items-center">
+                                                        <span className="font-bold text-white text-base mr-2">
+                                                            {chat.cast_nickname || `グループチャット ${chat.id}`}
                                                         </span>
-                                                    )}
-                                                </div>
-                                                <div className="text-sm text-white">
-                                                    {chat.created_at && (
-                                                        <div className="text-xs text-gray-400 mt-1">
-                                                            作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
-                                                        </div>
-                                                    )}
+                                                        {chat.unread > 0 && (
+                                                            <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
+                                                                {chat.unread}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-sm text-white">
+                                                        {chat.created_at && (
+                                                            <div className="text-xs text-gray-400 mt-1">
+                                                                作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </button>
-                                    {/* Star button */}
-                                    <button
-                                        onClick={(e) => handleStarToggle(chat.id, e)}
-                                        className="absolute top-2 right-2 p-1 rounded-full bg-primary border border-secondary hover:bg-secondary transition-colors"
-                                    >
-                                        <FiStar 
-                                            className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`} 
-                                        />
-                                    </button>
-                                </div>
-                            );
-                        })
-                    )
-                )}
+                                        </button>
+                                        {/* Star button */}
+                                        <button
+                                            onClick={(e) => handleStarToggle(chat.id, e)}
+                                            className="absolute top-2 right-2 p-1 rounded-full bg-primary border border-secondary hover:bg-secondary transition-colors"
+                                        >
+                                            <FiStar 
+                                                className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`} 
+                                            />
+                                        </button>
+                                    </div>
+                                );
+                            })
+                        )
+                    )}
+                </div>
+            )}
+            
+            {/* Floating Action Button for Gifts */}
+            <div className="fixed bottom-20 right-4 z-50">
+                <button className="bg-orange-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-orange-600 transition-colors">
+                    <div className="text-center">
+                        <div className="text-lg">🎁</div>
+                        <div className="text-xs font-bold">まとめてギフト</div>
+                    </div>
+                </button>
             </div>
         </div>
     );

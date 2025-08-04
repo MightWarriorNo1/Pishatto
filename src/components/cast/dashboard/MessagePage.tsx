@@ -134,7 +134,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     />;
 
     return (
-        <div className="max-w-md min-h-screen bg-primary relative">
+        <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary relative">
             {/* Header (fixed) */}  
             <div className="fixed h-16 flex items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button onClick={onBack} className="mr-2">
@@ -372,7 +372,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
     }
 
     return (
-        <div className="max-w-md min-h-screen bg-primary pb-20">
+        <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20">
             {/* Fixed Header */}
             <div className="fixed top-0 left-0 right-0 max-w-md mx-auto bg-primary z-20 border-b border-secondary">
                 <h1 className="text-lg font-bold text-center py-3 text-white">メッセージ</h1>
@@ -415,7 +415,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
                         <div className="flex items-center">
                             <input
                                 type="text"
-                                placeholder="年齢で検索 (例: 20, 30)"
+                                 placeholder="年齢で検索 (例: 20, 30)"
                                 value={filterAge}
                                 onChange={(e) => setFilterAge(e.target.value)}
                                 className="flex-1 px-3 py-2 bg-secondary text-white rounded-lg border-none outline-none placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
