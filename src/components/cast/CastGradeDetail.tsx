@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import GradeAbout from './GradeAbout';
-import { ChevronLeft, ChevronRight, MessageSquareMore, FileText, Gift, Gem, Settings, UsersRound, Medal, Star} from 'lucide-react';
-import { getGuestGrade, GradeInfo } from '../../services/api';
+import { ChevronLeft, ChevronRight, MessageSquareMore, FileText, Gift, Gem, Settings, UsersRound, Medal, Star, Heart, Clock, ThumbsUp, UserPlus } from 'lucide-react';
+import { getCastGrade, GradeInfo } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 
-const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-    const [showAbout, setShowAbout] = useState(false);
+const CastGradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [gradeInfo, setGradeInfo] = useState<GradeInfo | null>(null);
     const [loading, setLoading] = useState(true);
     const { user } = useUser();
@@ -15,10 +13,10 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             if (user?.id) {
                 try {
                     setLoading(true);
-                    const data = await getGuestGrade(user.id);
+                    const data = await getCastGrade(user.id);
                     setGradeInfo(data);
                 } catch (error) {
-                    console.error('Error fetching grade info:', error);
+                    console.error('Error fetching cast grade info:', error);
                 } finally {
                     setLoading(false);
                 }
@@ -44,54 +42,10 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 return <Medal color='#FFD700' size={64} />;
             case 'platinum':
                 return <Medal color='#E5E4E2' size={64} />;
-            case 'centurion':
-                return <Medal color='#B8860B' size={64} />;
             default:
                 return <Medal color='#D4AF37' size={64} />;
         }
     };
-
-    // const getGradeColor = (grade: string) => {
-    //     switch (grade) {
-    //         case 'green':
-    //             return 'bg-green-500';
-    //         case 'orange':
-    //             return 'bg-orange-500';
-    //         case 'bronze':
-    //             return 'bg-amber-600';
-    //         case 'silver':
-    //             return 'bg-gray-400';
-    //         case 'gold':
-    //             return 'bg-yellow-500';
-    //         case 'platinum':
-    //             return 'bg-purple-500';
-    //         case 'centurion':
-    //             return 'bg-black';
-    //         default:
-    //             return 'bg-primary';
-    //     }
-    // };
-
-    // const getGradeGradient = (grade: string) => {
-    //     switch (grade) {
-    //         case 'green':
-    //             return 'from-green-400 to-green-600';
-    //         case 'orange':
-    //             return 'from-orange-400 to-orange-600';
-    //         case 'bronze':
-    //             return 'from-amber-500 to-amber-700';
-    //         case 'silver':
-    //             return 'from-gray-300 to-gray-500';
-    //         case 'gold':
-    //             return 'from-yellow-400 to-yellow-600';
-    //         case 'platinum':
-    //             return 'from-purple-400 to-purple-600';
-    //         case 'centurion':
-    //             return 'from-black to-gray-800';
-    //         default:
-    //             return 'from-blue-400 to-blue-600';
-    //     }
-    // };
 
     const getProgressPercentage = () => {
         if (!gradeInfo) return 0;
@@ -108,8 +62,8 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     };
 
     const getCurrentGradeIndex = () => {
-        const grades = ['green', 'orange', 'bronze', 'silver', 'gold', 'platinum', 'centurion'];
-        return grades.indexOf(gradeInfo?.current_grade || 'green');
+        const grades = ['beginner', 'green', 'orange', 'bronze', 'silver', 'gold', 'platinum'];
+        return grades.indexOf(gradeInfo?.current_grade || 'beginner');
     };
 
     const getGradeData = () => {
@@ -121,11 +75,8 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             { name: 'シルバー', grade: 'silver', icon: <Medal color='#C0C0C0' size={32} />, color: 'text-gray-300' },
             { name: 'ゴールド', grade: 'gold', icon: <Medal color='#FFD700' size={32} />, color: 'text-yellow-300' },
             { name: 'プラチナ', grade: 'platinum', icon: <Medal color='#E5E4E2' size={32} />, color: 'text-gray-200' },
-            { name: 'センチュリオン', grade: 'centurion', icon: <Medal color='#B8860B' size={32} />, color: 'text-amber-500' },
         ];
     };
-
-    if (showAbout) return <GradeAbout onBack={() => setShowAbout(false)} />;
 
     if (loading) {
         return (
@@ -144,12 +95,11 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }
 
     const benefits = [
-        { icon: <MessageSquareMore color='orange' size={32} />, label: 'チャット背景', key: 'chat_background' },
-        { icon: <FileText color='orange' size={32} />, label: 'つぶやきグレード表示', key: 'tweet_grade_display' },
-        { icon: <Gift color='orange' size={32} />, label: 'グレードギフト', key: 'grade_gift' },
-        { icon: <Gem color='orange' size={32} />, label: 'バースデーギフト', key: 'birthday_gift' },
-        { icon: <Settings color='orange' size={32} />, label: 'プライベート設定拡充', key: 'private_settings_expansion' },
-        { icon: <UsersRound color='orange' size={32} />, label: '専任コンシェルジュ', key: 'dedicated_concierge' },
+        { icon: <MessageSquareMore color='orange' size={32} />, label: 'らくらく\nメッセ', key: 'easy_message' },
+        { icon: <FileText color='orange' size={32} />, label: '休会制度', key: 'suspension_system' },
+        { icon: <Gift color='orange' size={32} />, label: '自動おかえり\nメッセ', key: 'auto_goodbye_message' },
+        { icon: <Gem color='orange' size={32} />, label: '初回ウェルカムメッセ', key: 'welcome_message' },
+        { icon: <Settings color='orange' size={32} />, label: '振込手数料\n割引', key: 'transfer_fee_discount' },
     ];
 
     const gradeData = getGradeData();
@@ -162,7 +112,7 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer transition-colors">
                     <ChevronLeft />
                 </button>
-                <span className="text-lg font-bold flex-1 text-center text-white">ゲストグレード</span>
+                <span className="text-lg font-bold flex-1 text-center text-white">キャストグレード</span>
             </div>
             
             {/* Add top padding to account for fixed header */}
@@ -180,12 +130,12 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     {/* Enhanced Badge with glow effect */}
                     <div className={`w-32 h-32 rounded-full flex items-center justify-center shadow-2xl mb-4 border-4 border-white/30 bg-white/10 backdrop-blur-sm animate-pulse`}>
                         <span className="text-7xl filter drop-shadow-lg">{getGradeIcon(gradeInfo.current_grade)}</span>
-                        {gradeInfo.current_grade === 'centurion' && (
+                        {gradeInfo.current_grade === 'platinum' && (
                             <span className="absolute -top-2 -right-2 text-2xl animate-bounce">👑</span>
                         )}
                     </div>
                     <div className="text-white font-bold text-2xl mb-2 text-center">{gradeInfo.current_grade_name}</div>
-                    <div className="text-white/90 text-lg font-semibold">{gradeInfo.grade_points.toLocaleString()}P</div>
+                    <div className="text-white/90 text-lg font-semibold">{gradeInfo.grade_points.toLocaleString()} FP</div>
                     
                     {/* Current position indicator */}
                     <div className="mt-4 bg-white/20 rounded-full px-4 py-2">
@@ -200,7 +150,7 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="text-center py-6 px-4">
                 <div className="text-white text-sm mb-4 leading-relaxed">
                     {gradeInfo.next_grade ? 
-                        `次のグレード「${gradeInfo.next_grade_name}」まであと${gradeInfo.points_to_next_grade.toLocaleString()}Pです。` :
+                        `次のグレード「${gradeInfo.next_grade_name}」まであと${gradeInfo.points_to_next_grade.toLocaleString()}FPです。` :
                         '🎉 最高グレードに到達しました！おめでとうございます！'
                     }
                 </div>
@@ -283,20 +233,9 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
             </div>
             
-            {/* What is guest grade row */}
-            <button 
-                className="w-full flex items-center px-4 py-4 border-b border-secondary hover:bg-secondary/20 transition-colors" 
-                onClick={() => setShowAbout(true)}
-            >
-                <span className="flex-1 text-left font-bold text-white">ゲストグレードとは</span>
-                <span className="text-white text-lg">
-                    <ChevronRight />
-                </span>
-            </button>
-            
             {/* Enhanced Member benefits */}
             <div className="px-4 py-6">
-                <div className="text-center font-bold text-white mb-6 text-lg">会員特典一覧</div>
+                <div className="text-center font-bold text-white mb-6 text-lg">pishatto内特典</div>
                 <div className="grid grid-cols-3 gap-y-6 gap-x-4">
                     {benefits.map((b, i) => {
                         const isActive = gradeInfo.benefits[b.key as keyof typeof gradeInfo.benefits];
@@ -331,4 +270,4 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     );
 };
 
-export default GradeDetail; 
+export default CastGradeDetail;

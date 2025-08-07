@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiBell } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import ChatScreen from '../../components/dashboard/ChatScreen';
+import CastGroupChatScreen from '../../components/cast/dashboard/CastGroupChatScreen';
 import ConciergeChat from '../../components/ConciergeChat';
 import ConciergeDetailPage from '../ConciergeDetailPage';
 import { useChatRefresh } from '../../contexts/ChatRefreshContext';
@@ -25,7 +26,13 @@ const CastMessage: React.FC<MessageScreenProps & { userId: number }> = ({ showCh
     }, [userId, refreshKey]);
 
     if (showChat) {
-        return <ChatScreen chatId={showChat} onBack={() => setShowChat(null)} />;
+        // Check if this is a group chat (has group_id) or individual chat
+        const chat = chats.find(c => c.id === showChat);
+        if (chat && chat.group_id) {
+            return <CastGroupChatScreen groupId={chat.group_id} onBack={() => setShowChat(null)} />;
+        } else {
+            return <ChatScreen chatId={showChat} onBack={() => setShowChat(null)} />;
+        }
     }
 
     if (showConcierge) {

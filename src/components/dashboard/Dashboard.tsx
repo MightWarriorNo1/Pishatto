@@ -13,40 +13,56 @@ import Timeline from './Timeline';
 import Profile from './Profile';
 import FootprintsSection from './FootprintsSection';
 import { useUser } from '../../contexts/UserContext';
-import { markAllNotificationsRead } from '../../services/api';
-import { useChatMessages, useTweets } from '../../hooks/useRealtime';
+import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
+import { useChatRefresh } from '../../contexts/ChatRefreshContext';
+import { markAllNotificationsRead, getGuestChats } from '../../services/api';
+import { useChatMessages, useTweets, useNotifications, useUnreadMessageCount } from '../../hooks/useRealtime';
 
 const Dashboard: React.FC = () => {
   const [activeBottomTab, setActiveBottomTab] = useState<'search' | 'message' | 'call' | 'tweet' | 'mypage'>('search');
   const [activeSearchTab, setActiveSearchTab] = useState<'home' | 'favorites' | 'footprints' | 'ranking'>('home');
   const [showChat, setShowChat] = useState<number | null>(null);
   const [showOrder, setShowOrder] = useState(false);
+  const [showConcierge, setShowConcierge] = useState(false);
   const { user } = useUser();
-  const [messageCount, setMessageCount] = useState(0);;
+  const { isNotificationEnabled } = useNotificationSettings();
+  const { refreshChats } = useChatRefresh();
+  const [messageCount, setMessageCount] = useState(0);
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
-  const [latestNotification] = useState<any>(null);
+  const [latestNotification, setLatestNotification] = useState<any>(null);
   const [tweetCount, setTweetCount] = useState(0);
   const [hasSearchResults, setHasSearchResults] = useState(false);
   const prevTab = React.useRef(activeBottomTab);
 
-  // useEffect(() => {
-  //   if (user) {
-  //     getGuestChats(user.id).then((chats) => {
-  //       const totalUnread = (chats || []).reduce((sum: any, chat: any) => sum + (chat.unread || 0), 0);
-  //       setMessageCount(totalUnread);
-  //     });
-  //   }
-  // }, []);
+  // Initialize message count from existing chats
+  useEffect(() => {
+    if (user) {
+      getGuestChats(user.id, 'guest').then((chats) => {
+        const totalUnread = (chats || []).reduce((sum: any, chat: any) => sum + (chat.unread || 0), 0);
+        setMessageCount(totalUnread);
+      });
+    }
+  }, [user]);
 
-  // useNotifications(user?.id ?? '', (notification) => {
-  //   if (notification.type === 'message') {
-  //     setMessageCount((c) => c + 1);
-  //   }
-  //   console.log("messageCount", messageCount); 
-  //   setLatestNotification(notification);
-  //   setShowNotificationPopup(true);
-  //   setLastNotificationId(notification.id);
-  // });
+  // Real-time unread message count updates
+  useUnreadMessageCount(user?.id || 0, 'guest', (count) => {
+    if (activeBottomTab !== 'message') {
+      if (count === 0) {
+        setMessageCount(0);
+      } else {
+        setMessageCount((prev) => prev + count);
+      }
+    }
+  });
+
+  // Real-time notification updates
+  useNotifications(user?.id || 0, (notification) => {
+    if (notification.type === 'message' && activeBottomTab !== 'message') {
+      setMessageCount((c) => c + 1);
+    }
+    setLatestNotification(notification);
+    setShowNotificationPopup(true);
+  });
 
   useTweets((tweet) => {
     if (activeBottomTab !== 'tweet') {
@@ -76,7 +92,17 @@ const Dashboard: React.FC = () => {
         });
       }
     }
+    
+    // Update prevTab ref
+    prevTab.current = activeBottomTab;
   }, [activeBottomTab, user]);
+
+  // Handle footprints tab being disabled
+  useEffect(() => {
+    if (activeSearchTab === 'footprints' && !isNotificationEnabled('footprints')) {
+      setActiveSearchTab('home');
+    }
+  }, [activeSearchTab, isNotificationEnabled]);
 
   // Render content for the search tabs
   const renderSearchTabContent = () => {
@@ -96,6 +122,19 @@ const Dashboard: React.FC = () => {
       case 'favorites':
         return <FavoritesSection />;
       case 'footprints':
+        // If footprints are disabled, show home content instead
+        if (!isNotificationEnabled('footprints')) {
+          return (
+            <>
+              <div className="px-4 py-4">
+                <NewCastSection />
+                <UserSatisfactionSection />
+                <RankingSection />
+                <BestSatisfactionSection />
+              </div>
+            </>
+          );
+        }
         return <FootprintsSection />;
       case 'ranking':
         return <RankingTabSection />;
@@ -119,9 +158,16 @@ const Dashboard: React.FC = () => {
               setMessageCount(count);
             }
           }}
+          onConciergeStateChange={setShowConcierge}
         />;
       case 'call':
-        return <CallScreen onStartOrder={() => setShowOrder(true)} />;
+        return <CallScreen 
+          onStartOrder={() => setShowOrder(true)} 
+          onNavigateToMessage={() => {
+            setActiveBottomTab('message');
+            refreshChats(); // Refresh chat list to show new chat
+          }}
+        />;
       case 'tweet':
         return <Timeline />;
       case 'mypage':
@@ -147,8 +193,8 @@ const Dashboard: React.FC = () => {
       )}
       {/* Show other tab content when not in search mode */}
       {activeBottomTab !== 'search' && renderOtherTabContent()}
-      {/* Only show BottomNavigation if not in chat detail or order flow */}
-      {!showOrder && showChat === null && (
+      {/* Only show BottomNavigation if not in chat detail, order flow, or concierge detail */}
+      {!showOrder && showChat === null && !showConcierge && (
         <BottomNavigation
           activeTab={activeBottomTab}
           onTabChange={tab => {

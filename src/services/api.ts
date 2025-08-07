@@ -76,6 +76,9 @@ export interface GuestProfile {
     favorite_area?: string;
     interests?: GuestInterest[];
     points?: number;
+    grade?: string;
+    grade_points?: number;
+    grade_updated_at?: string;
     payment_info?: string;
     identity_verification_completed?: 'pending' | 'success' | 'failed';
     created_at: string;
@@ -107,16 +110,26 @@ export interface Reservation {
   type?: 'free' | 'pishatto';
   scheduled_at: string;
   location?: string;
+  meeting_location?: string;
+  reservation_name?: string;
   duration?: number;
   details?: string;
   created_at?: string;
   started_at?: string;
   ended_at?: string;
   points_earned?: number;
+  calculated_points?: number;
   // Feedback fields
   feedback_text?: string;
   feedback_rating?: number;
   feedback_badge_id?: number;
+  // Free call result fields
+  selected_casts?: any[];
+  cast_counts?: {
+    royal_vip: number;
+    vip: number;
+    premium: number;
+  };
 }
 
 export interface CastProfile {
@@ -129,6 +142,7 @@ export interface CastProfile {
   residence?: string;
   birthplace?: string;
   profile_text?: string;
+  category?: 'プレミアム' | 'VIP' | 'ロイヤルVIP';
   created_at?: string;
   updated_at?: string;
   reservations?: Reservation[];
@@ -234,7 +248,54 @@ export const guestUpdateProfile = async (data: GuestProfileUpdateData) => {
 };
 
 export const createReservation = async (data: Reservation) => {
+  console.log("data", data);
   const response = await api.post('/guest/reservation', data);
+  return response.data;
+};
+
+export const createFreeCall = async (data: {
+  guest_id: number;
+  scheduled_at: string;
+  location?: string;
+  duration?: number;
+  custom_duration_hours?: number;
+  details?: string;
+  time?: string;
+  cast_counts: {
+    royal_vip: number;
+    vip: number;
+    premium: number;
+  };
+}) => {
+  const response = await api.post('/guest/free-call', data);
+  return response.data;
+};
+
+export const createFreeCallReservation = async (data: {
+  guest_id: number;
+  scheduled_at: string;
+  location?: string;
+  duration?: number;
+  custom_duration_hours?: number;
+  details?: string;
+  time?: string;
+  cast_counts: {
+    royal_vip: number;
+    vip: number;
+    premium: number;
+  };
+}) => {
+  const response = await api.post('/guest/free-call-reservation', data);
+  return response.data;
+};
+
+export const getAvailableCasts = async (params?: { location?: string; limit?: number }) => {
+  const response = await api.get('/casts/available', { params });
+  return response.data;
+};
+
+export const getCastCountsByLocation = async () => {
+  const response = await api.get('/casts/counts-by-location');
   return response.data;
 };
 
@@ -395,6 +456,11 @@ export const getNotifications = async (userType: 'guest' | 'cast', userId: numbe
   return response.data.notifications;
 };
 
+export const getUnreadNotificationCount = async (userType: 'guest' | 'cast', userId: number): Promise<number> => {
+  const response = await api.get(`/notifications/${userType}/${userId}/unread-count`);
+  return response.data.count;
+};
+
 export const markNotificationRead = async (id: number) => {
   const response = await api.post(`/notifications/read/${id}`);
   return response.data;
@@ -472,9 +538,50 @@ export const getPaymentHistory = async (user_type: 'guest' | 'cast', user_id: nu
   return response.data.payments;
 };
 
-export const getReceipts = async (user_type: 'guest' | 'cast', user_id: number) => {
+export interface Receipt {
+  id: number;
+  receipt_number: string;
+  user_type: 'guest' | 'cast';
+  user_id: number;
+  payment_id?: number;
+  recipient_name: string;
+  amount: number;
+  tax_amount: number;
+  tax_rate: number;
+  total_amount: number;
+  purpose: string;
+  issued_at: string;
+  company_name: string;
+  company_address: string;
+  company_phone: string;
+  registration_number: string;
+  status: 'draft' | 'issued' | 'cancelled';
+  pdf_url?: string;
+  html_content?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const getReceipts = async (user_type: 'guest' | 'cast', user_id: number): Promise<Receipt[]> => {
   const response = await api.get(`/receipts/${user_type}/${user_id}`);
   return response.data.receipts;
+};
+
+export const createReceipt = async (data: {
+  user_type: 'guest' | 'cast';
+  user_id: number;
+  payment_id?: number;
+  recipient_name: string;
+  amount: number;
+  purpose: string;
+}): Promise<Receipt> => {
+  const response = await api.post('/receipts', data);
+  return response.data.receipt;
+};
+
+export const getReceipt = async (receiptId: number): Promise<Receipt> => {
+  const response = await api.get(`/receipts/${receiptId}`);
+  return response.data.receipt;
 };
 
 export const registerPaymentInfo = async (user_id: number, user_type: 'guest' | 'cast', payment_info: string) => {
@@ -586,6 +693,23 @@ export const getPointTransactions = async (userType: 'guest' | 'cast', userId: n
   return response.data;
 };
 
+export const createPointTransaction = async (data: {
+  user_type: 'guest' | 'cast';
+  user_id: number;
+  amount: number;
+  type: 'pending' | 'completed' | 'cancelled';
+  reservation_id?: number;
+  description?: string;
+}) => {
+  const response = await api.post('/point-transactions', data);
+  return response.data;
+};
+
+export const deductPoints = async (guest_id: number, amount: number) => {
+  const response = await api.post('/guests/deduct-points', { guest_id, amount });
+  return response.data;
+};
+
 export const fetchAllGifts = async () => {
   const response = await api.get('/gifts');
   return response.data.gifts;
@@ -639,9 +763,20 @@ export const likeGuest = async (cast_id: number, guest_id: number) => {
   return response.data;
 };
 
-export const createChat = async (cast_id: number, guest_id: number) => {
-  console.log("createChat", cast_id, guest_id);
-  const response = await api.post('/chats/create', { cast_id, guest_id });
+export const createChat = async (cast_id: number, guest_id: number, reservation_id?: number) => {
+  console.log("createChat", cast_id, guest_id, reservation_id);
+  const response = await api.post('/chats/create', { cast_id, guest_id, reservation_id });
+  return response.data;
+};
+
+export const createChatGroup = async (data: {
+  name: string;
+  guest_id: number;
+  cast_ids: number[];
+  reservation_id?: number;
+}) => {
+  console.log("createChatGroup", data);
+  const response = await api.post('/chats/create-group', data);
   return response.data;
 };
 
@@ -734,9 +869,7 @@ export const getFavoriteChats = async (guestId: number) => {
 };
 
 export const isChatFavorited = async (chatId: number, guestId: number) => {
-  console.log("IS CHAT FAVORITED", chatId, guestId);
   const response = await api.get(`/chats/${chatId}/favorited/${guestId}`);
-  console.log("IS CHAT FAVORITED RESPONSE", response.data);
   return response.data;
 };
 
@@ -913,9 +1046,7 @@ export const markConciergeAsRead = async (userId: number, userType: 'guest' | 'c
     console.error('Error marking concierge as read:', error);
     throw error;
   }
-};
-
-export const getConciergeInfo = async (): Promise<ConciergeInfo> => {
+};export const getConciergeInfo = async (): Promise<ConciergeInfo> => {
   try {
     const response = await api.get('/concierge/info');
     return response.data.data;
@@ -925,4 +1056,209 @@ export const getConciergeInfo = async (): Promise<ConciergeInfo> => {
   }
 };
 
+export const sendGroupMessage = async (data: {
+  group_id: number;
+  message?: string;
+  image?: File;
+  gift_id?: number;
+  sender_guest_id?: number;
+  sender_cast_id?: number;
+}) => {
+  const formData = new FormData();
+  formData.append('group_id', data.group_id.toString());
+  
+  if (data.message) formData.append('message', data.message);
+  if (data.image) formData.append('image', data.image);
+  if (data.gift_id) formData.append('gift_id', data.gift_id.toString());
+  if (data.sender_guest_id) formData.append('sender_guest_id', data.sender_guest_id.toString());
+  if (data.sender_cast_id) formData.append('sender_cast_id', data.sender_cast_id.toString());
+
+  const response = await api.post('/chats/group-message', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data.message;
+};
+
+export const getGroupMessages = async (groupId: number, userType: string, userId: number) => {
+  const response = await api.get(`/chats/group/${groupId}/messages`, {
+    params: { user_type: userType, user_id: userId }
+  });
+  return response.data;
+};
+
+export const getGroupParticipants = async (groupId: number) => {
+  const response = await api.get(`/chats/group/${groupId}/participants`);
+  return response.data;
+};
+
+// Notification settings API functions
+export interface NotificationSettings {
+  footprints: boolean;
+  likes: boolean;
+  messages: boolean;
+  concierge_messages: boolean;
+  meetup_dissolution: boolean;
+  auto_extension: boolean;
+  tweet_likes: boolean;
+  admin_notices: boolean;
+}
+
+export const getNotificationSettings = async (userType: 'guest' | 'cast', userId: number): Promise<NotificationSettings> => {
+  const response = await api.get('/notification-settings', {
+    params: { user_id: userId, user_type: userType }
+  });
+  return response.data.settings;
+};
+
+export const updateNotificationSettings = async (
+  userType: 'guest' | 'cast', 
+  userId: number, 
+  settings: Partial<NotificationSettings>
+): Promise<{ message: string; settings: Partial<NotificationSettings> }> => {
+  const response = await api.post('/notification-settings', {
+    user_id: userId,
+    user_type: userType,
+    settings
+  });
+  return response.data;
+};
+
+export const checkNotificationEnabled = async (
+  userType: 'guest' | 'cast', 
+  userId: number, 
+  settingKey: string
+): Promise<{ enabled: boolean }> => {
+  const response = await api.get('/notification-settings/check', {
+    params: { user_id: userId, user_type: userType, setting_key: settingKey }
+  });
+  return response.data;
+};
+
+export const markChatMessagesRead = async (chatId: number, userId: number, userType: string) => {
+  try {
+    const response = await api.post(`/chats/${chatId}/mark-read`, {
+      user_id: userId,
+      user_type: userType
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error marking chat messages as read:', error);
+    throw error;
+  }
+};
+
+// Grade-related interfaces and functions
+export interface GradeInfo {
+  current_grade: string;
+  current_grade_name: string;
+  grade_points: number;
+  next_grade?: string;
+  next_grade_name?: string;
+  points_to_next_grade: number;
+  benefits: {
+    chat_background?: boolean;
+    tweet_grade_display?: boolean;
+    grade_gift?: boolean;
+    birthday_gift?: boolean;
+    private_settings_expansion?: boolean;
+    dedicated_concierge?: boolean;
+    class_up_rights?: boolean;
+    // Cast-specific benefits
+    easy_message?: boolean;
+    suspension_system?: boolean;
+    auto_goodbye_message?: boolean;
+    welcome_message?: boolean;
+    transfer_fee_discount?: boolean;
+  };
+  all_benefits: Record<string, any>;
+  grade_names: Record<string, string>;
+  fp_breakdown?: {
+    repeat_points: number;
+    gift_points: number;
+    extension_count: number;
+    want_to_meet_again_count: number;
+    new_guest_count: number;
+    repeater_count: number;
+  };
+}
+
+export interface GradeUpdateResult {
+  old_grade: string;
+  new_grade: string;
+  grade_points: number;
+  upgraded: boolean;
+}
+
+export const getGuestGrade = async (guestId: number): Promise<GradeInfo> => {
+  try {
+    const response = await api.get(`/grades/guest/${guestId}`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching guest grade:', error);
+    throw error;
+  }
+};
+
+export const getCastGrade = async (castId: number): Promise<GradeInfo> => {
+  try {
+    const response = await api.get(`/grades/cast/${castId}`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching cast grade:', error);
+    throw error;
+  }
+};
+
+export const updateGuestGrade = async (guestId: number): Promise<GradeUpdateResult> => {
+  try {
+    const response = await api.post('/grades/guest/update', { guest_id: guestId });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error updating guest grade:', error);
+    throw error;
+  }
+};
+
+export const updateCastGrade = async (castId: number): Promise<GradeUpdateResult> => {
+  try {
+    const response = await api.post('/grades/cast/update', { cast_id: castId });
+    return response.data.data;
+  } catch (error) {
+    console.error('Error updating cast grade:', error);
+    throw error;
+  }
+};
+
+export const getAllGradesInfo = async (): Promise<{
+  thresholds: Record<string, number>;
+  names: Record<string, string>;
+  benefits: Record<string, any>;
+}> => {
+  try {
+    const response = await api.get('/grades/info');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching all grades info:', error);
+    throw error;
+  }
+};
+
+export const getGradeBenefits = async (grade: string): Promise<{
+  grade: string;
+  benefits: Record<string, boolean>;
+}> => {
+  try {
+    const response = await api.get(`/grades/${grade}/benefits`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching grade benefits:', error);
+    throw error;
+  }
+};
+
 export default api; 
+
+
+

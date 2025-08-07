@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Image, Camera, FolderClosed, Gift, ChevronLeft, X } from 'lucide-react';
 import { sendMessage, getChatMessages, fetchAllGifts, fetchRanking, updateReservation, getChatById, getGuestReservations } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
+import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useChatMessages } from '../../hooks/useRealtime';
 import dayjs from 'dayjs';
 
@@ -10,14 +11,14 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     if (!avatarString) {
-        return '/assets/avatar/1.jpg';
+        return '/assets/avatar/female.png';
     }
     
     // Split by comma and get the first non-empty avatar
     const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
     
     if (avatars.length === 0) {
-        return '/assets/avatar/1.jpg';
+        return '/assets/avatar/female.png';
     }
     
     return `${API_BASE_URL}/${avatars[0]}`;
@@ -42,6 +43,7 @@ interface Proposal {
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const { user, refreshUser } = useUser();
+    const { isNotificationEnabled } = useNotificationSettings();
     const [showGift, setShowGift] = useState(false);
     const [showFile, setShowFile] = useState(false);
     const [input, setInput] = useState('');
@@ -116,14 +118,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
 
     useChatMessages(chatId, (message) => {
         setMessages((prev) => {
-            // Remove optimistic message if real one matches (by image or message and sender_guest_id)
+            // Remove optimistic message if real one matches (by image or message and sender information)
             // Also check for duplicate messages by ID to prevent duplicates
             const filtered = prev.filter(m => {
                 // Remove optimistic messages that match the real message
                 if (m.id && m.id.toString().startsWith('optimistic-') &&
                     ((m.image && message.image && m.image === imagePreview) ||
                         (m.message && message.message && m.message === message.message)) &&
-                    m.sender_guest_id === message.sender_guest_id) {
+                    // Check both sender_guest_id and sender_cast_id for proper matching
+                    ((m.sender_guest_id && message.sender_guest_id && m.sender_guest_id === message.sender_guest_id) ||
+                     (m.sender_cast_id && message.sender_cast_id && m.sender_cast_id === message.sender_cast_id))) {
                     return false;
                 }
                 // Remove duplicate messages by ID
@@ -170,6 +174,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
 
     const handleSend = async () => {
         if ((input.trim() || attachedFile) && !sending && user) {
+            // Check if message notifications are enabled
+            const isMessageNotificationEnabled = isNotificationEnabled('messages');
+            
+            if (!isMessageNotificationEnabled) {
+                setSendError('メッセージ通知が無効になっています。設定で有効にしてください。');
+                return;
+            }
+
             setSending(true);
             setSendError(null);
             try {
@@ -209,12 +221,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     <ChevronLeft size={30} />
                 </button>
                 <img
-                    src={castInfo?.avatar ? getFirstAvatarUrl(castInfo.avatar) : '/assets/avatar/1.jpg'}
+                    src={castInfo?.avatar ? getFirstAvatarUrl(castInfo.avatar) : '/assets/avatar/female.png'}
                     alt="avatar"
                     className="w-8 h-8 rounded-full mr-2 border border-secondary"
                     onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = '/assets/avatar/1.jpg';
+                        target.src = '/assets/avatar/female.png';
                     }}
                 />
                 <div className="flex flex-col">
@@ -263,8 +275,29 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     <div className="text-center text-white py-10">メッセージがありません</div>
                 ) : (
                     (messages || []).map((msg, idx) => {
-                        const isSent = user && String(msg.sender_guest_id) === String(user.id);
-                        const senderAvatar = msg.guest?.avatar || msg.cast?.avatar || '/assets/avatar/1.jpg';
+                        // Improved message ownership determination
+                        // Check if message is from the current user (guest)
+                        const isSentByGuest = user && String(msg.sender_guest_id) === String(user.id);
+                        // Check if message is from a cast (should be displayed as received by guest)
+                        const isFromCast = msg.sender_cast_id && !msg.sender_guest_id;
+                        // Determine if this message should be displayed as sent by the current user
+                        const isSent = isSentByGuest && !isFromCast;
+                        
+                        // Debug logging for message ownership issues
+                        if (process.env.NODE_ENV === 'development') {
+                            console.log('Message ownership debug:', {
+                                messageId: msg.id,
+                                sender_guest_id: msg.sender_guest_id,
+                                sender_cast_id: msg.sender_cast_id,
+                                currentUserId: user?.id,
+                                isSentByGuest,
+                                isFromCast,
+                                isSent,
+                                message: msg.message?.substring(0, 50) + '...'
+                            });
+                        }
+                        
+                        const senderAvatar = msg.guest?.avatar || msg.cast?.avatar || '/assets/avatar/female.png';
                         const senderName = msg.guest?.nickname || msg.cast?.nickname || 'ゲスト/キャスト';
                         let proposal: Proposal | null = null;
                         try {
@@ -301,18 +334,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             <div key={msg.id || idx} className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
                                 {!isSent && (
                                     <img
-                                        src={senderAvatar ? getFirstAvatarUrl(senderAvatar) : '/assets/avatar/1.jpg'}
+                                        src={senderAvatar ? getFirstAvatarUrl(senderAvatar) : '/assets/avatar/female.png'}
                                         alt="avatar"
                                         className="w-8 h-8 rounded-full mr-2 border border-secondary mt-1"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            target.src = '/assets/avatar/female.png';
+                                        }}
                                     />
                                 )}
                                 <div>
                                     {!isSent && (
                                         <div className="text-xs text-gray-400 mb-1 flex items-center">
                                             <span>{senderName}</span>
-                                            {msg.cast && (
-                                                <span className="ml-2 px-1 py-0.5 bg-blue-500 text-white text-xs rounded">キャスト</span>
-                                            )}
                                         </div>
                                     )}
                                     <div className={`${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''}`}>
@@ -371,8 +405,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 <div className="flex items-center w-full">
                     <input
                         type="text"
-                        className="flex-1 px-4 py-2 rounded-full border border-secondary bg-primary text-white text-sm mr-2"
-                        placeholder="メッセージを入力..."
+                        className={`flex-1 px-4 py-2 rounded-full border border-secondary text-sm mr-2 ${
+                            isNotificationEnabled('messages') 
+                                ? 'bg-primary text-white' 
+                                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        }`}
+                        placeholder={isNotificationEnabled('messages') ? "メッセージを入力..." : "メッセージ通知が無効です"}
                         value={input}
                         onChange={e => setInput(e.target.value)}
                         onKeyDown={async (e) => {
@@ -380,8 +418,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                 await handleSend();
                             }
                         }}
+                        disabled={!isNotificationEnabled('messages')}
                     />
-                    <span className="text-white ml-2 cursor-pointer" onClick={handleImageButtonClick}>
+                    <span 
+                        className={`ml-2 cursor-pointer ${
+                            isNotificationEnabled('messages') ? 'text-white' : 'text-gray-500'
+                        }`} 
+                        onClick={isNotificationEnabled('messages') ? handleImageButtonClick : undefined}
+                    >
                         <Image size={30} />
                     </span>
                     <input
@@ -390,11 +434,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         ref={fileInputRef}
                         style={{ display: 'none' }}
                         onChange={handleImageChange}
+                        disabled={!isNotificationEnabled('messages')}
                     />
                     <button 
-                        className={`ml-2 ${user && user.points && user.points > 0 ? 'text-white' : 'text-gray-500'}`} 
+                        className={`ml-2 ${
+                            user && user.points && user.points > 0 && isNotificationEnabled('messages') 
+                                ? 'text-white' 
+                                : 'text-gray-500'
+                        }`} 
                         onClick={() => setShowGiftModal(true)}
-                        disabled={!user || !user.points || user.points <= 0}
+                        disabled={!user || !user.points || user.points <= 0 || !isNotificationEnabled('messages')}
                     >
                         <Gift size={30} />
                     </button>
@@ -422,40 +471,49 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                 ? 'bg-secondary text-white hover:bg-red-700' 
                                                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                         }`}
-                                        onClick={async () => {
-                                            if (!user || !hasEnoughPoints) return;
-                                            setShowGift(false);
-                                            setSending(true);
-                                            setSendError(null);
-                                            try {
-                                                const sent = await sendMessage({
-                                                    chat_id: chatId,
-                                                    sender_guest_id: user.id,
-                                                    gift_id: gift.id,
-                                                });
-                                                // Ensure the sent message has the gift details
-                                                if (sent && !sent.gift && gift) {
-                                                    sent.gift = {
-                                                        id: gift.id,
-                                                        name: gift.name || gift.label,
-                                                        icon: gift.icon,
-                                                        points: gift.points
-                                                    };
-                                                }
-                                                // Add the sent message to the messages array immediately
-                                                setMessages((prev) => [...prev, sent]);
-                                                // Refresh user points after sending gift
-                                                refreshUser();
-                                            } catch (e: any) {
-                                                if (e.response?.data?.error === 'Insufficient points to send this gift') {
-                                                    setSendError(`ポイントが不足しています。必要: ${e.response.data.required_points}P、所持: ${e.response.data.available_points}P`);
-                                                } else {
-                                                    setSendError('ギフトの送信に失敗しました');
-                                                }
-                                            } finally {
-                                                setSending(false);
+                                                                            onClick={async () => {
+                                        if (!user || !hasEnoughPoints) return;
+                                        
+                                        // Check if message notifications are enabled
+                                        const isMessageNotificationEnabled = isNotificationEnabled('messages');
+                                        
+                                        if (!isMessageNotificationEnabled) {
+                                            setSendError('メッセージ通知が無効になっています。設定で有効にしてください。');
+                                            return;
+                                        }
+                                        
+                                        setShowGift(false);
+                                        setSending(true);
+                                        setSendError(null);
+                                        try {
+                                            const sent = await sendMessage({
+                                                chat_id: chatId,
+                                                sender_guest_id: user.id,
+                                                gift_id: gift.id,
+                                            });
+                                            // Ensure the sent message has the gift details
+                                            if (sent && !sent.gift && gift) {
+                                                sent.gift = {
+                                                    id: gift.id,
+                                                    name: gift.name || gift.label,
+                                                    icon: gift.icon,
+                                                    points: gift.points
+                                                };
                                             }
-                                        }}
+                                            // Add the sent message to the messages array immediately
+                                            setMessages((prev) => [...prev, sent]);
+                                            // Refresh user points after sending gift
+                                            refreshUser();
+                                        } catch (e: any) {
+                                            if (e.response?.data?.error === 'Insufficient points to send this gift') {
+                                                setSendError(`ポイントが不足しています。必要: ${e.response.data.required_points}P、所持: ${e.response.data.available_points}P`);
+                                            } else {
+                                                setSendError('ギフトの送信に失敗しました');
+                                            }
+                                        } finally {
+                                            setSending(false);
+                                        }
+                                    }}
                                     >
                                         <span className="text-3xl mb-1">
                                             {gift.icon}
@@ -500,6 +558,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                     }`}
                                     onClick={async () => {
                                         if (!hasEnoughPoints) return;
+                                        
+                                        // Check if message notifications are enabled
+                                        const isMessageNotificationEnabled = isNotificationEnabled('messages');
+                                        
+                                        if (!isMessageNotificationEnabled) {
+                                            setSendError('メッセージ通知が無効になっています。設定で有効にしてください。');
+                                            return;
+                                        }
+                                        
                                         setShowGiftModal(false);
                                         setSending(true);
                                         setSendError(null);

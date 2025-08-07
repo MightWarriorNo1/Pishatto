@@ -15,8 +15,9 @@ import FeedbackForm from '../../components/feedback/FeedbackForm';
 import { Reservation, getAllReservations, getAllChats, fetchRanking } from '../../services/api';
 import { applyReservation, startReservation, stopReservation, getCastApplications } from '../../services/api';
 import { ChatRefreshProvider, useChatRefresh } from '../../contexts/ChatRefreshContext';
-import { useTweets } from '../../hooks/useRealtime';
+import { useTweets, useUnreadMessageCount, useNotifications } from '../../hooks/useRealtime';
 import echo from '../../services/echo';
+import { getCastProfileById } from '../../services/api';
 
 // Modal component for call details (unchanged)
 const CallDetailModal = ({ call, onClose, onApply }: { call: any, onClose: () => void, onApply: () => void }) => {
@@ -48,21 +49,20 @@ const CallDetailModal = ({ call, onClose, onApply }: { call: any, onClose: () =>
                 <div className="flex items-center mb-1">
                     <span className="text-2xl font-bold text-white mr-2">{call.points}</span>
                     <span className="bg-red-100 text-black text-xs px-2 py-0.5 rounded font-bold mr-2">延長時</span>
-                    <span className="text-white font-bold text-lg">+ 10,850P</span>
                     <span className="text-xs text-black ml-1">/1時間</span>
                 </div>
                 <div className="text-xs text-white mb-2">{call.extra}</div>
-                <div className="mb-4">
-                    <label className="flex items-center text-sm font-medium text-black mb-1">
+                {/* <div className="mb-4">
+                    <label className="flex items-center text-sm font-medium text-white mb-1">
                         <span className="mr-2">
                             <MessageCircle /></span> コメント（任意）
                     </label>
                     <textarea
-                        className="w-full border border-black rounded-lg p-2 text-sm text-black bg-primary resize-none"
+                        className="w-full border border-white rounded-lg p-2 text-sm text-white bg-primary resize-none"
                         rows={2}
                         placeholder="例）当選後10分で到着できます！or 5分くらい遅れます。（自由記述）"
                     />
-                </div>
+                </div> */}
                 <button
                     className={`w-full py-3 rounded-lg bg-secondary text-white font-bold text-base mb-2 ${call.active === false ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={call.active === false ? undefined : onApply}
@@ -88,71 +88,6 @@ const ApplicationCompletionModal = ({ onClose }: { onClose: () => void }) => (
     </div>
 );
 
-// --- ReservationTimer (guest style, inline for now) ---
-// const ReservationTimer: React.FC<{ started_at?: string; ended_at?: string; scheduled_at?: string; duration?: number; }> = ({ started_at, ended_at, scheduled_at, duration }) => {
-//     const [currentTime, setCurrentTime] = React.useState<Date>(new Date());
-//     React.useEffect(() => {
-//         // Stop timer if both started_at and ended_at are present
-//         if (started_at && ended_at) return;
-        
-//         const interval = setInterval(() => {
-//             setCurrentTime(new Date());
-//         }, 1000);
-//         return () => clearInterval(interval);
-//     }, [started_at, ended_at]);
-//     const scheduled = scheduled_at ? new Date(scheduled_at) : undefined;
-//     const plannedEnd = (scheduled && duration) ? new Date(scheduled.getTime() + duration * 60 * 60 * 1000) : undefined;
-//     const started = started_at ? new Date(started_at) : undefined;
-//     const ended = ended_at ? new Date(ended_at) : undefined;
-//     const now = currentTime;
-//     let state: 'before' | 'during' | 'after' = 'before';
-    
-//     // If both started_at and ended_at are present, the reservation is finished
-//     if (started && ended) {
-//         state = 'after';
-//     } else if (started && !ended) {
-//         // Reservation is in progress
-//         if (now >= started) state = 'during';
-//     } else if (plannedEnd && now > plannedEnd && !ended) {
-//         // Past planned end time but not ended
-//         state = 'during';
-//     }
-//     const format = (d: Date) => d.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-//     const diff = (a: Date, b: Date) => {
-//         let ms = Math.abs(a.getTime() - b.getTime());
-//         let h = Math.floor(ms / 3600000);
-//         let m = Math.floor((ms % 3600000) / 60000);
-//         let s = Math.floor((ms % 60000) / 1000);
-//         return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-//     };
-//     return (
-//         <div className="text-primary text-lg mt-2 space-y-1">
-//             {state === 'before' && scheduled && plannedEnd && (
-//                 <>
-//                     <div><b>現在時刻:</b> {format(now)}</div>
-//                     <div><b>予約開始:</b> {format(scheduled)}</div>
-//                     <div><b>予約終了:</b> {format(plannedEnd)}</div>
-//                     <div className="font-mono text-blue-600">開始まで: {diff(scheduled, now)}</div>
-//                 </>
-//             )}
-//             {state === 'during' && scheduled && plannedEnd && (
-//                 <>
-//                     <div><b>予約開始:</b> {format(scheduled)}</div>
-//                     <div><b>予約終了:</b> {format(plannedEnd)}</div>
-//                     <div><b>現在時刻:</b> {format(now)}</div>
-//                     <div className="font-mono text-green-600">経過: {diff(now, scheduled)}</div>
-//                 </>
-//             )}
-//             {state === 'after' && scheduled && plannedEnd && (
-//                 <>
-//                     <div><b>予約開始:</b> {format(scheduled)}</div>
-//                     <div><b>予約終了:</b> {format(plannedEnd)}</div>
-//                     {ended && <div><b>終了時刻:</b> {format(ended)}</div>}
-//                 </>
-//             )}
-//         </div>
-//     );
-// };
 
 const ReservationTimerModal: React.FC<{
     timerCall: any;
@@ -225,13 +160,51 @@ const CastDashboardInner: React.FC = () => {
     const [reservationApplications, setReservationApplications] = useState<any[]>([]);
     const { refreshChats } = useChatRefresh();
     const [tweetBadgeCount, setTweetBadgeCount] = useState(0);
+    const [messageBadgeCount, setMessageBadgeCount] = useState(0);
     const prevMainPage = React.useRef(mainPage);
     const [showTimerModal, setShowTimerModal] = useState(false);
-    const [timerCall, setTimerCall] = useState<any | null>(null);
+    const [timerCall, setTimerCall] = useState<any>(null);
     const [exitedInfo, setExitedInfo] = useState<{ ended: Date; exceeded?: number } | null>(null);
+    const [latestNotification, setLatestNotification] = useState<any>(null);
+    const [showNotificationPopup, setShowNotificationPopup] = useState(false);
+    const [cast, setCast] = useState<any>(null);
     const [showFeedbackForm, setShowFeedbackForm] = useState(false);
     const [currentReservationId, setCurrentReservationId] = useState<number | null>(null);
     const [isMessageDetailOpen, setIsMessageDetailOpen] = useState(false);
+    const [showConcierge, setShowConcierge] = useState(false);
+
+    const castId = Number(localStorage.getItem('castId'));
+
+    // Fetch cast profile to get category
+    useEffect(() => {
+        if (castId) {
+            getCastProfileById(castId)
+                .then(castData => {
+                    setCast(castData.cast);
+                })
+                .catch(error => {
+                    console.error('Failed to fetch cast profile:', error);
+                });
+        }
+    }, [castId]);
+
+    useUnreadMessageCount(castId || 0, 'cast', (count) => {
+        if (mainPage !== 2) { // Not on message page
+            if (count === 0) {
+                setMessageBadgeCount(0);
+            } else {
+                setMessageBadgeCount((prev) => prev + count);
+            }
+        }
+    });
+
+    useNotifications(castId || 0, (notification) => {
+        if (notification.type === 'message' && mainPage !== 2) {
+            setMessageBadgeCount((c) => c + 1);
+        }
+        setLatestNotification(notification);
+        setShowNotificationPopup(true);
+    });
 
     useTweets((tweet) => {
       if (mainPage !== 3) {
@@ -242,6 +215,9 @@ const CastDashboardInner: React.FC = () => {
     useEffect(() => {
       if (mainPage === 3 && prevMainPage.current !== 3) {
         setTweetBadgeCount(0);
+      }
+      if (mainPage === 2 && prevMainPage.current !== 2) {
+        setMessageBadgeCount(0);
       }
       prevMainPage.current = mainPage;
     }, [mainPage]);
@@ -261,18 +237,20 @@ const CastDashboardInner: React.FC = () => {
         const interval = setInterval(fetchReservations, 5000);
 
         getAllChats()
-            .then(chats => setChats(chats || []));
+            .then(chats => {
+                setChats(chats || []);
+                const unreadCount = (chats || []).reduce((acc: number, chat: any) => acc + (chat.unread || 0), 0);
+                setMessageBadgeCount(unreadCount);
+            });
 
-        // Fetch reservation applications for the current cast
-        const castId = Number(localStorage.getItem('castId'));
         if (castId) {
             getCastApplications(castId)
                 .then(applications => setReservationApplications(applications || []));
         }
 
         return () => clearInterval(interval);
-    }, []);
-    
+    }, [castId]);
+
     React.useEffect(() => {
   const channels = reservations
     .filter(r => r.id)
@@ -293,8 +271,6 @@ const CastDashboardInner: React.FC = () => {
     });
   };
 }, [reservations.map(r => r.id).join(",")]);
-
-    const castId = Number(localStorage.getItem('castId'));
 
     const isReservationInChat = (reservationId: number | undefined) => {
         if (typeof reservationId !== 'number') return false;
@@ -320,45 +296,50 @@ const CastDashboardInner: React.FC = () => {
     };
 
     const calls: CallWithActive[] = reservations
-  .filter((r) => {
-    // Check if reservation has started (has started_at but no ended_at)
-    const hasStarted = r.started_at && r.started_at !== null && r.started_at !== '';
-    const hasEnded = r.ended_at && r.ended_at !== null && r.ended_at !== '';
-    const isInProgress = hasStarted && !hasEnded;
-    const isCompleted = hasStarted && hasEnded;
-    const castApplied = isReservationInChat(r.id);
-    
-    // Hide reservations that have started or ended if cast hasn't applied
-    if ((isInProgress || isCompleted) && !castApplied) {
-      return false;
-    }
-    
-    // Hide completed reservations (those that have ended)
-    if (isCompleted) {
-      return false;
-    }
-    
-    return true;
-  })
-  .map((r) => {
-        const alreadyInChat = isReservationInChat(r.id); // Only disable if THIS cast has applied
-        const isApplied = isReservationApplied(r.id); // Check if cast has applied
-        const inactive = (r as any).active === false || alreadyInChat;
-        return {
-            ...r,
-            title: r.location || '未設定',
-            time: r.scheduled_at ? new Date(r.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '〜' : '',
-            typeLabel: r.type === 'pishatto' ? 'プレミアム' : 'スタンダード',
-            people: r.details
-                ? (r.details.match(/(\d+)人/g)?.map(s => Number(s.replace('人', ''))).reduce((a, b) => a + b, 0) || 1)
-                : 1,
-            points: r.duration ? `${r.duration*60/30 * 4750}P〜` : '0P〜',
-            extra: '',
-            closed: false,
-            active: !inactive,
-            isApplied: isApplied, // Add this flag for styling
-        };
-    });
+        .filter((r) => {
+        // Check if reservation has started (has started_at but no ended_at)
+            const hasStarted = r.started_at && r.started_at !== null && r.started_at !== '';
+            const hasEnded = r.ended_at && r.ended_at !== null && r.ended_at !== '';
+            const isInProgress = hasStarted && !hasEnded;
+            const isCompleted = hasStarted && hasEnded;
+            const castApplied = isReservationInChat(r.id);
+
+            // Only show free type reservations
+            if (r.type !== 'free') {
+                return false;
+            }
+
+            // Hide reservations that have started or ended if cast hasn't applied
+            if ((isInProgress || isCompleted) && !castApplied) {
+                return false;
+            }
+
+            // Hide completed reservations (those that have ended)
+            if (isCompleted) {
+                return false;
+            }
+
+            return true;
+        })
+        .map((r) => {
+            const alreadyInChat = isReservationInChat(r.id); // Only disable if THIS cast has applied
+            const isApplied = isReservationApplied(r.id); // Check if cast has applied
+            const inactive = (r as any).active === false || (alreadyInChat && isApplied);
+            return {
+                ...r,
+                title: r.location || '未設定',
+                time: r.scheduled_at ? new Date(r.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '〜' : '',
+                typeLabel: r.type === 'pishatto' ? 'プレミアム' : 'スタンダード',
+                people: r.details
+                    ? (r.details.match(/(\d+)人/g)?.map(s => Number(s.replace('人', ''))).reduce((a, b) => a + b, 0) || 1)
+                    : 1,
+                points:  r.duration ? `${r.duration * 60 / 30 * (cast?.category === 'VIP' ? 12000 : cast?.category === 'ロイヤルVIP' ? 15000 : 9000)}P〜` : '0P〜',
+                extra: '',
+                closed: false,
+                active: !inactive,
+                isApplied: isApplied, // Add this flag for styling
+            };
+        });
 
     const filteredByArea: CallWithActive[] = selectedArea === '全国'
         ? calls
@@ -398,6 +379,7 @@ const CastDashboardInner: React.FC = () => {
     };
 
     let tabFilteredCalls: CallWithActive[] = sortedCalls;
+    
     if (selectedTab === 1) {
         tabFilteredCalls = sortedCalls.filter(call => isToday(call.scheduled_at));
     } else if (selectedTab === 2) {
@@ -406,14 +388,9 @@ const CastDashboardInner: React.FC = () => {
         tabFilteredCalls = sortedCalls.filter(call => isReservationInChat(call.id) || isReservationApplied(call.id));
     }
 
-    // Calculate unread message count for badge
-    const unreadCount = chats.reduce((acc, chat) => acc + (chat.unread ? 1 : 0), 0);
-
-    
-
     return (
         <div className="min-h-screen bg-white flex flex-col items-center">
-            <div className="w-full max-w-md flex flex-col flex-1 min-h-screen pb-20">
+            <div className="w-full max-w-md mx-auto flex flex-col flex-1 min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
                 {loading ? (
                     <div className="flex justify-center items-center h-40 text-lg">ローディング...</div>
                 ) : (
@@ -431,7 +408,7 @@ const CastDashboardInner: React.FC = () => {
                                     onSortChange={setSelectedSort}
                                     totalCount={tabFilteredCalls.length}
                                 />
-                                <div className="flex-1 bg-gradient-to-br from-primary via-primary to-secondary border-t border-secondary">
+                                <div className="flex-1 bg-gradient-to-br from-primary via-primary to-secondary border-t border-secondary pb-24">
                                     <div className="grid grid-cols-2 gap-2 p-2">
                                         {tabFilteredCalls.map((call, idx) => (
                                             <div
@@ -447,6 +424,7 @@ const CastDashboardInner: React.FC = () => {
                                                     {...call}
                                                     location={call.location || ''}
                                                     duration={call.duration || 0}
+                                                    points={call.points || '0'}
                                                     type={call.type || ''}
                                                     greyedOut={call.closed || call.active === false || call.isApplied}
                                                     started_at={call.started_at}
@@ -469,7 +447,7 @@ const CastDashboardInner: React.FC = () => {
                             </>
                         )}
                         {mainPage === 1 && <CastSearchPage />}
-                        {mainPage === 2 && <MessagePage setIsMessageDetailOpen={setIsMessageDetailOpen} />}
+                        {mainPage === 2 && <MessagePage setIsMessageDetailOpen={setIsMessageDetailOpen} onConciergeStateChange={setShowConcierge} />}
                         {mainPage === 3 && <CastTimelinePage />}
                         {mainPage === 4 && <CastProfilePage />}
                     </>
@@ -504,9 +482,8 @@ const CastDashboardInner: React.FC = () => {
                             // Apply for reservation (pending admin approval)
                             try {
                                 await applyReservation(selectedCall.id, castId);
-                                // Update the reservation's active status in local state immediately
-                                setReservations(prev => prev.map(r => r.id === selectedCall.id ? { ...r, active: false } : r));
-                                setSelectedCall((call: any) => call ? { ...call, active: false } : call);
+                                // Don't set reservation as inactive - allow multiple casts to apply
+                                setSelectedCall(null);
                                 setShowApplicationComplete(true);
                                 
                                 // Refresh reservation applications
@@ -551,9 +528,19 @@ const CastDashboardInner: React.FC = () => {
                 )}
             </div>
             {/* Bottom Navigation Bar - fixed and centered */}
-            {(!isMessageDetailOpen) && (  
+            {(!isMessageDetailOpen && !showConcierge) && (  
                 <div className="w-full max-w-md fixed bottom-0 left-1/2 -translate-x-1/2 z-20">
-                    <BottomNavigationBar selected={mainPage} onTabChange={setMainPage} messageBadgeCount={unreadCount} tweetBadgeCount={tweetBadgeCount} />
+                    <BottomNavigationBar selected={mainPage} onTabChange={setMainPage} messageBadgeCount={messageBadgeCount} tweetBadgeCount={tweetBadgeCount} />
+                </div>
+            )}
+            {/* Notification popup */}
+            {showNotificationPopup && latestNotification && (
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-secondary text-white px-6 py-4 rounded-lg shadow-lg z-50 animate-fade-in">
+                    <div className="font-bold mb-1">新着通知</div>
+                    <div>{latestNotification.message}</div>
+                    <button className="mt-2 text-xs underline" onClick={() => {
+                        setShowNotificationPopup(false)
+                    }}>閉じる</button>
                 </div>
             )}
         </div>

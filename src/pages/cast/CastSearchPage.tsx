@@ -3,12 +3,16 @@ import React, { useEffect, useState } from 'react';
 import { Heart, SlidersHorizontal, Bell, ChevronLeft, MessageSquare, X } from 'lucide-react';
 import { getRepeatGuests, RepeatGuest, getGuestProfileById, GuestProfile, likeGuest, createChat, sendCastMessage, getLikeStatus, fetchRanking, recordGuestVisit } from '../../services/api';
 import CastNotificationPage from './CastNotificationPage';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../../contexts/UserContext';
+import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 // GuestDetailPage component
 type GuestDetailPageProps = { onBack: () => void; guest: RepeatGuest };
 
 const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
+    const { isNotificationEnabled } = useNotificationSettings();
     const [showEasyMessage, setShowEasyMessage] = useState(false);
     const [profile, setProfile] = useState<GuestProfile | null>(null);
     const [loading, setLoading] = useState(true);
@@ -23,9 +27,14 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
     // Record visit when cast views guest profile
     useEffect(() => {
         if (castId && guest.id) {
-            recordGuestVisit(castId, guest.id);
+            // Check if footprint notifications are enabled before recording visit
+            const isFootprintNotificationEnabled = isNotificationEnabled('footprints');
+            
+            if (isFootprintNotificationEnabled) {
+                recordGuestVisit(castId, guest.id);
+            }
         }
-    }, [castId, guest.id]);
+    }, [castId, guest.id, isNotificationEnabled]);
     
     useEffect(()=>{
         likeStatus();
@@ -361,8 +370,25 @@ interface RankingItem {
     region?: string;
 }
 
+// Utility function to get the first available avatar from comma-separated string
+const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+    if (!avatarString) {
+        return '/assets/avatar/female.png';
+    }
+    
+    // Split by comma and get the first non-empty avatar
+    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+    
+    if (avatars.length === 0) {
+        return '/assets/avatar/female.png';
+    }
+    
+    return `${API_BASE_URL}/${avatars[0]}`;
+};
+
 // RankingPage component (updated with filters)
 const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+    const navigate = useNavigate();
     const [mainTab, setMainTab] = useState<'cast' | 'guest'>('guest');
     const [region, setRegion] = useState('全国');
     const [category, setCategory] = useState('ギフト');
@@ -400,6 +426,15 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             '全期間': 'allTime'
         };
         return mapping[frontendDateTab] || 'current';
+    };
+
+    // Handle navigation to detail page
+    const handleUserClick = (user: RankingItem) => {
+        if (mainTab === 'cast') {
+            navigate(`/cast/${user.id}`);
+        } else {
+            navigate(`/guest/${user.id}`);
+        }
     };
 
     // Fetch ranking data from backend
@@ -485,18 +520,11 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return (
         <div className="max-w-md pb-8 bg-gradient-to-br from-primary via-primary to-secondary min-h-screen">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-secondary">
+            <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary">
                 <button onClick={onBack} className="text-2xl text-white font-bold">
                     <ChevronLeft />
                 </button>
                 <span className="text-lg font-bold text-white">ランキング</span>
-                <button 
-                    onClick={() => setShowFilterModal(true)}
-                    className="flex items-center bg-secondary text-white rounded-full px-3 py-1 text-sm font-bold"
-                >
-                    <SlidersHorizontal size={16} className="mr-1" />
-                    フィルター
-                </button>
             </div>
 
             {/* Main Tabs */}
@@ -567,8 +595,8 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     <div className="text-xs text-white ml-auto">{user.points}pt</div>
                                 </div>
                                 <div className="flex flex-col items-center w-full">
-                                    <div className="w-28 h-28 rounded-full border-4 border-secondary overflow-hidden mb-2">
-                                        <img src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_BASE_URL}/${user.avatar}`) : '/assets/avatar/female.png'} alt={user.name} className="w-full h-full object-cover" />
+                                    <div className="w-28 h-28 rounded-full border-4 border-secondary overflow-hidden mb-2 cursor-pointer" onClick={() => handleUserClick(user)}>
+                                        <img src={getFirstAvatarUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" />
                                     </div>
                                     <div className="text-lg font-bold text-white">{user.name}{user.age && `　${user.age}歳`}</div>
                                     {user.region && user.region !== '全国' && (
@@ -580,11 +608,12 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             <div key={user.id} className="flex items-center px-4 py-2 border-b border-secondary">
                                 <div className={`flex items-center justify-center w-8 h-8 text-lg font-bold ${user.rank === 2 ? 'text-white bg-primary border border-secondary rounded' : user.rank === 3 ? 'text-white bg-secondary rounded' : 'text-white bg-primary border border-secondary rounded'}`}>{user.rank}</div>
                                 <div className="mx-4">
-                                    {user.avatar ? (
-                                        <img src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_BASE_URL}/${user.avatar}`) : '/assets/avatar/female.png'} alt={user.name} className="w-16 h-16 rounded-full border-4 border-transparent" />
-                                    ) : (
-                                        <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl text-white">👤</div>
-                                    )}
+                                    <img 
+                                        src={getFirstAvatarUrl(user.avatar)} 
+                                        alt={user.name} 
+                                        className="w-16 h-16 rounded-full border-4 border-transparent cursor-pointer"
+                                        onClick={() => handleUserClick(user)}
+                                    />
                                 </div>
                                 <div className="flex-1">
                                     <div className="text-base font-bold text-white">{user.name}{user.age && `　${user.age}歳`}</div>
@@ -668,13 +697,22 @@ const EasyMessagePage: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 };
 
 const CastSearchPage: React.FC = () => {
+    const navigate = useNavigate();
+    const { user } = useUser();
+    const { isNotificationEnabled } = useNotificationSettings();
+    const [casts, setCasts] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedArea, setSelectedArea] = useState('東京都');
+    const [likedCasts, setLikedCasts] = useState<Set<number>>(new Set());
+    const [messageLoading, setMessageLoading] = useState<number | null>(null);
+    const [ranking, setRanking] = useState<any[]>([]);
+    const [rankingLoading, setRankingLoading] = useState(false);
+    const [showNotification, setShowNotification]=useState(false);
+    const [showEasyMessage, setShowEasyMessage] = useState(false);
     const [showRanking, setShowRanking] = useState(false);
     const [showGuestDetail, setShowGuestDetail] = useState(false);
     const [selectedGuest, setSelectedGuest] = useState<RepeatGuest | null>(null);
     const [repeatGuests, setRepeatGuests] = useState<RepeatGuest[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [showNotification, setShowNotification]=useState(false);
-    const [showEasyMessage, setShowEasyMessage] = useState(false);
     React.useEffect(() => {
         getRepeatGuests().then(setRepeatGuests).finally(() => setLoading(false));
     }, []);

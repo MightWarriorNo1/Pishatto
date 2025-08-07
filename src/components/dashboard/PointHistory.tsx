@@ -1,19 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { getPaymentHistory } from '../../services/api';
+import { getPointTransactions } from '../../services/api';
 import { ChevronLeft } from 'lucide-react';
+import { useUser } from '../../contexts/UserContext';
+import ReceiptIssuancePage from './ReceiptIssuancePage';
 
-interface PaymentData {
+interface PointTransactionData {
   id: number;
-  user_id: number;
-  user_type: 'guest' | 'cast';
+  guest_id?: number;
+  cast_id?: number;
+  type: 'buy' | 'transfer' | 'convert' | 'gift' | 'pending';
   amount: number;
-  status: 'pending' | 'paid' | 'failed' | 'refunded';
-  payment_method?: 'card' | 'convenience_store' | 'bank_transfer' | 'linepay' | 'other';
+  reservation_id?: number;
   description?: string;
+  gift_type?: string;
   created_at: string;
-  paid_at?: string;
-  failed_at?: string;
-  refunded_at?: string;
+  updated_at: string;
 }
 
 interface PointHistoryProps {
@@ -22,88 +23,199 @@ interface PointHistoryProps {
   userId?: number;
 }
 
+interface ReceiptData {
+  recipientName: string;
+  memo: string;
+  emailAddress: string;
+}
+
 const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest', userId }) => {
-  const [payments, setPayments] = useState<PaymentData[]>([]);
+  const { user } = useUser();
+  const [transactions, setTransactions] = useState<PointTransactionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showReceiptPage, setShowReceiptPage] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<PointTransactionData | null>(null);
 
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
     setError(null);
-    getPaymentHistory(userType, userId)
-      .then(setPayments)
-      .catch(() => setError('支払い履歴の取得に失敗しました'))
+    getPointTransactions(userType, userId)
+      .then((response) => {
+        if (response.success) {
+          setTransactions(response.transactions || []);
+        } else {
+          setError(response.error || 'ポイント履歴の取得に失敗しました');
+        }
+      })
+      .catch(() => setError('ポイント履歴の取得に失敗しました'))
       .finally(() => setLoading(false));
   }, [userType, userId]);
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'pending': return '処理中';
-      case 'paid': return '完了';
-      case 'failed': return '失敗';
-      case 'refunded': return '返金済み';
-      default: return status;
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getTransactionType = (transaction: PointTransactionData) => {
+    switch (transaction.type) {
+      case 'buy':
+        return 'オートチャージ';
+      case 'transfer':
+        return 'ポイント送付';
+      case 'convert':
+        return 'ポイント変換';
+      case 'gift':
+        return 'ギフト送付';
+      default:
+        return 'その他';
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'paid': return 'text-green-600';
-      case 'pending': return 'text-yellow-600';
-      case 'failed': return 'text-red-600';
-      case 'refunded': return 'text-blue-600';
-      default: return 'text-gray-600';
+  const getTransactionIcon = (transaction: PointTransactionData) => {
+    if (transaction.amount < 0) {
+      return (
+        <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+          <div className="w-6 h-6 rounded-full bg-gray-400"></div>
+        </div>
+      );
     }
-  };
-
-  const getPaymentMethodText = (method?: string) => {
-    switch (method) {
-      case 'card': return 'クレジットカード';
-      case 'convenience_store': return 'コンビニ決済';
-      case 'bank_transfer': return '銀行振込';
-      case 'linepay': return 'LINE Pay';
-      case 'other': return 'その他';
-      default: return '不明';
-    }
-  };
-
-  return (
-    <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
-      <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
-        {onBack && (
-          <button onClick={onBack} className="mr-2 text-2xl text-white">
-            <ChevronLeft />
-          </button>
-        )}
-        <span className="text-lg font-bold flex-1 text-center text-white">支払い履歴</span>
+    return (
+      <div className="w-10 h-10 rounded-full bg-yellow-400 flex items-center justify-center">
+        <div className="w-6 h-6 rounded-full bg-yellow-500"></div>
       </div>
-      <div className="p-4">
+    );
+  };
+
+  const handleReceiptClick = (transaction: PointTransactionData) => {
+    setSelectedTransaction(transaction);
+    setShowReceiptPage(true);
+  };
+
+  const handleReceiptBack = () => {
+    setShowReceiptPage(false);
+    setSelectedTransaction(null);
+  };
+
+  const handleReceiptIssue = (receiptData: ReceiptData) => {
+    // Here you would typically call an API to issue the receipt
+    console.log('Issuing receipt:', {
+      transaction: selectedTransaction,
+      receiptData
+    });
+    
+    // For now, just show an alert and go back
+    alert('領収書が発行されました。メールをご確認ください。');
+    handleReceiptBack();
+  };
+
+  // Show receipt issuance page if active
+  if (showReceiptPage && selectedTransaction) {
+    return (
+      <ReceiptIssuancePage
+        onBack={handleReceiptBack}
+        onIssue={handleReceiptIssue}
+        transactionData={{
+          amount: selectedTransaction.amount,
+          type: getTransactionType(selectedTransaction),
+          description: selectedTransaction.description,
+          created_at: selectedTransaction.created_at
+        }}
+      />
+    );
+  }
+
+  console.log("Transaction", transactions);
+  return (
+    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
+      <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-10">
+        <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
+          {onBack && (
+            <button onClick={onBack} className="mr-2 text-white hover:text-secondary">
+              <ChevronLeft size={24} />
+            </button>
+          )}
+          <span className="text-lg font-medium flex-1 text-center text-white">ポイント履歴・領収書</span>
+        </div>
+      </div>
+
+      <div className="p-4 pt-20">
+        {/* Current Points Section */}
+        <div className="text-center mb-6">
+          <div className="text-sm text-white mb-2">現在の所有ポイント</div>
+          <div className="text-3xl font-bold text-white mb-2">
+            {(user?.points || 0).toLocaleString()}P
+          </div>  
+          <div className="text-xs text-white space-y-1">
+            <div>ポイントは3,000Pごとにオートチャージされます</div>
+            <div>またポイントの有効期限は購入・取得から180日です</div>
+          </div>
+        </div>
+
         {loading ? (
           <div className="text-white text-center">ローディング...</div>
         ) : error ? (
-          <div className="text-red-400 text-center">{error}</div>
-        ) : payments.length === 0 ? (
-          <div className="text-white text-center">支払い履歴がありません</div>
+          <div className="text-white text-center">{error}</div>
+        ) : transactions.length === 0 ? (
+          <div className="text-white text-center">ポイント履歴がありません</div>
         ) : (
-          <div className="space-y-4">
-            {payments.map((payment) => (
-              <div key={payment.id} className="bg-white rounded shadow p-4 flex flex-col">
-                <div className="flex justify-between mb-2">
-                  <span className="font-bold text-primary">¥{payment.amount.toLocaleString()}</span>
-                  <span className={`text-xs font-bold ${getStatusColor(payment.status)}`}>
-                    {getStatusText(payment.status)}
-                  </span>
+          <div className="space-y-0">
+            {transactions.map((transaction, index) => (
+              <div key={transaction.id}>
+                {/* Transaction Row */}
+                <div className="flex items-center py-4 border-b border-gray-100">
+                  {/* Avatar/Icon */}
+                  <div className="mr-3">
+                    {getTransactionIcon(transaction)}
+                  </div>
+                  
+                  {/* Transaction Details */}
+                  <div className="flex-1">
+                    <div className="text-xs text-white mb-1">
+                      {formatDate(transaction.created_at)}
+                    </div>
+                    <div className="text-sm text-white">
+                      {getTransactionType(transaction)}
+                    </div>
+                    {transaction.description && (
+                      <div className="text-xs text-gray-300 mt-1">
+                        {transaction.description}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Amount */}
+                  <div className={`text-sm font-medium ${
+                    transaction.amount < 0 ? 'text-white' : 'text-white'
+                  }`}>
+                    {(() => {
+                      // For gift transactions, show as negative for the sender
+                      if (transaction.type === 'gift' || transaction.type==='pending') {
+                        return `-${Math.abs(transaction.amount).toLocaleString()}P`;
+                      }
+                      // For other transactions, show with + or - based on amount
+                      return `${transaction.amount > 0 ? '+' : ''}${transaction.amount.toLocaleString()}P`;
+                    })()}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500 mb-1">
-                  決済方法: {getPaymentMethodText(payment.payment_method)}
-                </div>
-                {payment.description && (
-                  <div className="text-xs text-gray-600 mb-1">{payment.description}</div>
+                
+                
+                {(transaction.type==='pending' || transaction.type==='gift') && (
+                  <div className="py-3 text-center border-b border-white">
+                    <button 
+                      className="text-white text-sm"
+                      onClick={() => handleReceiptClick(transaction)}
+                    >
+                      領収書を発行する
+                    </button>
+                  </div>
                 )}
-                <div className="text-xs text-gray-500">
-                  {payment.created_at ? new Date(payment.created_at).toLocaleString('ja-JP') : ''}
-                </div>
               </div>
             ))}
           </div>

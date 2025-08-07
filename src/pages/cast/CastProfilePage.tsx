@@ -1,12 +1,13 @@
 /*eslint-disable */
 import React, { useEffect, useState } from 'react';
-import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight, ChevronLeft, Medal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CastGiftBoxPage from './CastGiftBoxPage';
 import CastActivityRecordPage from './CastActivityRecordPage';
 import CastFriendReferralPage from './CastFriendReferralPage';
 import CastImmediatePaymentPage from './CastImmediatePaymentPage';
-import { getCastProfileById, getCastPointsData, getCastPassportData } from '../../services/api';
+import { getCastProfileById, getCastPointsData, getCastPassportData, getUnreadNotificationCount, getCastGrade, GradeInfo } from '../../services/api';
+import { useNotifications } from '../../hooks/useRealtime';
 import CastProfileEditPage from './CastProfileEditPage';
 import CastPointHistoryPage from './CastPointHistoryPage';
 import CastNotificationPage from './CastNotificationPage';
@@ -104,6 +105,9 @@ const CastProfilePage: React.FC = () => {
     const [pointsData, setPointsData] = useState<PointsData | null>(null);
     const [passportData, setPassportData] = useState<PassportData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [notificationCount, setNotificationCount] = useState(0);
+    const [gradeInfo, setGradeInfo] = useState<GradeInfo | null>(null);
+    const [gradeLoading, setGradeLoading] = useState(true);
 
     const fetchCastProfile = async () => {
         try {
@@ -134,13 +138,36 @@ const CastProfilePage: React.FC = () => {
         }
     };
 
+    const fetchNotificationCount = async () => {
+        try {
+            const count = await getUnreadNotificationCount('cast', castId);
+            setNotificationCount(count);
+        } catch (error) {
+            console.error('Failed to fetch notification count:', error);
+        }
+    };
+
+    const fetchGradeInfo = async () => {
+        try {
+            setGradeLoading(true);
+            const data = await getCastGrade(castId);
+            setGradeInfo(data);
+        } catch (error) {
+            console.error('Error fetching grade info:', error);
+        } finally {
+            setGradeLoading(false);
+        }
+    };
+
     useEffect(() => {
         const fetchAllData = async () => {
             setLoading(true);
             await Promise.all([
                 fetchCastProfile(),
                 fetchPointsData(),
-                fetchPassportData()
+                fetchPassportData(),
+                fetchNotificationCount(),
+                fetchGradeInfo()
             ]);
             setLoading(false);
         };
@@ -153,6 +180,23 @@ const CastProfilePage: React.FC = () => {
     const handleProfileUpdate = () => {
         // Refresh the profile data after successful update
         fetchCastProfile();
+    };
+
+    const handleNotificationClose = () => {
+        setShowNotification(false);
+        // Refresh notification count when returning from notification page
+        fetchNotificationCount();
+    };
+
+    // Real-time notification updates
+    useNotifications(castId || 0, (notification) => {
+        setNotificationCount(prev => prev + 1);
+    });
+
+    // Reset notification count when notification screen is opened
+    const handleNotificationOpen = () => {
+        setNotificationCount(0);
+        setShowNotification(true);
     };
 
     // Avatar navigation functions
@@ -199,7 +243,7 @@ const CastProfilePage: React.FC = () => {
     if (showImmediatePayment) return <CastImmediatePaymentPage onBack={() => setShowImmediatePayment(false)} />;
     if (showEdit) return <CastProfileEditPage onBack={() => setShowEdit(false)} onProfileUpdate={handleProfileUpdate} />;
     if (showPointHistory) return <CastPointHistoryPage onBack={() => setShowPointHistory(false)} />;
-    if (showNotification) return <CastNotificationPage onBack={() => setShowNotification(false)} />;
+    if (showNotification) return <CastNotificationPage onBack={handleNotificationClose} />;
     if (showQRCode) return <QRCodeModal onClose={() => setShowQRCode(false)} />;
 
     if (loading) {
@@ -211,14 +255,19 @@ const CastProfilePage: React.FC = () => {
     }
 
     return (
-        <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-8">
+        <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24">
             {/* Fixed Header */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 flex items-center justify-between px-4 pt-4 pb-4 bg-primary border-b border-secondary">
                 <button 
-                    onClick={() => setShowNotification(true)} 
-                    className="text-2xl text-white hover:text-secondary transition-colors"
+                    onClick={handleNotificationOpen} 
+                    className="text-2xl text-white hover:text-secondary transition-colors relative"
                 >
                     <Bell />
+                    {notificationCount > 0 && (
+                        <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                            {notificationCount > 99 ? '99+' : notificationCount}
+                        </span>
+                    )}
                 </button>
                 <span className="text-xl font-bold text-white">マイページ</span>
                 <div className="flex items-center space-x-2">
@@ -279,9 +328,17 @@ const CastProfilePage: React.FC = () => {
                     <Pencil />
                 </button>
             </div>
-            <div className="flex items-center justify-between px-4 pt-6">
-                <Link to="/cast/grade-detail">
-                    <img src="/assets/icons/profile_badge.png" alt="badge" className="border-2 border-secondary rounded-lg" />
+            {/* Grade section */}
+            <div className="bg-secondary text-white text-center py-2 font-bold">今期のグレード</div>
+            <div className="bg-primary px-4 py-4 flex items-center gap-4 border border-secondary">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                    <span className="text-2xl">🏆</span>
+                </div>
+                <span className="text-2xl font-bold text-white">
+                    {gradeLoading ? '読み込み中...' : gradeInfo?.current_grade_name || 'ビギナー'}
+                </span>
+                <Link to="/cast/grade-detail" className="ml-auto cursor-pointer">
+                    <ChevronRight size={24} className="text-white hover:text-secondary" />
                 </Link>
             </div>
             {/* Points Section */}

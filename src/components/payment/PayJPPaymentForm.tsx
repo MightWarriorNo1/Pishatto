@@ -220,7 +220,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
   // Show card registration prompt if no cards are registered
   if (hasRegisteredCard === false) {
     return (
-      <div className="max-w-md mx-auto bg-primary p-6 rounded-lg">
+      <div className="max-w-md mx-auto p-6 rounded-lg">
         <h2 className="text-xl font-bold text-white mb-6 text-center">
           {amount.toLocaleString()}ポイント購入
         </h2>
@@ -258,7 +258,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
   // Show loading while checking for registered cards
   if (hasRegisteredCard === null) {
     return (
-      <div className="max-w-md mx-auto bg-primary p-6 rounded-lg">
+      <div className="max-w-md mx-auto p-6 rounded-lg">
         <div className="text-center py-8">
           <div className="text-white">読み込み中...</div>
         </div>
@@ -269,7 +269,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
   // Show payment options when user has registered cards and hasn't chosen to use new card
   if (hasRegisteredCard === true && !useRegisteredCard) {
     return (
-      <div className="max-w-md mx-auto bg-primary p-6 rounded-lg">
+      <div className="max-w-md mx-auto p-6 rounded-lg">
         <h2 className="text-xl font-bold text-white mb-6 text-center">
           {amount.toLocaleString()}ポイント購入
         </h2>
@@ -307,7 +307,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
   // Show card input form when user chooses to use new card or has no registered cards
   if (useRegisteredCard || !hasRegisteredCard) {
     return (
-      <div className="max-w-md mx-auto bg-primary p-6 rounded-lg">
+      <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary p-6 rounded-lg">
         <h2 className="text-xl font-bold text-white mb-6 text-center">
           {amount.toLocaleString()}ポイント購入
         </h2>
@@ -426,7 +426,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
   }
 
   return (
-    <div className="max-w-md mx-auto bg-primary p-6 rounded-lg">
+    <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary p-6 rounded-lg">
       <h2 className="text-xl font-bold text-white mb-6 text-center">
         {amount.toLocaleString()}ポイント購入
       </h2>

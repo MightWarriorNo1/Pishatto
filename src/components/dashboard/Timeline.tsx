@@ -6,6 +6,7 @@ import NotificationScreen from './NotificationScreen';
 import { Bell, Plus, SlidersHorizontal, Heart, Trash2 } from 'lucide-react';
 import { fetchAllTweets, fetchUserTweets, createTweet, likeTweet, getTweetLikeStatus, deleteTweet } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
+import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useTweets } from '../../hooks/useRealtime';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -13,6 +14,7 @@ const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
 
 const Timeline: React.FC = () => {
     const { user } = useUser();
+    const { isNotificationEnabled } = useNotificationSettings();
     const navigate = useNavigate();
     const [showPostCreate, setShowPostCreate] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
@@ -59,8 +61,6 @@ const Timeline: React.FC = () => {
             statuses[id] = liked;
             counts[id] = count;
         });
-        console.log("STATUS", statuses);
-        console.log("COUNTS", counts);
         setLikeStatuses(statuses);
         setLikeCounts(counts);
     };
@@ -101,10 +101,19 @@ const Timeline: React.FC = () => {
     };
 
     const handleLike = async (tweetId: number) => {
-        if (!user && !castId) return;
+        // Check if like notifications are enabled
+        if (!isNotificationEnabled('likes')) {
+            return; // Silently ignore if likes are disabled
+        }
+        
         const res = await likeTweet(tweetId, user ? user.id : undefined, !user && castId ? castId : undefined);
-        setLikeStatuses((prev) => ({ ...prev, [tweetId]: res.liked }));
-        setLikeCounts((prev) => ({ ...prev, [tweetId]: res.count }));
+        if (res.liked) {
+            setLikeStatuses(prev => ({ ...prev, [tweetId]: true }));
+            setLikeCounts(prev => ({ ...prev, [tweetId]: (prev[tweetId] || 0) + 1 }));
+        } else {
+            setLikeStatuses(prev => ({ ...prev, [tweetId]: false }));
+            setLikeCounts(prev => ({ ...prev, [tweetId]: Math.max(0, (prev[tweetId] || 0) - 1) }));
+        }
     };
 
     const handleDeleteTweet = async (tweetId: number) => {
@@ -140,22 +149,24 @@ const Timeline: React.FC = () => {
     if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
     return (
         <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20 relative">
-            {/* Top bar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary">
-                <button onClick={() => setShowNotification(true)} className="text-white cursor-pointer">
-                    <Bell />
-                </button>
-                <span className="text-lg font-bold mx-auto text-white">つぶやき</span>
-                <button className="absolute right-4 top-3 text-white">
-                    <SlidersHorizontal />
-                </button>
-            </div>
-            <div className="flex items-center border-b border-secondary">
-                <button onClick={() => setTab('all')} className={`flex-1 py-3 text-center   font-bold text-base ${tab === 'all' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>みんなのつぶやき</button>
-                <button onClick={() => setTab('cast')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'cast' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>ゲスト専用</button>
+            {/* Fixed Top bar */}
+            <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-10">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary">
+                    <button onClick={() => setShowNotification(true)} className="text-white cursor-pointer">
+                        <Bell />
+                    </button>
+                    <span className="text-lg font-bold mx-auto text-white">つぶやき</span>
+                    {/* <button className="absolute right-4 top-3 text-white">
+                        <SlidersHorizontal />
+                    </button> */}
+                </div>
+                <div className="flex items-center border-b border-secondary bg-primary">
+                    <button onClick={() => setTab('all')} className={`flex-1 py-3 text-center   font-bold text-base ${tab === 'all' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>みんなのつぶやき</button>
+                    <button onClick={() => setTab('cast')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'cast' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>ゲスト専用</button>
+                </div>
             </div>
             {/* Posts */}
-            <div className="px-4 flex flex-col gap-4 py-6">
+            <div className="px-4 flex flex-col gap-4 py-6 pt-32">
                 {loading ? (
                     <div className="text-white py-10 text-center">ローディング...</div>
                 ) : error ? (
@@ -180,7 +191,7 @@ const Timeline: React.FC = () => {
                                 />
                                 <div className="flex flex-col flex-1">
                                     <span className="font-bold text-sm text-white">{tweet.guest?.nickname || tweet.cast?.nickname || 'ゲスト/キャスト'}</span>
-                                    <span className="text-xs text-white">{new Date(tweet.created_at + 'Z').toLocaleString('ja-JP')}</span>
+                                    <span className="text-xs text-white">{new Date(tweet.created_at).toLocaleString('ja-JP')}</span>
                                 </div>
                                 {/* Delete button - only show for user's own tweets */}
                                 {isCurrentUserTweet(tweet) && (
@@ -211,10 +222,23 @@ const Timeline: React.FC = () => {
                             {/* Like button and count */}
                             <div className="flex items-center mt-2">
                                 <button
-                                    className={`mr-2 text-lg ${likeStatuses[tweet.id] ? 'text-red-500' : 'text-gray-400'}`}
+                                    className={`mr-2 text-lg ${
+                                        !isNotificationEnabled('likes') 
+                                            ? 'text-gray-500 cursor-not-allowed' 
+                                            : likeStatuses[tweet.id] 
+                                                ? 'text-red-500' 
+                                                : 'text-gray-400'
+                                    }`}
                                     onClick={() => handleLike(tweet.id)}
+                                    disabled={!isNotificationEnabled('likes')}
                                 >
-                                    <Heart fill={likeStatuses[tweet.id] ? 'red' : 'white'} />
+                                    <Heart fill={
+                                        !isNotificationEnabled('likes') 
+                                            ? 'gray' 
+                                            : likeStatuses[tweet.id] 
+                                                ? 'red' 
+                                                : 'white'
+                                    } />
                                 </button>
                                 <span className="text-white text-sm">{likeCounts[tweet.id] || 0}</span>
                             </div>

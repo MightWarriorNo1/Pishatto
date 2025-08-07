@@ -8,15 +8,15 @@ const CastFriendReferralPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
     return (
         <div className='max-w-md  bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
             {/* Top bar */}
-            <div className="flex items-center px-4 pt-4 pb-2 border-b bg-gradient-to-br from-primary via-primary to-secondary border-secondary">
-                <button className="mr-2 text-2xl text-white" onClick={onBack}>
+            <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
+                <button className="mr-2 text-2xl text-white hover:text-secondary" onClick={onBack}>
                     <ChevronLeft />
                 </button>
                 <span className="flex-1 text-center text-base font-bold text-white">インボイス番号登録</span>
                 {/* <button className="text-white font-bold">保存</button> */}
             </div>
             {/* Form */}
-            {/* <div className="px-4 pt-6">
+            {/* <div className="px-4 pt-6 mt-16">
                 <div className="mb-4">
                     <div className="flex items-center justify-between mb-1">
                         <label className="text-sm font-bold text-white">インボイス番号 <span className="text-white">*</span></label>

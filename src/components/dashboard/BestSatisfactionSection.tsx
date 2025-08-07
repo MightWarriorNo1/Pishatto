@@ -28,7 +28,6 @@ const BestSatisfactionSection: React.FC = () => {
       const satisfactionData = data.map((cast: SatisfactionCast) => ({
         ...cast,
       }));
-      console.log(satisfactionData);
       setCasts(satisfactionData);
       setLoading(false);
     }).catch((error: any) => {

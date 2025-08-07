@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Heart, ChevronLeft } from 'lucide-react';
-import { getChatById, getReservationById, getGuestProfileById } from '../../../services/api';
+import { getChatById, getReservationById, getGuestProfileById, getCastProfileById } from '../../../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -37,11 +37,12 @@ const parseDuration = (val: string) => {
     }
     return 60; // default 1 hour
 };
-const calcPoints = (people: string, duration: string) => {
+const calcPoints = (people: string, duration: string, castCategory?: string) => {
     const numPeople = parsePeople(people);
     const minutes = parseDuration(duration);
     const units = Math.ceil(minutes / 30);
-    return 9000 * numPeople * units;
+    const basePoints = castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000;
+    return basePoints * numPeople * units;
 };
 
 interface GuestData {
@@ -50,29 +51,42 @@ interface GuestData {
     avatar?: string;
 }
 
-
+interface GroupInfo {
+    id: number;
+    name: string;
+    participants: any[];
+    isGroupChat: boolean;
+}
 
 const MessageProposalPage: React.FC<{ 
     onBack: () => void; 
     onProposalSend?: (proposal: any) => void;
     chatId: number;
-}> = ({ onBack, onProposalSend, chatId }) => {
+    groupInfo?: GroupInfo;
+}> = ({ onBack, onProposalSend, chatId, groupInfo }) => {
     const navigate = useNavigate();
     const [date, setDate] = useState('');
     const [people, setPeople] = useState('1名');
     const [duration, setDuration] = useState('2時間');
     const [guestData, setGuestData] = useState<GuestData | null>(null);
+    const [castCategory, setCastCategory] = useState<string | undefined>(undefined);
     const [loading, setLoading] = useState(true);
     const now = new Date();
     const jpDate = formatJPDate(now);
     const jpTime = formatTime(now);
 
-    // Fetch chat, reservation, and guest data
+    // Fetch chat, reservation, and guest data only if not a group chat
     useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
                 
+                // If it's a group chat, we don't need to fetch individual guest data
+                if (groupInfo?.isGroupChat) {
+                    setLoading(false);
+                    return;
+                }
+
                 // Get chat data to find reservation_id
                 const chat = await getChatById(chatId);
                 if (!chat || !chat.reservation_id) {
@@ -112,6 +126,17 @@ const MessageProposalPage: React.FC<{
                         });
                     }
                 }
+
+                // Get cast profile to determine category for points calculation
+                const castId = Number(localStorage.getItem('castId'));
+                if (castId) {
+                    try {
+                        const castData = await getCastProfileById(castId);
+                        setCastCategory(castData.cast?.category);
+                    } catch (error) {
+                        console.error('Failed to fetch cast profile:', error);
+                    }
+                }
             } catch (error) {
                 console.error('Error fetching data:', error);
             } finally {
@@ -120,9 +145,9 @@ const MessageProposalPage: React.FC<{
         };
 
         fetchData();
-    }, [chatId]);
+    }, [chatId, groupInfo]);
 
-    const totalPoints = calcPoints(people, duration);
+    const totalPoints = calcPoints(people, duration, castCategory);
 
     const handleProposalSend = () => {
         if (onProposalSend) {
@@ -131,7 +156,7 @@ const MessageProposalPage: React.FC<{
                 people,
                 duration,
                 totalPoints,
-                extensionPoints: Math.round(9000 * parsePeople(people) / 2), // 15min = half of 30min
+                extensionPoints: Math.round((castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000) * parsePeople(people) / 2), // 15min = half of 30min
             });
         }
     };
@@ -153,35 +178,65 @@ const MessageProposalPage: React.FC<{
                     <button onClick={onBack} className="mr-2">
                         <ChevronLeft className="text-white" size={24} />
                     </button>
-                    <img 
-                        src={guestData?.avatar ? `${API_BASE_URL}/${guestData.avatar}` : "/assets/avatar/1.jpg"} 
-                        alt="avatar" 
-                        className="w-9 h-9 rounded-full mr-2 border border-secondary cursor-pointer" 
-                        onClick={() => {
-                            if (guestData?.id) {
-                                navigate(`/guest/${guestData.id}`);
-                            }
-                        }}
-                    />
-                    <span className="font-semibold text-lg flex flex-row text-white">
-                        {guestData?.nickname || 'ゲスト'} 
-                        <span className="text-white">
-                            <Heart />
-                        </span>
-                    </span>
+                    {groupInfo?.isGroupChat ? (
+                        // Group chat display
+                        <>
+                            <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center mr-2">
+                                <span className="text-white text-sm font-bold">
+                                    {groupInfo.participants.length}
+                                </span>
+                            </div>
+                            <span className="font-semibold text-lg flex flex-row text-white">
+                                {groupInfo.name}
+                                <span className="text-white ml-1">
+                                    <Heart />
+                                </span>
+                            </span>
+                        </>
+                    ) : (
+                        // Individual chat display
+                        <>
+                            <img 
+                                src={guestData?.avatar ? `${API_BASE_URL}/${guestData.avatar}` : "/assets/avatar/1.jpg"} 
+                                alt="avatar" 
+                                className="w-9 h-9 rounded-full mr-2 border border-secondary cursor-pointer" 
+                                onClick={() => {
+                                    if (guestData?.id) {
+                                        navigate(`/guest/${guestData.id}`);
+                                    }
+                                }}
+                            />
+                            <span className="font-semibold text-lg flex flex-row text-white">
+                                {guestData?.nickname || 'ゲスト'} 
+                                <span className="text-white">
+                                    <Heart />
+                                </span>
+                            </span>
+                        </>
+                    )}
                 </div>
             </div>
             {/* Chat Area */}
             <div className="w-full max-w-md flex flex-col items-center px-4 py-6 bg-primary relative">
                 <span className="text-xs text-white mb-4 text-center w-full">{jpDate}</span>
                 <div className="flex items-center justify-center w-full mt-2">
-                    <span className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
-                        <img 
-                            src={guestData?.avatar ? `${API_BASE_URL}/${guestData.avatar}` : '/assets/avatar/avatar-2.png'} 
-                            className="w-12 h-12 rounded-full object-cover" 
-                            alt="avatar" 
-                        />
-                    </span>
+                    {groupInfo?.isGroupChat ? (
+                        // Group chat avatar
+                        <span className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
+                            <span className="text-white text-lg font-bold">
+                                {groupInfo.participants.length}
+                            </span>
+                        </span>
+                    ) : (
+                        // Individual chat avatar
+                        <span className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
+                            <img 
+                                src={guestData?.avatar ? `${API_BASE_URL}/${guestData.avatar}` : '/assets/avatar/avatar-2.png'} 
+                                className="w-12 h-12 rounded-full object-cover" 
+                                alt="avatar" 
+                            />
+                        </span>
+                    )}
                 </div>
                 <span className="text-xs text-white mt-2">{jpTime}</span>
             </div>

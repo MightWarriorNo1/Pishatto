@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { Bell, ChevronLeft, ChevronRight, CreditCard, HelpCircle, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User } from 'lucide-react';
+import { Bell, ChevronLeft, ChevronRight, CreditCard, HelpCircle, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User, Medal } from 'lucide-react';
 import PaymentHistory from './PaymentHistory';
 import GradeDetail from './GradeDetail';
 import AvatarEditPage from './AvatarEditPage';
@@ -12,7 +12,10 @@ import HelpPage from '../help/HelpPage';
 import QRCodeModal from './QRCodeModal';
 import NotificationScreen from './NotificationScreen';
 import { useUser } from '../../contexts/UserContext';
-
+import PointHistory from './PointHistory';
+import { getUnreadNotificationCount, getGuestGrade, GradeInfo } from '../../services/api';
+import { useNotifications } from '../../hooks/useRealtime';
+    
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 // Utility function to get the first available avatar from comma-separated string
@@ -33,6 +36,8 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
 const Profile: React.FC = () => {
     const { user, loading } = useUser();
     const [showNotification, setShowNotification] = useState(false);
+    const [gradeInfo, setGradeInfo] = useState<GradeInfo | null>(null);
+    const [gradeLoading, setGradeLoading] = useState(true);
     const [showPaymentHistory, setShowPaymentHistory] = useState(false);
     const [showHelp, setShowHelp] = useState(false);
     const [showGradeDetail, setShowGradeDetail] = useState(false);
@@ -42,6 +47,7 @@ const Profile: React.FC = () => {
     const [showPointPurchase, setShowPointPurchase] = useState(false);
     const [showIdentityVerification, setShowIdentityVerification] = useState(false);
     const [showQRCode, setShowQRCode] = useState(false);
+    const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
     // Get avatar URL
     const getAvatarUrl = () => {
@@ -50,8 +56,64 @@ const Profile: React.FC = () => {
         }
         return '/assets/avatar/2.jpg'; // Default avatar
     };
-    if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
-    if (showPaymentHistory) return <PaymentHistory onBack={() => setShowPaymentHistory(false)} userType="guest" userId={user?.id} />;
+
+    // Fetch unread notification count
+    useEffect(() => {
+        const fetchUnreadCount = async () => {
+            if (user?.id) {
+                try {
+                    const count = await getUnreadNotificationCount('guest', user.id);
+                    setUnreadNotificationCount(count);
+                } catch (error) {
+                    console.error('Failed to fetch unread notification count:', error);
+                }
+            }
+        };
+
+        fetchUnreadCount();
+        
+        // Set up interval to refresh count every 30 seconds
+        const interval = setInterval(fetchUnreadCount, 30000);
+        
+        return () => clearInterval(interval);
+    }, [user?.id]);
+
+    // Function to handle notification count updates
+    const handleNotificationCountChange = (count: number) => {
+        setUnreadNotificationCount(count);
+    };
+
+    // Real-time notification updates
+    useNotifications(user?.id || 0, (notification) => {
+        setUnreadNotificationCount(prev => prev + 1);
+    });
+
+    // Reset notification count when notification screen is opened
+    const handleNotificationOpen = () => {
+        setUnreadNotificationCount(0);
+        setShowNotification(true);
+    };
+
+    // Fetch grade information
+    useEffect(() => {
+        const fetchGradeInfo = async () => {
+            if (user?.id) {
+                try {
+                    setGradeLoading(true);
+                    const data = await getGuestGrade(user.id);
+                    setGradeInfo(data);
+                } catch (error) {
+                    console.error('Error fetching grade info:', error);
+                } finally {
+                    setGradeLoading(false);
+                }
+            }
+        };
+
+        fetchGradeInfo();
+    }, [user?.id]);
+    if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} onNotificationCountChange={handleNotificationCountChange} />;
+    if (showPaymentHistory) return <PointHistory onBack={() => setShowPaymentHistory(false)} userType="guest" userId={user?.id} />;
     if (showGradeDetail) return <GradeDetail onBack={() => setShowGradeDetail(false)} />;
     if (showAvatarEdit) return <AvatarEditPage onBack={() => setShowAvatarEdit(false)} />;
     if (showNotificationSettings) return <NotificationSettingsPage onBack={() => setShowNotificationSettings(false)} />;
@@ -65,8 +127,13 @@ const Profile: React.FC = () => {
         <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20">
             {/* Top bar */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 flex items-center justify-between px-4 py-3 border-b bg-primary border-secondary">
-                <button type="button" onClick={() => setShowNotification(true)} className="hover:text-secondary cursor-pointer">
+                <button type="button" onClick={handleNotificationOpen} className="hover:text-secondary cursor-pointer relative">
                     <Bell className="w-6 h-6 text-white" />
+                    {unreadNotificationCount > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                            {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                        </span>
+                    )}
                 </button>
                 <span className="text-lg font-bold text-white">マイページ</span>
                 <div className="flex items-center gap-2">
@@ -119,14 +186,15 @@ const Profile: React.FC = () => {
                         {loading ? '---' : (user?.points || 0).toLocaleString()}P
                     </span>
                 </div>
-            </div>
-            {/* Grade section */}
+            </div>        {/* Grade section */}
             <div className="bg-secondary text-white text-center py-2 font-bold">今期のグレード</div>
             <div className="bg-primary px-4 py-4 flex items-center gap-4 border border-secondary">
-                <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-secondary text-3xl shadow"><svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#FF0000" /><polygon points="12,7 13.09,10.26 16.18,10.27 13.64,12.14 14.73,15.4 12,13.53 9.27,15.4 10.36,12.14 7.82,10.27 10.91,10.26" fill="#fff" /></svg></span>
-                <span className="text-2xl font-bold text-white">ビギナー</span>
-                <button onClick={() => setShowGradeDetail(true)} className="ml-auto">
-                    <svg width="24" height="24" fill="none" stroke="#bfa76a" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" /></svg>
+                <Medal size={48} className="text-secondary" />
+                <span className="text-2xl font-bold text-white">
+                    {gradeLoading ? '読み込み中...' : gradeInfo?.current_grade_name || 'ビギナー'}
+                </span>
+                <button onClick={() => setShowGradeDetail(true)} className="ml-auto cursor-pointer ">
+                    <ChevronRight size={24} className="text-white hover:text-secondary" />
                 </button>
             </div>
             {/* Grade up section */}

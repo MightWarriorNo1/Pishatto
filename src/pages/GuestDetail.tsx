@@ -1,8 +1,10 @@
 /*eslint-disable */
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Heart, MessageSquare, User, MapPin, Briefcase, GraduationCap, DollarSign, GlassWater, Cigarette, Users, Home, Star } from 'lucide-react';
 import { getGuestProfileById, GuestProfile, likeGuest, createChat, sendCastMessage, getLikeStatus, recordGuestVisit } from '../services/api';
+import { useUser } from '../contexts/UserContext';
+import { useNotificationSettings } from '../contexts/NotificationSettingsContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -23,13 +25,14 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
 };
 
 const GuestDetail: React.FC = () => {
-    const { id } = useParams();
+    const { id, castId } = useParams();
     const navigate = useNavigate();
+    const { user } = useUser();
+    const { isNotificationEnabled } = useNotificationSettings();
     const [guest, setGuest] = useState<GuestProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [liked, setLiked] = useState(false);
     const [messageLoading, setMessageLoading] = useState(false);
-    const castId = Number(localStorage.getItem('castId')) || null;
 
     useEffect(() => {
         if (id) {
@@ -48,9 +51,14 @@ const GuestDetail: React.FC = () => {
 
     useEffect(() => {
         if (castId && guest?.id) {
-            recordGuestVisit(castId, guest.id);
+            // Check if footprint notifications are enabled before recording visit
+            const isFootprintNotificationEnabled = isNotificationEnabled('footprints');
+            
+            if (isFootprintNotificationEnabled) {
+                recordGuestVisit(Number(castId), guest.id);
+            }
         }
-    }, [castId, guest?.id]);
+    }, [castId, guest?.id, isNotificationEnabled]);
     
     useEffect(() => {
         if (guest && castId) {
@@ -63,7 +71,7 @@ const GuestDetail: React.FC = () => {
         try {
             // Only check like status if we're a cast member
             if (castId) {
-                const res = await getLikeStatus(castId, guest.id);
+                const res = await getLikeStatus(Number(castId), guest.id);
                 setLiked(res.liked);
             }
         } catch (error) {
@@ -74,7 +82,7 @@ const GuestDetail: React.FC = () => {
     const handleLike = async () => {
         if (!guest || !castId) return;
         try {
-            const res = await likeGuest(castId, guest.id);
+            const res = await likeGuest(Number(castId), guest.id);
             setLiked(res.liked);
         } catch (error) {
             console.error('Error liking guest:', error);
@@ -85,9 +93,9 @@ const GuestDetail: React.FC = () => {
         if (!guest || !castId) return;
         setMessageLoading(true);
         try {
-            const chatRes = await createChat(castId, guest.id);
+            const chatRes = await createChat(Number(castId), guest.id);
             const chatId = chatRes.chat.id;
-            await sendCastMessage(chatId, castId, '👍');
+            await sendCastMessage(chatId, Number(castId), '👍');
             // Navigate to chat or show success message
             navigate(`/cast/${castId}/message`);
         } catch (error) {
@@ -100,7 +108,13 @@ const GuestDetail: React.FC = () => {
     if (loading) {
         return (
             <div className="max-w-md mx-auto min-h-screen bg-primary flex items-center justify-center">
-                <div className="text-white">ローディング...</div>
+                <div className="flex flex-col items-center">
+                    <svg className="animate-spin h-8 w-8 text-secondary mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                    </svg>
+                    <div className="text-white">ローディング...</div>
+                </div>
             </div>
         );
     }
@@ -120,11 +134,13 @@ const GuestDetail: React.FC = () => {
                 <img 
                     src={getFirstAvatarUrl(guest.avatar)} 
                     alt="guest avatar" 
-                    className="w-full h-64 object-cover" 
+                    className="w-full h-64 object-cover rounded-b-3xl shadow-lg transition-all duration-300" 
+                    onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
                 />
                 <button 
-                    onClick={() => navigate(-1)} 
-                    className="absolute top-4 left-4 bg-primary bg-opacity-70 rounded-full p-2 text-2xl shadow text-white border border-secondary"
+                    onClick={() => navigate(-1)}
+                    className="absolute top-4 left-4 bg-primary bg-opacity-80 rounded-full p-2 text-2xl shadow-lg text-white border border-secondary hover:bg-secondary hover:text-primary transition-colors duration-200 z-10"
+                    title="戻る"
                 >
                     <ChevronLeft />
                 </button>
@@ -132,15 +148,16 @@ const GuestDetail: React.FC = () => {
 
             {/* Badge */}
             <div className="px-4 mt-2">
-                <span className="bg-secondary text-white text-xs rounded px-2 py-1 font-bold">ゲスト</span>
+                <span className="bg-secondary text-white text-xs rounded px-2 py-1 font-bold shadow">ゲスト</span>
             </div>
 
             {/* Profile card */}
-            <div className="flex items-center gap-3 px-4 mt-4">
+            <div className="flex items-center gap-3 px-4 mt-4 bg-primary rounded-xl shadow-lg py-4">
                 <img 
                     src={getFirstAvatarUrl(guest.avatar)} 
                     alt="guest avatar" 
                     className="w-14 h-14 rounded-full object-cover border-2 border-secondary shadow" 
+                    onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
                 />
                 <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -153,15 +170,16 @@ const GuestDetail: React.FC = () => {
             </div>
 
             {/* Action buttons - only show for cast members */}
-            {/* {castId && (
+            {castId && (
                 <div className="flex gap-2 px-4 mt-4">
                     <button
                         onClick={handleLike}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold ${
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold shadow transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-secondary/50 ${
                             liked 
-                                ? 'bg-red-500 text-white' 
-                                : 'bg-primary border border-secondary text-white'
+                                ? 'bg-red-500 text-white scale-105' 
+                                : 'bg-primary border border-secondary text-white hover:bg-secondary hover:text-primary'
                         }`}
+                        title={liked ? 'すでにいいねしています' : 'いいねする'}
                     >
                         <Heart size={20} fill={liked ? 'white' : 'none'} />
                         {liked ? 'いいね済み' : 'いいね'}
@@ -169,51 +187,55 @@ const GuestDetail: React.FC = () => {
                     <button
                         onClick={handleMessage}
                         disabled={messageLoading}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold bg-secondary text-white"
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold bg-secondary text-white shadow hover:bg-secondary/80 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-secondary/50 disabled:opacity-60"
+                        title="メッセージを送る"
                     >
                         <MessageSquare size={20} />
                         {messageLoading ? '送信中...' : 'メッセージ'}
                     </button>
                 </div>
-            )} */}
+            )}
 
             {/* Profile details */}
-            <div className="grid grid-cols-2 gap-y-2 text-sm px-4 mt-6">
-                <div className="text-white">年齢：</div>
-                <div className="font-bold text-white">{guest.age || ''}</div>
-                <div className="text-white">身長：</div>
-                <div className="font-bold text-white">{guest.height ? `${guest.height}cm` : ''}</div>
-                <div className="text-white">居住地：</div>
-                <div className="font-bold text-white">{guest.residence || ''}</div>
-                <div className="text-white">出身地：</div>
-                <div className="font-bold text-white">{guest.birthplace || ''}</div>
-                <div className="text-white">学歴：</div>
-                <div className="font-bold text-white">{guest.education || ''}</div>
-                <div className="text-white">年収：</div>
-                <div className="font-bold text-white">{guest.annual_income || ''}</div>
-                <div className="text-white">お仕事：</div>
-                <div className="font-bold text-white">{guest.occupation || ''}</div>
-                <div className="text-white">お酒：</div>
-                <div className="font-bold text-white">{guest.alcohol || ''}</div>
-                <div className="text-white">タバコ：</div>
-                <div className="font-bold text-white">{guest.tobacco || ''}</div>
-                <div className="text-white">兄弟姉妹：</div>
-                <div className="font-bold text-white">{guest.siblings || ''}</div>
-                <div className="text-white">同居人：</div>
-                <div className="font-bold text-white">{guest.cohabitant || ''}</div>
-                <div className="text-white">好みのエリア：</div>
-                <div className="font-bold text-white">{guest.favorite_area || ''}</div>
+            <div className="px-4 mt-8">
+                <div className="text-lg text-white font-bold mb-4 flex items-center gap-2"><User size={18}/>プロフィール詳細</div>
+                <div className="grid grid-cols-2 gap-y-3 text-sm bg-primary rounded-xl shadow p-4">
+                    <div className="flex items-center gap-2 text-white"><Star size={16}/>年齢：</div>
+                    <div className="font-bold text-white">{guest.age || ''}</div>
+                    <div className="flex items-center gap-2 text-white"><MapPin size={16}/>身長：</div>
+                    <div className="font-bold text-white">{guest.height ? `${guest.height}cm` : ''}</div>
+                    <div className="flex items-center gap-2 text-white"><Home size={16}/>居住地：</div>
+                    <div className="font-bold text-white">{guest.residence || ''}</div>
+                    <div className="flex items-center gap-2 text-white"><MapPin size={16}/>出身地：</div>
+                    <div className="font-bold text-white">{guest.birthplace || ''}</div>
+                    <div className="flex items-center gap-2 text-white"><GraduationCap size={16}/>学歴：</div>
+                    <div className="font-bold text-white">{guest.education || ''}</div>
+                    <div className="flex items-center gap-2 text-white"><DollarSign size={16}/>年収：</div>
+                    <div className="font-bold text-white">{guest.annual_income || ''}</div>
+                    <div className="flex items-center gap-2 text-white"><Briefcase size={16}/>お仕事：</div>
+                    <div className="font-bold text-white">{guest.occupation || ''}</div>
+                    <div className="flex items-center gap-2 text-white"><GlassWater size={16}/>お酒：</div>
+                    <div className="font-bold text-white">{guest.alcohol || ''}</div>
+                    <div className="flex items-center gap-2 text-white"><Cigarette size={16}/>タバコ：</div>
+                    <div className="font-bold text-white">{guest.tobacco || ''}</div>
+                    <div className="flex items-center gap-2 text-white"><Users size={16}/>兄弟姉妹：</div>
+                    <div className="font-bold text-white">{guest.siblings || ''}</div>
+                    <div className="flex items-center gap-2 text-white"><Home size={16}/>同居人：</div>
+                    <div className="font-bold text-white">{guest.cohabitant || ''}</div>
+                    <div className="flex items-center gap-2 text-white"><MapPin size={16}/>好みのエリア：</div>
+                    <div className="font-bold text-white">{guest.favorite_area || ''}</div>
+                </div>
             </div>
 
             {/* Interests */}
             {guest.interests && guest.interests.length > 0 && (
-                <div className="px-4 mt-4">
-                    <div className="text-white font-bold mb-2">興味・関心</div>
+                <div className="px-4 mt-8">
+                    <div className="text-lg text-white font-bold mb-2 flex items-center gap-2"><Star size={18}/>興味・関心</div>
                     <div className="flex flex-wrap gap-2">
                         {guest.interests.map((interest, index) => (
                             <span 
                                 key={index} 
-                                className="bg-secondary text-white text-xs rounded px-2 py-1"
+                                className="bg-secondary text-white text-xs rounded px-2 py-1 shadow"
                             >
                                 {typeof interest === 'string' 
                                     ? interest 

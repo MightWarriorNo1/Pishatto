@@ -5,7 +5,10 @@ import MessageProposalPage from './MessageProposalPage';
 import { sendMessage, getChatMessages,getChatById, getGuestReservations } from '../../../services/api';
 import { getCastChats } from '../../../services/api';
 import { useChatMessages } from '../../../hooks/useRealtime';
+import ConciergeChat from '../../ConciergeChat';
 import dayjs from 'dayjs';
+import CastConciergeDetailPage from './CastConciergeDetailPage';
+import CastGroupChatScreen from './CastGroupChatScreen';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 interface Message {
@@ -16,6 +19,9 @@ interface Message {
     timestamp: Date;
     unread: boolean;
     guestAge?: string; // This now stores birth year from backend
+    is_group_chat?: boolean;
+    group_id?: number;
+    group_name?: string;
 }
 
 interface MessageDetailProps {
@@ -70,14 +76,16 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     // Real-time updates
     useChatMessages(message.id, (msg) => {
         setMessages((prev) => {
-            // Remove optimistic message if real one matches (by image or message and sender_cast_id)
+            // Remove optimistic message if real one matches (by image or message and sender information)
             // Also check for duplicate messages by ID to prevent duplicates
             const filtered = prev.filter(m => {
                 // Remove optimistic messages that match the real message
                 if (m.id && m.id.toString().startsWith('optimistic-') &&
                     ((m.image && msg.image && m.image === msg.image) ||
                      (m.message && msg.message && m.message === msg.message)) &&
-                    String(m.sender_cast_id) === String(msg.sender_cast_id)) {
+                    // Check both sender_guest_id and sender_cast_id for proper matching
+                    ((m.sender_guest_id && msg.sender_guest_id && String(m.sender_guest_id) === String(msg.sender_guest_id)) ||
+                     (m.sender_cast_id && msg.sender_cast_id && String(m.sender_cast_id) === String(msg.sender_cast_id)))) {
                     return false;
                 }
                 // Remove duplicate messages by ID
@@ -134,7 +142,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     />;
 
     return (
-        <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary relative">
+        <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary relative pb-24">
             {/* Header (fixed) */}  
             <div className="fixed h-16 flex items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button onClick={onBack} className="mr-2">
@@ -189,7 +197,28 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     }
                     const castIdStr = localStorage.getItem('castId');
                     const castId = castIdStr ? Number(castIdStr) : null;
-                    const isSent = String(msg.sender_cast_id) === String(castId);
+                    // Improved message ownership determination for cast view
+                    // Check if message is from the current cast
+                    const isSentByCast = castId && String(msg.sender_cast_id) === String(castId);
+                    // Check if message is from a guest (should be displayed as received by cast)
+                    const isFromGuest = msg.sender_guest_id && !msg.sender_cast_id;
+                    // Determine if this message should be displayed as sent by the current cast
+                    const isSent = isSentByCast && !isFromGuest;
+                    
+                    // Debug logging for message ownership issues
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log('Cast message ownership debug:', {
+                            messageId: msg.id,
+                            sender_guest_id: msg.sender_guest_id,
+                            sender_cast_id: msg.sender_cast_id,
+                            currentCastId: castId,
+                            isSentByCast,
+                            isFromGuest,
+                            isSent,
+                            message: msg.message?.substring(0, 50) + '...'
+                        });
+                    }
+                    
                     return (
                         <div key={msg.id || idx} className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
                             <div className="flex flex-col">
@@ -301,19 +330,26 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
 
 interface MessagePageProps {
     setIsMessageDetailOpen?: (open: boolean) => void;
+    onConciergeStateChange?: (isShown: boolean) => void;
 }
 
-const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => {
+const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onConciergeStateChange }) => {
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterNickname, setFilterNickname] = useState('');
     const [filterAge, setFilterAge] = useState('');
+    const [showConcierge, setShowConcierge] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
 
     useEffect(() => {
         if (setIsMessageDetailOpen) setIsMessageDetailOpen(!!selectedMessage);
     }, [selectedMessage, setIsMessageDetailOpen]);
+
+    // Notify parent when concierge state changes
+    useEffect(() => {
+        onConciergeStateChange?.(showConcierge);
+    }, [showConcierge, onConciergeStateChange]);
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -337,6 +373,9 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
                     timestamp: chat.updated_at ? new Date(chat.updated_at) : new Date(),
                     unread: !!chat.unread,
                     guestAge: chat.guest_age || '', // Backend returns 'guest_age' but it contains birth year
+                    is_group_chat: !!chat.is_group_chat,
+                    group_id: chat.group_id,
+                    group_name: chat.group_name,
                 }));
                 setMessages(mapped);
             } catch (err) {
@@ -358,7 +397,6 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
         if (message.guestAge) {
             const currentYear = new Date().getFullYear();
             guestAge = currentYear - Number(message.guestAge);
-            console.log(`Guest: ${message.name}, Birth Year: ${message.guestAge}, Calculated Age: ${guestAge}`);
         }
         
         const ageMatch = !filterAge || 
@@ -368,9 +406,22 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
     });
 
     if (selectedMessage) {
+        // If it's a group chat, show CastGroupChatScreen
+        if (selectedMessage.is_group_chat && selectedMessage.group_id) {
+            return (
+                <CastGroupChatScreen
+                    groupId={selectedMessage.group_id}
+                    onBack={() => setSelectedMessage(null)}
+                />
+            );
+        }
+        // Otherwise show regular MessageDetail
         return <MessageDetail message={selectedMessage} onBack={() => setSelectedMessage(null)} />;
     }
-
+    if (showConcierge) {
+        return <CastConciergeDetailPage onBack={() => setShowConcierge(false)} />;
+    }
+    
     return (
         <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20">
             {/* Fixed Header */}
@@ -444,6 +495,9 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
 
             {/* Content with top margin to account for fixed header and filter bar */}
             <div className="pt-32">
+                <ConciergeChat 
+                        onClick={() => setShowConcierge(true)}
+                    />
                 {loading ? (
                     <div className="text-center text-white py-10">ローディング...</div>
                 ) : (
@@ -477,13 +531,24 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen }) => 
                                     <img src={message.avatar} alt={message.name} className="w-12 h-12 rounded-full mr-4" />
                                     <div className="flex-1">
                                         <div className="flex justify-between items-center mb-1">
-                                            <span className="font-bold text-white">{message.name}</span>
+                                            <div className="flex items-center">
+                                                <span className="font-bold text-white">
+                                                    {message.is_group_chat ? message.group_name || 'Group Chat' : message.name}
+                                                </span>
+                                                {message.is_group_chat && (
+                                                    <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-0.5 rounded">
+                                                        グループ
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="text-xs text-gray-400">
                                                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
                                         <div className="flex items-center">
-                                            {/* <p className="text-sm text-gray-300 truncate">{message.lastMessage}</p> */}
+                                            {/* <p className="text-sm text-gray-300 truncate">
+                                                {message.is_group_chat ? `${message.name}: ${message.lastMessage}` : message.lastMessage}
+                                            </p> */}
                                             {message.unread && (
                                                 <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
                                                     NEW

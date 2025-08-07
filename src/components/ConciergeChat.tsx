@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useConcierge } from '../contexts/ConciergeContext';
 import { useUser } from '../contexts/UserContext';
+import { Bird } from 'lucide-react';
 import ConciergeAvatar from './ConciergeAvatar';
 
 interface ConciergeChatProps {
@@ -28,14 +29,15 @@ const ConciergeChat: React.FC<ConciergeChatProps> = ({ onClick }) => {
             >
                 <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
                     {/* Concierge Avatar - Yellow bird with tuxedo */}
-                    <ConciergeAvatar size="md" className="mr-3" />
+                    {/* <ConciergeAvatar size="md" className="mr-3" /> */}
+                    <Bird className="w-10 h-10 text-yellow-500 cursor-pointer mr-3" />
                     
                     <div className="flex-1">
                         <div className="flex items-center">
                             <span className="font-bold text-white text-base mr-2">
-                                patoコンシェルジュ 11歳
+                                pishattoコンシェルジュ 11歳
                             </span>
-                            {/* Pato status icon */}
+                            {/* pishatto status icon */}
                             <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center mr-1">
                                 <span className="text-white text-xs font-bold">P</span>
                             </div>

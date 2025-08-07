@@ -111,7 +111,6 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
         <div className={`border border-secondary rounded-xl shadow-sm p-3 flex flex-col min-h-[160px] ${greyedOut ? 'bg-gray-600' : 'bg-primary'}`}>
             {successMsg && <div className="text-green-400 font-bold">{successMsg}</div>}
             {errorMsg && <div className="text-red-400 font-bold">{errorMsg}</div>}
-            <div className="absolute top-0 left-0 w-full h-2 rounded-t-xl bg-secondary" />
             <div className="text-xs text-white font-bold mb-1 mt-2">{location} {time}</div>
             <div className="flex items-center mb-1 space-x-1">
                 <span className="bg-secondary text-white text-xs px-2 py-0.5 rounded font-bold">{type}</span>
@@ -123,7 +122,6 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
             </div>
             <div className="text-xs text-white mb-1">獲得予定ポイント</div>
             <div className="text-lg font-bold text-white mb-1">{points}</div>
-            <div className="text-xs text-white">深夜料金込み: +4,000P</div>
             {/* Timer states */}
             {(() => {
                 if (state === 'before' && scheduled && plannedEnd) {
@@ -158,14 +156,6 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
             })()}
         </div>
     );
-};
-
-// Helper function for legacy timer formatting
-const formatTime = (sec: number) => {
-    const h = Math.floor(sec / 3600);
-    const m = Math.floor((sec % 3600) / 60);
-    const s = sec % 60;
-    return `${h > 0 ? h + ':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 };
 
 export default CallCard; 

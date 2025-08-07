@@ -11,9 +11,9 @@ interface BottomNavigationProps {
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabChange, messageCount = 0, tweetCount = 0 }) => {
   return (
     <div className="fixed max-w-md mx-auto bottom-0 left-0 right-0 z-50">
-      <div className="rounded-b-3xl shadow p-4 flex flex-row items-center bg-secondary border-t border-secondary">
+      <div className="shadow p-4 flex flex-row items-center bg-primary">
         <button
-          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'search' ? 'text-primary font-bold' : 'text-white'}`}
+          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'search' ? 'text-secondary font-bold' : 'text-white'}`}
           onClick={() => onTabChange('search')}
         >
           <span className="relative text-2xl mb-1">
@@ -22,7 +22,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
           <span>探す</span>
         </button>
         <button
-          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'message' ? 'text-primary font-bold' : 'text-white'}`}
+          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'message' ? 'text-secondary font-bold' : 'text-white'}`}
           onClick={() => onTabChange('message')}
         >
           <span className="relative text-2xl mb-1">
@@ -34,7 +34,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
           <span>メッセージ</span>
         </button>
         <button
-          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'call' ? 'text-primary font-bold' : 'text-white'}`}
+          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'call' ? 'text-secondary font-bold' : 'text-white'}`}
           onClick={() => onTabChange('call')}
         >
           <span className="relative text-2xl mb-1">
@@ -43,7 +43,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
           <span>呼ぶ</span>
         </button>
         <button
-          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'tweet' ? 'text-primary font-bold' : 'text-white'}`}
+          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'tweet' ? 'text-secondary font-bold' : 'text-white'}`}
           onClick={() => onTabChange('tweet')}
         >
           <span className="relative text-2xl mb-1">
@@ -55,7 +55,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
           <span>つぶやき</span>
         </button>
         <button
-          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'mypage' ? 'text-primary font-bold' : 'text-white'}`}
+          className={`flex-1 flex flex-col items-center py-2 text-xs transition-colors duration-150 ${activeTab === 'mypage' ? 'text-secondary font-bold' : 'text-white'}`}
           onClick={() => onTabChange('mypage')}
         >
           <span className="relative text-2xl mb-1">

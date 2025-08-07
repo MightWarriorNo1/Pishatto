@@ -4,6 +4,7 @@ import { Search, QrCode, X } from 'lucide-react';
 import { getCastList } from '../../services/api';
 import { CastProfile } from '../../services/api';
 import QRCodeModal from './QRCodeModal';
+import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 
 interface TopNavigationProps {
   activeTab: 'home' | 'favorites' | 'footprints' | 'ranking';
@@ -21,13 +22,36 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
   const [isLoading, setIsLoading] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const { isNotificationEnabled } = useNotificationSettings();
 
-  const tabs = [
-    { key: 'home', label: 'ホーム' },
-    { key: 'favorites', label: 'お気に入り' },
-    { key: 'footprints', label: '足あとから' },
-    { key: 'ranking', label: 'ランキング' },
-  ];
+  // Filter tabs based on notification settings
+  const getAvailableTabs = () => {
+    const baseTabs = [
+      { key: 'home', label: 'ホーム' },
+      { key: 'favorites', label: 'お気に入り' },
+      { key: 'footprints', label: '足あとから' },
+      { key: 'ranking', label: 'ランキング' },
+    ];
+
+    // Hide footprints tab if footprints notifications are disabled
+    if (!isNotificationEnabled('footprints')) {
+      return baseTabs.filter(tab => tab.key !== 'footprints');
+    }
+
+    return baseTabs;
+  };
+
+  const tabs = getAvailableTabs();
+
+  // Handle tab change with validation
+  const handleTabChange = (tab: 'home' | 'favorites' | 'footprints' | 'ranking') => {
+    // If footprints is disabled and user tries to access it, redirect to home
+    if (tab === 'footprints' && !isNotificationEnabled('footprints')) {
+      onTabChange('home');
+      return;
+    }
+    onTabChange(tab);
+  };
 
   // Fetch all casts on component mount
   useEffect(() => {
@@ -230,6 +254,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
                               {cast.nickname?.charAt(0) || '?'}
                             </span>
                           )}
+
                         </div>
                         <div className="flex-1">
                           <div className="text-white font-bold text-sm">{cast.nickname || 'No Name'}</div>
@@ -281,7 +306,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
             <button
               key={tab.key}
               className={`flex-1 py-3 px-2 text-center text-sm font-bold rounded-t-lg transition-colors ${activeTab === tab.key ? 'bg-secondary text-white' : 'bg-primary text-gray-400'}`}
-              onClick={() => onTabChange(tab.key as any)}
+              onClick={() => handleTabChange(tab.key as any)}
             >
               {tab.label}
             </button>

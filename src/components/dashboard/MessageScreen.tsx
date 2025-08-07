@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { FiBell, FiStar } from 'react-icons/fi';
 import ChatScreen from './ChatScreen';
+import GroupChatScreen from './GroupChatScreen';
 import ConciergeChat from '../ConciergeChat';
 import ConciergeDetailPage from '../../pages/ConciergeDetailPage';
 import { useChatRefresh } from '../../contexts/ChatRefreshContext';
-import { getGuestChats, getNotifications, markNotificationRead, getCastProfileById, favoriteChat, unfavoriteChat, getFavoriteChats, isChatFavorited } from '../../services/api';
+import { getGuestChats, getNotifications, markNotificationRead, getCastProfileById, favoriteChat, unfavoriteChat, getFavoriteChats, isChatFavorited, markChatMessagesRead } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
+import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useNotifications } from '../../hooks/useRealtime';
 import NotificationScreen from './NotificationScreen';
 
@@ -15,9 +17,10 @@ interface MessageScreenProps {
     setShowChat: (show: number | null) => void;
     onNotificationCountChange?: (count: number) => void;
     activeBottomTab?: 'search' | 'message' | 'call' | 'tweet' | 'mypage';
+    onConciergeStateChange?: (isShown: boolean) => void;
 }
 
-const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ showChat, setShowChat, userId, onNotificationCountChange, activeBottomTab }) => {
+const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ showChat, setShowChat, userId, onNotificationCountChange, activeBottomTab, onConciergeStateChange }) => {
     const [selectedTab, setSelectedTab] = useState<'all' | 'favorite'>('all');
     const [chats, setChats] = useState<any[]>([]);
     const [messageNotifications, setMessageNotifications] = useState<any[]>([]);
@@ -27,8 +30,15 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const [showNotification, setShowNotification] = useState(false);
     const [showConcierge, setShowConcierge] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [currentChat, setCurrentChat] = useState<any>(null);
     const { user } = useUser();
     const { refreshKey } = useChatRefresh();
+    const { isNotificationEnabled } = useNotificationSettings();
+    
+    // Notify parent when concierge state changes
+    useEffect(() => {
+        onConciergeStateChange?.(showConcierge);
+    }, [showConcierge, onConciergeStateChange]);
     
     useEffect(() => {
             const loadChatsAndFavorites = async () => {
@@ -109,8 +119,20 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         }
     }, [userId, refreshKey, user]);
 
-    // Filter chats based on search query
+    // Filter chats based on search query and notification settings
     const filteredChats = chats.filter(chat => {
+        // Filter by notification settings first
+        // If messages are disabled, hide all non-concierge chats
+        if (!isNotificationEnabled('messages') && !chat.is_concierge_chat) {
+            return false;
+        }
+        
+        // If concierge messages are disabled, hide concierge chats
+        if (!isNotificationEnabled('concierge_messages') && chat.is_concierge_chat) {
+            return false;
+        }
+        
+        // Then filter by search query
         if (!searchQuery.trim()) return true;
         
         const query = searchQuery.toLowerCase();
@@ -129,10 +151,21 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         return false;
     });
 
-    // Filter favorite chats based on search query - use main chats filtered by favorite status
+    // Filter favorite chats based on search query and notification settings
     const filteredFavoriteChats = chats.filter(chat => {
         // First filter by favorite status
         if (!favoritedChatIds.has(chat.id)) return false;
+        
+        // Filter by notification settings
+        // If messages are disabled, hide all non-concierge chats
+        if (!isNotificationEnabled('messages') && !chat.is_concierge_chat) {
+            return false;
+        }
+        
+        // If concierge messages are disabled, hide concierge chats
+        if (!isNotificationEnabled('concierge_messages') && chat.is_concierge_chat) {
+            return false;
+        }
         
         // Then filter by search query
         if (!searchQuery.trim()) return true;
@@ -194,7 +227,24 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     // };
 
     if (showChat) {
-        return <ChatScreen chatId={showChat} onBack={() => setShowChat(null)} />;
+        if (currentChat && currentChat.is_group_chat) {
+            return <GroupChatScreen 
+                groupId={currentChat.group_id} 
+                groupName={currentChat.group_name || 'Group Chat'} 
+                onBack={() => {
+                    setShowChat(null);
+                    setCurrentChat(null);
+                }} 
+            />;
+        } else {
+            // Check if this is a group chat (has group_id) or individual chat
+            const chat = chats.find(c => c.id === showChat);
+            if (chat && chat.group_id) {
+                return <GroupChatScreen groupId={chat.group_id} onBack={() => setShowChat(null)} />;
+            } else {
+                return <ChatScreen chatId={showChat} onBack={() => setShowChat(null)} />;
+            }
+        }
     } 
 
     if (showConcierge) {
@@ -204,9 +254,9 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
 
     return (
-        <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col">
+        <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col pb-24">
             {/* Top bar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-secondary cursor-pointer" onClick={() => setShowNotification(true)}>
+            <div className="fixed max-w-md mx-auto top-0 left-0 right-0 flex items-center justify-between px-4 py-3 border-b border-secondary cursor-pointer bg-primary" onClick={() => setShowNotification(true)}>
                 <FiBell className="w-6 h-6 text-white" />
                 <div className="font-bold text-lg text-white">メッセージ一覧</div>
                 <div className="w-6 h-6" /> {/* Placeholder for right icon */}
@@ -224,7 +274,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                 </div>
             )} */}
             {/* Tabs */}
-            <div className="flex items-center px-4 mt-2">
+            <div className="flex items-center px-4 pt-16">
                 <button
                     className={`px-4 py-1 rounded-full font-bold text-sm mr-2 ${selectedTab === 'all' ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}
                     onClick={() => setSelectedTab('all')}
@@ -259,10 +309,12 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
             ) : (
                 /* Message list */
                 <div className="px-4 mt-4">
-                    {/* Concierge Chat - Always show at top */}
-                    <ConciergeChat 
-                        onClick={() => setShowConcierge(true)}
-                    />
+                    {/* Concierge Chat - Show only if concierge messages are enabled */}
+                    {isNotificationEnabled('concierge_messages') && (
+                        <ConciergeChat 
+                            onClick={() => setShowConcierge(true)}
+                        />
+                    )}
                     
                     {selectedTab === 'all' ? (
                         filteredChats.length === 0 ? (
@@ -279,7 +331,32 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                 const getAvatarSrc = () => {
                                     if (!chat.avatar) return '/assets/avatar/female.png';
                                     const avatars = chat.avatar.split(',').map((avatar: string) => avatar.trim());
-                                    return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/1.jpg';
+                                    return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/female.png';
+                                };
+
+                                // Handle group chat display
+                                const getDisplayName = () => {
+                                    if (chat.is_group_chat && chat.group_name) {
+                                        // Check if this is a guest-only group (no casts assigned yet)
+                                        if (chat.casts && chat.casts.length === 0) {
+                                            return chat.group_name + ' (キャスト選択待ち)';
+                                        }
+                                        return chat.group_name;
+                                    }
+                                    return chat.cast_nickname || `グループチャット ${chat.id}`;
+                                };
+
+                                const getDisplayAvatar = () => {
+                                    if (chat.is_group_chat && chat.casts && chat.casts.length > 0) {
+                                        // For group chats, show the first cast avatar or a group icon
+                                        return chat.casts[0]?.avatar ? 
+                                            `${API_BASE_URL}/${chat.casts[0].avatar}` : 
+                                            '/assets/avatar/female.png'; // Use default avatar instead of group.png
+                                    } else if (chat.is_group_chat && (!chat.casts || chat.casts.length === 0)) {
+                                        // For guest-only groups, show a default avatar
+                                        return '/assets/avatar/female.png';
+                                    }
+                                    return getAvatarSrc();
                                 };
                                 
                                 return (
@@ -288,25 +365,33 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                             className="w-full"
                                             onClick={async () => {
                                                 setShowChat(chat.id);
+                                                setCurrentChat(chat); // Set current chat for GroupChatScreen
                                                 // Immediately set unread to 0 for this chat in local state
                                                 setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
                                                 if (chatNotif) {
                                                     await markNotificationRead(chatNotif.id);
                                                     setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));
                                                 }
+                                                // Mark messages as read when entering any chat
+                                                await markChatMessagesRead(chat.id, userId, 'guest');
                                             }}
                                         >
                                             <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
                                                 <img
-                                                    src={getAvatarSrc()}
+                                                    src={getDisplayAvatar()}
                                                     alt="avatar"
                                                     className="w-12 h-12 rounded-full mr-3 border border-secondary"
                                                 />
                                                 <div className="flex-1">
                                                     <div className="flex items-center">
                                                         <span className="font-bold text-white text-base mr-2">
-                                                            {chat.cast_nickname || `グループチャット ${chat.id}`}
+                                                            {getDisplayName()}
                                                         </span>
+                                                        {chat.is_group_chat && chat.casts && chat.casts.length > 1 && (
+                                                            <span className="ml-2 bg-blue-600 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                                                                {chat.casts.length}人
+                                                            </span>
+                                                        )}
                                                         {chat.unread > 0 && (
                                                             <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
                                                                 {chat.unread}
@@ -314,6 +399,16 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                                         )}
                                                     </div>
                                                     <div className="text-sm text-white">
+                                                        {chat.is_group_chat && chat.casts && chat.casts.length > 1 && (
+                                                            <div className="text-xs text-gray-400 mt-1">
+                                                                参加者: {chat.casts.map((cast: any) => cast.nickname).join(', ')}
+                                                            </div>
+                                                        )}
+                                                        {chat.is_group_chat && (!chat.casts || chat.casts.length === 0) && (
+                                                            <div className="text-xs text-gray-400 mt-1">
+                                                                キャストが選択されるまでお待ちください
+                                                            </div>
+                                                        )}
                                                         {chat.created_at && (
                                                             <div className="text-xs text-gray-400 mt-1">
                                                                 作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
@@ -351,7 +446,32 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                 const getAvatarSrc = () => {
                                     if (!chat.avatar) return '/assets/avatar/female.png';
                                     const avatars = chat.avatar.split(',').map((avatar: string) => avatar.trim());
-                                    return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/1.jpg';
+                                    return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/female.png';
+                                };
+
+                                // Handle group chat display
+                                const getDisplayName = () => {
+                                    if (chat.is_group_chat && chat.group_name) {
+                                        // Check if this is a guest-only group (no casts assigned yet)
+                                        if (chat.casts && chat.casts.length === 0) {
+                                            return chat.group_name + ' (キャスト選択待ち)';
+                                        }
+                                        return chat.group_name;
+                                    }
+                                    return chat.cast_nickname || `グループチャット ${chat.id}`;
+                                };
+
+                                const getDisplayAvatar = () => {
+                                    if (chat.is_group_chat && chat.casts && chat.casts.length > 0) {
+                                        // For group chats, show the first cast avatar or a group icon
+                                        return chat.casts[0]?.avatar ? 
+                                            `${API_BASE_URL}/${chat.casts[0].avatar}` : 
+                                            '/assets/avatar/female.png'; // Use default avatar instead of group.png
+                                    } else if (chat.is_group_chat && (!chat.casts || chat.casts.length === 0)) {
+                                        // For guest-only groups, show a default avatar
+                                        return '/assets/avatar/female.png';
+                                    }
+                                    return getAvatarSrc();
                                 };
                                 
                                 return (
@@ -360,25 +480,33 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                             className="w-full"
                                             onClick={async () => {
                                                 setShowChat(chat.id);
+                                                setCurrentChat(chat); // Set current chat for GroupChatScreen
                                                 // Immediately set unread to 0 for this chat in local state
                                                 setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
                                                 if (chatNotif) {
                                                     await markNotificationRead(chatNotif.id);
                                                     setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));
                                                 }
+                                                // Mark messages as read when entering any chat
+                                                await markChatMessagesRead(chat.id, userId, 'guest');
                                             }}
                                         >
                                             <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
                                                 <img
-                                                    src={getAvatarSrc()}
+                                                    src={getDisplayAvatar()}
                                                     alt="avatar"
                                                     className="w-12 h-12 rounded-full mr-3 border border-secondary"
                                                 />
                                                 <div className="flex-1">
                                                     <div className="flex items-center">
                                                         <span className="font-bold text-white text-base mr-2">
-                                                            {chat.cast_nickname || `グループチャット ${chat.id}`}
+                                                            {getDisplayName()}
                                                         </span>
+                                                        {chat.is_group_chat && chat.casts && chat.casts.length > 1 && (
+                                                            <span className="ml-2 bg-blue-600 text-white text-xs font-bold rounded-full px-2 py-0.5">
+                                                                {chat.casts.length}人
+                                                            </span>
+                                                        )}
                                                         {chat.unread > 0 && (
                                                             <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
                                                                 {chat.unread}
@@ -386,6 +514,16 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                                         )}
                                                     </div>
                                                     <div className="text-sm text-white">
+                                                        {chat.is_group_chat && chat.casts && chat.casts.length > 1 && (
+                                                            <div className="text-xs text-gray-400 mt-1">
+                                                                参加者: {chat.casts.map((cast: any) => cast.nickname).join(', ')}
+                                                            </div>
+                                                        )}
+                                                        {chat.is_group_chat && (!chat.casts || chat.casts.length === 0) && (
+                                                            <div className="text-xs text-gray-400 mt-1">
+                                                                キャストが選択されるまでお待ちください
+                                                            </div>
+                                                        )}
                                                         {chat.created_at && (
                                                             <div className="text-xs text-gray-400 mt-1">
                                                                 作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
@@ -411,16 +549,6 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                     )}
                 </div>
             )}
-            
-            {/* Floating Action Button for Gifts */}
-            <div className="fixed bottom-20 right-4 z-50">
-                <button className="bg-orange-500 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-orange-600 transition-colors">
-                    <div className="text-center">
-                        <div className="text-lg">🎁</div>
-                        <div className="text-xs font-bold">まとめてギフト</div>
-                    </div>
-                </button>
-            </div>
         </div>
     );
 };

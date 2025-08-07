@@ -159,7 +159,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
                     </button>
                     <span className="flex-1 text-center text-base font-bold text-white">カード登録</span>
                 </div>
-                <div className="px-4 py-6">
+                <div className="px-4 py-6 mt-16">
                     <CardRegistrationForm
                         onSuccess={handleCardRegistered}
                         onCancel={handleCardCancel}
@@ -173,7 +173,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
     if (loading) {
         return (
-            <div className='max-w-md bg-primary min-h-screen pb-24'>
+            <div className='max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
                 <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
                     <button className="mr-2 text-2xl text-white" onClick={onBack}>
                         <ChevronLeft />
@@ -189,7 +189,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
     if (error) {
         return (
-            <div className='max-w-md bg-primary min-h-screen pb-24'>
+            <div className='max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
                 <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
                     <button className="mr-2 text-2xl text-white" onClick={onBack}>
                         <ChevronLeft />
@@ -211,7 +211,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
     if (!paymentData || !castProfile) {
         return (
-            <div className='max-w-md bg-primary min-h-screen pb-24'>
+            <div className='max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
                 <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
                     <button className="mr-2 text-2xl text-white" onClick={onBack}>
                         <ChevronLeft />
@@ -235,17 +235,17 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
     };
 
     return (
-        <div className='max-w-md bg-primary min-h-screen pb-24'>
+        <div className='max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
             {/* Top bar */}
-            <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
-                <button className="mr-2 text-2xl text-white" onClick={onBack}>
+            <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
+                <button className="mr-2 text-2xl text-white hover:text-secondary" onClick={onBack}>
                     <ChevronLeft />
                 </button>
                 <span className="flex-1 text-center text-base font-bold text-white">すぐ入金</span>
             </div>
 
             {/* Main section */}
-            <div className="px-4 py-6">
+            <div className="px-4 py-6 mt-16">
                 {paymentSuccess && (
                     <div className="bg-green-600 rounded-lg p-3 text-center mb-4">
                         <p className="text-white text-sm">すぐ入金申請が完了しました！</p>

@@ -1,8 +1,8 @@
 /*eslint-disable */
 import React, { useState, useEffect } from 'react';
 import {useNavigate} from 'react-router-dom';
-import { Bell, SlidersHorizontal, Plus, Heart } from 'lucide-react';
-import { fetchAllTweets, fetchUserTweets, createTweet, likeTweet, getTweetLikeStatus } from '../../services/api';
+import { Bell, SlidersHorizontal, Plus, Heart, Trash2 } from 'lucide-react';
+import { fetchAllTweets, fetchUserTweets, createTweet, likeTweet, getTweetLikeStatus, deleteTweet } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import PostCreatePage from '../../components/dashboard/PostCreatePage';
 import CastNotificationPage from './CastNotificationPage';
@@ -27,7 +27,15 @@ const CastTimelinePage: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-            const data = tab === 'cast' && user ? await fetchUserTweets('cast', user.id) : await fetchAllTweets();
+            let data;
+            if (tab === 'cast') {
+                // Fetch all tweets from casts (not just current user)
+                data = await fetchAllTweets();
+                // Filter to only show tweets from casts
+                data = data.filter((tweet: any) => tweet.cast && !tweet.guest);
+            } else {
+                data = await fetchAllTweets();
+            }
             setTweets(data);
         } catch (e) {
             setError('つぶやきの取得に失敗しました');
@@ -87,6 +95,36 @@ const CastTimelinePage: React.FC = () => {
         setLikeStatuses((prev) => ({ ...prev, [tweetId]: res.liked }));
         setLikeCounts((prev) => ({ ...prev, [tweetId]: res.count }));
     };
+
+    const handleDeleteTweet = async (tweetId: number) => {
+        if (!confirm('このつぶやきを削除しますか？')) return;
+        
+        try {
+            await deleteTweet(tweetId);
+            // Remove the deleted tweet from the state
+            setTweets((prev) => prev.filter(tweet => tweet.id !== tweetId));
+            // Remove from like statuses and counts
+            setLikeStatuses((prev) => {
+                const newStatuses = { ...prev };
+                delete newStatuses[tweetId];
+                return newStatuses;
+            });
+            setLikeCounts((prev) => {
+                const newCounts = { ...prev };
+                delete newCounts[tweetId];
+                return newCounts;
+            });
+        } catch (e) {
+            alert('削除に失敗しました');
+        }
+    };
+
+    // Check if the current user is the author of the tweet
+    const isCurrentUserTweet = (tweet: any) => {
+        if (castId && tweet.cast?.id === castId) return true;
+        return false;
+    };
+
     const handleAvatarClick = (tweet: any) => {
         if (tweet.cast?.id) {
             navigate(`/cast/${tweet.cast.id}`);
@@ -97,7 +135,7 @@ const CastTimelinePage: React.FC = () => {
     if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} userType="cast" userId={castId || undefined} />;
     if (showNotification) return <CastNotificationPage onBack={() => setShowNotification(false)} />;
     return (
-        <div className="max-w-md pb-20 min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
+        <div className="max-w-md pb-28 min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
             {/* Fixed Header */}
             <div className="fixed top-0 left-0 right-0 max-w-md mx-auto bg-primary z-20">
                 {/* Header */}
@@ -106,9 +144,9 @@ const CastTimelinePage: React.FC = () => {
                         <Bell />
                     </span>
                     <span className="text-xl font-bold text-white">つぶやき</span>
-                    <span className="text-2xl text-white">
+                    {/* <span className="text-2xl text-white">
                         <SlidersHorizontal />
-                    </span>
+                    </span> */}
                 </div>
                 {/* Tabs */}
                 <div className="flex items-center border-b border-secondary">
@@ -139,8 +177,21 @@ const CastTimelinePage: React.FC = () => {
                                     />
                                 <div className="flex flex-col flex-1">
                                     <span className="font-bold text-sm text-white">{tweet.guest?.nickname || tweet.cast?.nickname || 'ゲスト/キャスト'}</span>
-                                    <span className="text-xs text-white">{new Date(tweet.created_at + 'Z').toLocaleString('ja-JP')}</span>
+                                    <span className="text-xs text-white">{new Date(tweet.created_at).toLocaleString('ja-JP')}</span>
                                 </div>
+                                {/* Delete button - only show for user's own tweets */}
+                                {isCurrentUserTweet(tweet) && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteTweet(tweet.id);
+                                        }}
+                                        className="text-red-400 hover:text-red-300 transition-colors p-1"
+                                        title="削除"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
                             </div>
                             <div className="text-white text-sm whitespace-pre-line mt-1">{tweet.content}</div>
                             {tweet.image && (

@@ -1,11 +1,23 @@
+/* eslint-disable */
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import PayJPPaymentForm from '../payment/PayJPPaymentForm';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { getPaymentInfo } from '../../services/api';
 
-const amounts = [1000, 3000, 5000, 10000,30000,50000];
+const amounts = [1000, 3000, 5000, 10000, 30000, 50000];
+const prices = [1200, 3600, 6000, 12000, 36000, 60000];
+
+const Skeleton = () => (
+  <div className="animate-pulse bg-gray-200 h-20 rounded-2xl w-full mb-6" />
+);
+
+const Spinner = () => (
+  <div className="flex justify-center items-center py-8">
+    <div className="w-8 h-8 border-4 border-blue-300 border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const navigate = useNavigate();
@@ -16,13 +28,15 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [hasRegisteredCard, setHasRegisteredCard] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [successAnim, setSuccessAnim] = useState(false);
 
   useEffect(() => {
     checkRegisteredCards();
   }, [user?.id]);
 
-  const handlePurchase = () => {
+  const handlePurchase = (amount: number) => {
     if (!user) return;
+    setSelectedAmount(amount);
     setShowPaymentForm(true);
     setError(null);
     setPaymentStatus(null);
@@ -30,28 +44,25 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
   const checkRegisteredCards = async () => {
     if (!user?.id) return;
-
     try {
-        const paymentInfo = await getPaymentInfo('guest', user.id);
-        setHasRegisteredCard(!!paymentInfo?.card_count);
+      const paymentInfo = await getPaymentInfo('guest', user.id);
+      setHasRegisteredCard(!!paymentInfo?.card_count);
     } catch (error) {
-        console.error('Failed to check registered cards:', error);
-        setHasRegisteredCard(false);
+      setHasRegisteredCard(false);
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
-  const handlePaymentSuccess = (payment: any) => {
+  const handlePaymentSuccess = () => {
     setPaymentStatus('決済が完了しました！');
     setShowPaymentForm(false);
-    // Refresh user data to update points
+    setSuccessAnim(true);
     refreshUser();
-    
-    // Navigate to profile page after successful purchase
     setTimeout(() => {
+      setSuccessAnim(false);
       navigate('/dashboard');
-    }, 2000); // Wait 2 seconds to show success message
+    }, 1800);
   };
 
   const handlePaymentError = (errorMessage: string) => {
@@ -66,62 +77,97 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
 
   if (showPaymentForm) {
     return (
-      <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
-        <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
-          <button onClick={handlePaymentCancel} className="mr-2 text-2xl text-white">
-            <ChevronLeft />
-          </button>
-          <span className="text-lg font-bold flex-1 text-center text-white">決済</span>
-        </div>
-        <div className="p-6">
-          <PayJPPaymentForm
-            amount={selectedAmount}
-            onSuccess={handlePaymentSuccess}
-            onError={handlePaymentError}
-            onCancel={handlePaymentCancel}
-            userType="guest"
-            userId={user?.id}
-          />
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/40 animate-fade-in">
+        <div className="max-w-md w-full min-h-screen  bg-gradient-to-br from-primary via-primary to-secondary rounded-2xl shadow-2xl animate-slide-up">
+          <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary rounded-t-2xl">
+            <button onClick={handlePaymentCancel} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" aria-label="戻る">
+              <ChevronLeft />
+            </button>
+            <span className="text-lg font-bold flex-1 text-center text-white">決済</span>
+          </div>
+          <div className="p-6">
+            <PayJPPaymentForm
+              amount={selectedAmount}
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+              onCancel={handlePaymentCancel}
+              userType="guest"
+              userId={user?.id}
+            />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
-      <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
+    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
+      {/* Header */}
+      <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary rounded-b-2xl shadow-md">
         {onBack && (
-          <button onClick={onBack} className="mr-2 text-2xl text-white">
+          <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary" aria-label="戻る">
             <ChevronLeft />
           </button>
         )}
-        <span className="text-lg font-bold flex-1 text-center text-white">ポイント購入</span>
+        <span className="text-xl font-extrabold flex-1 text-center text-white tracking-wide">ポイントを購入する</span>
       </div>
-      <div className="p-6">
-        <h2 className="font-bold text-xl mb-4 text-white">購入ポイントを選択</h2>
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {amounts.map(amount => (
-            <button
+      {/* Points Card */}
+      <div className="mx-4 mt-8 mb-6">
+        {loading ? (
+          <Skeleton />
+        ) : (
+          <div className="bg-gradient-to-r from-white via-blue-50 to-blue-100 rounded-2xl shadow-lg p-6 flex flex-col items-center border border-blue-200">
+            <div className="flex items-center mb-2">
+              <span className="text-gray-700 font-semibold mr-2 text-lg">所持ポイント</span>
+              <span className="text-blue-400 text-xl">Ⓟ</span>
+            </div>
+            <div className="text-4xl font-extrabold text-primary mb-1 drop-shadow">{user?.points?.toLocaleString() ?? 0}P</div>
+            <div className="text-xs text-gray-500">ポイントの有効期限は購入から180日です</div>
+          </div>
+        )}
+      </div>
+      {/* Point Options List */}
+      <div className="px-4">
+        {loading ? (
+          <Spinner />
+        ) : (
+          amounts.map((amount, idx) => (
+            <div
               key={amount}
-              className={`px-6 py-3 rounded-lg border font-bold text-lg ${selectedAmount === amount ? 'bg-secondary text-white border-secondary' : 'bg-primary text-white border-secondary hover:bg-secondary'}`}
-              onClick={() => setSelectedAmount(amount)}
+              className="flex items-center justify-between bg-white/10 rounded-xl shadow-md mb-5 px-5 py-4 border border-gray-100 hover:shadow-xl transition-all duration-200"
             >
-              {amount.toLocaleString()}P
-            </button>
-          ))}
-        </div>
-        
-        <button
-          className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition mb-4"
-          onClick={handlePurchase}
-        >
-          購入する
-        </button>
+              <div className="flex items-center">
+                <span className="text-xl font-bold text-blue-400 mr-2">Ⓟ</span>
+                <span className="text-xl font-bold text-white">{amount.toLocaleString()}ポイント</span>
+              </div>
+              <button
+                className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-bold py-2 px-8 rounded-lg text-lg shadow transition-all duration-150 active:scale-95 focus:outline-none focus:ring-2 focus:ring-orange-300"
+                onClick={() => handlePurchase(amount)}
+                aria-label={`購入する ${amount}ポイント`}
+              >
+                ￥{prices[idx].toLocaleString()}
+              </button>
+            </div>
+          ))
+        )}
         {error && <div className="text-red-400 text-center mb-2">{error}</div>}
-        {paymentStatus && <div className="text-green-400 text-center mb-2">{paymentStatus}</div>}
+        {paymentStatus && (
+          <div className="flex flex-col items-center justify-center my-4 animate-fade-in">
+            <CheckCircle2 className="text-green-400 w-12 h-12 mb-2 animate-bounce-in" />
+            <div className="text-green-500 text-lg font-bold">{paymentStatus}</div>
+          </div>
+        )}
       </div>
+      {successAnim && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 animate-fade-in">
+          <div className="flex flex-col items-center bg-white rounded-2xl shadow-2xl px-10 py-8 animate-bounce-in">
+            <CheckCircle2 className="text-green-400 w-20 h-20 mb-4 animate-bounce-in" />
+            <div className="text-green-600 text-2xl font-bold mb-2">決済が完了しました！</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default PointPurchasePage; 
+export default PointPurchasePage;

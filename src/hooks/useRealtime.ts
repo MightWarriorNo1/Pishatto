@@ -18,6 +18,23 @@ export function useChatMessages(
   }, [chatId, onNewMessage]);
 }
 
+// Real-time group messages
+export function useGroupMessages(
+  groupId: string | number,
+  onNewMessage: (message: any) => void
+) {
+  useEffect(() => {
+    if (!groupId) return;
+    const channel = echo.channel(`group.${groupId}`);
+    channel.listen("GroupMessageSent", (e: { message: any }) => {
+      onNewMessage(e.message);
+    });
+    return () => {
+      channel.stopListening("GroupMessageSent");
+    };
+  }, [groupId, onNewMessage]);
+}
+
 // Real-time reservation updates
 export function useReservationUpdates(
   reservationId: string | number,
@@ -52,6 +69,39 @@ export function useNotifications(
   }, [userId, onNotification]);
 }
 
+// Real-time unread message count updates
+export function useUnreadMessageCount(
+  userId: string | number,
+  userType: 'guest' | 'cast',
+  onCountUpdate: (count: number) => void
+) {
+  useEffect(() => {
+    if (!userId) return;
+    const channel = echo.channel(`user.${userId}`);
+    
+    // Listen for new messages that would increase unread count
+    channel.listen("MessageSent", (e: { message: any }) => {
+      // Only count messages from other users
+      const isOwnMessage = (userType === 'guest' && e.message.sender_guest_id) || 
+                          (userType === 'cast' && e.message.sender_cast_id);
+      
+      if (!isOwnMessage) {
+        onCountUpdate(1); // Just increment by 1 for each new message
+      }
+    });
+
+    // Listen for messages being read
+    channel.listen("MessagesRead", () => {
+      onCountUpdate(0);
+    });
+
+    return () => {
+      channel.stopListening("MessageSent");
+      channel.stopListening("MessagesRead");
+    };
+  }, [userId, userType, onCountUpdate]);
+}
+
 // Tweets (public channel)
 export function useTweets(onNewTweet: (tweet: any) => void) {
   useEffect(() => {
@@ -63,4 +113,32 @@ export function useTweets(onNewTweet: (tweet: any) => void) {
       channel.stopListening("TweetCreated");
     };
   }, [onNewTweet]);
+}
+
+// Admin news (public channels)
+export function useAdminNews(userType: 'guest' | 'cast', onNewNews: (news: any) => void) {
+  useEffect(() => {
+    let channelName = 'admin-news';
+    if (userType === 'guest') {
+      channelName = 'admin-news.guest';
+    } else if (userType === 'cast') {
+      channelName = 'admin-news.cast';
+    }
+    
+    const channel = echo.channel(channelName);
+    channel.listen("AdminNewsPublished", (e: { news: any }) => {
+      onNewNews(e.news);
+    });
+    
+    // Also listen to general admin-news channel for 'all' target type
+    const generalChannel = echo.channel('admin-news');
+    generalChannel.listen("AdminNewsPublished", (e: { news: any }) => {
+      onNewNews(e.news);
+    });
+    
+    return () => {
+      channel.stopListening("AdminNewsPublished");
+      generalChannel.stopListening("AdminNewsPublished");
+    };
+  }, [userType, onNewNews]);
 }

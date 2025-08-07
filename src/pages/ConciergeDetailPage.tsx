@@ -5,6 +5,7 @@ import { useConcierge } from '../contexts/ConciergeContext';
 import { useUser } from '../contexts/UserContext';
 import { getConciergeInfo, ConciergeInfo } from '../services/api';
 import ConciergeAvatar from '../components/ConciergeAvatar';
+import { Bird, ChevronLeft } from 'lucide-react';
 
 interface ConciergeDetailPageProps {
     onBack: () => void;
@@ -66,51 +67,51 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
         '支払いについて教えて'
     ];
 
-    const services = [
-        {
-            title: '予約サポート',
-            description: '予約の変更・キャンセルをお手伝いします',
-            icon: '📅',
-            color: 'bg-blue-500'
-        },
-        {
-            title: '支払いサポート',
-            description: '支払い方法や請求についてサポートします',
-            icon: '💳',
-            color: 'bg-green-500'
-        },
-        {
-            title: '技術サポート',
-            description: 'アプリの使い方や技術的な問題を解決します',
-            icon: '🔧',
-            color: 'bg-purple-500'
-        },
-        {
-            title: 'その他サポート',
-            description: 'その他のお問い合わせに対応します',
-            icon: '❓',
-            color: 'bg-orange-500'
-        }
-    ];
+    // const services = [
+    //     {
+    //         title: '予約サポート',
+    //         description: '予約の変更・キャンセルをお手伝いします',
+    //         icon: '📅',
+    //         color: 'bg-blue-500'
+    //     },
+    //     {
+    //         title: '支払いサポート',
+    //         description: '支払い方法や請求についてサポートします',
+    //         icon: '💳',
+    //         color: 'bg-green-500'
+    //     },
+    //     {
+    //         title: '技術サポート',
+    //         description: 'アプリの使い方や技術的な問題を解決します',
+    //         icon: '🔧',
+    //         color: 'bg-purple-500'
+    //     },
+    //     {
+    //         title: 'その他サポート',
+    //         description: 'その他のお問い合わせに対応します',
+    //         icon: '❓',
+    //         color: 'bg-orange-500'
+    //     }
+    // ];
 
     return (
-        <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col">
+        <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col relative">
             {/* Header */}
-            <div className="flex items-center px-4 py-3 border-b border-secondary">
+            <div className="fixed flex items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button onClick={onBack} className="mr-3">
-                    <FiArrowLeft className="w-6 h-6 text-white" />
+                    <ChevronLeft className="w-6 h-6 text-white hover:text-secondary cursor-pointer" />
                 </button>
                 <div className="flex items-center flex-1">
-                    <ConciergeAvatar size="sm" className="mr-3" />
+                <Bird className="w-10 h-10 text-yellow-500 cursor-pointer mr-3" />
+                    {/* <ConciergeAvatar size="sm" className="mr-3" /> */}
                     <div>
-                        <div className="font-bold text-white text-lg">patoコンシェルジュ</div>
-                        <div className="text-sm text-gray-300">11歳</div>
+                        <div className="font-bold text-white text-lg">pishattoコンシェルジュ</div>
                     </div>
                 </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex items-center px-4 mt-2">
+            {/* <div className="flex items-center px-4 mt-2 py-20">
                 <button
                     className={`px-4 py-2 rounded-full font-bold text-sm mr-2 flex items-center ${
                         selectedTab === 'chat' ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'
@@ -138,10 +139,10 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
                     <FiGift className="w-4 h-4 mr-1" />
                     サービス
                 </button>
-            </div>
+            </div> */}
 
             {/* Content */}
-            <div className="flex-1 px-4 mt-4 overflow-y-auto">
+            <div className="flex-1 px-4 mt-4 overflow-y-auto py-20">
                 {selectedTab === 'chat' && (
                     <div className="space-y-4">
                         {/* Loading state */}
@@ -243,7 +244,7 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
                     </div>
                 )}
 
-                {selectedTab === 'services' && (
+                {/* {selectedTab === 'services' && (
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-3">
                             {services.map((service, index) => (
@@ -257,12 +258,12 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
                             ))}
                         </div>
                     </div>
-                )}
+                )} */}
             </div>
 
             {/* Message Input */}
             {selectedTab === 'chat' && (
-                <div className="px-4 py-3 border-t border-secondary">
+                <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t border-secondary flex flex-col px-4 py-2 z-20">
                     <div className="flex items-center space-x-2">
                         <input
                             type="text"
@@ -278,21 +279,6 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
                         <button className="p-2 text-white hover:bg-secondary rounded-full transition-colors">
                             <FiGift className="w-5 h-5" />
                         </button>
-                    </div>
-                    
-                    {/* Progress banner */}
-                    <div className="mt-3 bg-orange-500 text-white text-xs px-3 py-2 rounded-lg">
-                        <div className="flex items-center justify-between">
-                            <span>2人で</span>
-                            <div className="flex items-center">
-                                <span className="mr-2">STEP1</span>
-                                <div className="flex space-x-1">
-                                    <div className="w-2 h-2 bg-white rounded-full"></div>
-                                    <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                                    <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             )}

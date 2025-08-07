@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Share, Heart, MessageSquare } from 'lucide-react';
 import { likeCast, getCastProfileById, createChat, sendGuestMessage, getLikeStatus, favoriteCast, unfavoriteCast, getFavorites, getCastList, getCastBadges } from '../services/api';
 import { useUser } from '../contexts/UserContext';
+import { useNotificationSettings } from '../contexts/NotificationSettingsContext';
 import Toast from '../components/ui/Toast';
 import { shareContent } from '../utils/clipboard';
 
@@ -23,6 +24,7 @@ const CastDetail: React.FC = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useUser();
+    const { isNotificationEnabled } = useNotificationSettings();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [liked, setLiked] = useState(false);
     const [cast, setCast] = useState<any>(null);
@@ -109,6 +111,18 @@ const CastDetail: React.FC = () => {
 
     const handleLike = async () => {
         if (!user || !id) return;
+        
+        // Check if like notifications are enabled
+        const isLikeNotificationEnabled = isNotificationEnabled('likes');
+        
+        if (!isLikeNotificationEnabled) {
+            setToastMessage('いいね通知が無効になっています。設定で有効にしてください。');
+            setToastType('error');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 5000);
+            return;
+        }
+        
         const res = await likeCast(user.id, Number(id));
         if (res.liked) setLiked(true);
         else setLiked(false);
@@ -157,6 +171,17 @@ const CastDetail: React.FC = () => {
     };
 
     const handleMessage = async () => {
+        // Check if message notifications are enabled
+        const isMessageNotificationEnabled = isNotificationEnabled('messages');
+        
+        if (!isMessageNotificationEnabled) {
+            setToastMessage('メッセージ通知が無効になっています。設定で有効にしてください。');
+            setToastType('error');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 5000);
+            return;
+        }
+        
         setMessageLoading(true);
         try {
             const chatRes = await createChat(cast.id,Number(user?.id));
@@ -446,12 +471,20 @@ const CastDetail: React.FC = () => {
                     {/* Like Button */}
                     <div className="px-4 py-2">
                         {!liked ? (
-                            <button className="w-full bg-secondary text-white rounded-lg py-4 flex items-center justify-center font-bold text-lg hover:bg-red-700 transition" onClick={handleLike}>
+                            <button 
+                                className={`w-full rounded-lg py-4 flex items-center justify-center font-bold text-lg transition ${
+                                    isNotificationEnabled('likes') 
+                                        ? 'bg-secondary text-white hover:bg-red-700' 
+                                        : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                                }`} 
+                                onClick={handleLike}
+                                disabled={!isNotificationEnabled('likes')}
+                            >
                                 <span className="mr-2">
                                     <Heart />
                                 </span>
                                 <span className="text-base">
-                                    いいね
+                                    {isNotificationEnabled('likes') ? 'いいね' : 'いいね (無効)'}
                                 </span>
                             </button>
                         ) : (
