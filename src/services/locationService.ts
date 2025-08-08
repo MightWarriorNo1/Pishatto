@@ -11,7 +11,6 @@ export interface Location {
 export const locationService = {
     async getActiveLocations(): Promise<string[]> {
         const response = await fetch(`${API_BASE_URL}/locations/active`);
-        console.log('Response:', response);
         if (!response.ok) {
             throw new Error('Failed to fetch locations');
         }

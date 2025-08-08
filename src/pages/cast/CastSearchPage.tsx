@@ -463,19 +463,15 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 region: item.region || region
             }));
 
-            // Apply filters
             const filteredData = transformedData.filter(item => {
-                // Age filter
                 if (item.age && (item.age < filters.ageRange.min || item.age > filters.ageRange.max)) {
                     return false;
                 }
                 
-                // Points filter
                 if (item.points < filters.minPoints || item.points > filters.maxPoints) {
                     return false;
                 }
 
-                // Region filter (if not "全国")
                 if (filters.region !== '全国' && item.region && item.region !== filters.region) {
                     return false;
                 }
@@ -486,14 +482,6 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             setRankingData(filteredData);
         } catch (error) {
             console.error('Failed to fetch ranking data:', error);
-            // Fallback to mock data if API fails
-            setRankingData([
-                { id: 1, rank: 1, name: "キンさん", age: 46, avatar: "/assets/avatar/avatar-1.png", points: 1000 },
-                { id: 2, rank: 2, name: "タケシ", age: null, avatar: "/assets/avatar/2.jpg", points: 800 },
-                { id: 3, rank: 3, name: "リサ", age: 25, avatar: "/assets/avatar/avatar-2.png", points: 600 },
-                { id: 4, rank: 4, name: "マイク", age: 40, avatar: "/assets/avatar/man.png", points: 400 },
-                { id: 5, rank: 5, name: "エミ", age: 22, avatar: "/assets/avatar/female.png", points: 200 },
-            ]);
         } finally {
             setLoading(false);
         }

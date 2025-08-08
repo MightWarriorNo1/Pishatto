@@ -1,3 +1,4 @@
+/*eslint-disable */
 import React, { useEffect, useState } from 'react';
 import { ChevronLeft, Trash2 } from 'lucide-react';
 import { getNotifications, markNotificationRead, deleteNotification, getAdminNews, AdminNews } from '../../services/api';

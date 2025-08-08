@@ -143,7 +143,7 @@ const CastTimelinePage: React.FC = () => {
                     <span className="text-2xl text-white hover:text-secondary transition-colors cursor-pointer" onClick={() => setShowNotification(true)}>
                         <Bell />
                     </span>
-                    <span className="text-xl font-bold text-white">つぶやき</span>
+                    <span className="text-xl font-bold mx-auto text-white">つぶやき</span>
                     {/* <span className="text-2xl text-white">
                         <SlidersHorizontal />
                     </span> */}

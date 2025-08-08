@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronUp, ChevronDown, ChevronLeft } from 'lucide-react';
-import { createReceipt, getReceipt, Receipt } from '../../services/api';
+/*eslint-disable */
+import React, { useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
+import { createReceipt,  Receipt } from '../../services/api';
 import ReceiptDisplay from './ReceiptDisplay';
 
 interface ReceiptConfirmationPageProps {

@@ -1,5 +1,5 @@
 import { ChevronLeft } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { updateNotificationSettings, NotificationSettings } from '../../services/api';
@@ -28,7 +28,6 @@ const NotificationSettingsPage: React.FC<NotificationSettingsPageProps> = ({ onB
         if (!user?.id || saving) return;
 
         const newValue = !settings[key];
-        const newSettings = { ...settings, [key]: newValue };
         
         // Update local state immediately for responsive UI
         updateSettings({ [key]: newValue });

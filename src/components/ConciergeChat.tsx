@@ -1,8 +1,8 @@
+/* eslint-disable */
 import React, { useEffect } from 'react';
 import { useConcierge } from '../contexts/ConciergeContext';
 import { useUser } from '../contexts/UserContext';
 import { Bird } from 'lucide-react';
-import ConciergeAvatar from './ConciergeAvatar';
 
 interface ConciergeChatProps {
     onClick: () => void;

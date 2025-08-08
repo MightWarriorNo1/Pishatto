@@ -74,8 +74,8 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
       </div>
 
       {/* Reservation Details */}
-      <div className="px-4 py-6 flex-1">
-        <div className="bg-white rounded-lg border border-gradient-to-r from-primary to-secondary p-4 shadow-lg relative overflow-hidden" style={{ boxShadow: '0 4px 24px 0 rgba(0,0,0,0.08)' }}>
+      <div className="px-4 py-6">
+        <div className="bg-white/10 rounded-lg border border-gradient-to-r from-primary to-secondary p-4 shadow-lg relative overflow-hidden" style={{ boxShadow: '0 4px 24px 0 rgba(0,0,0,0.08)' }}>
           <div className="absolute inset-0 pointer-events-none rounded-lg border-2 border-gradient-to-r from-primary to-secondary opacity-30" />
           <div className="flex items-start space-x-4 relative z-10">
             {/* Cast Avatar */}
@@ -96,25 +96,25 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
             {/* Cast Details */}
             <div className="flex-1">
               <div className="flex items-center mb-2">
-                <span className="text-lg font-bold text-primary">{selectedCast.nickname}さん</span>
+                <span className="text-lg font-bold text-white">{selectedCast.nickname}さん</span>
                 <span className="ml-2 text-secondary">🦋</span>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex items-center">
-                  <MapPin className="w-4 h-4 text-primary mr-2" />
-                  <span className="text-primary">{meetingArea}</span>
+                  <MapPin className="w-4 h-4 text-white mr-2" />
+                  <span className="text-white">{meetingArea}</span>
                 </div>
                 <div className="flex items-center">
-                  <Calendar className="w-4 h-4 text-primary mr-2" />
-                  <span className="text-primary">{scheduledTime}</span>
+                  <Calendar className="w-4 h-4 text-white mr-2" />
+                  <span className="text-white">{scheduledTime}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-primary">設定時間</span>
-                  <span className="font-medium text-primary">{duration}</span>
+                  <span className="text-white">設定時間</span>
+                  <span className="font-medium text-white">{duration}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-primary">使用ポイント</span>
-                  <span className="font-bold text-primary">{totalPoints.toLocaleString()}P</span>
+                  <span className="text-white">使用ポイント</span>
+                  <span className="font-bold text-white">{totalPoints.toLocaleString()}P</span>
                 </div>
               </div>
             </div>
@@ -154,7 +154,7 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
       </div>
 
       {/* Additional Information */}
-      <div className="px-4 py-4">
+      <div className="px-4 py-24">
         <div className="bg-white/5 rounded-lg p-4">
           <h3 className="text-white font-bold mb-2">ご利用の流れ</h3>
           <div className="space-y-2 text-sm text-white/80">

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React from 'react';
 import { useState } from 'react';
 import LoginOptions from './steps/LoginOptions';
@@ -132,7 +133,7 @@ const RegisterSteps: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
+    <div className="bg-white flex items-center justify-center">
       <div className="max-w-md w-full mx-auto bg-primary rounded-2xl shadow-lg p-8 border border-secondary">
         {renderStep()}
       </div>

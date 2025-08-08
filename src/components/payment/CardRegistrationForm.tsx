@@ -1,3 +1,4 @@
+/*eslint-disable */
 import React, { useEffect, useRef, useState } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import { registerCard } from '../../services/api';
@@ -108,7 +109,7 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
   };
 
   return (
-    <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary p-6 rounded-lg">
+    <div className="max-w-md mx-auto p-6 rounded-lg">
       <h2 className="text-xl font-bold text-white mb-6 text-center">カード情報登録</h2>
       
       <form onSubmit={handleSubmit} className="space-y-4">

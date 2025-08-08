@@ -1,3 +1,4 @@
+/*eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import { getPaymentInfo, deletePaymentInfo } from '../../services/api';

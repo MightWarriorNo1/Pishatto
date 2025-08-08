@@ -220,7 +220,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
       };
 
       const reservation = await createReservation(reservationData);
-      const reservationId = reservation.id;
+      const reservationId = reservation.reservation.id;
 
       // Create chat between user and cast
       const chat = await createChat(selectedCast.id, user.id, reservationId);

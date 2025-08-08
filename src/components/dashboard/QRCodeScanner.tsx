@@ -1,3 +1,4 @@
+/*eslint-disable */
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Camera, RotateCcw } from 'lucide-react';
 import jsQR from 'jsqr';

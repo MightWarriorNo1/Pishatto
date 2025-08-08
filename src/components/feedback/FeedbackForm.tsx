@@ -20,7 +20,6 @@ const FeedbackForm: React.FC<FeedbackFormProps> = ({ reservationId, onBack, onSu
   const [feedbackText, setFeedbackText] = useState<string>('');
   const [selectedBadgeId, setSelectedBadgeId] = useState<number | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

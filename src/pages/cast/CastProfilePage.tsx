@@ -1,12 +1,12 @@
 /*eslint-disable */
 import React, { useEffect, useState } from 'react';
-import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight, ChevronLeft, Medal } from 'lucide-react';
+import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight, ChevronLeft, Medal, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CastGiftBoxPage from './CastGiftBoxPage';
 import CastActivityRecordPage from './CastActivityRecordPage';
 import CastFriendReferralPage from './CastFriendReferralPage';
 import CastImmediatePaymentPage from './CastImmediatePaymentPage';
-import { getCastProfileById, getCastPointsData, getCastPassportData, getUnreadNotificationCount, getCastGrade, GradeInfo } from '../../services/api';
+import { getCastProfileById, getCastPointsData, getCastPassportData, getUnreadNotificationCount, getCastGrade, GradeInfo, getMonthlyEarnedRanking, MonthlyRankingResponse } from '../../services/api';
 import { useNotifications } from '../../hooks/useRealtime';
 import CastProfileEditPage from './CastProfileEditPage';
 import CastPointHistoryPage from './CastPointHistoryPage';
@@ -15,23 +15,6 @@ import QRCodeModal from '../../components/dashboard/QRCodeModal';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
-// Utility function to get the first available avatar from comma-separated string
-// const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
-//     if (!avatarString) {
-//         return '/assets/avatar/avatar-1.png';
-//     }
-    
-//     // Split by comma and get the first non-empty avatar
-//     const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-    
-//     if (avatars.length === 0) {
-//         return '/assets/avatar/avatar-1.png';
-//     }
-    
-//     return `${API_BASE_URL}/${avatars[0]}`;
-// };
-
-// Utility function to get all avatar URLs from comma-separated string
 const getAllAvatarUrls = (avatarString: string | null | undefined): string[] => {
     if (!avatarString) {
         return ['/assets/avatar/avatar-1.png'];
@@ -108,6 +91,9 @@ const CastProfilePage: React.FC = () => {
     const [notificationCount, setNotificationCount] = useState(0);
     const [gradeInfo, setGradeInfo] = useState<GradeInfo | null>(null);
     const [gradeLoading, setGradeLoading] = useState(true);
+    const [ranking, setRanking] = useState<MonthlyRankingResponse | null>(null);
+    const [selectedMonth, setSelectedMonth] = useState<'current' | 'last'>('current');
+    const [rankingLoading, setRankingLoading] = useState(false);
 
     const fetchCastProfile = async () => {
         try {
@@ -159,6 +145,18 @@ const CastProfilePage: React.FC = () => {
         }
     };
 
+    const fetchMonthlyRanking = async (month: 'current' | 'last' = 'current') => {
+        try {
+            setRankingLoading(true);
+            const data = await getMonthlyEarnedRanking({ castId, limit: 10, month });
+            setRanking(data);
+        } catch (error) {
+            console.error('Error fetching monthly ranking:', error);
+        } finally {
+            setRankingLoading(false);
+        }
+    };
+
     useEffect(() => {
         const fetchAllData = async () => {
             setLoading(true);
@@ -167,7 +165,8 @@ const CastProfilePage: React.FC = () => {
                 fetchPointsData(),
                 fetchPassportData(),
                 fetchNotificationCount(),
-                fetchGradeInfo()
+                fetchGradeInfo(),
+                fetchMonthlyRanking(selectedMonth)
             ]);
             setLoading(false);
         };
@@ -235,7 +234,16 @@ const CastProfilePage: React.FC = () => {
         return avatarUrls.length > 1;
     };
 
+    // Handle month selection for ranking
+    const handleMonthChange = (month: 'current' | 'last') => {
+        setSelectedMonth(month);
+        fetchMonthlyRanking(month);
+    };
 
+    // Get month display name
+    const getMonthDisplayName = (month: 'current' | 'last') => {
+        return month === 'current' ? '今月' : '先月';
+    };
 
     if (showGiftBox) return <CastGiftBoxPage onBack={() => setShowGiftBox(false)} />;
     if (showActivityRecord) return <CastActivityRecordPage onBack={() => setShowActivityRecord(false)} />;
@@ -334,9 +342,16 @@ const CastProfilePage: React.FC = () => {
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
                     <span className="text-2xl">🏆</span>
                 </div>
-                <span className="text-2xl font-bold text-white">
-                    {gradeLoading ? '読み込み中...' : gradeInfo?.current_grade_name || 'ビギナー'}
-                </span>
+                <div className="flex flex-col">
+                    <span className="text-2xl font-bold text-white">
+                        {gradeLoading ? '読み込み中...' : gradeInfo?.current_grade_name || 'ビギナー'}
+                    </span>
+                    {ranking && (
+                        <span className="text-sm text-white/90">
+                            今月のランキング: {ranking.summary.my_rank ? `#${ranking.summary.my_rank}` : '—'} / Pt {ranking.summary.my_points ?? 0}
+                        </span>
+                    )}
+                </div>
                 <Link to="/cast/grade-detail" className="ml-auto cursor-pointer">
                     <ChevronRight size={24} className="text-white hover:text-secondary" />
                 </Link>
@@ -368,38 +383,90 @@ const CastProfilePage: React.FC = () => {
                 </div>
                 <button className="w-full py-2 rounded-lg bg-secondary text-white font-bold hover:bg-red-700 transition" onClick={() => setShowPointHistory(true)}>所持ポイント確認・精算</button>
             </div>
-            {/* Passport/Partner Shop Cards */}
-            {/* <div className="bg-primary border border-secondary rounded-lg mx-4 my-2 p-4">
-                <div className="font-bold text-base mb-2 text-white">pishattoパスポート</div>
-                <div className="flex space-x-2 overflow-x-auto overflow-y-auto">
-                    {passportData.length > 0 ? (
-                        passportData.map((passport) => (
-                            <div key={passport.id} className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                                <img src={passport.image} alt={passport.name} className="w-full h-full object-cover rounded" />
-                            </div>
-                        ))
-                    ) : (
-                        // Fallback to static images if no data
-                        <>
-                            <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                                <img src="/assets/avatar/AdobeStock_1095142160_Preview.jpeg" alt='img1' />
-                            </div>
-                            <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                                <img src="/assets/avatar/AdobeStock_1067731649_Preview.jpeg" alt='img1' />
-                            </div>
-                            <div className="w-60 h-24 bg-gray-900 rounded-lg  min-w-[120px] flex justify-center text-xs border border-secondary">
-                                <img src="/assets/avatar/AdobeStock_1190678828_Preview.jpeg" alt='img1' />
-                            </div>
-                            <div className="w-60 h-24 bg-gray-900 rounded-lg min-w-[120px] flex justify-center text-xs border border-secondary">
-                                <img src="/assets/avatar/AdobeStock_1537463438_Preview.jpeg" alt='img1' />
-                            </div>
-                            <div className="w-60 h-24 bg-gray-900 rounded-lg flex min-w-[120px] justify-center text-xs border border-secondary">
-                                <img src="/assets/avatar/AdobeStock_1537463446_Preview.jpeg" alt='img1' />
-                            </div>
-                        </>
-                    )}
+            {/* Enhanced Monthly Ranking Section */}
+            <div className="bg-white/10 border border-secondary rounded-lg mx-4 my-2 p-4">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <Medal className="text-yellow-400" size={24} />
+                        <span className="font-bold text-lg text-white">月間ランキング</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Calendar className="text-white" size={16} />
+                        <select 
+                            value={selectedMonth} 
+                            onChange={(e) => handleMonthChange(e.target.value as 'current' | 'last')}
+                            className="bg-secondary text-white text-sm px-2 py-1 rounded border border-white/20"
+                        >
+                            <option value="current">今月</option>
+                            <option value="last">先月</option>
+                        </select>
+                    </div>
                 </div>
-            </div> */}
+                
+                {rankingLoading ? (
+                    <div className="text-center py-8">
+                        <div className="text-white">ランキング読み込み中...</div>
+                    </div>
+                ) : ranking && ranking.data && ranking.data.length > 0 ? (
+                    <>
+                        {/* Current Cast Ranking Summary */}
+                        {ranking.summary.my_rank && (
+                            <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 border border-yellow-400/30 rounded-lg p-3 mb-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                                            <span className="text-white font-bold text-sm">{ranking.summary.my_rank}</span>
+                                        </div>
+                                        <div>
+                                            <div className="text-white font-semibold">あなたの順位</div>
+                                            <div className="text-yellow-400 text-sm">{ranking.summary.my_points?.toLocaleString()}P</div>
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-white/70 text-xs">期間</div>
+                                        <div className="text-white text-sm">
+                                            {ranking.summary.period_start} - {ranking.summary.period_end}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {/* Top 10 Ranking List */}
+                        <div className="space-y-2">
+                            <div className="text-center text-white/70 text-sm mb-3">TOP 10</div>
+                            {ranking.data.map((item, index) => (
+                                <div key={item.user_id} className={`flex items-center px-3 py-2 rounded-lg transition-colors ${
+                                    item.user_id === castId ? 'bg-yellow-400/20 border border-yellow-400/30' : 'bg-white/5 hover:bg-white/10'
+                                }`}>
+                                    <div className="w-8 text-center">
+                                        {index === 0 && <span className="text-yellow-400 text-lg">🥇</span>}
+                                        {index === 1 && <span className="text-gray-300 text-lg">🥈</span>}
+                                        {index === 2 && <span className="text-orange-400 text-lg">🥉</span>}
+                                        {index > 2 && <span className="text-white font-bold">{item.rank}</span>}
+                                    </div>
+                                    <img
+                                        src={item.avatar ? `${API_BASE_URL}/${item.avatar}` : '/assets/avatar/avatar-1.png'}
+                                        onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
+                                        alt={item.name}
+                                        className="w-8 h-8 rounded-full border border-secondary object-cover mr-3"
+                                    />
+                                    <div className="flex-1">
+                                        <div className={`truncate ${item.user_id === castId ? 'text-yellow-400 font-semibold' : 'text-white'}`}>
+                                            {item.name}
+                                        </div>
+                                    </div>
+                                    <div className="text-white font-semibold">{item.points.toLocaleString()}P</div>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <div className="text-center py-8">
+                        <div className="text-white/70">ランキングデータがありません</div>
+                    </div>
+                )}
+            </div>
             {/* Menu List */}
             <div className="bg-white/10 border border-secondary rounded-lg mx-4 my-2 p-2 divide-y divide-gray-800">
                 <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-secondary transition" onClick={() => setShowGiftBox(true)}>

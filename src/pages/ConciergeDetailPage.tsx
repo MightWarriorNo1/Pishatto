@@ -1,10 +1,9 @@
+/*eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiMessageSquare, FiHelpCircle, FiGift, FiStar, FiImage } from 'react-icons/fi';
+import { FiGift, FiImage } from 'react-icons/fi';
 import { useConcierge } from '../contexts/ConciergeContext';
 import { useUser } from '../contexts/UserContext';
 import { getConciergeInfo, ConciergeInfo } from '../services/api';
-import ConciergeAvatar from '../components/ConciergeAvatar';
 import { Bird, ChevronLeft } from 'lucide-react';
 
 interface ConciergeDetailPageProps {

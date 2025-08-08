@@ -1,4 +1,4 @@
-import { ChevronLeft, Medal, Star, Gift, Crown, Users, Settings, MessageSquare, Calendar, Shield, Zap, TrendingUp } from 'lucide-react';
+import { ChevronLeft, Medal, Star, Gift, TrendingUp } from 'lucide-react';
 import React, { useState } from 'react';
 
 // Enhanced grade data with detailed information

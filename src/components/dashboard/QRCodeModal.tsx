@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Share2, Download, Copy, Camera } from 'lucide-react';
+import { X, Share2, Download, Copy } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useUser } from '../../contexts/UserContext';
 import QRCodeScanner from './QRCodeScanner';
@@ -84,10 +84,6 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ onClose }) => {
       // Fallback to copy link
       handleCopyLink();
     }
-  };
-
-  const handleScanQR = () => {
-    setShowScanner(true);
   };
 
   const handleScanResult = (data: string) => {

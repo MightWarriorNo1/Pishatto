@@ -248,7 +248,6 @@ export const guestUpdateProfile = async (data: GuestProfileUpdateData) => {
 };
 
 export const createReservation = async (data: Reservation) => {
-  console.log("data", data);
   const response = await api.post('/guest/reservation', data);
   return response.data;
 };
@@ -804,7 +803,9 @@ export const getLikeStatus = async (cast_id: number, guest_id: number) => {
 };
 
 export const fetchRanking = async (params: { userType: string; timePeriod: string; category: string; area: string }) => {
+  console.log("params", params);
   const response = await api.get('/ranking', { params });
+  console.log("RES", response);
   return response.data;
 };
 
@@ -948,6 +949,11 @@ export const completeReservation = async (reservationId: number, feedback: {
 
 export const refundUnusedPoints = async (reservationId: number) => {
   const response = await api.post(`/reservations/${reservationId}/refund`);
+  return response.data;
+};
+
+export const getPointBreakdown = async (reservationId: number) => {
+  const response = await api.get(`/reservations/${reservationId}/point-breakdown`);
   return response.data;
 };
 
@@ -1209,6 +1215,34 @@ export const getCastGrade = async (castId: number): Promise<GradeInfo> => {
     console.error('Error fetching cast grade:', error);
     throw error;
   }
+};
+
+// New: Monthly earned ranking based on point_transactions
+export interface MonthlyRankingItem {
+  user_id: number;
+  name: string;
+  avatar: string;
+  points: number;
+  rank: number;
+}
+
+export interface MonthlyRankingResponse {
+  data: MonthlyRankingItem[];
+  summary: {
+    month: 'current' | 'last';
+    period_start: string;
+    period_end: string;
+    cast_id: number | null;
+    my_points: number | null;
+    my_rank: number | null;
+  };
+}
+
+export const getMonthlyEarnedRanking = async (
+  params: { limit?: number; castId?: number; month?: 'current' | 'last' } = {}
+): Promise<MonthlyRankingResponse> => {
+  const response = await api.get('/ranking/monthly-earned', { params });
+  return response.data as MonthlyRankingResponse;
 };
 
 export const updateGuestGrade = async (guestId: number): Promise<GradeUpdateResult> => {

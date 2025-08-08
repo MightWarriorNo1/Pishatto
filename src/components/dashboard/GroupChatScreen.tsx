@@ -56,20 +56,25 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
     const [fetching, setFetching] = useState(true);
     const [fetchError, setFetchError] = useState<string | null>(null);
     const [sendError, setSendError] = useState<string | null>(null);
-    const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
-    const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
     const [gifts, setGifts] = useState<any[]>([]);
     const [showGiftModal, setShowGiftModal] = useState(false);
     const [selectedGiftCategory, setSelectedGiftCategory] = useState('standard');
-    const [participants, setParticipants] = useState<any[]>([]);
-    const [groupInfo, setGroupInfo] = useState<any>(null);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
     const [showProposalModal, setShowProposalModal] = useState(false);
     const [selectedProposal, setSelectedProposal] = useState<any>(null);
     const [proposalMsgId, setProposalMsgId] = useState<number | null>(null);
-    const [acceptedProposals, setAcceptedProposals] = useState<number[]>([]);
     const [proposalActionLoading, setProposalActionLoading] = useState(false);
     const [proposalActionError, setProposalActionError] = useState<string | null>(null);
+    const [acceptedProposals, setAcceptedProposals] = useState<number[]>([]);
+    const [participants, setParticipants] = useState<any[]>([]);
+    const [groupInfo, setGroupInfo] = useState<any>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    
+    
+    // Camera functionality
+    const [showCamera, setShowCamera] = useState(false);
+    const [cameraError, setCameraError] = useState('');
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
 
     // Fetch messages on component mount
     useEffect(() => {
@@ -198,6 +203,59 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                 setImagePreview(e.target?.result as string);
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    // Camera functionality
+    const handleOpenCamera = async () => {
+        setCameraError('');
+        setShowCamera(true);
+        setShowFile(false);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                await videoRef.current.play();
+            }
+        } catch (err: any) {
+            setCameraError('カメラを利用できません。ブラウザの設定やアクセス権限を確認してください。');
+        }
+    };
+
+    const handleTakePhoto = () => {
+        if (!videoRef.current) return;
+        const video = videoRef.current;
+        const canvas = document.createElement('canvas');
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(video, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+            if (blob) {
+                const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+                setAttachedFile(file);
+                const reader = new FileReader();
+                reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+                reader.readAsDataURL(file);
+                setShowCamera(false);
+                // Stop the stream
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach((track) => track.stop());
+                    streamRef.current = null;
+                }
+            }
+        }, 'image/jpeg');
+    };
+
+    const handleCloseCamera = () => {
+        setShowCamera(false);
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop());
+            streamRef.current = null;
         }
     };
 
@@ -379,7 +437,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                     }`}>
                                         {message.image && (
                                             <img
-                                                src={`${IMAGE_BASE_URL}/storage/${message.image}`}
+                                                src={`${API_BASE_URL}/storage/${message.image}`}
                                                 alt="attached"
                                                 className="w-64 h-32 rounded mb-2"
                                             />
@@ -496,7 +554,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                             <span>画像</span>
                         </button>
                         <button
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={handleOpenCamera}
                             className="flex items-center space-x-2 bg-secondary text-white px-3 py-2 rounded text-sm"
                         >
                             <Camera className="w-4 h-4" />
@@ -672,6 +730,38 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                     <X className="w-4 h-4 mr-2" />
                                     拒否
                                 </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Camera Modal */}
+            {showCamera && (
+                <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50">
+                    <div className="bg-primary p-4 rounded-lg flex flex-col items-center">
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            className="w-64 h-64 rounded-md bg-black"
+                        />
+                        {cameraError && (
+                            <div className="text-red-400 mt-2 text-center">{cameraError}</div>
+                        )}
+                        <div className="flex mt-4 space-x-4">
+                            <button
+                                onClick={handleTakePhoto}
+                                className="bg-secondary text-white px-4 py-2 rounded-md"
+                                disabled={!!cameraError}
+                            >
+                                撮影
+                            </button>
+                            <button
+                                onClick={handleCloseCamera}
+                                className="bg-gray-400 text-white px-4 py-2 rounded-md"
+                            >
+                                キャンセル
                             </button>
                         </div>
                     </div>

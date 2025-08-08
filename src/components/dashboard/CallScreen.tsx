@@ -478,10 +478,6 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
 
     const handleNext = () => {
         if (selectedLocation) {
-            // Navigate to cast selection page for the selected area
-            // You can implement this navigation logic based on your routing structure
-            console.log('Selected location for cast selection:', selectedLocation);
-            // For now, we'll just call onNext with the selected location
             onNext(selectedLocation);
         }
     };
@@ -579,7 +575,7 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
             </div>
 
             {/* Enhanced Fixed Bottom Button */}
-            <div className="px-4 py-6 border-t border-white/10 bg-gradient-to-r from-primary to-blue-900">
+            <div className="px-4 py-6">
                 <button 
                     className={`w-full py-4 rounded-2xl font-bold text-lg transition-all duration-300 shadow-xl ${
                         selectedLocation 
@@ -629,7 +625,6 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
                 const response = await getCastList({ area: selectedLocation });
                 setCasts(response.casts || []);
             } catch (error) {
-                console.error('Error fetching casts for location:', error);
                 setError('キャストの読み込みに失敗しました。しばらく待ってから再度お試しください。');
                 setCasts([]);
             } finally {
@@ -841,7 +836,7 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
                                                 <div className="flex items-center">
                                                     <span className="text-3xl font-bold mr-4">{currentCast.nickname}</span>
                                                     <span className="text-sm bg-white/30 px-4 py-2 rounded-full backdrop-blur-sm font-semibold">
-                                                        {currentCast.birth_year ? new Date().getFullYear() - currentCast.birth_year : '??'}歳
+                                                        {currentCast.birth_year ? new Date().getFullYear() - currentCast.birth_year+'歳' : ''}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
@@ -1389,7 +1384,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     return (
         <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20">
             {/* Enhanced Header */}
-            <div className="bg-gradient-to-r from-secondary to-red-600 text-white px-4 py-3 text-lg font-bold shadow-lg">
+            <div className="bg-gradient-to-r from-secondary to-red-600 text-white px-4 py-6 text-lg font-bold shadow-lg">
                 <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>

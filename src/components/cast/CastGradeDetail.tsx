@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, MessageSquareMore, FileText, Gift, Gem, Settings, UsersRound, Medal, Star, Heart, Clock, ThumbsUp, UserPlus } from 'lucide-react';
+import { ChevronLeft,  MessageSquareMore, FileText, Gift, Gem, Settings,  Medal, Star } from 'lucide-react';
 import { getCastGrade, GradeInfo } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 

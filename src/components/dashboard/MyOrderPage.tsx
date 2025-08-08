@@ -91,11 +91,6 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                                     {formatDate(r.scheduled_at || '')}
                                                 </span>
                                             </div>
-                                            <div className="bg-white/20 px-3 py-1 rounded-full">
-                                                <span className="text-white text-sm font-medium">
-                                                    #{r.id}
-                                                </span>
-                                            </div>
                                         </div>
                                     </div>
 

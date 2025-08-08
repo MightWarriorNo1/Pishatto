@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Calendar, Image, Search, Filter} from 'lucide-react';
+import { ChevronLeft, Calendar, Image, Search, Filter, Camera, FolderClosed } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MessageProposalPage from './MessageProposalPage';
 import { sendMessage, getChatMessages,getChatById, getGuestReservations } from '../../../services/api';
@@ -48,10 +48,24 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const fileSelectInputRef = useRef<HTMLInputElement>(null);
     const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
     const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
     const [guestId, setGuestId] = useState<number | null>(null);
     const [guestReservations, setGuestReservations] = useState<any[]>([]);
+    const [showFile, setShowFile] = useState(false);
+    const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    
+    // Camera functionality
+    const [showCamera, setShowCamera] = useState(false);
+    const [cameraError, setCameraError] = useState('');
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
+
+    // New: ref for input bar and popover for click outside
+    const inputBarRef = useRef<HTMLDivElement>(null);
+    const popoverRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         const fetchMessages = async () => {
             const castIdStr = localStorage.getItem('castId');
@@ -72,6 +86,45 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
         if (guestId == null) return;
         getGuestReservations(guestId).then(setGuestReservations).catch(() => setGuestReservations([]));
     }, [guestId]);
+
+    // Close popover when clicking outside input bar or popover
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                showFile &&
+                inputBarRef.current &&
+                popoverRef.current &&
+                !inputBarRef.current.contains(event.target as Node) &&
+                !popoverRef.current.contains(event.target as Node)
+            ) {
+                setShowFile(false);
+            }
+        };
+        if (showFile) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showFile]);
+
+    // Auto scroll to bottom on new messages
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    // Close popovers/modals with Escape
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setShowFile(false);
+                setShowCamera(false);
+                setLightboxUrl(null);
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, []);
 
     // Real-time updates
     useChatMessages(message.id, (msg) => {
@@ -99,7 +152,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     });
 
     const handleImageButtonClick = () => {
-        fileInputRef.current?.click();
+        setShowFile((prev) => !prev);
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,6 +162,59 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
             const reader = new FileReader();
             reader.onload = (ev) => setImagePreview(ev.target?.result as string);
             reader.readAsDataURL(file);
+        }
+    };
+
+    // Camera functionality
+    const handleOpenCamera = async () => {
+        setCameraError('');
+        setShowCamera(true);
+        setShowFile(false);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                await videoRef.current.play();
+            }
+        } catch (err: any) {
+            setCameraError('カメラを利用できません。ブラウザの設定やアクセス権限を確認してください。');
+        }
+    };
+
+    const handleTakePhoto = () => {
+        if (!videoRef.current) return;
+        const video = videoRef.current;
+        const canvas = document.createElement('canvas');
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(video, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+            if (blob) {
+                const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+                setAttachedFile(file);
+                const reader = new FileReader();
+                reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+                reader.readAsDataURL(file);
+                setShowCamera(false);
+                // Stop the stream
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach((track) => track.stop());
+                    streamRef.current = null;
+                }
+            }
+        }, 'image/jpeg');
+    };
+
+    const handleCloseCamera = () => {
+        setShowCamera(false);
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop());
+            streamRef.current = null;
         }
     };
 
@@ -142,9 +248,9 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     />;
 
     return (
-        <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary relative pb-24">
+        <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary relative pb-24">
             {/* Header (fixed) */}  
-            <div className="fixed h-16 flex items-center px-4 py-3 border-b border-secondary bg-primary">
+            <div className="fixed max-w-md mx-auto left-0 right-0 h-16 flex items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button onClick={onBack} className="mr-2">
                     <ChevronLeft className="text-white" size={24} />
                 </button>
@@ -169,6 +275,10 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                 }}
             >
                 {(messages || []).map((msg, idx) => {
+                    // Date separator
+                    const currentDate = msg.created_at ? dayjs(msg.created_at).format('YYYY-MM-DD') : '';
+                    const prev = (messages || [])[idx - 1];
+                    const prevDate = prev && prev.created_at ? dayjs(prev.created_at).format('YYYY-MM-DD') : '';
                     let proposal: Proposal | null = null;
                     try {
                         const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
@@ -181,18 +291,27 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                             dayjs(res.scheduled_at).isSame(proposal?.date)
                         );
                         return (
-                            <div key={msg.id || idx} className="flex justify-end mb-4">
-                                <div className={`bg-orange-500 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative ${isAccepted ? 'opacity-50' : ''}`}>
-                                    <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
-                                    <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
-                                    <div>時間：{proposal.duration}</div>
-                                    <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
-                                    <div>（延長：{proposal.extensionPoints?.toLocaleString()}P / 15分）</div>
-                                    {isAccepted && (
-                                        <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">承認済み</span>
-                                    )}
+                            <React.Fragment key={msg.id || `p-${idx}`}>
+                                {(idx === 0 || currentDate !== prevDate) && (
+                                    <div className="flex justify-center my-2">
+                                        <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
+                                            {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''}
+                                        </span>
+                                    </div>
+                                )}
+                                <div className="flex justify-end mb-4">
+                                    <div className={`bg-orange-500 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative ${isAccepted ? 'opacity-50' : ''}`}>
+                                        <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
+                                        <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
+                                        <div>時間：{proposal.duration}</div>
+                                        <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
+                                        <div>（延長：{proposal.extensionPoints?.toLocaleString()}P / 15分）</div>
+                                        {isAccepted && (
+                                            <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">承認済み</span>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            </React.Fragment>
                         );
                     }
                     const castIdStr = localStorage.getItem('castId');
@@ -220,7 +339,15 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     }
                     
                     return (
-                        <div key={msg.id || idx} className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
+                        <React.Fragment key={msg.id || idx}>
+                            {(idx === 0 || currentDate !== prevDate) && (
+                                <div className="flex justify-center my-2">
+                                    <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
+                                        {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''}
+                                    </span>
+                                </div>
+                            )}
+                        <div className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
                             <div className="flex flex-col">
                                 <div className={isSent ? 'w-full bg-secondary text-white rounded-lg px-4 py-2' : 'w-full bg-white text-black rounded-lg px-4 py-2'}>
                                     {/* Gift display */}
@@ -241,7 +368,10 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                                     : `${IMAGE_BASE_URL}/storage/${msg.image}`
                                             }
                                             alt="sent"
-                                            className="max-w-full max-h-40 rounded mb-2"
+                                            className="max-w-full max-h-40 rounded mb-2 cursor-zoom-in"
+                                            onClick={() => setLightboxUrl(
+                                                msg.image.startsWith('http') ? msg.image : `${IMAGE_BASE_URL}/storage/${msg.image}`
+                                            )}
                                         />
                                     )}
                                     {msg.message}
@@ -251,18 +381,43 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                 </div>
                             </div>
                         </div>
+                        </React.Fragment>
                     );
                 })}
+                <div ref={messagesEndRef} />
             </div>
 
-            {/* Input area (fixed at bottom) */}
-            <div className="fixed bottom-0 w-full max-w-md flex flex-col px-4 py-2 border-t border-secondary bg-primary" style={{height: '5.5rem'}}>
-                <div className="flex items-center mb-2">
+            {/* Input bar (always fixed at bottom) */}
+            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t border-secondary flex flex-col px-4 py-2 z-20">
+                {/* Image preview */}
+                {imagePreview && (
+                    <div className="flex items-center mt-2 p-2 bg-gray-800 rounded-lg">
+                        <img src={imagePreview} alt="preview" className="h-20 w-20 object-cover rounded border border-gray-300" />
+                        <div className="ml-3 flex-1">
+                            <div className="text-white text-sm font-medium">画像が選択されました</div>
+                            <div className="text-gray-400 text-xs">{attachedFile?.name || 'photo.jpg'}</div>
+                        </div>
+                        <button
+                            type="button"
+                            className="ml-2 text-white bg-red-500 hover:bg-red-600 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
+                            onClick={() => { 
+                                setAttachedFile(null); 
+                                setImagePreview(null); 
+                                if (fileInputRef.current) fileInputRef.current.value = '';
+                                if (fileSelectInputRef.current) fileSelectInputRef.current.value = '';
+                            }}
+                        >
+                            ×
+                        </button>
+                    </div>
+                )}
+                <div className="flex items-center w-full relative" ref={inputBarRef}>
                     <input
-                        className="flex-1 border-none outline-none text-lg bg-primary text-white placeholder-red-400"
+                        type="text"
+                        className="flex-1 px-4 py-2 rounded-full border border-secondary text-sm mr-2 bg-primary text-white"
                         placeholder="メッセージを入力..."
                         value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
+                        onChange={e => setNewMessage(e.target.value)}
                         onKeyDown={async (e) => {
                             if (e.key === 'Enter' && (newMessage.trim() || attachedFile) && !sending) {
                                 setSending(true);
@@ -297,7 +452,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                         }}
                     />
                     <span className="text-white ml-2 cursor-pointer" onClick={handleImageButtonClick}>
-                        <Image size={30}/>
+                        <Image size={30} />
                     </span>
                     <input
                         type="file"
@@ -306,24 +461,105 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                         style={{ display: 'none' }}
                         onChange={handleImageChange}
                     />
+                    <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileSelectInputRef}
+                        style={{ display: 'none' }}
+                        onChange={handleImageChange}
+                    />
                     <span className="text-white ml-2 cursor-pointer" onClick={() => setMessageProposal(true)}>
                         <Calendar size={30}/>
                     </span>
-                </div>
-                {/* Image preview */}
-                {imagePreview && (
-                    <div className="flex items-center mt-2">
-                        <img src={imagePreview} alt="preview" className="h-20 rounded border border-gray-300" />
-                        <button
-                            type="button"
-                            className="ml-2 text-white bg-red-500 rounded-full w-8 h-8 flex items-center justify-center"
-                            onClick={() => { setAttachedFile(null); setImagePreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                    {/* Popover absolutely inside input bar */}
+                    {showFile && (
+                        <div
+                            ref={popoverRef}
+                            className="absolute bottom-full mb-2 right-0 w-80 bg-primary rounded-xl shadow-lg border border-secondary z-50 animate-fade-in"
                         >
-                            ×
-                        </button>
-                    </div>
-                )}
+                            <button
+                                className="flex items-center justify-between w-full px-4 py-3 pt-6 hover:bg-secondary text-white text-base border-b border-secondary"
+                                onClick={() => {
+                                    setShowFile(false);
+                                    fileInputRef.current?.click();
+                                }}
+                            >
+                                <span>写真ライブラリ</span>
+                                <Image />
+                            </button>
+                            <button 
+                                className="flex items-center justify-between w-full px-4 py-3 hover:bg-secondary text-white text-base border-b border-secondary"
+                                onClick={handleOpenCamera}
+                            >
+                                <span>写真またはビデオを撮る</span>
+                                <Camera />
+                            </button>
+                            <button 
+                                className="flex items-center justify-between w-full px-4 py-3 hover:bg-secondary text-white text-base"
+                                onClick={() => {
+                                    setShowFile(false);
+                                    fileSelectInputRef.current?.click();
+                                }}
+                            >
+                                <span>ファイルを選択</span>
+                                <FolderClosed />
+                            </button>
+                        </div>
+                    )}
+                </div>
             </div>
+            
+            {/* Camera Modal */}
+            {showCamera && (
+                <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50">
+                    <div className="bg-primary p-6 rounded-lg flex flex-col items-center max-w-sm w-full mx-4">
+                        <h3 className="text-white text-lg font-bold mb-4">カメラ</h3>
+                        <div className="relative">
+                            <video
+                                ref={videoRef}
+                                autoPlay
+                                playsInline
+                                className="w-64 h-64 rounded-md bg-black object-cover"
+                            />
+                            {cameraError && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 rounded-md">
+                                    <div className="text-red-400 text-center p-4">
+                                        <div className="text-sm mb-2">カメラエラー</div>
+                                        <div className="text-xs">{cameraError}</div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        {cameraError && (
+                            <div className="text-red-400 mt-2 text-center text-sm">{cameraError}</div>
+                        )}
+                        <div className="flex mt-4 space-x-4">
+                            <button
+                                onClick={handleTakePhoto}
+                                className="bg-secondary text-white px-6 py-2 rounded-md font-bold disabled:opacity-50"
+                                disabled={!!cameraError}
+                            >
+                                撮影
+                            </button>
+                            <button
+                                onClick={handleCloseCamera}
+                                className="bg-gray-400 text-white px-6 py-2 rounded-md font-bold"
+                            >
+                                キャンセル
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Image Lightbox */}
+            {lightboxUrl && (
+                <div
+                    className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center"
+                    onClick={() => setLightboxUrl(null)}
+                >
+                    <img src={lightboxUrl} alt="preview" className="max-w-[90vw] max-h-[90vh] rounded shadow-lg" />
+                </div>
+            )}
         </div >
     );
 };

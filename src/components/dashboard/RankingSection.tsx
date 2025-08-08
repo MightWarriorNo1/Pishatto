@@ -29,7 +29,11 @@ interface RankingProfile {
   reservation_count?: number;
 }
 
-const RankingSection: React.FC = () => {
+interface RankingSectionProps {
+  onSeeRanking?: () => void;
+}
+
+const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking }) => {
   const navigate = useNavigate();
   const [rankings, setRankings] = useState<RankingProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +63,7 @@ const RankingSection: React.FC = () => {
     <div className="mb-8">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold text-white">昨日のランキングTOP10</h2>
-        <button className="text-sm text-white">ランキングを見る＞</button>
+        <button className="text-sm text-white" onClick={onSeeRanking}>ランキングを見る＞</button>
       </div>
       {loading ? (
         <div className="text-white">ローディング...</div>

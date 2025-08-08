@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Plus, Upload, X, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus,Trash2 } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import { uploadGuestAvatar, deleteGuestAvatar } from '../../services/api';
 import ProfileDetailEditPage from './ProfileDetailEditPage';

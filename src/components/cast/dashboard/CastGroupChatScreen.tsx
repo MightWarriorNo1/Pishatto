@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Users, Calendar } from 'lucide-react';
+import { Image, Camera, FolderClosed,  ChevronLeft, X, Users, Calendar } from 'lucide-react';
 import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants } from '../../../services/api';
 import { useUser } from '../../../contexts/UserContext';
 import { useGroupMessages } from '../../../hooks/useRealtime';
@@ -45,9 +45,6 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     const { user, refreshUser } = useUser();
     const [showFile, setShowFile] = useState(false);
     const [input, setInput] = useState('');
-    const [messageProposal, setMessageProposal] = useState(false);
-    const attachBtnRef = useRef<HTMLButtonElement>(null);
-    const [giftTab, setGiftTab] = useState<'standard' | 'local' | 'grade' | 'mygift'>('mygift');
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,10 +57,18 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
     const [gifts, setGifts] = useState<any[]>([]);
     const [showGiftModal, setShowGiftModal] = useState(false);
-    const [selectedGiftCategory, setSelectedGiftCategory] = useState('standard');
+    const [selectedGiftCategory] = useState('standard');
     const [participants, setParticipants] = useState<any[]>([]);
     const [groupInfo, setGroupInfo] = useState<any>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [messageProposal, setMessageProposal] = useState(false);
+    const attachBtnRef = useRef<HTMLButtonElement>(null);
+    
+    // Camera functionality
+    const [showCamera, setShowCamera] = useState(false);
+    const [cameraError, setCameraError] = useState('');
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const streamRef = useRef<MediaStream | null>(null);
 
     // Fetch messages on component mount
     useEffect(() => {
@@ -183,6 +188,59 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                 setImagePreview(e.target?.result as string);
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    // Camera functionality
+    const handleOpenCamera = async () => {
+        setCameraError('');
+        setShowCamera(true);
+        setShowFile(false);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            streamRef.current = stream;
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                await videoRef.current.play();
+            }
+        } catch (err: any) {
+            setCameraError('カメラを利用できません。ブラウザの設定やアクセス権限を確認してください。');
+        }
+    };
+
+    const handleTakePhoto = () => {
+        if (!videoRef.current) return;
+        const video = videoRef.current;
+        const canvas = document.createElement('canvas');
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+        ctx.drawImage(video, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+            if (blob) {
+                const file = new File([blob], 'photo.jpg', { type: 'image/jpeg' });
+                setAttachedFile(file);
+                const reader = new FileReader();
+                reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+                reader.readAsDataURL(file);
+                setShowCamera(false);
+                // Stop the stream
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach((track) => track.stop());
+                    streamRef.current = null;
+                }
+            }
+        }, 'image/jpeg');
+    };
+
+    const handleCloseCamera = () => {
+        setShowCamera(false);
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop());
+            streamRef.current = null;
         }
     };
 
@@ -494,7 +552,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                             <span>画像</span>
                         </button>
                         <button
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={handleOpenCamera}
                             className="flex items-center space-x-2 bg-secondary text-white px-3 py-2 rounded text-sm"
                         >
                             <Camera className="w-4 h-4" />
@@ -503,6 +561,38 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                     </div>
                 )}
             </div>
+
+            {/* Camera Modal */}
+            {showCamera && (
+                <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50">
+                    <div className="bg-primary p-4 rounded-lg flex flex-col items-center">
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            className="w-64 h-64 rounded-md bg-black"
+                        />
+                        {cameraError && (
+                            <div className="text-red-400 mt-2 text-center">{cameraError}</div>
+                        )}
+                        <div className="flex mt-4 space-x-4">
+                            <button
+                                onClick={handleTakePhoto}
+                                className="bg-secondary text-white px-4 py-2 rounded-md"
+                                disabled={!!cameraError}
+                            >
+                                撮影
+                            </button>
+                            <button
+                                onClick={handleCloseCamera}
+                                className="bg-gray-400 text-white px-4 py-2 rounded-md"
+                            >
+                                キャンセル
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

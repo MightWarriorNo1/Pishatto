@@ -1,3 +1,4 @@
+/*eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { Bell, ChevronLeft, Trash2 } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';

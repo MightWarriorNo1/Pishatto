@@ -14,7 +14,11 @@ interface SatisfactionCast {
   grade_points: number;
 }
 
-const UserSatisfactionSection: React.FC = () => {
+interface UserSatisfactionSectionProps {
+  onSeeAll?: () => void;
+}
+
+const UserSatisfactionSection: React.FC<UserSatisfactionSectionProps> = ({ onSeeAll }) => {
   const navigate = useNavigate();
   const [casts, setCasts] = useState<SatisfactionCast[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +43,7 @@ const UserSatisfactionSection: React.FC = () => {
     <div className="mb-8">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold text-white">ユーザー満足度の高いキャスト</h2>
-        <button className="text-sm text-white">すべて見る＞</button>
+        <button className="text-sm text-white" onClick={onSeeAll}>すべて見る＞</button>
       </div>
       {loading ? (
         <div className="text-white">ローディング...</div>

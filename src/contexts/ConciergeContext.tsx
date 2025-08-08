@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { getConciergeMessages, sendConciergeMessage, markConciergeAsRead, ConciergeMessage as ApiConciergeMessage } from '../services/api';
 
 interface ConciergeMessage {

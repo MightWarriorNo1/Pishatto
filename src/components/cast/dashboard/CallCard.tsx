@@ -1,6 +1,5 @@
 import React from 'react';
 import { Clock3, UserRound } from "lucide-react";
-import dayjs from 'dayjs';
 import { updateReservation, Reservation } from '../../../services/api';
 
 interface CallCardProps {

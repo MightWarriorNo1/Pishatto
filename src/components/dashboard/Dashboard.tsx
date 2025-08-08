@@ -16,7 +16,17 @@ import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useChatRefresh } from '../../contexts/ChatRefreshContext';
 import { markAllNotificationsRead, getGuestChats } from '../../services/api';
-import { useChatMessages, useTweets, useNotifications, useUnreadMessageCount } from '../../hooks/useRealtime';
+import { useChatMessages, useTweets, useNotifications, useUnreadMessageCount } from '../../hooks/useRealtime';// Assume a simple Modal component exists or will be created
+
+// Add Modal component above Dashboard
+const Modal: React.FC<{ onClose: () => void; children: React.ReactNode }> = ({ onClose, children }) => (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 relative">
+      <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl">×</button>
+      {children}
+    </div>
+  </div>
+);
 
 const Dashboard: React.FC = () => {
   const [activeBottomTab, setActiveBottomTab] = useState<'search' | 'message' | 'call' | 'tweet' | 'mypage'>('search');
@@ -31,8 +41,11 @@ const Dashboard: React.FC = () => {
   const [showNotificationPopup, setShowNotificationPopup] = useState(false);
   const [latestNotification, setLatestNotification] = useState<any>(null);
   const [tweetCount, setTweetCount] = useState(0);
-  const [hasSearchResults, setHasSearchResults] = useState(false);
+  const [hasSearchResults] = useState(false);
   const prevTab = React.useRef(activeBottomTab);
+  const [modalType, setModalType] = useState<null | 'satisfaction' | 'ranking'>(null);
+  const [allSatisfactionCasts, setAllSatisfactionCasts] = useState<any[]>([]);
+  const [allRankings, setAllRankings] = useState<any[]>([]);
 
   // Initialize message count from existing chats
   useEffect(() => {
@@ -97,6 +110,19 @@ const Dashboard: React.FC = () => {
     prevTab.current = activeBottomTab;
   }, [activeBottomTab, user]);
 
+  // Fetch all data for modals
+  useEffect(() => {
+    if (modalType === 'satisfaction') {
+      import('../../services/api').then(api => {
+        api.getAllSatisfactionCasts().then(setAllSatisfactionCasts);
+      });
+    } else if (modalType === 'ranking') {
+      import('../../services/api').then(api => {
+        api.fetchRanking({ userType: 'cast', timePeriod: 'yesterday', category: 'gift', area: '全国' }).then(res => setAllRankings(res.data || []));
+      });
+    }
+  }, [modalType]);
+
   // Handle footprints tab being disabled
   useEffect(() => {
     if (activeSearchTab === 'footprints' && !isNotificationEnabled('footprints')) {
@@ -113,8 +139,8 @@ const Dashboard: React.FC = () => {
             {/* <PromotionalBanner /> */}
             <div className="px-4 py-4">
               <NewCastSection />
-              <UserSatisfactionSection />
-              <RankingSection />
+              <UserSatisfactionSection onSeeAll={() => setModalType('satisfaction')} />
+              <RankingSection onSeeRanking={() => setModalType('ranking')} />
               <BestSatisfactionSection />
             </div>
           </>
@@ -212,6 +238,41 @@ const Dashboard: React.FC = () => {
             setShowNotificationPopup(false)
           }}>閉じる</button>
         </div>
+      )}
+      {/* Modal rendering */}
+      {modalType === 'satisfaction' && (
+        <Modal onClose={() => setModalType(null)}>
+          <div className="p-4">
+            <h2 className="text-lg font-bold mb-4">ユーザー満足度の高いキャスト一覧</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {allSatisfactionCasts.map((cast: any) => (
+                <div key={cast.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer">
+                  <img src={cast.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${cast.avatar}` : '/assets/avatar/female.png'} alt={cast.nickname} className="w-full h-32 object-cover rounded-lg border border-secondary mb-2" />
+                  <div className="font-medium text-white text-sm">{cast.nickname}</div>
+                  <div className="text-xs text-white mt-1">{cast.average_rating?.toFixed(1)} ★ / {cast.feedback_count}件</div>
+                  <div className="text-xs text-white mt-1">{cast.grade_points}円/30分</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Modal>
+      )}
+      {modalType === 'ranking' && (
+        <Modal onClose={() => setModalType(null)}>
+          <div className="p-4">
+            <h2 className="text-lg font-bold mb-4">昨日のランキングTOP10</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {allRankings.map((profile: any, index: number) => (
+                <div key={profile.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer">
+                  <img src={profile.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar}` : '/assets/avatar/female.png'} alt={profile.name} className="w-full h-32 object-cover rounded-lg border border-secondary mb-2" />
+                  <div className="font-medium text-white text-sm">{profile.name}</div>
+                  <div className="text-xs text-white mt-1">{profile.points}ポイント {profile.gift_count && `(${profile.gift_count}件)`}</div>
+                  <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">{index + 1}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );
