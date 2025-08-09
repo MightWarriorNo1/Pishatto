@@ -7,8 +7,10 @@ import { useUser } from '../../contexts/UserContext';
 import PostCreatePage from '../../components/dashboard/PostCreatePage';
 import CastNotificationPage from './CastNotificationPage';
 import { useTweets } from '../../hooks/useRealtime';
+import { useCast } from '../../contexts/CastContext';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
 const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
 
 const CastTimelinePage: React.FC = () => {
@@ -21,7 +23,7 @@ const CastTimelinePage: React.FC = () => {
     const [showPostCreate, setShowPostCreate] = useState(false);
     const [likeStatuses, setLikeStatuses] = useState<{ [tweetId: number]: boolean }>({});
     const [likeCounts, setLikeCounts] = useState<{ [tweetId: number]: number }>({});
-    const castId = Number(localStorage.getItem('castId')) || null;
+    const { castId } = useCast() as any;
     const [showNotification, setShowNotification] = useState(false);
     const loadTweets = async () => {
         setLoading(true);
@@ -44,7 +46,6 @@ const CastTimelinePage: React.FC = () => {
         }
     };
 
-    // Fetch like status and count for all tweets
     const fetchLikes = async (tweets: any[]) => {
         const promises = tweets.map(async (tweet) => {
             const { liked, count } = await getTweetLikeStatus(tweet.id, user ? user.id : undefined, !user && castId ? castId : undefined);
@@ -186,7 +187,7 @@ const CastTimelinePage: React.FC = () => {
                                             e.stopPropagation();
                                             handleDeleteTweet(tweet.id);
                                         }}
-                                        className="text-red-400 hover:text-red-300 transition-colors p-1"
+                                        className="text-white hover:text-red-300 transition-colors p-1"
                                         title="削除"
                                     >
                                         <Trash2 size={16} />

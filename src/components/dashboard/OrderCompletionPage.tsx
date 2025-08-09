@@ -9,11 +9,11 @@ interface OrderCompletionPageProps {
     id: number;
     nickname: string;
     avatar?: string | string[];
+    grade_points?: number;
   };
   meetingArea: string;
   scheduledTime: string;
   duration: string;
-  totalPoints: number;
 }
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
@@ -25,11 +25,21 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
   selectedCast,
   meetingArea,
   scheduledTime,
-  duration,
-  totalPoints
+  duration
 }) => {
   const [showChatTooltip, setShowChatTooltip] = useState(false);
   const [showHomeTooltip, setShowHomeTooltip] = useState(false);
+
+  const computeHours = (durationLabel: string): number => {
+    if (!durationLabel) return 1;
+    if (durationLabel.includes('以上')) return 4;
+    const parsed = parseInt(durationLabel.replace('時間', ''));
+    return Number.isNaN(parsed) ? 1 : parsed;
+  };
+
+  const hours = computeHours(duration);
+  const gradePoints = selectedCast.grade_points || 0;
+  const computedPoints = gradePoints * hours * 60 / 30;
 
   // Stepper steps
   const steps = [
@@ -40,9 +50,9 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col pt-16">
       {/* Header */}
-      <div className="bg-primary px-4 py-3 border-b border-white/10 shadow-md">
+      <div className="fixed top-0 max-w-md mx-auto w-full z-50 bg-primary px-4 py-3 border-b border-white/10 shadow-md">
         <div className="flex items-center justify-between">
           <div></div>
           <h1 className="text-lg font-bold text-white tracking-wide">注文完了</h1>
@@ -114,7 +124,7 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-white">使用ポイント</span>
-                  <span className="font-bold text-white">{totalPoints.toLocaleString()}P</span>
+                  <span className="font-bold text-white">{computedPoints.toLocaleString()}P</span>
                 </div>
               </div>
             </div>

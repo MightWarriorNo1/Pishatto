@@ -60,7 +60,7 @@ const PreviewProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
             </div>
             {/* Profile details */}
-            <div className="grid grid-cols-2 gap-y-2 text-sm px-4 mt-4">
+            <div className="grid grid-cols-2 gap-y-2 text-sm px-4 mt-4 pb-20">
                 <div className="text-white">身長：</div><div className="font-bold text-white">{user?.height || ''}</div>
                 <div className="text-white">居住地：</div><div className="font-bold text-white">{user?.residence || ''}</div>
                 <div className="text-white">出身地：</div><div className="font-bold text-white">{user?.birthplace || ''}</div>

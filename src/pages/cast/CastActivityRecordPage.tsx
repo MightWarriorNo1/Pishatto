@@ -34,7 +34,7 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
     const [transactions, setTransactions] = useState<PointTransaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const castId = Number(localStorage.getItem('castId'));
+    const { castId } = require('../../contexts/CastContext');
 
     useEffect(() => {
         const fetchTransactions = async () => {

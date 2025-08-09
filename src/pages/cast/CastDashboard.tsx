@@ -18,6 +18,7 @@ import { ChatRefreshProvider, useChatRefresh } from '../../contexts/ChatRefreshC
 import { useTweets, useUnreadMessageCount, useNotifications } from '../../hooks/useRealtime';
 import echo from '../../services/echo';
 import { getCastProfileById } from '../../services/api';
+import { useCast } from '../../contexts/CastContext';
 
 // Modal component for call details (unchanged)
 const CallDetailModal = ({ call, onClose, onApply }: { call: any, onClose: () => void, onApply: () => void }) => {
@@ -167,26 +168,25 @@ const CastDashboardInner: React.FC = () => {
     const [exitedInfo, setExitedInfo] = useState<{ ended: Date; exceeded?: number } | null>(null);
     const [latestNotification, setLatestNotification] = useState<any>(null);
     const [showNotificationPopup, setShowNotificationPopup] = useState(false);
-    const [cast, setCast] = useState<any>(null);
     const [showFeedbackForm, setShowFeedbackForm] = useState(false);
     const [currentReservationId, setCurrentReservationId] = useState<number | null>(null);
     const [isMessageDetailOpen, setIsMessageDetailOpen] = useState(false);
     const [showConcierge, setShowConcierge] = useState(false);
 
-    const castId = Number(localStorage.getItem('castId'));
+    const { cast, castId, loading: castLoading } = useCast();
 
     // Fetch cast profile to get category
     useEffect(() => {
-        if (castId) {
+        if (castId && !cast) {
             getCastProfileById(castId)
                 .then(castData => {
-                    setCast(castData.cast);
+                    // Cast data will be handled by the context
                 })
                 .catch(error => {
                     console.error('Failed to fetch cast profile:', error);
                 });
         }
-    }, [castId]);
+    }, [castId, cast]);
 
     useUnreadMessageCount(castId || 0, 'cast', (count) => {
         if (mainPage !== 2) { // Not on message page
@@ -273,7 +273,7 @@ const CastDashboardInner: React.FC = () => {
 }, [reservations.map(r => r.id).join(",")]);
 
     const isReservationInChat = (reservationId: number | undefined) => {
-        if (typeof reservationId !== 'number') return false;
+        if (typeof reservationId !== 'number' || !castId) return false;
         return chats.some(chat => chat.reservation_id === reservationId && chat.cast_id === castId);
     };
 
@@ -430,12 +430,12 @@ const CastDashboardInner: React.FC = () => {
                                                     started_at={call.started_at}
                                                     ended_at={call.ended_at}
                                                     points_earned={call.points_earned}
-                                                    isOwnReservation={call.cast_id === castId}
-                                                    onStart={call.cast_id === castId && !call.started_at && typeof call.id === 'number' ? async () => {
+                                                    isOwnReservation={castId ? call.cast_id === castId : false}
+                                                    onStart={castId && call.cast_id === castId && !call.started_at && typeof call.id === 'number' ? async () => {
                                                         const updated = await startReservation(call.id as number, castId);
                                                         setReservations(prev => prev.map(r => r.id === call.id ? { ...r, ...updated } : r));
                                                     } : undefined}
-                                                    onStop={call.cast_id === castId && call.started_at && !call.ended_at && typeof call.id === 'number' ? async () => {
+                                                    onStop={castId && call.cast_id === castId && call.started_at && !call.ended_at && typeof call.id === 'number' ? async () => {
                                                         const updated = await stopReservation(call.id as number, castId);
                                                         setReservations(prev => prev.map(r => r.id === call.id ? { ...r, ...updated } : r));
                                                     } : undefined}
@@ -480,6 +480,10 @@ const CastDashboardInner: React.FC = () => {
                         onClose={() => setSelectedCall(null)}
                         onApply={async () => {
                             // Apply for reservation (pending admin approval)
+                            if (!castId) {
+                                alert('キャストIDが見つかりません');
+                                return;
+                            }
                             try {
                                 await applyReservation(selectedCall.id, castId);
                                 // Don't set reservation as inactive - allow multiple casts to apply

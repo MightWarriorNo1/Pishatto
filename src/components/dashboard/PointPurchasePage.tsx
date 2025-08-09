@@ -127,7 +127,7 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
         )}
       </div>
       {/* Point Options List */}
-      <div className="px-4">
+      <div className="px-4 pb-16">
         {loading ? (
           <Spinner />
         ) : (

@@ -29,6 +29,7 @@ interface CastProfile {
   location?: string;
   favorite_area?: string;
   isPremium?: boolean;
+  category?: 'プレミアム' | 'VIP' | 'ロイヤルVIP';
 }
 
 const NewCastSection: React.FC = () => {
@@ -78,9 +79,9 @@ const NewCastSection: React.FC = () => {
                     alt={profile.nickname || profile.name || ''}
                     className="w-full h-full object-cover rounded-lg border border-secondary"
                   />
-                  {profile.isPremium && (
-                    <div className="absolute top-[100px] h-[20px] w-[80%] bg-gradient-to-r from-red-600 to-red-400 text-white text-xs px-2 py-1 rounded">
-                      プレミアム
+                  {profile.category && (
+                    <div className='absolute top-2 left-2 rounded text-xs font-medium text-white'>
+                      {profile.category}
                     </div>
                   )}
                 </div>

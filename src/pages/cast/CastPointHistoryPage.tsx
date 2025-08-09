@@ -33,7 +33,7 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const castId = Number(localStorage.getItem('castId')) || null;
+  const { castId } = require('../../contexts/CastContext');
   
   console.log('CastPointHistoryPage render - castId:', castId);
 

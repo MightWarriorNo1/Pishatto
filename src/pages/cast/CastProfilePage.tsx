@@ -6,6 +6,7 @@ import CastGiftBoxPage from './CastGiftBoxPage';
 import CastActivityRecordPage from './CastActivityRecordPage';
 import CastFriendReferralPage from './CastFriendReferralPage';
 import CastImmediatePaymentPage from './CastImmediatePaymentPage';
+import { useCast } from '../../contexts/CastContext';
 import { getCastProfileById, getCastPointsData, getCastPassportData, getUnreadNotificationCount, getCastGrade, GradeInfo, getMonthlyEarnedRanking, MonthlyRankingResponse } from '../../services/api';
 import { useNotifications } from '../../hooks/useRealtime';
 import CastProfileEditPage from './CastProfileEditPage';
@@ -61,6 +62,7 @@ interface CastProfile {
 interface PointsData {
     monthly_total_points: number;
     gift_points: number;
+    transfer_points: number;
     copat_back_rate: number;
     total_reservations: number;
     completed_reservations: number;
@@ -79,7 +81,7 @@ const CastProfilePage: React.FC = () => {
     const [showActivityRecord, setShowActivityRecord] = useState(false);
     const [showFriendReferral, setShowFriendReferral] = useState(false);
     const [showImmediatePayment, setShowImmediatePayment] = useState(false);
-    const castId = Number(localStorage.getItem('castId'));
+    const { castId } = useCast();
     const [showEdit, setShowEdit] = useState(false);
     const [showPointHistory, setShowPointHistory] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
@@ -97,7 +99,8 @@ const CastProfilePage: React.FC = () => {
 
     const fetchCastProfile = async () => {
         try {
-            const data = await getCastProfileById(castId);
+            if (!castId) return;
+            const data = await getCastProfileById(castId as number);
             setCast(data.cast);
             // Reset avatar index when cast data changes
             setCurrentAvatarIndex(0);
@@ -108,7 +111,8 @@ const CastProfilePage: React.FC = () => {
 
     const fetchPointsData = async () => {
         try {
-            const data = await getCastPointsData(castId);
+            if (!castId) return;
+            const data = await getCastPointsData(castId as number);
             setPointsData(data);
         } catch (error) {
             console.error('Failed to fetch points data:', error);
@@ -117,7 +121,8 @@ const CastProfilePage: React.FC = () => {
 
     const fetchPassportData = async () => {
         try {
-            const data = await getCastPassportData(castId);
+            if (!castId) return;
+            const data = await getCastPassportData(castId as number);
             setPassportData(data.passport_data);
         } catch (error) {
             console.error('Failed to fetch passport data:', error);
@@ -126,7 +131,8 @@ const CastProfilePage: React.FC = () => {
 
     const fetchNotificationCount = async () => {
         try {
-            const count = await getUnreadNotificationCount('cast', castId);
+            if (!castId) return;
+            const count = await getUnreadNotificationCount('cast', castId as number);
             setNotificationCount(count);
         } catch (error) {
             console.error('Failed to fetch notification count:', error);
@@ -136,7 +142,8 @@ const CastProfilePage: React.FC = () => {
     const fetchGradeInfo = async () => {
         try {
             setGradeLoading(true);
-            const data = await getCastGrade(castId);
+            if (!castId) return;
+            const data = await getCastGrade(castId as number);
             setGradeInfo(data);
         } catch (error) {
             console.error('Error fetching grade info:', error);
@@ -148,7 +155,8 @@ const CastProfilePage: React.FC = () => {
     const fetchMonthlyRanking = async (month: 'current' | 'last' = 'current') => {
         try {
             setRankingLoading(true);
-            const data = await getMonthlyEarnedRanking({ castId, limit: 10, month });
+            if (!castId) return;
+            const data = await getMonthlyEarnedRanking({ castId: castId as number, limit: 10, month });
             setRanking(data);
         } catch (error) {
             console.error('Error fetching monthly ranking:', error);
@@ -375,9 +383,23 @@ const CastProfilePage: React.FC = () => {
                         </div>
                     </div>
                     <div className="flex-1 bg-gray-900 rounded-lg p-2 text-center border border-secondary">
+                        <div className="text-xs text-gray-400">予約獲得ポイント</div>
+                        <div className="font-bold text-lg text-white">
+                            {pointsData ? `${pointsData.transfer_points.toLocaleString()}p` : '0p'}
+                        </div>
+                    </div>
+                </div>
+                <div className="flex space-x-2 mb-2">
+                    <div className="flex-1 bg-gray-900 rounded-lg p-2 text-center border border-secondary">
                         <div className="text-xs text-gray-400">今月のコパトバック率</div>
                         <div className="font-bold text-lg text-white">
                             {pointsData ? `${pointsData.copat_back_rate}%` : '0%'}
+                        </div>
+                    </div>
+                    <div className="flex-1 bg-gray-900 rounded-lg p-2 text-center border border-secondary">
+                        <div className="text-xs text-gray-400">総取引数</div>
+                        <div className="font-bold text-lg text-white">
+                            {pointsData ? `${pointsData.total_reservations}件` : '0件'}
                         </div>
                     </div>
                 </div>

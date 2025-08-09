@@ -78,7 +78,7 @@ const RegisterSteps: React.FC = () => {
         // Store the user data in context
         if (response.guest) {
           setUser(response.guest);
-          setPhone(formData.phoneNumber); // <-- Set phone in context and localStorage
+          setPhone(formData.phoneNumber); 
         }
         setCurrentStep((prev) => prev + 1);
       } catch (error: any) {
@@ -133,7 +133,7 @@ const RegisterSteps: React.FC = () => {
   };
 
   return (
-    <div className="bg-white flex items-center justify-center">
+    <div className="bg-white flex items-center justify-center min-h-screen">
       <div className="max-w-md w-full mx-auto bg-primary rounded-2xl shadow-lg p-8 border border-secondary">
         {renderStep()}
       </div>

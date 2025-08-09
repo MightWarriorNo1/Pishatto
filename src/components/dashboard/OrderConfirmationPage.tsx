@@ -8,34 +8,35 @@ interface Cast {
   nickname: string;
   avatar?: string;
   category?: string;
+  grade_points?: number;
 }
 
 interface OrderConfirmationPageProps {
   onBack: () => void;
-  onConfirm: (reservationId: number, chatId: number, confirmedTime?: string) => void;
+  onConfirm: (reservationId: number, chatId: number, confirmedTime?: string, updatedDuration?: string) => void;
   selectedCast: Cast;
   meetingArea: string;
   scheduledTime: string;
   duration: string;
-  totalPoints: number;
 }
 
 // Time selection modal component
-function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime }: {
+function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime, currentDuration }: {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (time: string) => void;
   currentTime: string;
+  currentDuration: string;
 }) {
   const [selectedTime, setSelectedTime] = useState(currentTime);
   const [customHours, setCustomHours] = useState(1);
 
   const timeOptions = [
-    { label: '30分後', value: '30分後' },
-    { label: '60分後', value: '60分後' },
-    { label: '90分後', value: '90分後' },
-    { label: '2時間後', value: '2時間後' },
-    { label: '3時間後', value: '3時間後' },
+    { label: '1時間', value: '1時間後' },
+    { label: '2時間', value: '2時間後' },
+    { label: '3時間', value: '3時間後' },
+    { label: '4時間', value: '4時間後' },
+    { label: '5時間', value: '5時間後' },
     { label: 'カスタム', value: 'custom' }
   ];
 
@@ -56,8 +57,8 @@ function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime }: {
               <Clock className="text-white w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">合流時間を変更</h3>
-              <p className="text-white/70 text-sm">希望の合流時間を選択してください</p>
+              <h3 className="text-xl font-bold text-white">設定時間を変更</h3>
+              <p className="text-white/70 text-sm">希望の設定時間を選択してください</p>
             </div>
           </div>
           <button 
@@ -69,7 +70,7 @@ function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime }: {
         </div>
         
         <div className="mb-6">
-          <label className="block text-white mb-4 font-semibold">合流時間</label>
+          <label className="block text-white mb-4 font-semibold">設定時間</label>
           <div className="grid grid-cols-2 gap-3 mb-4">
             {timeOptions.map(option => (
               <button
@@ -102,8 +103,8 @@ function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime }: {
                   value={customHours}
                   onChange={(e) => setCustomHours(Number(e.target.value))}
                 >
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map(hour => (
-                    <option key={hour} value={hour}>{hour}時間後</option>
+                  {Array.from({ length: 8 }, (_, i) => i + 1).map(hour => (
+                    <option key={hour} value={hour}>{hour}時間</option>
                   ))}
                 </select>
               </div>
@@ -153,8 +154,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   selectedCast,
   meetingArea,
   scheduledTime,
-  duration,
-  totalPoints
+  duration
 }) => {
   const { user, refreshUser } = useUser();
   const [meetingLocation, setMeetingLocation] = useState('');
@@ -164,6 +164,20 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [confirmedTime, setConfirmedTime] = useState(scheduledTime);
+  const [updatedDuration, setUpdatedDuration] = useState(duration);
+
+  const computeHours = (durationLabel: string): number => {
+    if (!durationLabel) return 1;
+    if (durationLabel.includes('以上')) {
+      return 4;
+    }
+    const parsed = parseInt(durationLabel.replace('時間', ''));
+    return Number.isNaN(parsed) ? 1 : parsed;
+  };
+
+  const hours = computeHours(updatedDuration);
+  const gradePoints = selectedCast.grade_points || 0;
+  const computedPoints = gradePoints * hours * 60 / 30; // points per 30min
 
   const handleConfirm = async () => {
     if (!isAreaConfirmed) {
@@ -177,8 +191,8 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
     }
 
     // Check if user has sufficient points
-    if (!user.points || user.points < totalPoints) {
-      setErrorMessage(`ポイントが不足しています。必要ポイント: ${totalPoints.toLocaleString()}P、現在のポイント: ${(user.points || 0).toLocaleString()}P`);
+    if (!user.points || user.points < computedPoints) {
+      setErrorMessage(`ポイントが不足しています。必要ポイント: ${computedPoints.toLocaleString()}P、現在のポイント: ${(user.points || 0).toLocaleString()}P`);
       return;
     }
 
@@ -214,9 +228,9 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
         location: meetingArea,
         meeting_location: meetingLocation,
         reservation_name: reservationName,
-        duration: parseInt(duration.replace('時間', '')),
-        points: totalPoints,
-        details: `予約名: ${reservationName}, キャスト: ${selectedCast.nickname}, 合流エリア: ${meetingArea}, 設定時間: ${duration}, 使用ポイント: ${totalPoints}P, 合流時間: ${confirmedTime}`,
+        duration: hours,
+        points: computedPoints,
+        details: `予約名: ${reservationName}, キャスト: ${selectedCast.nickname}, 合流エリア: ${meetingArea}, 設定時間: ${updatedDuration}, 使用ポイント: ${computedPoints}P, 合流時間: ${confirmedTime}`,
       };
 
       const reservation = await createReservation(reservationData);
@@ -227,13 +241,13 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
       const chatId = chat.id;
 
       // Deduct points from user
-      await deductPoints(user.id, totalPoints);
+      await deductPoints(user.id, computedPoints);
 
       // Create pending point transaction
       await createPointTransaction({
         user_type: 'guest',
         user_id: user.id,
-        amount: -totalPoints,
+        amount: -computedPoints,
         type: 'pending',
         reservation_id: reservationId,
         description: `${selectedCast.nickname}さんとの予約 - ${meetingArea}`
@@ -242,7 +256,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
       // Refresh user data to get updated point balance
       await refreshUser();
 
-      onConfirm(reservationId, chatId, confirmedTime);
+      onConfirm(reservationId, chatId, confirmedTime, updatedDuration);
     } catch (error) {
       console.error('Order confirmation error:', error);
       setErrorMessage('注文の処理中にエラーが発生しました。もう一度お試しください。');
@@ -253,12 +267,28 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
 
   const handleTimeChange = (newTime: string) => {
     setConfirmedTime(newTime);
+    
+    // Convert the selected time to duration format
+    let durationValue: string;
+    if (newTime.includes('時間後')) {
+      const hours = parseInt(newTime.replace('時間後', ''));
+      durationValue = `${hours}時間`;
+    } else if (newTime.includes('分後')) {
+      const minutes = parseInt(newTime.replace('分後', ''));
+      const hours = Math.ceil(minutes / 60);
+      durationValue = `${hours}時間`;
+    } else {
+      // Default to 1 hour if format is not recognized
+      durationValue = '1時間';
+    }
+    
+    setUpdatedDuration(durationValue);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
-      {/* Header */}
-      <div className="bg-primary px-4 py-3 border-b border-white/10 shadow-lg shadow-primary/30 rounded-b-2xl bg-gradient-to-r from-primary via-blue-900 to-secondary">
+      {/* Fixed Header */}
+      <div className="fixed top-0 max-w-md mx-auto w-full z-50 bg-primary px-4 py-3 border-b border-white/10 shadow-lg shadow-primary/30 bg-gradient-to-r from-primary via-blue-900 to-secondary">
         <div className="flex items-center justify-between">
           <button 
             onClick={onBack}
@@ -272,6 +302,9 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
         </div>
         <h2 className="text-2xl font-bold text-white mt-2 pt-4 tracking-tight">注文内容</h2>
       </div>
+
+      {/* Spacer to prevent content from being hidden behind fixed header */}
+      <div className="h-24"></div>
 
       {/* Matched Cast Information */}
       <div className="px-4 py-6">
@@ -302,21 +335,22 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-white flex items-center gap-1"><Clock size={16} />合流予定時間</span>
+                  <span className="font-medium text-white">{30}分後</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-white flex items-center gap-1"><User size={16} />設定時間</span>
+                  {/* <span className="font-medium text-white">{duration}</span> */}
                   <button 
                     onClick={() => setShowTimeModal(true)}
                     className="font-medium text-white hover:text-secondary transition-colors flex items-center gap-1 group"
                   >
-                    <span>{confirmedTime}</span>
+                    <span>{updatedDuration}</span>
                     <Clock size={14} className="group-hover:scale-110 transition-transform" />
                   </button>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white flex items-center gap-1"><User size={16} />設定時間</span>
-                  <span className="font-medium text-white">{duration}</span>
-                </div>
-                <div className="flex justify-between items-center">
                   <span className="text-white flex items-center gap-1"><CreditCard size={16} />合計ポイント</span>
-                  <span className="font-bold text-white text-lg">{totalPoints.toLocaleString()}P</span>
+                  <span className="font-bold text-white text-lg">{computedPoints.toLocaleString()}P</span>
                 </div>
               </div>
             </div>
@@ -387,7 +421,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
       )}
 
       {/* Final Confirmation Button */}
-      <div className="px-4 py-6">
+      <div className="px-4 pb-32">
         <button
           onClick={handleConfirm}
           disabled={isProcessing || !isAreaConfirmed}
@@ -411,6 +445,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
         onClose={() => setShowTimeModal(false)}
         onConfirm={handleTimeChange}
         currentTime={confirmedTime}
+        currentDuration={updatedDuration}
       />
     </div>
   );

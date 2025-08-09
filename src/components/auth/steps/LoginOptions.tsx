@@ -6,7 +6,7 @@ interface LoginOptionsProps {
 
 const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
   return (
-    <div className="flex flex-col" style={{height:"100vh"}}>
+    <div className="min-h-screen bg-primary flex flex-col">
       <div className="flex-1 flex items-center justify-center">
         <div className="w-full px-4 space-y-4">
           <div className="p-2 text-center text-xs text-white">

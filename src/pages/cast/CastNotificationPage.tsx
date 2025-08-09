@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ChevronLeft, Trash2 } from 'lucide-react';
 import { getNotifications, markNotificationRead, deleteNotification, getAdminNews, AdminNews } from '../../services/api';
 import { useAdminNews } from '../../hooks/useRealtime';
+import { useCast } from '../../contexts/CastContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -16,7 +17,8 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
     const [adminNews, setAdminNews] = useState<AdminNews[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const castId = Number(localStorage.getItem('castId'));
+    // Use authenticated cast context
+    const { castId } = useCast() as any;
 
     const loadAdminNews = async () => {
         try {

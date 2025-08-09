@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronLeft, Gift } from 'lucide-react';
 import { fetchCastReceivedGifts } from '../../services/api';
+import { useCast } from '../../contexts/CastContext';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
@@ -8,7 +9,7 @@ const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
 const CastGiftBoxPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [gifts, setGifts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const castId = Number(localStorage.getItem('castId'));
+    const { castId } = useCast() as any;
 
     useEffect(() => {
         if (!castId) return;

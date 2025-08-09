@@ -6,6 +6,7 @@ import CastNotificationPage from './CastNotificationPage';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
+import { useCast } from '../../contexts/CastContext';
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 // GuestDetailPage component
@@ -18,7 +19,7 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
     const [loading, setLoading] = useState(true);
     const [liked, setLiked] = useState(false);
     const [messageLoading, setMessageLoading] = useState(false);
-    const castId = Number(localStorage.getItem('castId'));
+    const { castId } = useCast();
     React.useEffect(() => {
         getGuestProfileById(guest.id).then(setProfile).finally(() => setLoading(false));
         setLiked(false); // Reset like state on guest change
@@ -44,21 +45,24 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
         return <EasyMessagePage onClose={() => setShowEasyMessage(false)} />
     }
     const handleLike = async () => {
-        const res = await likeGuest(castId, guest.id);
+        if (!castId) return;
+        const res = await likeGuest(castId as number, guest.id);
         if (res.liked) setLiked(true);
     };
 
     const likeStatus = async () => {
-        const res = await getLikeStatus(castId, guest.id);
+        if (!castId) return;
+        const res = await getLikeStatus(castId as number, guest.id);
         if (res.liked) setLiked(true);
         else setLiked(false);
     };
     const handleMessage = async () => {
         setMessageLoading(true);
         try {
-            const chatRes = await createChat(castId, guest.id);
+            if (!castId) return;
+            const chatRes = await createChat(castId as number, guest.id);
             const chatId = chatRes.chat.id;
-            await sendCastMessage(chatId, castId, '👍');
+            await sendCastMessage(chatId, castId as number, '👍');
         } finally {
             setMessageLoading(false);
         }

@@ -12,6 +12,7 @@ import CastProfilePage from './pages/cast/CastProfilePage';
 import CastMessageDetailPage from './pages/cast/CastMessageDetailPage';
 import ReceiptTestPage from './components/dashboard/ReceiptTestPage';
 import { UserProvider } from './contexts/UserContext';
+import { CastProvider } from './contexts/CastContext';
 import { ConciergeProvider } from './contexts/ConciergeContext';
 import { NotificationSettingsProvider } from './contexts/NotificationSettingsContext';
 
@@ -22,25 +23,27 @@ const CastLoginWrapper: React.FC = () => {
 const App: React.FC = () => {
   return (
     <UserProvider>
-      <NotificationSettingsProvider>
-        <ConciergeProvider>
-          <Router>
-            <Routes>
-              <Route path="/" element={<RoleSelectPage />} />
-              <Route path="/register" element={<RegisterSteps />} />
-              <Route path="/cast/login" element={<CastLoginWrapper />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/cast/:id" element={<CastDetail />} />
-              <Route path="/guest/:id" element={<GuestDetail />} />
-              <Route path="/cast/dashboard" element={<CastDashboard />} />
-              <Route path="/cast/grade-detail" element={<CastGradeDetailPage />} />
-              <Route path="/cast/profile" element={<CastProfilePage />} />
-              <Route path="/cast/:id/message" element={<CastMessageDetailPage />} />
-              <Route path="/receipt-test" element={<ReceiptTestPage />} />
-            </Routes>
-          </Router>
-        </ConciergeProvider>
-      </NotificationSettingsProvider>
+      <CastProvider>
+        <NotificationSettingsProvider>
+          <ConciergeProvider>
+            <Router>
+              <Routes>
+                <Route path="/" element={<RoleSelectPage />} />
+                <Route path="/register" element={<RegisterSteps />} />
+                <Route path="/cast/login" element={<CastLoginWrapper />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/cast/:id" element={<CastDetail />} />
+                <Route path="/guest/:id" element={<GuestDetail />} />
+                <Route path="/cast/dashboard" element={<CastDashboard />} />
+                <Route path="/cast/grade-detail" element={<CastGradeDetailPage />} />
+                <Route path="/cast/profile" element={<CastProfilePage />} />
+                <Route path="/cast/:id/message" element={<CastMessageDetailPage />} />
+                <Route path="/receipt-test" element={<ReceiptTestPage />} />
+              </Routes>
+            </Router>
+          </ConciergeProvider>
+        </NotificationSettingsProvider>
+      </CastProvider>
     </UserProvider>
   );
 };

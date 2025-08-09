@@ -206,6 +206,16 @@ export const guestLogin = async (phone: string) => {
   return response.data;
 };
 
+export const checkGuestAuth = async () => {
+  const response = await api.get('/guest/check-auth', { withCredentials: true });
+  return response.data;
+};
+
+export const checkCastAuth = async () => {
+  const response = await api.get('/cast/check-auth', { withCredentials: true });
+  return response.data;
+};
+
 export const getGuestProfile = async (phone: string): Promise<{ guest: GuestProfile, interests: GuestInterest[] }> => {
   const response = await api.get(`/guest/profile/${phone}`);
   return { guest: response.data.guest, interests: response.data.guest.interests || [] };
@@ -335,7 +345,7 @@ export const getReservationById = async (id: number) => {
 };
 
 export const castRegister = async (data: { phone: string; nickname?: string; avatar?: string }) => {
-  const response = await api.post('/cast/register', data);
+  const response = await api.post('/cast/register', data, { withCredentials: true });
   return response.data;
 };
 

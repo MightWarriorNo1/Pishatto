@@ -1347,8 +1347,8 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     if (page === 'orderConfirmation') return (
         <OrderConfirmationPage
             onBack={() => setPage('castSelection')}
-            onConfirm={(reservationId: number, chatId: number, confirmedTime?: string) => {
-                if (confirmedTime) setSelectedTime(confirmedTime);
+            onConfirm={(reservationId: number, chatId: number, confirmedTime?: string, updatedDuration?: string) => {
+                if (updatedDuration) setSelectedDuration(updatedDuration);
                 setPage('orderCompletion');
                 setReservationId(reservationId);
                 setChatId(chatId);
@@ -1357,7 +1357,6 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             meetingArea={selectedLocation}
             scheduledTime={selectedTime}
             duration={selectedDuration}
-            totalPoints={30000}
         />
     );
     
@@ -1375,7 +1374,6 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             meetingArea={selectedLocation}
             scheduledTime={selectedTime}
             duration={selectedDuration}
-            totalPoints={30000}
         />
     );
     

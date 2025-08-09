@@ -314,6 +314,20 @@ const CastDetail: React.FC = () => {
                             }}
                         />
                     
+                        {/* Category Badge - Left Bottom */}
+                        {cast?.category && (
+                            <div className="absolute bottom-4 left-4">
+                                <div className={`px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg ${
+                                    cast.category === 'ロイヤルVIP' 
+                                        ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
+                                        : cast.category === 'VIP' 
+                                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500' 
+                                        : 'bg-gradient-to-r from-blue-500 to-green-500'
+                                }`}>
+                                    {cast.category}
+                                </div>
+                            </div>
+                        )}
                         
                         {/* Image Navigation Buttons */}
                         {images.length > 1 && (
@@ -452,15 +466,31 @@ const CastDetail: React.FC = () => {
                                 <div className="text-white text-sm">おすすめキャストはありません</div>
                             ) : (
                                 randomCasts.map((rec) => (
-                                    <div key={rec.id} className="flex flex-col items-center cursor-pointer" onClick={() => navigate(`/cast/${rec.id}`)}>
-                                        <img 
-                                            src={getFirstAvatar(rec.avatar)} 
-                                            alt={rec.nickname || ''} 
-                                            className="w-32 h-32 object-cover mb-2 border-2 border-secondary"
-                                            onError={(e) => {
-                                                e.currentTarget.src = '/assets/avatar/female.png';
-                                            }}
-                                        />
+                                    <div key={rec.id} className="flex flex-col cursor-pointer" onClick={() => navigate(`/cast/${rec.id}`)}>
+                                        <div className="relative">
+                                            <img 
+                                                src={getFirstAvatar(rec.avatar)} 
+                                                alt={rec.nickname || ''} 
+                                                className="w-32 h-32 object-cover mb-2 border-2 border-secondary"
+                                                onError={(e) => {
+                                                    e.currentTarget.src = '/assets/avatar/female.png';
+                                                }}
+                                            />
+                                            {/* Category Badge for Random Casts */}
+                                            {rec.category && (
+                                                <div className="absolute bottom-2 left-2">
+                                                    <div className={`px-2 py-1 rounded-full text-xs font-bold text-white shadow-lg ${
+                                                        rec.category === 'ロイヤルVIP' 
+                                                            ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
+                                                            : rec.category === 'VIP' 
+                                                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500' 
+                                                            : 'bg-gradient-to-r from-blue-500 to-green-500'
+                                                    }`}>
+                                                        {rec.category}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                         <span className="font-bold text-sm mb-1 text-white text-center">{rec.nickname || ''}</span>
                                         <span className="text-xs text-gray-300">{rec.birth_year ? (new Date().getFullYear() - rec.birth_year)+'歳' : ''}</span>
                                     </div>

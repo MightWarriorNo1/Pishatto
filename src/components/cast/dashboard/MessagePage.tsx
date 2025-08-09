@@ -1,8 +1,10 @@
+/* eslint-disable */
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, Calendar, Image, Search, Filter, Camera, FolderClosed } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MessageProposalPage from './MessageProposalPage';
 import { sendMessage, getChatMessages,getChatById, getGuestReservations } from '../../../services/api';
+import { useCast } from '../../../contexts/CastContext';
 import { getCastChats } from '../../../services/api';
 import { useChatMessages } from '../../../hooks/useRealtime';
 import ConciergeChat from '../../ConciergeChat';
@@ -66,10 +68,9 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     // New: ref for input bar and popover for click outside
     const inputBarRef = useRef<HTMLDivElement>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
+    const { castId } = useCast() as any;
     useEffect(() => {
         const fetchMessages = async () => {
-            const castIdStr = localStorage.getItem('castId');
-            const castId = castIdStr ? Number(castIdStr) : null;
             if (!castId) return;
             const msgs = await getChatMessages(Number(message.id), castId, 'cast');
             setMessages(Array.isArray(msgs) ? msgs : []);
@@ -79,7 +80,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
         getChatById(Number(message.id)).then(chat => {
             if (chat && chat.guest_id) setGuestId(chat.guest_id);
         });
-    }, [message.id]);
+    }, [message.id, castId]);
 
     // Fetch guest reservations only when guestId is available
     useEffect(() => {
@@ -230,8 +231,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
         onProposalSend={async (proposal) => {
             setSending(true);
             try {
-                const castIdStr = localStorage.getItem('castId');
-                const castId = castIdStr ? Number(castIdStr) : null;
+                // use castId from component scope
                 if (!castId) return;
                 const payload: any = {
                     chat_id: Number(message.id),
@@ -314,8 +314,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                             </React.Fragment>
                         );
                     }
-                    const castIdStr = localStorage.getItem('castId');
-                    const castId = castIdStr ? Number(castIdStr) : null;
+                    // Use authenticated cast id from context
                     // Improved message ownership determination for cast view
                     // Check if message is from the current cast
                     const isSentByCast = castId && String(msg.sender_cast_id) === String(castId);
@@ -422,8 +421,6 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                             if (e.key === 'Enter' && (newMessage.trim() || attachedFile) && !sending) {
                                 setSending(true);
                                 try {
-                                    const castIdStr = localStorage.getItem('castId');
-                                    const castId = castIdStr ? Number(castIdStr) : null;
                                     if (!castId) return;
                                     const payload: any = {
                                         chat_id: Number(message.id),
@@ -577,6 +574,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
     const [filterAge, setFilterAge] = useState('');
     const [showConcierge, setShowConcierge] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
+    const { castId } = useCast() as any;
 
     useEffect(() => {
         if (setIsMessageDetailOpen) setIsMessageDetailOpen(!!selectedMessage);
@@ -591,8 +589,6 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
         const fetchMessages = async () => {
             setLoading(true);
             try {
-                const castIdStr = localStorage.getItem('castId');
-                const castId = castIdStr ? Number(castIdStr) : null;
                 if (!castId) {
                     setMessages([]);
                     setLoading(false);

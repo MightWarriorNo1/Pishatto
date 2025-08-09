@@ -1,9 +1,8 @@
-import { ChevronLeft } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { castRegister } from '../../../services/api';
-import { castLogin } from '../../../services/api';
-import { sendSmsVerificationCode } from '../../../services/api';
+import { castLogin, castRegister, sendSmsVerificationCode } from '../../../services/api';
+import { useCast } from '../../../contexts/CastContext';
 
 interface CastSMSCodeInputProps {
     onBack: () => void;
@@ -12,21 +11,22 @@ interface CastSMSCodeInputProps {
 }
 
 const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, verificationCode }) => {
-    const [code, setCode] = useState(['', '', '', '', '', '']);
-    const [timeLeft, setTimeLeft] = useState(30);
-    const isActive = code.length === 6 && /^[a-zA-Z0-9]{6}$/.test(code.join(''));
-    const navigate = useNavigate();
+    const [code, setCode] = useState<string[]>(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [displayedCode, setDisplayedCode] = useState<string | null>(null);
+    const [timeLeft, setTimeLeft] = useState(0);
+    const [displayedCode, setDisplayedCode] = useState<string | null>(verificationCode || null);
+    const navigate = useNavigate();
+    const { setCastId, setCast } = useCast();
+    
+    console.log('CastSMSCodeInput: cast context values:', { setCastId, setCast });
 
-    // Timer effect
+    const isActive = code.every(digit => digit !== '') && code.join('').length === 6;
+
     useEffect(() => {
         if (timeLeft > 0) {
-            const timer = setInterval(() => {
-                setTimeLeft((prev) => prev - 1);
-            }, 1000);
-            return () => clearInterval(timer);
+            const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+            return () => clearTimeout(timer);
         }
     }, [timeLeft]);
 
@@ -44,18 +44,8 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
         }
     };
 
-    // For testing purposes, set verification code
-    React.useEffect(() => {
-        if (verificationCode) {
-            setDisplayedCode(verificationCode);
-        } else if (process.env.NODE_ENV === 'development') {
-            // Fallback to sample code in development mode
-            setDisplayedCode('123456');
-        }
-    }, [verificationCode]);
-
     const handleResendCode = async () => {
-        if (timeLeft > 0) return;
+        if (timeLeft > 0 || loading) return;
         
         setLoading(true);
         setError(null);
@@ -65,12 +55,10 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
             
             if (response.success) {
                 setTimeLeft(30);
-                // Show verification code in development mode for resend
                 if (response.code) {
                     console.log('Development mode - Verification code (resend):', response.code);
                     setDisplayedCode(response.code);
                 } else {
-                    // Fallback: generate a test code for development
                     const testCode = Math.floor(100000 + Math.random() * 900000).toString();
                     console.log('Fallback test code generated (resend):', testCode);
                     setDisplayedCode(testCode);
@@ -142,18 +130,34 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
                                     setLoading(true);
                                     setError(null);
                                     try {
+                                        console.log('CastSMSCodeInput: attempting authentication with phone:', phone);
                                         // Try login with phone number
                                         const response = await castLogin(phone);
+                                        console.log('CastSMSCodeInput: login response:', response);
                                         if (response.cast) {
-                                            localStorage.setItem('castId', response.cast.id);
-                                            navigate('/cast/dashboard');
+                                            console.log('CastSMSCodeInput: cast login successful, setting cast data:', response.cast);
+                                            setCast(response.cast);
+                                            setCastId(response.cast.id);
+                                            // Add a small delay to ensure context is updated
+                                            setTimeout(() => {
+                                                console.log('CastSMSCodeInput: navigating to /cast/dashboard');
+                                                navigate('/cast/dashboard');
+                                            }, 100);
                                             return;
                                         }
                                         // fallback: register
+                                        console.log('CastSMSCodeInput: login failed, attempting registration...');
                                         const result = await castRegister({ phone });
-                                        localStorage.setItem('castId', result.cast.id);
-                                        navigate('/cast/dashboard');
+                                        console.log('CastSMSCodeInput: registration response:', result);
+                                        setCast(result.cast);
+                                        setCastId(result.cast.id);
+                                        // Add a small delay to ensure context is updated
+                                        setTimeout(() => {
+                                            console.log('CastSMSCodeInput: navigating to /cast/dashboard after registration');
+                                            navigate('/cast/dashboard');
+                                        }, 100);
                                     } catch (err: any) {
+                                        console.error('CastSMSCodeInput: authentication error:', err);
                                         setError('ログインに失敗しました。もう一度お試しください。');
                                     } finally {
                                         setLoading(false);

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Image, Camera, FolderClosed,  ChevronLeft, X, Users, Calendar } from 'lucide-react';
 import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants } from '../../../services/api';
+import { useCast } from '../../../contexts/CastContext';
 import { useUser } from '../../../contexts/UserContext';
 import { useGroupMessages } from '../../../hooks/useRealtime';
 import dayjs from 'dayjs';
@@ -71,6 +72,8 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     const streamRef = useRef<MediaStream | null>(null);
 
     // Fetch messages on component mount
+    const { castId } = useCast();
+
     useEffect(() => {
         setFetching(true);
         setFetchError(null);
@@ -81,8 +84,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                 return;
             }
             try {
-                const userId = localStorage.getItem("castId");
-                const response = await getGroupMessages(groupId, 'cast', userId ? parseInt(userId) : user.id);
+                const response = await getGroupMessages(groupId, 'cast', castId || user.id);
                 setMessages(Array.isArray(response.messages) ? response.messages : []);
                 setGroupInfo(response.group);
                 setFetchError(null);
@@ -93,7 +95,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             }
         };
         fetchMessages();
-    }, [groupId, user]);
+    }, [groupId, user, castId]);
 
     // Fetch participants
     useEffect(() => {

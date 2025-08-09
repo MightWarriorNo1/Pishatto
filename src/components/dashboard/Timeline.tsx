@@ -8,6 +8,7 @@ import { fetchAllTweets, fetchUserTweets, createTweet, likeTweet, getTweetLikeSt
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useTweets } from '../../hooks/useRealtime';
+import { useCast } from '../../contexts/CastContext';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
@@ -23,7 +24,7 @@ const Timeline: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [likeStatuses, setLikeStatuses] = useState<{ [tweetId: number]: boolean }>({});
     const [likeCounts, setLikeCounts] = useState<{ [tweetId: number]: number }>({});
-    const castId = Number(localStorage.getItem('castId')) || null;
+    const { castId } = useCast() as any;
     const [tab, setTab] = useState<'all' | 'cast'>('all');
 
     const loadTweets = async () => {

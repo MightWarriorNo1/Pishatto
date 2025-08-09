@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { getCastImmediatePaymentData, processCastImmediatePayment, getCastProfileById, getCastPointsData } from '../../services/api';
 import CardRegistrationForm from '../../components/payment/CardRegistrationForm';
+import { useCast } from '../../contexts/CastContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 interface ImmediatePaymentData {
@@ -26,6 +27,7 @@ interface CastProfile {
 interface CastPointsData {
     monthly_total_points: number;
     gift_points: number;
+    transfer_points: number;
     copat_back_rate: number;
     total_reservations: number;
     completed_reservations: number;
@@ -43,8 +45,8 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
     const [processingPayment, setProcessingPayment] = useState(false);
     const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-    // Get cast ID from localStorage (assuming it's stored there)
-    const castId = Number(localStorage.getItem('castId'));
+    // Get cast ID from authenticated context
+    const { castId } = useCast() as any;
 
     useEffect(() => {
         if (castId) {

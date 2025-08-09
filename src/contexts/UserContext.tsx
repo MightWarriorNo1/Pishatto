@@ -1,5 +1,6 @@
+/*eslint-disable */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { GuestProfile, getGuestProfile, GuestInterest } from '../services/api';
+import { GuestProfile, getGuestProfile, GuestInterest, checkGuestAuth } from '../services/api';
 
 interface UserContextType {
   user: GuestProfile | null;
@@ -62,10 +63,51 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
+  // Check for existing authentication on app load
+  const checkExistingAuth = async () => {
+    try {
+      setLoading(true);
+      const authResult = await checkGuestAuth();
+      
+      if (authResult.authenticated && authResult.guest) {
+        // User is already authenticated, set the user data
+        setUser(authResult.guest);
+        setInterests(authResult.guest.interests || []);
+        setPhone(authResult.guest.phone);
+        setLoading(false);
+      } else {
+        const storedPhone = localStorage.getItem('phone');
+        if (storedPhone) {
+          setPhone(storedPhone);
+          // Don't set loading to false here, let the second useEffect handle it
+        } else {
+          setLoading(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking authentication:', error);
+      // If auth check fails, fall back to phone-based authentication
+      const storedPhone = localStorage.getItem('phone');
+      if (storedPhone) {
+        setPhone(storedPhone);
+        // Don't set loading to false here, let the second useEffect handle it
+      } else {
+        setLoading(false);
+      }
+    }
+  };
+
   useEffect(() => {
-    refreshUser();
-    // eslint-disable-next-line
-  }, [phone]);
+    checkExistingAuth();
+  }, []);
+
+  useEffect(() => {
+    if (phone && !user) {
+      refreshUser();
+    } else if (!phone) {
+      setLoading(false);
+    }
+  }, [phone, user]);
 
   return (
     <UserContext.Provider value={{ user, interests, loading, setUser, setInterests, phone, setPhone, refreshUser, updateUser }}>

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bird, ChevronLeft, MessageSquare, Clock, AlertCircle, CheckCircle, XCircle, Info } from 'lucide-react';
 import { getConciergeMessages, sendConciergeMessage, markConciergeAsRead } from '../../../services/api';
+import { useCast } from '../../../contexts/CastContext';
 
 interface ConciergeMessage {
     id: number;
@@ -27,8 +28,7 @@ const CastConciergeDetailPage: React.FC<CastConciergeDetailPageProps> = ({ onBac
     const [sending, setSending] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
-
-    const castId = Number(localStorage.getItem('castId'));
+    const { castId } = useCast() as any;
 
     useEffect(() => {
         if (castId) {
