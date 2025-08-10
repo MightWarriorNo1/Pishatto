@@ -1,7 +1,7 @@
 /*eslint-disable */
 import { useState, useEffect } from 'react';
-import {useNavigate} from 'react-router-dom';
-import { ChevronLeft, Clock, Flag, UserRound,HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, Clock, Flag, UserRound, HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus, X } from 'lucide-react';
 import StepRequirementScreen from './StepRequirementScreen';
 import { createFreeCall, createFreeCallReservation, fetchRanking, getGuestChats, getCastCountsByLocation, getCastList } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
@@ -20,14 +20,14 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     if (!avatarString) {
         return '/assets/avatar/female.png';
     }
-    
+
     // Split by comma and get the first non-empty avatar
     const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-    
+
     if (avatars.length === 0) {
         return '/assets/avatar/avatar-1.png';
     }
-    
+
     return `${APP_BASE_URL}/${avatars[0]}`;
 };
 
@@ -169,19 +169,18 @@ function CustomDurationModal({ isOpen, onClose, onConfirm }: {
 
 // Add a simple Stepper component for progress indication
 function Stepper({ step }: { step: number }) {
-  const steps = ['内容入力', '詳細条件', '最終確認'];
-  return (
-    <div className="flex items-center justify-center gap-2 py-4">
-      {steps.map((label, idx) => (
-        <div key={label} className="flex items-center">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-200 ${
-            idx < step ? 'bg-secondary border-secondary text-white' : idx === step ? 'bg-white border-secondary text-secondary' : 'bg-white border-gray-300 text-gray-400'
-          }`}>{idx + 1}</div>
-          {idx < steps.length - 1 && <div className="w-8 h-1 bg-gradient-to-r from-secondary to-gray-300 mx-1 rounded" />}
+    const steps = ['内容入力', '詳細条件', '最終確認'];
+    return (
+        <div className="flex items-center justify-center gap-2 py-4">
+            {steps.map((label, idx) => (
+                <div key={label} className="flex items-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all duration-200 ${idx < step ? 'bg-secondary border-secondary text-white' : idx === step ? 'bg-white border-secondary text-secondary' : 'bg-white border-gray-300 text-gray-400'
+                        }`}>{idx + 1}</div>
+                    {idx < steps.length - 1 && <div className="w-8 h-1 bg-gradient-to-r from-secondary to-gray-300 mx-1 rounded" />}
+                </div>
+            ))}
         </div>
-      ))}
-    </div>
-  );
+    );
 }
 
 function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, selectedArea, setSelectedArea, counts, setCounts, selectedDuration, setSelectedDuration, customDurationHours, setCustomDurationHours }: {
@@ -443,29 +442,29 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
     isProcessingFreeCall: boolean,
 }) {
     const [locations, setLocations] = useState<string[]>([]);
-    const [locationCastCounts, setLocationCastCounts] = useState<{[key: string]: number}>({});
+    const [locationCastCounts, setLocationCastCounts] = useState<{ [key: string]: number }>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchLocationsAndCounts = async () => {
-          try {
-            setError(null);
-            const activeLocations = await locationService.getActiveLocations();
-            setLocations(activeLocations);
-            
-            // Fetch cast counts by location
-            const countsData = await getCastCountsByLocation();
-            setLocationCastCounts(countsData);
-          } catch (error) {
-            console.error('Error fetching locations and counts:', error);
-            setError('場所の読み込みに失敗しました。しばらく待ってから再度お試しください。');
-            setLocations([]);
-            setLocationCastCounts({});
-          } finally {
-            setLoading(false);
-          }
+            try {
+                setError(null);
+                const activeLocations = await locationService.getActiveLocations();
+                setLocations(activeLocations);
+
+                // Fetch cast counts by location
+                const countsData = await getCastCountsByLocation();
+                setLocationCastCounts(countsData);
+            } catch (error) {
+                console.error('Error fetching locations and counts:', error);
+                setError('場所の読み込みに失敗しました。しばらく待ってから再度お試しください。');
+                setLocations([]);
+                setLocationCastCounts({});
+            } finally {
+                setLoading(false);
+            }
         };
         fetchLocationsAndCounts();
     }, []);
@@ -524,8 +523,8 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
                             <span className="text-red-400 text-3xl">⚠️</span>
                         </div>
                         <div className="text-red-400 text-center mb-6 text-lg">{error}</div>
-                        <button 
-                            onClick={() => window.location.reload()} 
+                        <button
+                            onClick={() => window.location.reload()}
                             className="px-8 py-4 bg-gradient-to-r from-secondary to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg font-semibold"
                         >
                             再試行
@@ -534,13 +533,12 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
                 ) : (
                     <div className='grid grid-cols-2 gap-4'>
                         {locations.map((location) => (
-                            <div 
-                                key={location} 
-                                className={`relative p-6 flex flex-col items-center justify-between rounded-2xl cursor-pointer transition-all duration-300 shadow-lg hover:shadow-2xl ${
-                                    selectedLocation === location 
-                                        ? 'bg-gradient-to-br from-secondary to-red-600 text-white border-2 border-white transform scale-105' 
-                                        : 'bg-gradient-to-br from-white/15 to-white/5 text-white hover:bg-secondary/20 hover:scale-105 border border-white/20'
-                                }`} 
+                            <div
+                                key={location}
+                                className={`relative p-6 flex flex-col items-center justify-between rounded-2xl cursor-pointer transition-all duration-300 shadow-lg hover:shadow-2xl ${selectedLocation === location
+                                    ? 'bg-gradient-to-br from-secondary to-red-600 text-white border-2 border-white transform scale-105'
+                                    : 'bg-gradient-to-br from-white/15 to-white/5 text-white hover:bg-secondary/20 hover:scale-105 border border-white/20'
+                                    }`}
                                 onClick={() => handleLocationSelect(location)}
                             >
                                 <div className="text-center mb-4">
@@ -550,15 +548,14 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
                                         <span className="text-xs opacity-80">アクティブ</span>
                                     </div>
                                 </div>
-                                
-                                <div className={`px-4 py-2 rounded-full font-bold text-sm ${
-                                    selectedLocation === location 
-                                        ? 'bg-white/20 text-white' 
-                                        : 'bg-gradient-to-r from-secondary to-red-500 text-white'
-                                }`}>
+
+                                <div className={`px-4 py-2 rounded-full font-bold text-sm ${selectedLocation === location
+                                    ? 'bg-white/20 text-white'
+                                    : 'bg-gradient-to-r from-secondary to-red-500 text-white'
+                                    }`}>
                                     {locationCastCounts[location] || 0}人
                                 </div>
-                                
+
                                 {selectedLocation === location && (
                                     <div className="absolute top-2 right-2">
                                         <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
@@ -574,12 +571,11 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
 
             {/* Enhanced Fixed Bottom Button */}
             <div className="px-4 py-6">
-                <button 
-                    className={`w-full py-4 rounded-2xl font-bold text-lg transition-all duration-300 shadow-xl ${
-                        selectedLocation 
-                            ? 'bg-gradient-to-r from-secondary to-red-600 text-white hover:from-red-600 hover:to-red-700 transform hover:scale-105 active:scale-95' 
-                            : 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                    }`}
+                <button
+                    className={`w-full py-4 rounded-2xl font-bold text-lg transition-all duration-300 shadow-xl ${selectedLocation
+                        ? 'bg-gradient-to-r from-secondary to-red-600 text-white hover:from-red-600 hover:to-red-700 transform hover:scale-105 active:scale-95'
+                        : 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                        }`}
                     onClick={handleNext}
                     disabled={!selectedLocation || isProcessingFreeCall}
                     type="button"
@@ -609,7 +605,7 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
 }) {
     const [casts, setCasts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const navigate=useNavigate();
+    const navigate = useNavigate();
     const [error, setError] = useState<string | null>(null);
     const [currentCastIndex, setCurrentCastIndex] = useState(0);
     const [currentAvatarIndex, setCurrentAvatarIndex] = useState(0);
@@ -662,13 +658,13 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
         if (!avatarString) {
             return ['/assets/avatar/female.png'];
         }
-        
+
         const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-        
+
         if (avatars.length === 0) {
             return ['/assets/avatar/female.png'];
         }
-        
+
         return avatars.map(avatar => `${APP_BASE_URL}/${avatar}`);
     };
 
@@ -757,8 +753,8 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
                             <span className="text-red-400 text-3xl">⚠️</span>
                         </div>
                         <div className="text-red-400 text-center mb-6 text-lg">{error}</div>
-                        <button 
-                            onClick={() => window.location.reload()} 
+                        <button
+                            onClick={() => window.location.reload()}
                             className="px-8 py-4 bg-gradient-to-r from-secondary to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-200 shadow-lg font-semibold"
                         >
                             再試行
@@ -783,7 +779,7 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
                                 <span className="text-white/60 text-sm ml-3">キャスト</span>
                             </div>
                         </div>
-                        
+
                         {/* Enhanced Single Cast Display */}
                         {currentCast && (
                             <div className="w-full">
@@ -796,17 +792,17 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
                                             className="w-full h-full object-cover"
                                             onError={e => (e.currentTarget.src = '/assets/avatar/female.png')}
                                         />
-                                        
+
                                         {/* Enhanced Avatar Navigation Buttons */}
                                         {hasMultipleAvatars && (
                                             <>
-                                                <button 
+                                                <button
                                                     className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all duration-200 shadow-lg"
                                                     onClick={handlePreviousAvatar}
                                                 >
                                                     <ChevronLeft className="w-6 h-6" />
                                                 </button>
-                                                <button 
+                                                <button
                                                     className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all duration-200 shadow-lg"
                                                     onClick={handleNextAvatar}
                                                 >
@@ -815,26 +811,25 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
                                                 {/* Enhanced Avatar Indicator Dots */}
                                                 <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 flex space-x-3">
                                                     {currentAvatars.map((_, index) => (
-                                                        <div 
+                                                        <div
                                                             key={index}
-                                                            className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                                                                index === currentAvatarIndex 
-                                                                    ? 'bg-white shadow-lg' 
-                                                                    : 'bg-white/50'
-                                                            }`}
+                                                            className={`w-3 h-3 rounded-full transition-all duration-200 ${index === currentAvatarIndex
+                                                                ? 'bg-white shadow-lg'
+                                                                : 'bg-white/50'
+                                                                }`}
                                                         />
                                                     ))}
                                                 </div>
                                             </>
                                         )}
-                                        
+
                                         {/* Enhanced Profile Info Overlay */}
                                         <div className="absolute bottom-4 left-4 right-4 text-primary">
                                             <div className="flex items-center justify-between mb-3">
                                                 <div className="flex items-center">
                                                     <span className="text-3xl font-bold mr-4">{currentCast.nickname}</span>
                                                     <span className="text-sm bg-white/30 px-4 py-2 rounded-full backdrop-blur-sm font-semibold">
-                                                        {currentCast.birth_year ? new Date().getFullYear() - currentCast.birth_year+'歳' : ''}
+                                                        {currentCast.birth_year ? new Date().getFullYear() - currentCast.birth_year + '歳' : ''}
                                                     </span>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
@@ -876,39 +871,36 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
                                         {/* Enhanced Navigation Buttons */}
                                         <div className="flex items-center justify-between mb-6">
                                             {/* Enhanced Left Button */}
-                                            <button 
-                                                className={`w-16 h-16 rounded-full flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:scale-110 active:scale-95 ${
-                                                    currentCastIndex > 0 
-                                                        ? 'bg-gradient-to-r from-secondary to-blue-600 hover:from-blue-600 hover:to-blue-700' 
-                                                        : 'bg-gray-600 cursor-not-allowed opacity-50'
-                                                }`}
+                                            <button
+                                                className={`w-16 h-16 rounded-full flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:scale-110 active:scale-95 ${currentCastIndex > 0
+                                                    ? 'bg-gradient-to-r from-secondary to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                                                    : 'bg-gray-600 cursor-not-allowed opacity-50'
+                                                    }`}
                                                 onClick={handlePreviousCast}
                                                 disabled={currentCastIndex === 0}
                                             >
                                                 <ChevronLeft className="w-8 h-8" />
                                             </button>
-                                            
+
                                             {/* Enhanced Meet Now Button */}
-                                            <button 
-                                                className={`px-10 py-5 rounded-full flex items-center justify-center text-white transition-all duration-200 shadow-xl hover:scale-105 active:scale-95 font-bold text-lg ${
-                                                    selectedCasts.includes(currentCast.id)
-                                                        ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
-                                                        : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-red-500 hover:to-red-600'
-                                                }`}
+                                            <button
+                                                className={`px-10 py-5 rounded-full flex items-center justify-center text-white transition-all duration-200 shadow-xl hover:scale-105 active:scale-95 font-bold text-lg ${selectedCasts.includes(currentCast.id)
+                                                    ? 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
+                                                    : 'bg-gradient-to-r from-orange-500 to-red-500 hover:from-red-500 hover:to-red-600'
+                                                    }`}
                                                 onClick={handleMeetNow}
                                             >
                                                 <span>
                                                     {selectedCasts.includes(currentCast.id) ? '✓ 選択済み' : '今すぐ会う!'}
                                                 </span>
                                             </button>
-                                            
+
                                             {/* Enhanced Right Button */}
-                                            <button 
-                                                className={`w-16 h-16 rounded-full flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:scale-110 active:scale-95 ${
-                                                    currentCastIndex < casts.length - 1 
-                                                        ? 'bg-gradient-to-r from-secondary to-blue-600 hover:from-blue-600 hover:to-blue-700' 
-                                                        : 'bg-gray-600 cursor-not-allowed opacity-50'
-                                                }`}
+                                            <button
+                                                className={`w-16 h-16 rounded-full flex items-center justify-center text-white transition-all duration-200 shadow-lg hover:scale-110 active:scale-95 ${currentCastIndex < casts.length - 1
+                                                    ? 'bg-gradient-to-r from-secondary to-blue-600 hover:from-blue-600 hover:to-blue-700'
+                                                    : 'bg-gray-600 cursor-not-allowed opacity-50'
+                                                    }`}
                                                 onClick={handleNextCast}
                                                 disabled={currentCastIndex === casts.length - 1}
                                             >
@@ -942,7 +934,7 @@ function OrderFinalConfirmationScreen({
 }: {
     onBack: () => void;
     onConfirmed: () => void;
-    onNext: ()=>void;
+    onNext: () => void;
     selectedTime: string;
     selectedArea: string;
     counts: number[];
@@ -976,7 +968,7 @@ function OrderFinalConfirmationScreen({
     const baseCost = 15000 * counts[0] * durationHours * 60 / 30 +
         12000 * counts[1] * durationHours * 60 / 30 +
         9000 * counts[2] * durationHours * 60 / 30;
-    const nightTimeFee = isNightTime ? nightTimeFeePerHour * durationHours*(counts[0]+counts[1]+counts[2]) : 0;
+    const nightTimeFee = isNightTime ? nightTimeFeePerHour * durationHours * (counts[0] + counts[1] + counts[2]) : 0;
     const totalCost = baseCost + nightTimeFee;
 
     // Check if user has enough points
@@ -1023,13 +1015,13 @@ function OrderFinalConfirmationScreen({
                     premium: counts[2]
                 }
             });
-            
+
             // Update user points after successful reservation
             if (response.points_deducted && response.remaining_points) {
                 // Refresh user data to get updated point balance
                 await refreshUser();
             }
-            
+
             setReservationMessage(`予約が完了しました (${response.points_deducted?.toLocaleString()}P 消費)`);
 
             // Trigger ranking update by fetching current rankings
@@ -1053,7 +1045,7 @@ function OrderFinalConfirmationScreen({
         }
     };
 
-    
+
     return (
         <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
             <Stepper step={2} />
@@ -1076,11 +1068,11 @@ function OrderFinalConfirmationScreen({
                         <div className="ml-auto text-right">
                             <span className="font-bold text-white">{selectedTime}</span>
                             <div className="text-xs text-white/70">
-                                {scheduledTime.toLocaleString('ja-JP', { 
-                                    month: 'numeric', 
-                                    day: 'numeric', 
-                                    hour: '2-digit', 
-                                    minute: '2-digit' 
+                                {scheduledTime.toLocaleString('ja-JP', {
+                                    month: 'numeric',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
                                 })}
                                 {isNightTime && <span className="text-orange-300 ml-1">(深夜)</span>}
                             </div>
@@ -1161,7 +1153,7 @@ function OrderFinalConfirmationScreen({
                     className={`w-full py-3 rounded-lg font-bold text-lg transition shadow-lg ${hasEnoughPoints
                         ? 'bg-secondary text-white hover:bg-red-700'
                         : 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                    }`}
+                        }`}
                     onClick={handleReservation}
                     disabled={!hasEnoughPoints}
                 >
@@ -1206,8 +1198,8 @@ function AvailableCastsModal({ isOpen, onClose, casts, onCastClick }: {
                             <p className="text-white/80 text-sm">オンラインキャスト一覧</p>
                         </div>
                     </div>
-                    <button 
-                        onClick={onClose} 
+                    <button
+                        onClick={onClose}
                         className="text-white hover:text-gray-300 p-2 rounded-full hover:bg-white/10 transition-all duration-200"
                     >
                         <X size={24} />
@@ -1227,8 +1219,8 @@ function AvailableCastsModal({ isOpen, onClose, casts, onCastClick }: {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {casts.map((cast) => (
-                                <div 
-                                    key={cast.id} 
+                                <div
+                                    key={cast.id}
                                     className="bg-gradient-to-br from-white/15 to-white/5 rounded-2xl p-4 border border-white/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer group"
                                     onClick={() => onCastClick(cast.cast_id)}
                                 >
@@ -1309,7 +1301,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     const [selectedTime, setSelectedTime] = useState('30分後');
     const [selectedArea, setSelectedArea] = useState('東京都');
     const [counts, setCounts] = useState([1, 1, 0]);
-    const navigate=useNavigate()
+    const navigate = useNavigate()
     const [selectedDuration, setSelectedDuration] = useState('1時間');
     const [selectedSituations, setSelectedSituations] = useState<string[]>([]);
     const [selectedCastTypes, setSelectedCastTypes] = useState<string[]>([]);
@@ -1324,27 +1316,27 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     // Add state for applied casts
     const [appliedCasts, setAppliedCasts] = useState<AppliedCast[]>([]);
     const [loadingAppliedCasts, setLoadingAppliedCasts] = useState(false);
-    
+
     // Add state for free call results
     const [freeCallResult, setFreeCallResult] = useState<any>(null);
     const [selectedCasts, setSelectedCasts] = useState<any[]>([]);
     const [isProcessingFreeCall, setIsProcessingFreeCall] = useState(false);
-    
+
     // Add state for order confirmation
     const [selectedCastForOrder, setSelectedCastForOrder] = useState<any>(null);
     const [reservationId, setReservationId] = useState<number>(0);
     const [chatId, setChatId] = useState<number>(0);
-    
-    const { user, refreshUser} = useUser();
+
+    const { user, refreshUser } = useUser();
     const [showAvailableCastsModal, setShowAvailableCastsModal] = useState(false);
 
-    const handleCastClick=(castId:number)=>{
+    const handleCastClick = (castId: number) => {
         navigate(`/cast/${castId}`)
     }
 
     const handleFreeCall = async () => {
         if (!user) return;
-        
+
         setIsProcessingFreeCall(true);
         try {
             // Calculate scheduled time based on selectedTime format
@@ -1380,10 +1372,10 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             setFreeCallResult(response);
             // Set empty array for selected casts since no casts are initially selected
             setSelectedCasts([]);
-            
+
             // Refresh user data to get updated point balance
             await refreshUser();
-            
+
         } catch (error: any) {
             console.error('Free call failed:', error);
             alert('フリーコールに失敗しました。もう一度お試しください。');
@@ -1499,7 +1491,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             onCastSelect={(cast) => setSelectedCastForOrder(cast)}
         />
     );
-    
+
     if (page === 'orderConfirmation') return (
         <OrderConfirmationPage
             onBack={() => setPage('castSelection')}
@@ -1515,7 +1507,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             duration={selectedDuration}
         />
     );
-    
+
     if (page === 'orderCompletion') return (
         <OrderCompletionPage
             onViewChat={() => {
@@ -1532,7 +1524,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             duration={selectedDuration}
         />
     );
-    
+
     if (showStepRequirement) return <StepRequirementScreen onBack={() => setShowStepRequirement(false)} />;
 
     return (
@@ -1547,22 +1539,22 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                     <div className="text-sm opacity-90">24/7 対応</div>
                 </div>
             </div>
-            
+
             {/* Enhanced Warning Banner */}
             <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 flex items-center justify-between shadow-lg">
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
                     <span className="text-sm font-semibold">ご利用準備が完了していません</span>
                 </div>
-                <button 
-                    onClick={() => setShowStepRequirement(true)} 
+                <button
+                    onClick={() => setShowStepRequirement(true)}
                     className="flex items-center gap-1 hover:bg-white/20 rounded-full p-2 transition-all duration-200"
                 >
                     <span className="text-xs">設定</span>
                     <ChevronRight size={16} />
                 </button>
             </div>
-            
+
             {/* Enhanced Area Selection */}
             <div className="bg-gradient-to-r from-primary to-blue-900 px-4 py-4 flex flex-col gap-3 border-b border-white/10 shadow-lg">
                 <div className="flex items-center justify-between">
@@ -1570,8 +1562,8 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                         <MapPin className="text-secondary" size={20} />
                         <span className="text-white font-medium">選択中のエリア</span>
                     </div>
-                    <button 
-                        className="text-white bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-sm transition-all duration-200" 
+                    <button
+                        className="text-white bg-white/10 hover:bg-white/20 px-3 py-1 rounded-full text-sm transition-all duration-200"
                         onClick={() => setShowAreaModal(true)}
                     >
                         変更
@@ -1588,7 +1580,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                     selectedArea={selectedArea}
                 />
             </div>
-            
+
             {/* Enhanced Service Cards */}
             <div className="px-4 py-6 space-y-4">
                 {/* Enhanced Free Call Card */}
@@ -1604,24 +1596,24 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="flex items-center mb-4">
                         <div className="flex -space-x-2 mr-4">
-                            <img src="assets/icons/akiko.png" alt="VIP" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg" />
-                            <img src="assets/icons/akiko.png" alt="Premium" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg" />
-                            <img src="assets/icons/akiko.png" alt="Royal VIP" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg" />
+                            <img src="assets/avatar/woman.png" alt="VIP" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg" />
+                            <img src="assets/avatar/woman.png" alt="Premium" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg" />
+                            <img src="assets/avatar/woman.png" alt="Royal VIP" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg" />
                         </div>
                         <span className="text-white/80 text-sm">即座にマッチング</span>
                     </div>
-                    
-                    <button 
+
+                    <button
                         className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-bold text-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
                         onClick={() => setPage('orderHistory')}
                     >
                         人数を決める
                     </button>
                 </div>
-                
+
                 {/* Enhanced Pishatto Card */}
                 <div className="bg-gradient-to-br from-white/15 to-white/5 rounded-2xl p-6 border border-white/10 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02]">
                     <div className="flex items-center justify-between mb-4">
@@ -1635,21 +1627,21 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                             </div>
                         </div>
                     </div>
-                    
+
                     <div className="flex items-center mb-4">
-                        <img src="assets/icons/ayaka.png" alt="cast" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg mr-4" />
+                        <img src="assets/avatar/woman.png" alt="cast" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg mr-4" />
                         <span className="text-white/80 text-sm">お気に入りキャストを選択</span>
                     </div>
-                    
-                    <button 
-                        className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 rounded-xl font-bold text-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95" 
+
+                    <button
+                        className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 rounded-xl font-bold text-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
                         onClick={() => setPage("freeCall")}
                     >
                         キャストを選ぶ
                     </button>
                 </div>
             </div>
-            
+
             {/* Enhanced Order History Button */}
             <div className="px-4 mb-6">
                 <button
@@ -1663,7 +1655,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                     <ChevronRight size={20} />
                 </button>
             </div>
-            
+
             {/* Enhanced Available Casts Section */}
             <div className="px-4 mb-6">
                 <div className="flex items-center justify-between mb-4">
@@ -1671,7 +1663,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                         <span className="font-bold text-lg text-white">今日会えるキャスト</span>
                     </div>
-                    <button 
+                    <button
                         className="text-white/80 text-sm hover:text-white transition-colors flex items-center gap-1 group"
                         onClick={() => setShowAvailableCastsModal(true)}
                     >
@@ -1679,7 +1671,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                         <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform duration-200" />
                     </button>
                 </div>
-                
+
                 {loadingAppliedCasts ? (
                     <div className="flex items-center justify-center py-8">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
@@ -1688,9 +1680,9 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                 ) : appliedCasts.length > 0 ? (
                     <div className="flex gap-3 overflow-x-auto pb-2">
                         {appliedCasts.slice(0, 4).map((cast, idx) => (
-                            <div 
-                                key={cast.id} 
-                                className="bg-gradient-to-br from-white/15 to-white/5 rounded-xl p-4 min-w-[140px] text-center flex-shrink-0 border border-white/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer group" 
+                            <div
+                                key={cast.id}
+                                className="bg-gradient-to-br from-white/15 to-white/5 rounded-xl p-4 min-w-[140px] text-center flex-shrink-0 border border-white/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer group"
                                 onClick={() => handleCastClick(cast.cast_id)}
                             >
                                 <div className="relative mb-3">
@@ -1715,7 +1707,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                             </div>
                         ))}
                         {appliedCasts.length > 4 && (
-                            <div 
+                            <div
                                 className="bg-gradient-to-br from-white/15 to-white/5 rounded-xl p-4 min-w-[140px] text-center flex-shrink-0 border border-white/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer flex flex-col items-center justify-center"
                                 onClick={() => setShowAvailableCastsModal(true)}
                             >
@@ -1777,14 +1769,14 @@ function AreaSelectModal({ isOpen, onClose, onSelect, selectedArea }: {
                             <p className="text-white/70 text-sm">お好みのエリアを選択してください</p>
                         </div>
                     </div>
-                    <button 
-                        onClick={onClose} 
+                    <button
+                        onClick={onClose}
                         className="text-white hover:text-gray-300 p-2 rounded-full hover:bg-white/10 transition-all duration-200"
                     >
                         <X size={24} />
                     </button>
                 </div>
-                
+
                 <div className="mb-8">
                     <label className="block text-white mb-4 font-semibold">エリア</label>
                     <div className="space-y-3">
@@ -1792,11 +1784,10 @@ function AreaSelectModal({ isOpen, onClose, onSelect, selectedArea }: {
                             <button
                                 key={opt}
                                 onClick={() => setArea(opt)}
-                                className={`w-full p-4 rounded-2xl border-2 transition-all duration-200 text-left ${
-                                    area === opt 
-                                        ? 'bg-gradient-to-r from-secondary to-red-500 text-white border-secondary shadow-lg' 
-                                        : 'bg-white/10 text-white border-white/20 hover:border-white/40 hover:bg-white/20'
-                                }`}
+                                className={`w-full p-4 rounded-2xl border-2 transition-all duration-200 text-left ${area === opt
+                                    ? 'bg-gradient-to-r from-secondary to-red-500 text-white border-secondary shadow-lg'
+                                    : 'bg-white/10 text-white border-white/20 hover:border-white/40 hover:bg-white/20'
+                                    }`}
                             >
                                 <div className="flex items-center justify-between">
                                     <span className="font-semibold">{opt}</span>
@@ -1810,7 +1801,7 @@ function AreaSelectModal({ isOpen, onClose, onSelect, selectedArea }: {
                         ))}
                     </div>
                 </div>
-                
+
                 <div className="flex gap-3">
                     <button
                         onClick={onClose}
