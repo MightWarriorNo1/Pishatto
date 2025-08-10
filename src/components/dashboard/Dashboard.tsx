@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import TopNavigation from './TopNavigation';
 import NewCastSection from './NewCastSection';
 import UserSatisfactionSection from './UserSatisfactionSection';
@@ -34,7 +35,16 @@ const Dashboard: React.FC = () => {
   const [showChat, setShowChat] = useState<number | null>(null);
   const [showOrder, setShowOrder] = useState(false);
   const [showConcierge, setShowConcierge] = useState(false);
-  const { user } = useUser();
+  const { user, loading } = useUser();
+  const navigate = useNavigate();
+
+
+  // Redirect unauthenticated guests to the first page
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/register');
+    }
+  }, [loading, user, navigate]);
   const { isNotificationEnabled } = useNotificationSettings();
   const { refreshChats } = useChatRefresh();
   const [messageCount, setMessageCount] = useState(0);

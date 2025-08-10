@@ -21,14 +21,14 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     if (!avatarString) {
-        return '/assets/avatar/2.jpg';
+        return '/assets/avatar/1.jpg';
     }
     
     // Split by comma and get the first non-empty avatar
     const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
     
     if (avatars.length === 0) {
-        return '/assets/avatar/2.jpg';
+        return '/assets/avatar/1.jpg';
     }
     return `${API_BASE_URL}/${avatars[0]}`;
 };
@@ -54,7 +54,7 @@ const Profile: React.FC = () => {
         if (user?.avatar) {
             return getFirstAvatarUrl(user.avatar);
         }
-        return '/assets/avatar/2.jpg'; // Default avatar
+        return '/assets/avatar/1.jpg'; // Default avatar
     };
 
     // Fetch unread notification count
@@ -168,7 +168,7 @@ const Profile: React.FC = () => {
                             className="w-24 h-24 rounded-full object-cover border-4 border-secondary shadow" 
                             onError={(e) => {
                                 // Fallback to default avatar if upload fails
-                                e.currentTarget.src = '/assets/avatar/2.jpg';
+                                e.currentTarget.src = '/assets/avatar/1.jpg';
                             }}
                         />
                     )}

@@ -119,6 +119,9 @@ export interface Reservation {
   ended_at?: string;
   points_earned?: number;
   calculated_points?: number;
+  // Selected cast(s)
+  cast_id?: number;
+  cast_ids?: number[];
   // Feedback fields
   feedback_text?: string;
   feedback_rating?: number;
@@ -288,6 +291,7 @@ export const createFreeCallReservation = async (data: {
   custom_duration_hours?: number;
   details?: string;
   time?: string;
+  total_cost?: number;
   cast_counts: {
     royal_vip: number;
     vip: number;
@@ -687,6 +691,11 @@ export const getCastApplications = async (castId: number) => {
   return response.data.applications;
 };
 
+export const getAllCastApplications = async (castId: number) => {
+  const response = await api.get(`/reservation-applications/cast/${castId}/all`);
+  return response.data.applications;
+};
+
 export const startReservation = async (reservation_id: number, cast_id: number) => {
   const response = await api.post('/reservation/start', { reservation_id, cast_id });
   return response.data.reservation;
@@ -706,11 +715,80 @@ export const createPointTransaction = async (data: {
   user_type: 'guest' | 'cast';
   user_id: number;
   amount: number;
-  type: 'pending' | 'completed' | 'cancelled';
+  type: 'pending' | 'transfer' | 'convert' | 'gift' | 'buy';
   reservation_id?: number;
   description?: string;
+  gift_type?: string;
 }) => {
   const response = await api.post('/point-transactions', data);
+  return response.data;
+};
+
+export const createPointTransactionWithCalculation = async (data: {
+  user_type: 'guest' | 'cast';
+  user_id: number;
+  amount: number;
+  type: 'pending' | 'transfer' | 'convert' | 'gift' | 'buy';
+  reservation_id?: number;
+  description?: string;
+  gift_type?: string;
+  calculated_points?: number;
+  night_time_bonus?: number;
+  extension_fee?: number;
+  total_points?: number;
+  unused_points?: number;
+  shortfall_points?: number;
+}) => {
+  const response = await api.post('/point-transactions/with-calculation', data);
+  return response.data;
+};
+
+export const createPendingPointTransaction = async (data: {
+  guest_id: number;
+  cast_id: number;
+  amount: number;
+  reservation_id: number;
+  description?: string;
+}) => {
+  const response = await api.post('/point-transactions/pending', data);
+  return response.data;
+};
+
+export const createTransferPointTransaction = async (data: {
+  guest_id: number;
+  cast_id: number;
+  amount: number;
+  reservation_id: number;
+  description?: string;
+  calculated_points?: number;
+  night_time_bonus?: number;
+  extension_fee?: number;
+  total_points?: number;
+}) => {
+  const response = await api.post('/point-transactions/transfer', data);
+  return response.data;
+};
+
+export const createRefundPointTransaction = async (data: {
+  guest_id: number;
+  cast_id: number;
+  amount: number;
+  reservation_id: number;
+  description?: string;
+}) => {
+  const response = await api.post('/point-transactions/refund', data);
+  return response.data;
+};
+
+export const createGiftPointTransaction = async (data: {
+  guest_id: number;
+  cast_id: number;
+  amount: number;
+  reservation_id?: number;
+  description?: string;
+  gift_type?: string;
+}) => {
+  const response = await api.post('/point-transactions/gift', data);
   return response.data;
 };
 
@@ -1094,6 +1172,11 @@ export const sendGroupMessage = async (data: {
       'Content-Type': 'multipart/form-data',
     },
   });
+  
+  console.log('sendGroupMessage API response:', response.data);
+  
+  // The backend returns { message: Message, group_id: number }
+  // We want to return just the message object
   return response.data.message;
 };
 

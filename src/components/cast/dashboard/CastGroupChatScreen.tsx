@@ -1,14 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Image, Camera, FolderClosed,  ChevronLeft, X, Users, Calendar } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Image, Camera, FolderClosed,  ChevronLeft, X, Users, Calendar, Send } from 'lucide-react';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
 import { useUser } from '../../../contexts/UserContext';
 import { useGroupMessages } from '../../../hooks/useRealtime';
+import { testEchoConnection } from '../../../services/echo';
 import dayjs from 'dayjs';
 import MessageProposalPage from './MessageProposalPage';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const userTz=dayjs.tz.guess();
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     if (!avatarString) {
@@ -44,6 +51,7 @@ interface CastGroupChatScreenProps {
 
 const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBack }) => {
     const { user, refreshUser } = useUser();
+    const { castId } = useCast();
     const [showFile, setShowFile] = useState(false);
     const [input, setInput] = useState('');
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
@@ -56,6 +64,8 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     const [sendError, setSendError] = useState<string | null>(null);
     const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
     const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
+    
+
     const [gifts, setGifts] = useState<any[]>([]);
     const [showGiftModal, setShowGiftModal] = useState(false);
     const [selectedGiftCategory] = useState('standard');
@@ -71,31 +81,58 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
 
-    // Fetch messages on component mount
-    const { castId } = useCast();
 
+
+    // Fetch messages on component mount
     useEffect(() => {
         setFetching(true);
         setFetchError(null);
+        
         const fetchMessages = async () => {
-            if (!groupId || isNaN(Number(groupId)) || !user || typeof user.id !== 'number') {
+            if (!groupId || isNaN(Number(groupId))) {
+                setFetchError('無効なグループIDです');
                 setMessages([]);
                 setFetching(false);
                 return;
             }
+            
+            if (!castId && !user?.id) {
+                setFetchError('ユーザーIDが見つかりません');
+                setMessages([]);
+                setFetching(false);
+                return;
+            }
+
             try {
-                const response = await getGroupMessages(groupId, 'cast', castId || user.id);
-                setMessages(Array.isArray(response.messages) ? response.messages : []);
-                setGroupInfo(response.group);
+                const userId = castId || user?.id;
+                if (!userId) {
+                    throw new Error('No valid user ID available');
+                }
+                const userType = castId ? 'cast' : 'guest';
+                
+                const response = await getGroupMessages(groupId, userType, userId);
+                
+                if (response && response.messages) {
+                    setMessages(Array.isArray(response.messages) ? response.messages : []);
+                } else {
+                    setMessages([]);
+                }
+                
+                if (response && response.group) {
+                    setGroupInfo(response.group);
+                }
+                
                 setFetchError(null);
-            } catch (e) {
-                setFetchError('メッセージの取得に失敗しました');
+            } catch (e: any) {
+                setFetchError(`メッセージの取得に失敗しました: ${e.message || 'Unknown error'}`);
+                setMessages([]);
             } finally {
                 setFetching(false);
             }
         };
+        
         fetchMessages();
-    }, [groupId, user, castId]);
+    }, [groupId, castId, user?.id]);
 
     // Fetch participants
     useEffect(() => {
@@ -124,9 +161,31 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     }, []);
 
     // Real-time group messages
-    useGroupMessages(groupId, (message) => {
-        setMessages(prev => [...prev, message]);
-    });
+    const handleRealtimeMessage = useCallback((message: any) => {
+        console.log('CastGroupChatScreen: Received real-time message:', message);
+        setMessages(prev => {
+            const messageExists = prev.some(m => m.id === message.id);
+            if (messageExists) return prev;
+            return [...prev, message];
+        });
+    }, []);
+    useGroupMessages(groupId, handleRealtimeMessage);
+
+    // Debug WebSocket connection status
+    useEffect(() => {
+        const checkConnection = () => {
+            const echo = (window as any).Echo;
+            if (echo && echo.connector && echo.connector.pusher) {
+                const state = echo.connector.pusher.connection.state;
+                console.log('CastGroupChatScreen: WebSocket connection state:', state);
+            }
+        };
+        
+        checkConnection();
+        const interval = setInterval(checkConnection, 5000); // Check every 5 seconds
+        
+        return () => clearInterval(interval);
+    }, []);
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
@@ -135,7 +194,12 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
 
     const handleSend = async () => {
         if (!input.trim() && !attachedFile && !showGiftModal) return;
-        if (!user) return;
+        
+        const userId = castId || user?.id;
+        if (!userId) {
+            setSendError('ユーザーIDが見つかりません');
+            return;
+        }
 
         setSending(true);
         setSendError(null);
@@ -144,7 +208,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             const messageData: any = {
                 group_id: groupId,
                 message: input.trim(),
-                sender_cast_id: user.id, // Cast users send as cast
+                sender_cast_id: userId, // Use the correct user ID
             };
 
             // Handle file upload
@@ -160,7 +224,27 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                 }
             }
 
-            await sendGroupMessage(messageData);
+            // Send the message
+            const response = await sendGroupMessage(messageData);
+            
+            // Immediately add the sent message returned from API (has real id)
+            if (response) {
+                setMessages(prev => {
+                    const exists = prev.some(m => m.id === response.id);
+                    return exists ? prev : [...prev, response];
+                });
+            } else {
+                // If no response, try to refresh messages after a short delay
+                setTimeout(async () => {
+                    try {
+                        const userType = castId ? 'cast' : 'guest';
+                        const response = await getGroupMessages(groupId, userType, userId);
+                        setMessages(Array.isArray(response.messages) ? response.messages : []);
+                    } catch (e) {
+                        console.error('Failed to refresh messages:', e);
+                    }
+                }, 1000);
+            }
 
             // Clear input and reset states
             setInput('');
@@ -175,7 +259,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             }
 
         } catch (error: any) {
-            setSendError(error.response?.data?.message || 'メッセージの送信に失敗しました');
+            setSendError(`メッセージの送信に失敗しました: ${error.response?.data?.message || error.message || 'Unknown error'}`);
         } finally {
             setSending(false);
         }
@@ -253,7 +337,8 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     // };
 
     const formatTime = (timestamp: string) => {
-        return dayjs(timestamp).format('HH:mm');
+        // Use mm for minutes, not MM (month)
+        return dayjs.utc(timestamp).tz(userTz).format('YYYY-MM-DD HH:mm');
     };
 
     const formatDate = (timestamp: string) => {
@@ -297,6 +382,30 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
         );
     }
 
+    // Check if we have a valid user ID
+    if (!castId && !user?.id) {
+        return (
+            <div className="bg-primary min-h-screen flex items-center justify-center">
+                <div className="text-white text-center">
+                    <div>ユーザーIDが見つかりません</div>
+                    <div className="text-sm mt-2">ログインしてください</div>
+                </div>
+            </div>
+        );
+    }
+
+    // Check if groupId is valid
+    if (!groupId || isNaN(Number(groupId))) {
+        return (
+            <div className="bg-primary min-h-screen flex items-center justify-center">
+                <div className="text-white text-center">
+                    <div>無効なグループIDです</div>
+                    <div className="text-sm mt-2">グループID: {groupId}</div>
+                </div>
+            </div>
+        );
+    }
+
     if (messageProposal) {
         return (
             <MessageProposalPage
@@ -311,12 +420,18 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                 onProposalSend={async (proposal) => {
                     setSending(true);
                     try {
+                        const userId = castId || user?.id;
+                        if (!userId) {
+                            throw new Error('No valid user ID available');
+                        }
                         const messageData: any = {
                             group_id: groupId,
-                            sender_cast_id: user?.id,
+                            sender_cast_id: userId,
                             message: JSON.stringify({ type: 'proposal', ...proposal }),
                         };
                         await sendGroupMessage(messageData);
+                    } catch (error) {
+                        // Handle error silently
                     } finally {
                         setSending(false);
                         setMessageProposal(false);
@@ -342,23 +457,66 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         ({participants.length}人)
                     </span>
                 </div>
-                <div className="w-6 h-6" />
+                <div className="flex space-x-2">
+                    <button 
+                        onClick={() => {
+                            setFetching(true);
+                            setFetchError(null);
+                            // Re-trigger the useEffect by changing a dependency
+                            setMessages([]);
+                        }}
+                        className="text-white hover:text-secondary text-sm"
+                        disabled={fetching}
+                    >
+                        {fetching ? '更新中...' : '更新'}
+                    </button>
+                    <button 
+                        onClick={() => {
+                            const isConnected = testEchoConnection();
+                            console.log('WebSocket connection test:', isConnected ? '✅ Connected' : '❌ Not connected');
+                        }}
+                        className="text-white hover:text-secondary text-sm"
+                    >
+                        🔌
+                    </button>
+                </div>
             </div>
 
             {/* Messages - Scrollable Area */}
             <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4" style={{ height: 'calc(100vh - 140px)' }}>
                 {fetchError && (
-                    <div className="text-red-500 text-center py-4">{fetchError}</div>
+                    <div className="text-red-500 text-center py-4">
+                        <div>{fetchError}</div>
+                        <button 
+                            onClick={() => {
+                                setFetching(true);
+                                setFetchError(null);
+                                setMessages([]);
+                            }}
+                            className="mt-2 bg-red-600 text-white px-3 py-1 rounded text-sm"
+                        >
+                            再試行
+                        </button>
+                    </div>
                 )}
+                
+                {!fetching && messages.length === 0 && !fetchError && (
+                    <div className="text-gray-400 text-center py-8">
+                        <div>メッセージがありません</div>
+                        <div className="text-sm mt-2">最初のメッセージを送信してみましょう</div>
+                    </div>
+                )}
+                
+
                 
                 {messages.map((message, index) => {
                     // Improved message ownership determination for cast group chat
                     // Check if message is from the current cast
-                    const isOwnMessage = 
-                        user && (
-                            message.sender_cast_id === user.id ||
-                            (message.cast && message.cast.id === user.id)
-                        );
+                    const currentUserId = castId || user?.id;
+                    const isOwnMessage = currentUserId && (
+                        message.sender_cast_id === currentUserId ||
+                        (message.cast && message.cast.id === currentUserId)
+                    );
                     
                     const showDate = index === 0 || 
                         !dayjs(message.created_at).isSame(dayjs(messages[index - 1]?.created_at), 'day');
@@ -494,7 +652,12 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSend();
+                                }
+                            }}
                             placeholder="メッセージを入力..."
                             className="w-full px-3 py-2 rounded-full border border-secondary bg-primary text-white text-sm"
                             disabled={sending}
@@ -532,7 +695,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         disabled={sending || (!input.trim() && !attachedFile && !showGiftModal)}
                         className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm disabled:opacity-50"
                     >
-                        {sending ? '送信中...' : '送信'}
+                        {sending ? <Send className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                     </button>
                 </div>
 

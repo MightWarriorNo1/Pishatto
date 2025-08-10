@@ -1,6 +1,6 @@
 import React from 'react';
 import { Clock3, UserRound } from "lucide-react";
-import { updateReservation, Reservation } from '../../../services/api';
+import { Reservation } from '../../../services/api';
 
 interface CallCardProps {
     location: string;
@@ -21,15 +21,16 @@ interface CallCardProps {
     isOwnReservation?: boolean;
     reservationId?: number;
     onReservationUpdate?: (data: Partial<Reservation>) => void;
+    statusText?: string;
 }
 
-const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, people, points, extra, closed, greyedOut, started_at, ended_at, points_earned, scheduled_at, onStart, onStop, isOwnReservation, reservationId, onReservationUpdate }) => {
+const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, people, points, extra, closed, greyedOut, started_at, ended_at, points_earned, scheduled_at, onStart, onStop, isOwnReservation, reservationId, onReservationUpdate, statusText }) => {
     const [currentTime, setCurrentTime] = React.useState<Date>(new Date());
-    const [finished, setFinished] = React.useState(false);
-    const [exceededAt, setExceededAt] = React.useState<number | null>(null);
-    const [localPoints, setLocalPoints] = React.useState<number | undefined>(points_earned);
-    const [successMsg, setSuccessMsg] = React.useState<string | null>(null);
-    const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+    const [finished] = React.useState(false);
+    const [exceededAt] = React.useState<number | null>(null);
+    const [localPoints] = React.useState<number | undefined>(points_earned);
+    const [successMsg] = React.useState<string | null>(null);
+    const [errorMsg] = React.useState<string | null>(null);
 
     React.useEffect(() => {
         if (finished || (started_at && ended_at)) return;
@@ -38,7 +39,6 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
         }, 1000);
         return () => clearInterval(interval);
     }, [finished, started_at, ended_at]);
-
     // Use scheduled_at and duration for planned times
     const scheduled = scheduled_at ? new Date(scheduled_at) : undefined;
     const plannedEnd = (scheduled && duration) ? new Date(scheduled.getTime() + duration * 60 * 60 * 1000) : undefined;
@@ -70,31 +70,6 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
         return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
     };
 
-    // Handler for exit button
-    const handleExit = async () => {
-        const end = new Date();
-        setFinished(true);
-        if (plannedEnd && end > plannedEnd) {
-            setExceededAt(end.getTime() - plannedEnd.getTime());
-        }
-        if (reservationId) {
-            const startToUse = started_at || scheduled_at || new Date().toISOString();
-            try {
-                const res = await updateReservation(reservationId, {
-                    started_at: startToUse,
-                    ended_at: end.toISOString(),
-                });
-                setLocalPoints(res.points_earned);
-                setSuccessMsg('予約が正常に終了しました');
-                setErrorMsg(null);
-                if (onReservationUpdate) onReservationUpdate({ started_at: startToUse, ended_at: end.toISOString(), points_earned: res.points_earned });
-            } catch (e: any) {
-                setErrorMsg(e?.response?.data?.message || 'サーバーエラーが発生しました');
-                setSuccessMsg(null);
-            }
-        }
-        if (onStop) onStop();
-    };
 
     // Render
     if (closed) {
@@ -107,7 +82,12 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
         );
     }
     return (
-        <div className={`border border-secondary rounded-xl shadow-sm p-3 flex flex-col min-h-[160px] ${greyedOut ? 'bg-gray-600' : 'bg-primary'}`}>
+        <div className={`border border-secondary rounded-xl shadow-sm p-3 flex flex-col min-h-[160px] relative ${greyedOut ? 'bg-gray-700 opacity-60' : 'bg-primary'}`}>
+            {statusText && (
+                <div className="absolute inset-0 flex items-center justify-center z-10 bg-black bg-opacity-70 rounded-xl">
+                    <span className="bg-secondary border border-secondary text-white px-3 py-1 rounded text-sm font-bold shadow">{statusText}</span>
+                </div>
+            )}
             {successMsg && <div className="text-green-400 font-bold">{successMsg}</div>}
             {errorMsg && <div className="text-red-400 font-bold">{errorMsg}</div>}
             <div className="text-xs text-white font-bold mb-1 mt-2">{location} {time}</div>
@@ -138,7 +118,6 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
                         <div><b>現在時刻:</b> {format(now)}</div>
                         <div className="flex items-center justify-between">
                             <div className="font-mono text-green-400">経過: {diff(now, scheduled)}</div>
-                            {isOwnReservation && <button className="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold transition-colors ml-2" onClick={handleExit}>終了</button>}
                         </div>
                     </>;
                 }

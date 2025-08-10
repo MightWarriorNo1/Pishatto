@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Image, Camera, FolderClosed, Gift, ChevronLeft, X } from 'lucide-react';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { sendMessage, getChatMessages, fetchAllGifts, updateReservation, getChatById, getGuestReservations } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
@@ -24,6 +26,10 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     return `${API_BASE_URL}/${avatars[0]}`;
 };
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const userTz=dayjs.tz.guess();
 interface ChatScreenProps {
     chatId: number;
     onBack: () => void;
@@ -40,6 +46,9 @@ interface Proposal {
     reservationId?: number;
     [key: string]: any;
 }
+
+
+
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const { user, refreshUser } = useUser();
@@ -212,6 +221,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         setShowFile((prev) => !prev);
     };
 
+    const formatTime = (timestamp: string) => {
+        return dayjs.utc(timestamp).tz(userTz).format('YYYY-MM-DD HH:mm');
+    };  
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -382,12 +395,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         const currentDate = msg.created_at ? dayjs(msg.created_at).format('YYYY-MM-DD') : '';
                         const prev = (messages || [])[idx - 1];
                         const prevDate = prev && prev.created_at ? dayjs(prev.created_at).format('YYYY-MM-DD') : '';
-                        // Improved message ownership determination
-                        // Check if message is from the current user (guest)
                         const isSentByGuest = user && String(msg.sender_guest_id) === String(user.id);
-                        // Check if message is from a cast (should be displayed as received by guest)
                         const isFromCast = msg.sender_cast_id && !msg.sender_guest_id;
-                        // Determine if this message should be displayed as sent by the current user
                         const isSent = isSentByGuest && !isFromCast;
                         
                         
@@ -409,7 +418,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                     {(idx === 0 || currentDate !== prevDate) && (
                                         <div className="flex justify-center my-2">
                                             <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
-                                                {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''}
+                                                {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''} */}
+                                                {formatTime(msg.created_at)}
                                             </span>
                                         </div>
                                     )}
@@ -437,7 +447,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                 {(idx === 0 || currentDate !== prevDate) && (
                                     <div className="flex justify-center my-2">
                                         <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
-                                            {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''}
+                                            {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''} */}
+                                            {formatTime(msg.created_at)}
                                         </span>
                                     </div>
                                 )}
@@ -485,7 +496,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                         )}
                                         {msg.message}
                                     </div>
-                                    <div className="text-xs text-gray-400 mt-1 text-right">{msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''}</div>
+                                    <div className="text-xs text-gray-400 mt-1 text-right">
+                                        {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''} */}
+                                        {formatTime(msg.created_at)}
+                                    </div>
                                 </div>
                             </div>
                             </React.Fragment>

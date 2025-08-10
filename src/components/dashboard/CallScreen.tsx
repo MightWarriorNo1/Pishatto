@@ -228,8 +228,6 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
         setCustomDurationHours(hours);
     };
 
-    console.log("duration", selectedDuration);
-
     return (
         <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
             <Stepper step={0} />
@@ -353,7 +351,7 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
                 </div>
             </div>
             {/* Next button sticky */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-28  z-20">
+            <div className="bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-16 z-20">
                 <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition-all shadow-lg" onClick={onNext}>次に進む</button>
             </div>
             <CustomTimeModal
@@ -957,11 +955,29 @@ function OrderFinalConfirmationScreen({
     const { user, refreshUser } = useUser();
     const [reservationMessage, setReservationMessage] = useState<string | null>(null);
 
+    // Calculate scheduled time based on selectedTime format
+    const now = new Date();
+    let scheduledTime: Date;
+    if (selectedTime.includes('時間後')) {
+        const customHours = parseInt(selectedTime.replace('時間後', ''));
+        scheduledTime = new Date(now.getTime() + customHours * 60 * 60 * 1000);
+    } else {
+        const minutes = parseInt(selectedTime.replace('分後', ''));
+        scheduledTime = new Date(now.getTime() + minutes * 60 * 1000);
+    }
+
+    // Check if scheduled time falls within night time (12:00 AM - 6:00 AM)
+    const scheduledHour = scheduledTime.getHours();
+    const isNightTime = scheduledHour >= 0 && scheduledHour < 6;
+    const nightTimeFeePerHour = 4000; // Fixed 4000P per hour for night time
+
     // Calculate total cost using customDurationHours if present
     const durationHours = customDurationHours || (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', '')));
-    const totalCost = 15000 * counts[0] * durationHours * 60 / 30 +
+    const baseCost = 15000 * counts[0] * durationHours * 60 / 30 +
         12000 * counts[1] * durationHours * 60 / 30 +
         9000 * counts[2] * durationHours * 60 / 30;
+    const nightTimeFee = isNightTime ? nightTimeFeePerHour * durationHours*(counts[0]+counts[1]+counts[2]) : 0;
+    const totalCost = baseCost + nightTimeFee;
 
     // Check if user has enough points
     const hasEnoughPoints = user && user.points && user.points >= totalCost;
@@ -978,8 +994,8 @@ function OrderFinalConfirmationScreen({
         // Format date as MySQL DATETIME string
         const now = new Date();
         const pad = (n: number) => n.toString().padStart(2, '0');
-        const toMysqlDatetime = (date: Date) =>
-            `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+        // const toMysqlDatetime = (date: Date) =>
+        //     `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
         const hours = durationHours;
         try {
             // Calculate scheduled time based on selectedTime format
@@ -992,12 +1008,14 @@ function OrderFinalConfirmationScreen({
                 scheduledTime = new Date(now.getTime() + minutes * 60 * 1000);
             }
 
+            console.log('scheduledTime', scheduledTime);
             const response = await createFreeCallReservation({
                 guest_id: user.id,
-                scheduled_at: toMysqlDatetime(scheduledTime),
+                scheduled_at: scheduledTime.toISOString(),
                 location: selectedArea,
                 duration: hours, // always a number, 4 if '4時間以上'
-                details: `フリーコール: VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, プレミアム:${counts[2]}人, シチュ: ${selectedSituations.join(',')}, タイプ: ${selectedCastTypes.join(',')}, スキル: ${selectedCastSkills.join(',')}`,
+                details: `フリーコール: VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, プレミアム:${counts[2]}人, 合計ポイント: ${totalCost.toLocaleString()}P, シチュ: ${selectedSituations.join(',')}, タイプ: ${selectedCastTypes.join(',')}, スキル: ${selectedCastSkills.join(',')}`,
+                total_cost: totalCost,
                 time: selectedTime, // store the selected time
                 cast_counts: {
                     royal_vip: counts[0],
@@ -1055,7 +1073,18 @@ function OrderFinalConfirmationScreen({
                             <Clock />
                         </span>
                         <span className="text-white mr-2">合流予定</span>
-                        <span className="ml-auto font-bold text-white">{selectedTime}</span>
+                        <div className="ml-auto text-right">
+                            <span className="font-bold text-white">{selectedTime}</span>
+                            <div className="text-xs text-white/70">
+                                {scheduledTime.toLocaleString('ja-JP', { 
+                                    month: 'numeric', 
+                                    day: 'numeric', 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                })}
+                                {isNightTime && <span className="text-orange-300 ml-1">(深夜)</span>}
+                            </div>
+                        </div>
                     </div>
                     <div className="flex items-center mb-1 text-sm">
                         <span className="w-6">
@@ -1095,24 +1124,35 @@ function OrderFinalConfirmationScreen({
                 <div className="bg-white/10 rounded-lg p-4 border border-secondary shadow-sm">
                     <div className="flex justify-between text-sm mb-1 text-white">
                         <span>ロイヤルVIP {counts[0]}人</span>
-                        <span>{15000 * counts[0] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30}P</span>
+                        <span>{15000 * counts[0] * durationHours * 60 / 30}P</span>
                     </div>
                     <div className="flex justify-between text-sm mb-1 text-white">
                         <span>VIP {counts[1]}人</span>
-                        <span>{12000 * counts[1] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30}P</span>
+                        <span>{12000 * counts[1] * durationHours * 60 / 30}P</span>
                     </div>
                     <div className="flex justify-between text-sm mb-1 text-white">
                         <span>プレミアム {counts[2]}人</span>
-                        <span>{9000 * counts[2] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30}P</span>
+                        <span>{9000 * counts[2] * durationHours * 60 / 30}P</span>
                     </div>
                     <div className="flex justify-between text-sm mt-2 text-white">
                         <span>小計</span>
-                        <span>{15000 * counts[0] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30 + 12000 * counts[1] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30 + 9000 * counts[2] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30}P</span>
+                        <span>{baseCost.toLocaleString()}P</span>
                     </div>
+                    {isNightTime && (
+                        <div className="flex justify-between text-sm mt-2 text-white">
+                            <span className="text-orange-300">深夜料金 ({nightTimeFeePerHour.toLocaleString()}P/時間)</span>
+                            <span className="text-orange-300">+{nightTimeFee.toLocaleString()}P</span>
+                        </div>
+                    )}
                     <div className="flex justify-between font-bold text-xl mt-4 text-white">
                         <span>合計</span>
-                        <span>{15000 * counts[0] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30 + 12000 * counts[1] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30 + 9000 * counts[2] * (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''))) * 60 / 30}P</span>
+                        <span>{totalCost.toLocaleString()}P</span>
                     </div>
+                    {isNightTime && (
+                        <div className="text-orange-300 text-xs mt-2 text-center">
+                            深夜時間帯 (12:00 AM - 6:00 AM) のため、{nightTimeFeePerHour.toLocaleString()}P/時間の深夜料金が適用されます
+                        </div>
+                    )}
                 </div>
             </div>
             {/* Confirm button sticky */}
@@ -1138,6 +1178,121 @@ function OrderFinalConfirmationScreen({
                         {reservationMessage}
                     </div>
                 )}
+            </div>
+        </div>
+    );
+}
+
+// Add modal component for displaying all available casts
+function AvailableCastsModal({ isOpen, onClose, casts, onCastClick }: {
+    isOpen: boolean;
+    onClose: () => void;
+    casts: AppliedCast[];
+    onCastClick: (castId: number) => void;
+}) {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed max-w-md mx-auto inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-br from-primary to-blue-900 border border-white/20 rounded-3xl w-full max-w-2xl max-h-[90vh] shadow-2xl overflow-hidden">
+                {/* Enhanced Header */}
+                <div className="bg-gradient-to-r from-secondary to-red-600 px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                            <Users className="text-white w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-white">今日会えるキャスト</h3>
+                            <p className="text-white/80 text-sm">オンラインキャスト一覧</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={onClose} 
+                        className="text-white hover:text-gray-300 p-2 rounded-full hover:bg-white/10 transition-all duration-200"
+                    >
+                        <X size={24} />
+                    </button>
+                </div>
+
+                {/* Enhanced Content */}
+                <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                    {casts.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16">
+                            <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6">
+                                <span className="text-white/50 text-4xl">👥</span>
+                            </div>
+                            <div className="text-white text-center mb-3 font-medium text-lg">まだキャストからの応募はありません</div>
+                            <p className="text-white/70 text-sm text-center">フリーコールでキャストを呼んでみましょう</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {casts.map((cast) => (
+                                <div 
+                                    key={cast.id} 
+                                    className="bg-gradient-to-br from-white/15 to-white/5 rounded-2xl p-4 border border-white/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer group"
+                                    onClick={() => onCastClick(cast.cast_id)}
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="relative">
+                                            <img
+                                                src={getFirstAvatarUrl(cast.avatar)}
+                                                alt={cast.cast_nickname}
+                                                className="w-16 h-16 rounded-full object-cover border-2 border-secondary shadow-lg group-hover:border-white transition-all duration-200"
+                                                onError={e => (e.currentTarget.src = '/assets/avatar/female.png')}
+                                            />
+                                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="bg-gradient-to-r from-secondary to-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">プレミアム</span>
+                                                <span className="text-green-400 text-xs font-semibold">オンライン</span>
+                                            </div>
+                                            <div className="text-white font-semibold text-lg mb-1 truncate">{cast.cast_nickname}</div>
+                                            {cast.last_message && (
+                                                <div className="text-white/60 text-sm truncate">
+                                                    {cast.last_message}
+                                                </div>
+                                            )}
+                                            {cast.updated_at && (
+                                                <div className="text-white/40 text-xs mt-1">
+                                                    {new Date(cast.updated_at).toLocaleString('ja-JP', {
+                                                        month: 'numeric',
+                                                        day: 'numeric',
+                                                        hour: '2-digit',
+                                                        minute: '2-digit'
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col items-end gap-2">
+                                            {cast.unread && cast.unread > 0 && (
+                                                <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
+                                                    <span className="text-white text-xs font-bold">{cast.unread}</span>
+                                                </div>
+                                            )}
+                                            <ChevronRight className="text-white/40 w-5 h-5 group-hover:text-white transition-colors duration-200" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Enhanced Footer */}
+                <div className="bg-white/5 px-6 py-4 border-t border-white/10">
+                    <div className="flex items-center justify-between">
+                        <div className="text-white/70 text-sm">
+                            合計: <span className="text-white font-semibold">{casts.length}人</span> のキャスト
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="bg-gradient-to-r from-secondary to-red-500 text-white px-6 py-2 rounded-xl hover:from-red-500 hover:to-red-600 transition-all duration-200 font-semibold shadow-lg"
+                        >
+                            閉じる
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -1181,6 +1336,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     const [chatId, setChatId] = useState<number>(0);
     
     const { user, refreshUser} = useUser();
+    const [showAvailableCastsModal, setShowAvailableCastsModal] = useState(false);
 
     const handleCastClick=(castId:number)=>{
         navigate(`/cast/${castId}`)
@@ -1515,7 +1671,13 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                         <span className="font-bold text-lg text-white">今日会えるキャスト</span>
                     </div>
-                    <button className="text-white/80 text-sm hover:text-white transition-colors">すべて見る →</button>
+                    <button 
+                        className="text-white/80 text-sm hover:text-white transition-colors flex items-center gap-1 group"
+                        onClick={() => setShowAvailableCastsModal(true)}
+                    >
+                        <span>すべて見る</span>
+                        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform duration-200" />
+                    </button>
                 </div>
                 
                 {loadingAppliedCasts ? (
@@ -1525,32 +1687,44 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                     </div>
                 ) : appliedCasts.length > 0 ? (
                     <div className="flex gap-3 overflow-x-auto pb-2">
-                        {appliedCasts.map((cast, idx) => (
+                        {appliedCasts.slice(0, 4).map((cast, idx) => (
                             <div 
                                 key={cast.id} 
-                                className="bg-gradient-to-br from-white/15 to-white/5 rounded-xl p-4 min-w-[140px] text-center flex-shrink-0 border border-white/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer" 
+                                className="bg-gradient-to-br from-white/15 to-white/5 rounded-xl p-4 min-w-[140px] text-center flex-shrink-0 border border-white/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer group" 
                                 onClick={() => handleCastClick(cast.cast_id)}
                             >
                                 <div className="relative mb-3">
                                     <img
                                         src={getFirstAvatarUrl(cast.avatar)}
                                         alt={cast.cast_nickname}
-                                        className="w-16 h-16 rounded-full object-cover border-2 border-secondary mx-auto shadow-lg"
+                                        className="w-16 h-16 rounded-full object-cover border-2 border-secondary mx-auto shadow-lg group-hover:border-white transition-all duration-200"
                                         onError={e => (e.currentTarget.src = '/assets/avatar/female.png')}
                                     />
-                                    {/* {cast.unread && cast.unread > 0 && (
-                                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                                            <span className="text-white text-xs font-bold">{cast.unread}</span>
-                                        </div>
-                                    )} */}
+                                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
                                 </div>
                                 <div className="mb-2">
                                     <span className="bg-gradient-to-r from-secondary to-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">プレミアム</span>
                                 </div>
                                 <div className="text-white font-semibold text-sm mb-1">{cast.cast_nickname}</div>
                                 <div className="text-white/60 text-xs">オンライン</div>
+                                {cast.unread && cast.unread > 0 && (
+                                    <div className="absolute top-2 right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                                        <span className="text-white text-xs font-bold">{cast.unread}</span>
+                                    </div>
+                                )}
                             </div>
                         ))}
+                        {appliedCasts.length > 4 && (
+                            <div 
+                                className="bg-gradient-to-br from-white/15 to-white/5 rounded-xl p-4 min-w-[140px] text-center flex-shrink-0 border border-white/10 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 cursor-pointer flex flex-col items-center justify-center"
+                                onClick={() => setShowAvailableCastsModal(true)}
+                            >
+                                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-3">
+                                    <span className="text-white/50 text-2xl">+{appliedCasts.length - 4}</span>
+                                </div>
+                                <div className="text-white/60 text-xs">もっと見る</div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="bg-white/10 rounded-xl p-6 text-center">
@@ -1562,6 +1736,14 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                     </div>
                 )}
             </div>
+
+            {/* Available Casts Modal */}
+            <AvailableCastsModal
+                isOpen={showAvailableCastsModal}
+                onClose={() => setShowAvailableCastsModal(false)}
+                casts={appliedCasts}
+                onCastClick={handleCastClick}
+            />
         </div>
     );
 };

@@ -157,7 +157,7 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
                                 {/* Welcome message from concierge info */}
                                 {conciergeInfo && messages.length === 0 && (
                                     <div className="flex justify-start">
-                                        <div className="max-w-[80%] rounded-lg px-4 py-3 bg-gray-100 text-gray-800 border">
+                                        <div className="max-w-[80%] rounded-lg px-4 py-3 bg-white/10 text-white border">
                                             {/* Welcome banner */}
                                             <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-lg p-3 mb-3 text-white">
                                                 <div className="flex items-center">

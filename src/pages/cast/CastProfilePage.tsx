@@ -356,7 +356,7 @@ const CastProfilePage: React.FC = () => {
                     </span>
                     {ranking && (
                         <span className="text-sm text-white/90">
-                            今月のランキング: {ranking.summary.my_rank ? `#${ranking.summary.my_rank}` : '—'} / Pt {ranking.summary.my_points ?? 0}
+                            今月のランキング: {ranking.summary.my_rank !== null && ranking.summary.my_rank !== undefined ? `#${ranking.summary.my_rank}` : '—'} / Pt {ranking.summary.my_points ?? 0}
                         </span>
                     )}
                 </div>
@@ -432,7 +432,7 @@ const CastProfilePage: React.FC = () => {
                 ) : ranking && ranking.data && ranking.data.length > 0 ? (
                     <>
                         {/* Current Cast Ranking Summary */}
-                        {ranking.summary.my_rank && (
+                        {ranking.summary.my_rank !== null && ranking.summary.my_rank !== undefined && (
                             <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 border border-yellow-400/30 rounded-lg p-3 mb-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
@@ -481,6 +481,29 @@ const CastProfilePage: React.FC = () => {
                                     <div className="text-white font-semibold">{item.points.toLocaleString()}P</div>
                                 </div>
                             ))}
+                             {/* Show current user's ranking even if not in TOP 10 */}
+                             {!ranking.data.some(i => i.user_id === castId) && (ranking.summary.my_rank !== null && ranking.summary.my_rank !== undefined) && (
+                                 <>
+                                     <div className="text-center text-white/50 text-xs mt-3">あなた</div>
+                                     <div className="flex items-center px-3 py-2 rounded-lg transition-colors bg-yellow-400/20 border border-yellow-400/30">
+                                         <div className="w-8 text-center">
+                                             <span className="text-white font-bold">{ranking.summary.my_rank}</span>
+                                         </div>
+                                         <img
+                                             src={getCurrentAvatarUrl()}
+                                             onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
+                                             alt={cast?.nickname || 'you'}
+                                             className="w-8 h-8 rounded-full border border-secondary object-cover mr-3"
+                                         />
+                                         <div className="flex-1">
+                                             <div className="truncate text-yellow-400 font-semibold">
+                                                 {cast?.nickname || 'あなた'}
+                                             </div>
+                                         </div>
+                                         <div className="text-white font-semibold">{(ranking.summary.my_points ?? 0).toLocaleString()}P</div>
+                                     </div>
+                                 </>
+                             )}
                         </div>
                     </>
                 ) : (

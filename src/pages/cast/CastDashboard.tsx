@@ -1,5 +1,6 @@
 /*eslint-disable */
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Clock3, UserRound, MessageCircle } from 'lucide-react';
 import TopNavigationBar from '../../components/cast/dashboard/TopNavigationBar';
 import TabBar from '../../components/cast/dashboard/TabBar';
@@ -13,7 +14,7 @@ import CastProfilePage from './CastProfilePage';
 import MessagePage from '../../components/cast/dashboard/MessagePage';
 import FeedbackForm from '../../components/feedback/FeedbackForm';
 import { Reservation, getAllReservations, getAllChats, fetchRanking } from '../../services/api';
-import { applyReservation, startReservation, stopReservation, getCastApplications } from '../../services/api';
+import { applyReservation, startReservation, stopReservation, getAllCastApplications } from '../../services/api';
 import { ChatRefreshProvider, useChatRefresh } from '../../contexts/ChatRefreshContext';
 import { useTweets, useUnreadMessageCount, useNotifications } from '../../hooks/useRealtime';
 import echo from '../../services/echo';
@@ -174,6 +175,14 @@ const CastDashboardInner: React.FC = () => {
     const [showConcierge, setShowConcierge] = useState(false);
 
     const { cast, castId, loading: castLoading } = useCast();
+    const navigate = useNavigate();
+
+    // Redirect unauthenticated casts to the first page
+    useEffect(() => {
+        if (!castLoading && !cast) {
+            navigate('/cast/login');
+        }
+    }, [castLoading, cast, navigate]);
 
     // Fetch cast profile to get category
     useEffect(() => {
@@ -244,7 +253,7 @@ const CastDashboardInner: React.FC = () => {
             });
 
         if (castId) {
-            getCastApplications(castId)
+            getAllCastApplications(castId)
                 .then(applications => setReservationApplications(applications || []));
         }
 
@@ -279,7 +288,18 @@ const CastDashboardInner: React.FC = () => {
 
     const isReservationApplied = (reservationId: number | undefined) => {
         if (typeof reservationId !== 'number') return false;
-        return reservationApplications.some(app => app.reservation_id === reservationId);
+        return reservationApplications.some(app => app.reservation_id === reservationId && app.status === 'pending');
+    };
+
+    const isReservationApproved = (reservationId: number | undefined) => {
+        if (typeof reservationId !== 'number') return false;
+        return reservationApplications.some(app => app.reservation_id === reservationId && app.status === 'approved');
+    };
+
+    const getReservationApplicationStatus = (reservationId: number | undefined) => {
+        if (typeof reservationId !== 'number') return null;
+        const application = reservationApplications.find(app => app.reservation_id === reservationId);
+        return application ? application.status : null;
     };
 
     type CallWithActive = Reservation & {
@@ -293,29 +313,43 @@ const CastDashboardInner: React.FC = () => {
         active: boolean;
         cast_id?: number;
         isApplied?: boolean;
+        isApproved?: boolean;
+        isInProgress?: boolean;
+        isCompleted?: boolean;
+        statusText?: string;
+    };
+
+    const parseLocalDateTime = (dateTimeString: string): Date => {
+        if (!dateTimeString || typeof dateTimeString !== 'string') return new Date();
+        
+        // Split the date and time parts
+        const parts = dateTimeString.split(' ');
+        if (parts.length < 2) return new Date();
+        
+        const [datePart, timePart] = parts;
+        if (!datePart || !timePart) return new Date();
+        
+        const dateComponents = datePart.split('-');
+        const timeComponents = timePart.split(':');
+        
+        if (dateComponents.length < 3 || timeComponents.length < 3) return new Date();
+        
+        const [year, month, day] = dateComponents.map(Number);
+        const [hour, minute, second] = timeComponents.map(Number);
+        
+        // Validate that all components are valid numbers
+        if (isNaN(year) || isNaN(month) || isNaN(day) || isNaN(hour) || isNaN(minute) || isNaN(second)) {
+            return new Date();
+        }
+        
+        // Create date in local time (month is 0-based in JS)
+        return new Date(year, month - 1, day, hour, minute, second);
     };
 
     const calls: CallWithActive[] = reservations
         .filter((r) => {
-        // Check if reservation has started (has started_at but no ended_at)
-            const hasStarted = r.started_at && r.started_at !== null && r.started_at !== '';
-            const hasEnded = r.ended_at && r.ended_at !== null && r.ended_at !== '';
-            const isInProgress = hasStarted && !hasEnded;
-            const isCompleted = hasStarted && hasEnded;
-            const castApplied = isReservationInChat(r.id);
-
             // Only show free type reservations
             if (r.type !== 'free') {
-                return false;
-            }
-
-            // Hide reservations that have started or ended if cast hasn't applied
-            if ((isInProgress || isCompleted) && !castApplied) {
-                return false;
-            }
-
-            // Hide completed reservations (those that have ended)
-            if (isCompleted) {
                 return false;
             }
 
@@ -323,12 +357,37 @@ const CastDashboardInner: React.FC = () => {
         })
         .map((r) => {
             const alreadyInChat = isReservationInChat(r.id); // Only disable if THIS cast has applied
-            const isApplied = isReservationApplied(r.id); // Check if cast has applied
-            const inactive = (r as any).active === false || (alreadyInChat && isApplied);
+            const isApplied = isReservationApplied(r.id); // Check if cast has applied (pending)
+            const isApproved = isReservationApproved(r.id); // Check if cast has been approved
+            const hasStarted = r.started_at && r.started_at !== null && r.started_at !== '';
+            const hasEnded = r.ended_at && r.ended_at !== null && r.ended_at !== '';
+            const isInProgress = Boolean(hasStarted && !hasEnded);
+            const isCompleted = Boolean(hasStarted && hasEnded);
+            
+            // Also consider reservations past their scheduled end time as completed
+            const now = new Date();
+            const scheduledEnd = r.scheduled_at && r.duration ? 
+                new Date(new Date(r.scheduled_at).getTime() + r.duration * 60 * 60 * 1000) : null;
+            const isPastScheduledEnd = Boolean(scheduledEnd && now > scheduledEnd);
+            const isActuallyCompleted = Boolean(isCompleted || isPastScheduledEnd);
+            const inactive = (r as any).active === false || isApplied || isApproved || isInProgress || isActuallyCompleted;
+            
+            // Determine status text
+            let statusText = '';
+            if (isApproved) {
+                statusText = '承認済み';
+            } else if (isApplied) {
+                statusText = '承認を待つ';
+            } else if (isInProgress) {
+                statusText = '進行中';
+            } else if (isActuallyCompleted) {
+                statusText = '終了';
+            }
+            
             return {
                 ...r,
                 title: r.location || '未設定',
-                time: r.scheduled_at ? new Date(r.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '〜' : '',
+                time: r.scheduled_at ? parseLocalDateTime(r.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '〜' : '',
                 typeLabel: r.type === 'pishatto' ? 'プレミアム' : 'スタンダード',
                 people: r.details
                     ? (r.details.match(/(\d+)人/g)?.map(s => Number(s.replace('人', ''))).reduce((a, b) => a + b, 0) || 1)
@@ -338,8 +397,14 @@ const CastDashboardInner: React.FC = () => {
                 closed: false,
                 active: !inactive,
                 isApplied: isApplied, // Add this flag for styling
+                isApproved: isApproved, // Add this flag for styling
+                isInProgress: isInProgress,
+                isCompleted: isActuallyCompleted,
+                statusText: statusText,
             };
         });
+
+    console.log('CALLS', calls);
 
     const filteredByArea: CallWithActive[] = selectedArea === '全国'
         ? calls
@@ -378,6 +443,9 @@ const CastDashboardInner: React.FC = () => {
         return date >= tomorrow;
     };
 
+    
+
+    
     let tabFilteredCalls: CallWithActive[] = sortedCalls;
     
     if (selectedTab === 1) {
@@ -413,9 +481,9 @@ const CastDashboardInner: React.FC = () => {
                                         {tabFilteredCalls.map((call, idx) => (
                                             <div
                                                 key={idx}
-                                                onClick={() => !call.closed && call.active !== false && !call.isApplied && setSelectedCall(call)}
+                                                onClick={() => !call.closed && call.active !== false && !call.isApplied && !call.isApproved && !call.isInProgress && !call.isCompleted && setSelectedCall(call)}
                                                 className={
-                                                    call.closed || call.active === false || call.isApplied
+                                                    call.closed || call.active === false || call.isApplied || call.isApproved || call.isInProgress || call.isCompleted
                                                         ?  'opacity-50 cursor-not-allowed'
                                                         : 'cursor-pointer'
                                                 }
@@ -426,11 +494,12 @@ const CastDashboardInner: React.FC = () => {
                                                     duration={call.duration || 0}
                                                     points={call.points || '0'}
                                                     type={call.type || ''}
-                                                    greyedOut={call.closed || call.active === false || call.isApplied}
+                                                    greyedOut={call.closed || call.active === false || call.isApplied || call.isApproved || call.isInProgress || call.isCompleted}
                                                     started_at={call.started_at}
                                                     ended_at={call.ended_at}
                                                     points_earned={call.points_earned}
                                                     isOwnReservation={castId ? call.cast_id === castId : false}
+                                                    statusText={call.statusText}
                                                     onStart={castId && call.cast_id === castId && !call.started_at && typeof call.id === 'number' ? async () => {
                                                         const updated = await startReservation(call.id as number, castId);
                                                         setReservations(prev => prev.map(r => r.id === call.id ? { ...r, ...updated } : r));
@@ -491,7 +560,7 @@ const CastDashboardInner: React.FC = () => {
                                 setShowApplicationComplete(true);
                                 
                                 // Refresh reservation applications
-                                const applications = await getCastApplications(castId);
+                                const applications = await getAllCastApplications(castId);
                                 setReservationApplications(applications || []);
                                 
                                 // Refresh ranking after successful application

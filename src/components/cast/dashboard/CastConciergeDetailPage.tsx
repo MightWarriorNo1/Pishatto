@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { Bird, ChevronLeft, MessageSquare, Clock, AlertCircle, CheckCircle, XCircle, Info } from 'lucide-react';
+import { Bird, ChevronLeft, MessageSquare, Clock, AlertCircle, CheckCircle, XCircle, Info, Send } from 'lucide-react';
 import { getConciergeMessages, sendConciergeMessage, markConciergeAsRead } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
 
@@ -170,7 +170,7 @@ const CastConciergeDetailPage: React.FC<CastConciergeDetailPageProps> = ({ onBac
                         {/* Welcome message if no messages */}
                         {messages.length === 0 && (
                             <div className="flex justify-start">
-                                <div className="max-w-[80%] rounded-lg px-4 py-3 bg-gray-100 text-gray-800 border">
+                                <div className="max-w-[80%] rounded-lg px-4 py-3 bg-white/10 text-white border">
                                     <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-lg p-3 mb-3 text-white">
                                         <div className="flex items-center">
                                             <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center mr-3">
@@ -300,7 +300,7 @@ const CastConciergeDetailPage: React.FC<CastConciergeDetailPageProps> = ({ onBac
                         {sending ? (
                             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                         ) : (
-                            <MessageSquare className="w-5 h-5" />
+                            <Send className="w-5 h-5" />
                         )}
                     </button>
                 </div>

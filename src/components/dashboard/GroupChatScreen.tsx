@@ -1,9 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Users, Calendar, Clock, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Users, Calendar, Clock, Check, Send } from 'lucide-react';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants, updateReservation } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useGroupMessages } from '../../hooks/useRealtime';
+import { testEchoConnection } from '../../services/echo';
 import dayjs from 'dayjs';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -23,6 +26,12 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     
     return `${API_BASE_URL}/${avatars[0]}`;
 };
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const userTz=dayjs.tz.guess();
+
 
 interface Proposal {
     type: string;
@@ -127,9 +136,31 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
     }, []);
 
     // Real-time group messages
-    useGroupMessages(groupId, (message) => {
-        setMessages(prev => [...prev, message]);
-    });
+    const handleRealtimeMessage = useCallback((message: any) => {
+        console.log('GroupChatScreen: Received real-time message:', message);
+        setMessages(prev => {
+            const messageExists = prev.some(m => m.id === message.id);
+            if (messageExists) return prev;
+            return [...prev, message];
+        });
+    }, []);
+    useGroupMessages(groupId, handleRealtimeMessage);
+
+    // Debug WebSocket connection status
+    useEffect(() => {
+        const checkConnection = () => {
+            const echo = (window as any).Echo;
+            if (echo && echo.connector && echo.connector.pusher) {
+                const state = echo.connector.pusher.connection.state;
+                console.log('GroupChatScreen: WebSocket connection state:', state);
+            }
+        };
+        
+        checkConnection();
+        const interval = setInterval(checkConnection, 5000); // Check every 5 seconds
+        
+        return () => clearInterval(interval);
+    }, []);
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
@@ -152,6 +183,8 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
         setSendError(null);
 
         try {
+            console.log('Sending message with data:', { groupId, input: input.trim(), userId: user.id });
+            
             const messageData: any = {
                 group_id: groupId,
                 message: input.trim(),
@@ -173,7 +206,30 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                 }
             }
 
-            await sendGroupMessage(messageData);
+            console.log('Message data to send:', messageData);
+            
+            // Send the message
+            const response = await sendGroupMessage(messageData);
+            console.log('Message sent successfully, response:', response);
+            
+            // Immediately add the sent message returned from API (has real id)
+            if (response) {
+                setMessages(prev => {
+                    const exists = prev.some(m => m.id === response.id);
+                    return exists ? prev : [...prev, response];
+                });
+            } else {
+                // If no response, try to refresh messages after a short delay
+                console.log('No response from server, will refresh messages in 1 second');
+                setTimeout(async () => {
+                    try {
+                        const response = await getGroupMessages(groupId, 'guest', user.id);
+                        setMessages(Array.isArray(response.messages) ? response.messages : []);
+                    } catch (e) {
+                        console.error('Failed to refresh messages:', e);
+                    }
+                }, 1000);
+            }
 
             // Clear input and reset states
             setInput('');
@@ -266,7 +322,8 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
     };
 
     const formatTime = (timestamp: string) => {
-        return dayjs(timestamp).format('HH:mm');
+        // Use mm for minutes, not MM (month)
+        return dayjs.utc(timestamp).tz(userTz).format('YYYY-MM-DD HH:mm');
     };
 
     const formatDate = (timestamp: string) => {
@@ -310,6 +367,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
         );
     }
 
+    console.log('messages', messages);
     return (
         <div className="min-h-screen flex flex-col">
             {/* Fixed Header */}
@@ -326,7 +384,15 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                         ({participants.length}人)
                     </span>
                 </div>
-                <div className="w-6 h-6" />
+                <button 
+                    onClick={() => {
+                        const isConnected = testEchoConnection();
+                        console.log('WebSocket connection test:', isConnected ? '✅ Connected' : '❌ Not connected');
+                    }}
+                    className="text-white hover:text-secondary text-sm"
+                >
+                    🔌
+                </button>
             </div>
 
             {/* Messages - Scrollable Area */}
@@ -493,7 +559,12 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey && isNotificationEnabled('messages')) {
+                                    e.preventDefault();
+                                    handleSend();
+                                }
+                            }}
                             placeholder={isNotificationEnabled('messages') ? "メッセージを入力..." : "メッセージ通知が無効です"}
                             className={`w-full px-3 py-2 rounded-full border border-secondary text-sm ${
                                 isNotificationEnabled('messages') 
@@ -528,11 +599,18 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                         disabled={sending || (!input.trim() && !attachedFile && !showGiftModal) || !isNotificationEnabled('messages')}
                         className={`px-4 py-2 rounded-full text-sm disabled:opacity-50 ${
                             isNotificationEnabled('messages') 
-                                ? 'bg-blue-500 text-white' 
+                                ? 'bg-blue-500 text-white hover:bg-blue-600' 
                                 : 'bg-gray-500 text-gray-300'
                         }`}
                     >
-                        {sending ? '送信中...' : isNotificationEnabled('messages') ? '送信' : '送信 (無効)'}
+                        {sending ? (
+                            <div className="flex items-center">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                                <span>送信中...</span>
+                            </div>
+                        ) : (
+                            <Send className="w-4 h-4" />
+                        )}
                     </button>
                 </div>
 

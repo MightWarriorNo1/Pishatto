@@ -172,7 +172,7 @@ const CastTimelinePage: React.FC = () => {
                                             ? `${APP_BASE_URL}/${tweet.guest.avatar}`
                                             : tweet.cast?.avatar
                                                 ? `${APP_BASE_URL}/${tweet.cast.avatar.split(',')[0].trim()}`
-                                                : '/assets/avatar/avatar-1.png'
+                                                : '/assets/avatar/female.png'
                                     } alt={tweet.guest?.nickname || tweet.cast?.nickname || ''} className="w-10 h-10 rounded-full object-cover mr-2 border border-secondary cursor-pointer hover:opacity-80 transition-opacity" 
                                     onClick={() => handleAvatarClick(tweet)} 
                                     />

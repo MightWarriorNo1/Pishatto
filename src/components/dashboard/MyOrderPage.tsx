@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getGuestReservations, Reservation, updateReservation } from '../../services/api';
+import { getGuestReservations, Reservation, updateReservation, completeReservation } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { ChevronLeft, Clock, MapPin, Users, Calendar, Award, MessageCircle } from 'lucide-react';
 import { useReservationUpdates } from '../../hooks/useRealtime';
@@ -31,6 +31,8 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             }
         });
     });
+
+    console.log(reservations);
 
     const formatDate = (dateString: string) => {
         return dayjs(dateString).format('MM/DD (ddd) HH:mm');
@@ -76,6 +78,7 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             const endedAt = (r.scheduled_at && r.duration)
                                 ? dayjs(r.scheduled_at).add(Number(r.duration), 'hour')
                                 : null;
+
                             return (
                                 <div 
                                     key={r.id} 
@@ -137,6 +140,7 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                                 scheduled_at={r.scheduled_at}
                                                 duration={r.duration}
                                                 userId={user?.id}
+                                                 selected_casts={r.selected_casts}
                                                 onReservationUpdate={data => setReservations(prev => prev.map(rr => rr.id === r.id ? { ...rr, ...data } : rr))}
                                             />
                                         </div>
@@ -162,8 +166,9 @@ const ReservationTimer: React.FC<{
     scheduled_at?: string; 
     duration?: number; 
     onReservationUpdate?: (data: Partial<Reservation>) => void; 
-    userId?: number 
-}> = ({ started_at, ended_at, points_earned, reservationId, scheduled_at, duration, onReservationUpdate, userId }) => {
+    userId?: number,
+    selected_casts?: any[]
+}> = ({ started_at, ended_at, points_earned, reservationId, scheduled_at, duration, onReservationUpdate, userId, selected_casts }) => {
     const [currentTime, setCurrentTime] = React.useState<Date>(new Date());
     const [finished, setFinished] = React.useState(false);
     const [exceededAt, setExceededAt] = React.useState<number | null>(null);
@@ -231,17 +236,22 @@ const ReservationTimer: React.FC<{
         if (reservationId) {
             const startToUse = started_at || scheduled_at || new Date().toISOString();
             try {
-                const res = await updateReservation(reservationId, {
+                // First update the timing to ensure accurate calculation
+                await updateReservation(reservationId, {
                     started_at: formatForMySQL(new Date(startToUse)),
                     ended_at: formatForMySQL(end),
                 });
-                setLocalPoints(res.points_earned);
+
+                // Then complete the reservation to process point settlement
+                const completion = await completeReservation(reservationId, {});
+                const updated = completion?.reservation || {};
+                setLocalPoints(updated.points_earned);
                 setSuccessMsg('予約が正常に終了しました');
                 setErrorMsg(null);
                 if (onReservationUpdate) onReservationUpdate({ 
                     started_at: formatForMySQL(new Date(startToUse)), 
                     ended_at: formatForMySQL(end), 
-                    points_earned: res.points_earned 
+                    points_earned: updated.points_earned 
                 });
                 setShowFeedbackModal(true);
             } catch (e: any) {
@@ -256,7 +266,7 @@ const ReservationTimer: React.FC<{
         <div className="space-y-4">
             {/* Status Messages */}
             {successMsg && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div className="items-center bg-green-50 border border-green-200 rounded-lg p-3">
                     <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                         <span className="text-green-800 font-medium text-sm">{successMsg}</span>
@@ -352,7 +362,24 @@ const ReservationTimer: React.FC<{
                 isOpen={showFeedbackModal}
                 onClose={() => setShowFeedbackModal(false)}
                 reservationId={reservationId || 0}
-                castId={1}
+                { ...(() => {
+                    const castsRaw = Array.isArray(selected_casts) ? selected_casts : [];
+                    const normalized = castsRaw.map((c: any) => {
+                        // Accept {id, nickname, avatar} or plain number id
+                        if (typeof c === 'number') return { id: c };
+                        if (c && typeof c === 'object') {
+                            return { id: c.id ?? c.cast_id ?? c.user_id, nickname: c.nickname ?? c.name, avatar: c.avatar };
+                        }
+                        return null;
+                    }).filter(Boolean) as { id: number; nickname?: string; avatar?: string }[];
+                    if (normalized.length > 1) {
+                        return { casts: normalized };
+                    } else if (normalized.length === 1) {
+                        return { castId: normalized[0].id };
+                    } else {
+                        return {};
+                    }
+                })() }
                 guestId={userId || 0}
                 onSuccess={() => setShowFeedbackModal(false)}
             />

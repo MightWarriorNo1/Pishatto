@@ -25,12 +25,45 @@ export function useGroupMessages(
 ) {
   useEffect(() => {
     if (!groupId) return;
-    const channel = echo.channel(`group.${groupId}`);
-    channel.listen("GroupMessageSent", (e: { message: any }) => {
-      onNewMessage(e.message);
-    });
+    
+    console.log(`useGroupMessages: Setting up listener for group.${groupId}`);
+    
+    const channel: any = echo.channel(`group.${groupId}`);
+    
+    // Add connection status logging (guard methods which may not exist)
+    if (typeof channel.subscribed === 'function') {
+      channel.subscribed(() => {
+        console.log(`useGroupMessages: Successfully subscribed to group.${groupId}`);
+      });
+    }
+    if (typeof channel.error === 'function') {
+      channel.error((error: any) => {
+        console.error(`useGroupMessages: Error on group.${groupId} channel:`, error);
+      });
+    }
+    
+    const handleEvent = (e: { message: any }) => {
+      console.log(`useGroupMessages: Received GroupMessageSent event for group.${groupId}:`, e);
+      if (e && e.message) {
+        onNewMessage(e.message);
+      } else {
+        console.warn(`useGroupMessages: Received GroupMessageSent event but no message data:`, e);
+      }
+    };
+    channel.listen("GroupMessageSent", handleEvent);
+    // Some setups require a leading dot for broadcastAs custom names
+    channel.listen(".GroupMessageSent", handleEvent);
+    
     return () => {
-      channel.stopListening("GroupMessageSent");
+      console.log(`useGroupMessages: Cleaning up listener for group.${groupId}`);
+      try { channel.stopListening("GroupMessageSent"); } catch {}
+      try { channel.stopListening(".GroupMessageSent"); } catch {}
+      try {
+        // Ensure we fully unsubscribe from the channel
+        (echo as any).leave?.(`group.${groupId}`);
+      } catch (err) {
+        // no-op
+      }
     };
   }, [groupId, onNewMessage]);
 }

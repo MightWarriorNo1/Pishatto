@@ -1,6 +1,8 @@
 /* eslint-disable */
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, Calendar, Image, Search, Filter, Camera, FolderClosed } from 'lucide-react';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { useNavigate } from 'react-router-dom';
 import MessageProposalPage from './MessageProposalPage';
 import { sendMessage, getChatMessages,getChatById, getGuestReservations } from '../../../services/api';
@@ -13,6 +15,11 @@ import CastConciergeDetailPage from './CastConciergeDetailPage';
 import CastGroupChatScreen from './CastGroupChatScreen';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+const userTz=dayjs.tz.guess();
 interface Message {
     id: string;
     avatar: string;
@@ -151,6 +158,11 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
             return [...filtered, msg];
         });
     });
+
+    const formatTime = (timestamp: string) => {
+    
+        return dayjs.utc(timestamp).tz(userTz).format('YYYY-MM-DD HH:mm');
+    };
 
     const handleImageButtonClick = () => {
         setShowFile((prev) => !prev);
@@ -295,7 +307,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                 {(idx === 0 || currentDate !== prevDate) && (
                                     <div className="flex justify-center my-2">
                                         <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
-                                            {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''}
+                                            {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''} */}
+                                            {formatTime(msg.created_at)}
                                         </span>
                                     </div>
                                 )}
@@ -314,13 +327,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                             </React.Fragment>
                         );
                     }
-                    // Use authenticated cast id from context
-                    // Improved message ownership determination for cast view
-                    // Check if message is from the current cast
                     const isSentByCast = castId && String(msg.sender_cast_id) === String(castId);
-                    // Check if message is from a guest (should be displayed as received by cast)
                     const isFromGuest = msg.sender_guest_id && !msg.sender_cast_id;
-                    // Determine if this message should be displayed as sent by the current cast
                     const isSent = isSentByCast && !isFromGuest;
                     
                     // Debug logging for message ownership issues
@@ -342,7 +350,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                             {(idx === 0 || currentDate !== prevDate) && (
                                 <div className="flex justify-center my-2">
                                     <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
-                                        {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''}
+                                        {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''} */}
+                                        {formatTime(msg.created_at)}
                                     </span>
                                 </div>
                             )}
@@ -376,7 +385,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                     {msg.message}
                                 </div>
                                 <div className={`text-xs text-gray-400 mt-1 ${isSent ? 'text-right' : 'text-left'}`}>
-                                    {msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''}
+                                    {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''} */}
+                                    {formatTime(msg.created_at)}
                                 </div>
                             </div>
                         </div>
