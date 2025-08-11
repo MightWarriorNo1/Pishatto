@@ -11,14 +11,14 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
   if (!avatarString) {
     return '/assets/avatar/female.png';
   }
-  
+
   // Split by comma and get the first non-empty avatar
   const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-  
+
   if (avatars.length === 0) {
     return '/assets/avatar/female.png';
   }
-  
+
   return `${API_BASE_URL}/${avatars[0]}`;
 };
 
@@ -54,14 +54,7 @@ const FavoritesSection: React.FC = () => {
 
   if (favorites.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 bg-primary rounded-lg ">
-        <div className="w-48 h-48 mb-6">
-          <img
-            src="/assets/avatar/image-1.png"
-            alt="お気に入りなし"
-            className="w-full h-full object-contain"
-          />
-        </div>
+      <div className="flex flex-col items-center justify-center py-12 px-4 rounded-lg ">
         <h2 className="text-lg font-bold text-center mb-2 text-white">
           あなただけのお気に入りリストを作りましょう
         </h2>

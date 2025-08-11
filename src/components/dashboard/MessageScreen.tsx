@@ -25,7 +25,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const [chats, setChats] = useState<any[]>([]);
     const [messageNotifications, setMessageNotifications] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('');
-    const [castProfiles, setCastProfiles] = useState<{[key: number]: any}>({});
+    const [castProfiles, setCastProfiles] = useState<{ [key: number]: any }>({});
     const [favoritedChatIds, setFavoritedChatIds] = useState<Set<number>>(new Set());
     const [showNotification, setShowNotification] = useState(false);
     const [showConcierge, setShowConcierge] = useState(false);
@@ -34,55 +34,55 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const { user } = useUser();
     const { refreshKey } = useChatRefresh();
     const { isNotificationEnabled } = useNotificationSettings();
-    
+
     // Notify parent when concierge state changes
     useEffect(() => {
         onConciergeStateChange?.(showConcierge);
     }, [showConcierge, onConciergeStateChange]);
-    
+
     useEffect(() => {
-            const loadChatsAndFavorites = async () => {
-        setIsLoading(true);
-        try {
-            // Fetch chats and favorites in parallel
-            const [chatsData, favoritesData] = await Promise.all([
-                getGuestChats(userId, 'guest'),
-                user ? getFavoriteChats(user.id) : Promise.resolve({ chats: [] })
-            ]);
+        const loadChatsAndFavorites = async () => {
+            setIsLoading(true);
+            try {
+                // Fetch chats and favorites in parallel
+                const [chatsData, favoritesData] = await Promise.all([
+                    getGuestChats(userId, 'guest'),
+                    user ? getFavoriteChats(user.id) : Promise.resolve({ chats: [] })
+                ]);
 
-            const chats = chatsData || [];
-            setChats(chats);
+                const chats = chatsData || [];
+                setChats(chats);
 
-            // Set favorited chat IDs
-            const favoriteChats = favoritesData.chats || [];
-            const favoritedIds = new Set<number>(favoriteChats.map((chat: any) => chat.id as number));
-            setFavoritedChatIds(favoritedIds);
+                // Set favorited chat IDs
+                const favoriteChats = favoritesData.chats || [];
+                const favoritedIds = new Set<number>(favoriteChats.map((chat: any) => chat.id as number));
+                setFavoritedChatIds(favoritedIds);
 
-            // Also check favorite status for each chat to ensure accuracy
-            if (user && chats.length > 0) {
-                const favoriteStatusPromises = chats.map(async (chat: any) => {
-                    try {
-                        const status = await isChatFavorited(chat.id, user.id);
-                        return { chatId: chat.id, favorited: status.favorited };
-                    } catch (error) {
-                        console.error(`Error checking favorite status for chat ${chat.id}:`, error);
-                        return { chatId: chat.id, favorited: false };
-                    }
-                });
+                // Also check favorite status for each chat to ensure accuracy
+                if (user && chats.length > 0) {
+                    const favoriteStatusPromises = chats.map(async (chat: any) => {
+                        try {
+                            const status = await isChatFavorited(chat.id, user.id);
+                            return { chatId: chat.id, favorited: status.favorited };
+                        } catch (error) {
+                            console.error(`Error checking favorite status for chat ${chat.id}:`, error);
+                            return { chatId: chat.id, favorited: false };
+                        }
+                    });
 
-                const favoriteStatuses = await Promise.all(favoriteStatusPromises);
-                const actualFavoritedIds = new Set<number>(
-                    favoriteStatuses
-                        .filter(status => status.favorited)
-                        .map(status => status.chatId)
-                );
-                setFavoritedChatIds(actualFavoritedIds);
-            }
+                    const favoriteStatuses = await Promise.all(favoriteStatusPromises);
+                    const actualFavoritedIds = new Set<number>(
+                        favoriteStatuses
+                            .filter(status => status.favorited)
+                            .map(status => status.chatId)
+                    );
+                    setFavoritedChatIds(actualFavoritedIds);
+                }
 
                 // Fetch cast profiles for each chat
                 if (chats.length > 0) {
                     const uniqueCastIds = Array.from(new Set(chats.map((chat: any) => chat.cast_id).filter(Boolean))) as number[];
-                    const profilePromises = uniqueCastIds.map((castId: number) => 
+                    const profilePromises = uniqueCastIds.map((castId: number) =>
                         getCastProfileById(castId)
                             .then(profile => ({ castId, profile }))
                             .catch(error => {
@@ -90,9 +90,9 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                 return { castId, profile: null };
                             })
                     );
-                    
+
                     await Promise.all(profilePromises).then(results => {
-                        const profilesMap: {[key: number]: any} = {};
+                        const profilesMap: { [key: number]: any } = {};
                         results.forEach(({ castId, profile }) => {
                             if (profile) {
                                 profilesMap[castId] = profile;
@@ -126,28 +126,28 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         if (!isNotificationEnabled('messages') && !chat.is_concierge_chat) {
             return false;
         }
-        
+
         // If concierge messages are disabled, hide concierge chats
         if (!isNotificationEnabled('concierge_messages') && chat.is_concierge_chat) {
             return false;
         }
-        
+
         // Then filter by search query
         if (!searchQuery.trim()) return true;
-        
+
         const query = searchQuery.toLowerCase();
-        
+
         // Filter by nickname
         const nickname = chat.cast_nickname?.toLowerCase() || '';
         if (nickname.includes(query)) return true;
-        
+
         // Filter by age using cast profile
         const castProfile = castProfiles[chat.cast_id];
         if (castProfile) {
             const age = (new Date().getFullYear() - castProfile.cast.birth_year).toString();
             if (age.includes(query)) return true;
         }
-        
+
         return false;
     });
 
@@ -155,34 +155,34 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const filteredFavoriteChats = chats.filter(chat => {
         // First filter by favorite status
         if (!favoritedChatIds.has(chat.id)) return false;
-        
+
         // Filter by notification settings
         // If messages are disabled, hide all non-concierge chats
         if (!isNotificationEnabled('messages') && !chat.is_concierge_chat) {
             return false;
         }
-        
+
         // If concierge messages are disabled, hide concierge chats
         if (!isNotificationEnabled('concierge_messages') && chat.is_concierge_chat) {
             return false;
         }
-        
+
         // Then filter by search query
         if (!searchQuery.trim()) return true;
-        
+
         const query = searchQuery.toLowerCase();
-        
+
         // Filter by nickname
         const nickname = chat.cast_nickname?.toLowerCase() || '';
         if (nickname.includes(query)) return true;
-        
+
         // Filter by age using cast profile
         const castProfile = castProfiles[chat.cast_id];
         if (castProfile) {
             const age = (new Date().getFullYear() - castProfile.cast.birth_year).toString();
             if (age.includes(query)) return true;
         }
-        
+
         return false;
     });
     // Handle star toggle
@@ -207,6 +207,16 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         }
     };
 
+    // Ensure we always display the first avatar if multiple are provided
+    const getFirstAvatarUrl = (avatar: string | null | undefined): string => {
+        if (!avatar || typeof avatar !== 'string') return '/assets/avatar/female.png';
+        const first = avatar
+            .split(',')
+            .map((item: string) => item.trim())
+            .filter(Boolean)[0];
+        return first ? `${API_BASE_URL}/${first}` : '/assets/avatar/female.png';
+    };
+
     // Listen for real-time notifications
     useNotifications(user?.id ?? '', (notification) => {
         console.log("Notification", notification);
@@ -228,13 +238,13 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
 
     if (showChat) {
         if (currentChat && currentChat.is_group_chat) {
-            return <GroupChatScreen 
-                groupId={currentChat.group_id} 
-                groupName={currentChat.group_name || 'Group Chat'} 
+            return <GroupChatScreen
+                groupId={currentChat.group_id}
+                groupName={currentChat.group_name || 'Group Chat'}
                 onBack={() => {
                     setShowChat(null);
                     setCurrentChat(null);
-                }} 
+                }}
             />;
         } else {
             // Check if this is a group chat (has group_id) or individual chat
@@ -245,7 +255,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                 return <ChatScreen chatId={showChat} onBack={() => setShowChat(null)} />;
             }
         }
-    } 
+    }
 
     if (showConcierge) {
         return <ConciergeDetailPage onBack={() => setShowConcierge(false)} />;
@@ -311,11 +321,11 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                 <div className="px-4 mt-4">
                     {/* Concierge Chat - Show only if concierge messages are enabled */}
                     {isNotificationEnabled('concierge_messages') && (
-                        <ConciergeChat 
+                        <ConciergeChat
                             onClick={() => setShowConcierge(true)}
                         />
                     )}
-                    
+
                     {selectedTab === 'all' ? (
                         filteredChats.length === 0 ? (
                             <div className="text-white text-center py-8">
@@ -326,13 +336,9 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                 // Find notification for this chat
                                 const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
                                 const isFavorited = favoritedChatIds.has(chat.id);
-                                
+
                                 // Get the first avatar from comma-separated string
-                                const getAvatarSrc = () => {
-                                    if (!chat.avatar) return '/assets/avatar/female.png';
-                                    const avatars = chat.avatar.split(',').map((avatar: string) => avatar.trim());
-                                    return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/female.png';
-                                };
+                                const getAvatarSrc = () => getFirstAvatarUrl(chat.avatar);
 
                                 // Handle group chat display
                                 const getDisplayName = () => {
@@ -348,17 +354,15 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
 
                                 const getDisplayAvatar = () => {
                                     if (chat.is_group_chat && chat.casts && chat.casts.length > 0) {
-                                        // For group chats, show the first cast avatar or a group icon
-                                        return chat.casts[0]?.avatar ? 
-                                            `${API_BASE_URL}/${chat.casts[0].avatar}` : 
-                                            '/assets/avatar/female.png'; // Use default avatar instead of group.png
+                                        // For group chats, show the first cast avatar from possibly comma-separated list
+                                        return getFirstAvatarUrl(chat.casts[0]?.avatar);
                                     } else if (chat.is_group_chat && (!chat.casts || chat.casts.length === 0)) {
                                         // For guest-only groups, show a default avatar
                                         return '/assets/avatar/female.png';
                                     }
                                     return getAvatarSrc();
                                 };
-                                
+
                                 return (
                                     <div key={chat.id} className="relative">
                                         <button
@@ -423,8 +427,8 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                             onClick={(e) => handleStarToggle(chat.id, e)}
                                             className="absolute top-2 right-2 p-1 rounded-full bg-primary border border-secondary hover:bg-secondary transition-colors"
                                         >
-                                            <FiStar 
-                                                className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`} 
+                                            <FiStar
+                                                className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`}
                                             />
                                         </button>
                                     </div>
@@ -441,13 +445,9 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                 // Find notification for this chat
                                 const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
                                 const isFavorited = favoritedChatIds.has(chat.id);
-                                
+
                                 // Get the first avatar from comma-separated string
-                                const getAvatarSrc = () => {
-                                    if (!chat.avatar) return '/assets/avatar/female.png';
-                                    const avatars = chat.avatar.split(',').map((avatar: string) => avatar.trim());
-                                    return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/female.png';
-                                };
+                                const getAvatarSrc = () => getFirstAvatarUrl(chat.avatar);
 
                                 // Handle group chat display
                                 const getDisplayName = () => {
@@ -463,17 +463,15 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
 
                                 const getDisplayAvatar = () => {
                                     if (chat.is_group_chat && chat.casts && chat.casts.length > 0) {
-                                        // For group chats, show the first cast avatar or a group icon
-                                        return chat.casts[0]?.avatar ? 
-                                            `${API_BASE_URL}/${chat.casts[0].avatar}` : 
-                                            '/assets/avatar/female.png'; // Use default avatar instead of group.png
+                                        // For group chats, show the first cast avatar from possibly comma-separated list
+                                        return getFirstAvatarUrl(chat.casts[0]?.avatar);
                                     } else if (chat.is_group_chat && (!chat.casts || chat.casts.length === 0)) {
                                         // For guest-only groups, show a default avatar
                                         return '/assets/avatar/female.png';
                                     }
                                     return getAvatarSrc();
                                 };
-                                
+
                                 return (
                                     <div key={chat.id} className="relative">
                                         <button
@@ -538,8 +536,8 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                             onClick={(e) => handleStarToggle(chat.id, e)}
                                             className="absolute top-2 right-2 p-1 rounded-full bg-primary border border-secondary hover:bg-secondary transition-colors"
                                         >
-                                            <FiStar 
-                                                className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`} 
+                                            <FiStar
+                                                className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`}
                                             />
                                         </button>
                                     </div>

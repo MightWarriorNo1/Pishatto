@@ -31,6 +31,12 @@ const getAllAvatarUrls = (avatarString: string | null | undefined): string[] => 
     return avatars.map(avatar => `${API_BASE_URL}/${avatar}`);
 };
 
+// Always return the first avatar when multiple are present
+const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+    const avatarUrls = getAllAvatarUrls(avatarString);
+    return avatarUrls[0] || '/assets/avatar/avatar-1.png';
+};
+
 interface Badge {
     id: number;
     name: string;
@@ -468,7 +474,7 @@ const CastProfilePage: React.FC = () => {
                                         {index > 2 && <span className="text-white font-bold">{item.rank}</span>}
                                     </div>
                                     <img
-                                        src={item.avatar ? `${API_BASE_URL}/${item.avatar}` : '/assets/avatar/avatar-1.png'}
+                                        src={getFirstAvatarUrl(item.avatar)}
                                         onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
                                         alt={item.name}
                                         className="w-8 h-8 rounded-full border border-secondary object-cover mr-3"
@@ -490,7 +496,7 @@ const CastProfilePage: React.FC = () => {
                                              <span className="text-white font-bold">{ranking.summary.my_rank}</span>
                                          </div>
                                          <img
-                                             src={getCurrentAvatarUrl()}
+                                             src={getFirstAvatarUrl(cast?.avatar)}
                                              onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
                                              alt={cast?.nickname || 'you'}
                                              className="w-8 h-8 rounded-full border border-secondary object-cover mr-3"

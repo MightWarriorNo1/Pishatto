@@ -74,7 +74,7 @@ const FootprintsSection: React.FC = () => {
 
   if (!footprints.length) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 bg-primary rounded-lg border border-secondary">
+      <div className="flex flex-col items-center justify-center py-12 px-4 rounded-lg">
         <h2 className="text-lg font-bold text-center mb-2 text-white">まだ誰もあなたのプロフィールを見ていません</h2>
         <p className="text-sm text-white text-center">キャストがあなたのプロフィールを訪れるとここに表示されます</p>
       </div>

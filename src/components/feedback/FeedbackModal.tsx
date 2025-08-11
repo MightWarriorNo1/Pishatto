@@ -41,6 +41,18 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   }[]>([]);
   const [existingFeedbackByCast, setExistingFeedbackByCast] = useState<Record<number, { id: number; comment?: string | null; rating?: number | null; badge_id?: number | null; guest_id?: number }>>({});
 
+  // Return first avatar URL when multiple are provided (comma-separated). Supports http/data URLs.
+  const getFirstAvatarUrl = (avatarString?: string | null): string | null => {
+    if (!avatarString || typeof avatarString !== 'string') return null;
+    const first = avatarString
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean)[0];
+    if (!first) return null;
+    if (first.startsWith('http') || first.startsWith('data:')) return first;
+    return `${API_BASE_URL}/${first}`;
+  };
+
   useEffect(() => {
     if (!isOpen) return;
     fetchAllBadges().then(setBadges);
@@ -231,9 +243,9 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
                 <div key={cast.id} className="border rounded-xl p-4">
                   <div className="flex items-center gap-3 mb-3">
                     <span className="w-9 h-9 rounded-full bg-gray-200 inline-flex items-center justify-center overflow-hidden">
-                      {cast.avatar ? (
+                      {getFirstAvatarUrl(cast.avatar) ? (
                         <img
-                          src={(cast.avatar.startsWith('http') || cast.avatar.startsWith('data:')) ? cast.avatar : `${API_BASE_URL}/${cast.avatar}`}
+                          src={getFirstAvatarUrl(cast.avatar) as string}
                           alt="avatar"
                           className="w-9 h-9 object-cover"
                         />

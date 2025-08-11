@@ -32,8 +32,6 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         });
     });
 
-    console.log(reservations);
-
     const formatDate = (dateString: string) => {
         return dayjs(dateString).format('MM/DD (ddd) HH:mm');
     };

@@ -39,7 +39,54 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
 
   const hours = computeHours(duration);
   const gradePoints = selectedCast.grade_points || 0;
-  const computedPoints = gradePoints * hours * 60 / 30;
+  const computedPoints = (gradePoints * hours * 60) / 30;
+
+  // Night-time fee handling (12AM-6AM)
+  const extractHourFromTimeString = (timeString: string): number | null => {
+    if (!timeString) return null;
+    const date = new Date(timeString);
+    if (!Number.isNaN(date.getTime())) {
+      return date.getHours();
+    }
+    // Try 24h format HH:mm
+    const match24h = timeString.match(/\b([01]?\d|2[0-3]):[0-5]\d\b/);
+    if (match24h) {
+      return parseInt(match24h[1], 10);
+    }
+    // Try 12h with AM/PM
+    const match12h = timeString.match(/\b(1[0-2]|0?\d)\s*(AM|PM)\b/i);
+    if (match12h) {
+      let hour = parseInt(match12h[1], 10) % 12;
+      const isPm = /PM/i.test(match12h[2]);
+      if (isPm) hour += 12;
+      return hour;
+    }
+    // Try Japanese format with 午前/午後 and 時
+    const jpMeridiem = timeString.match(/(午前|午後)\s*(\d{1,2})\s*時/);
+    if (jpMeridiem) {
+      let hour = parseInt(jpMeridiem[2], 10) % 12;
+      const isGogo = jpMeridiem[1] === '午後';
+      if (isGogo) hour += 12;
+      return hour;
+    }
+    // Try Japanese format without meridiem: e.g., 2時, 14時
+    const jpHourOnly = timeString.match(/\b(\d{1,2})\s*時/);
+    if (jpHourOnly) {
+      const hour = parseInt(jpHourOnly[1], 10);
+      if (hour >= 0 && hour <= 23) return hour;
+    }
+    return null;
+  };
+
+  const isNightTime = (() => {
+    const hour = extractHourFromTimeString(scheduledTime);
+    if (hour === null) return false;
+    return hour >= 0 && hour < 6;
+  })();
+
+  const NIGHT_FEE_PER_HOUR = 4000; // P per hour
+  const nightFee = isNightTime ? NIGHT_FEE_PER_HOUR * hours : 0;
+  const totalPoints = computedPoints + nightFee;
 
   // Stepper steps
   const steps = [
@@ -124,7 +171,7 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
                 </div>
                 <div className="flex justify-between">
                   <span className="text-white">使用ポイント</span>
-                  <span className="font-bold text-white">{computedPoints.toLocaleString()}P</span>
+                  <span className="font-bold text-white">{totalPoints.toLocaleString()}P</span>
                 </div>
               </div>
             </div>
