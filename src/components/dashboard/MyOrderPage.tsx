@@ -187,7 +187,7 @@ const ReservationTimer: React.FC<{
     // Use scheduled_at and duration for planned times
     const scheduled = scheduled_at ? new Date(scheduled_at) : undefined;
     const plannedEnd = (scheduled && duration) ? new Date(scheduled.getTime() + duration * 60 * 60 * 1000) : undefined;
-    const started = started_at ? new Date(started_at) : undefined;
+    const started = started_at ? new Date(started_at).toISOString() : undefined;
     const ended = ended_at ? new Date(ended_at) : undefined;
 
     // Timer states
@@ -231,10 +231,10 @@ const ReservationTimer: React.FC<{
         if (plannedEnd && end > plannedEnd) {
             setExceededAt(end.getTime() - plannedEnd.getTime());
         }
+        console.log(exceededAt);
         if (reservationId) {
             const startToUse = started_at || scheduled_at || new Date().toISOString();
             try {
-                // First update the timing to ensure accurate calculation
                 await updateReservation(reservationId, {
                     started_at: formatForMySQL(new Date(startToUse)),
                     ended_at: formatForMySQL(end),

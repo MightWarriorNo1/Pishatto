@@ -49,7 +49,6 @@ const echo = new Echo({
   enabledTransports: forceTLS ? ['wss', 'ws'] : ['ws', 'wss'],
 });
 
-console.log('[Echo] Config', { REVERB_HOST, REVERB_PORT, REVERB_WSS_PORT, REVERB_SCHEME, forceTLS });
 
 // Add connection event listeners for debugging
 if (echo.connector && 'pusher' in echo.connector) {

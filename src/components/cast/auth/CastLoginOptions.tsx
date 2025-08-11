@@ -13,7 +13,7 @@ const CastLoginOptions: React.FC<CastLoginOptionsProps> = ({ onNext }) => {
     }
 
     return (
-        <div className="min-h-screen max-w-md mx-auto bg-gradient-to-br from-primary via-gray-100 to-secondary flex items-center justify-center">
+        <div className="min-h-screen max-w-md mx-auto bg-gradient-to-br from-primary via-primary/80 to-secondary flex items-center justify-center">
             <div className="w-full p-8">
                 <div className="space-y-6">
                     <div className="text-center space-y-2">

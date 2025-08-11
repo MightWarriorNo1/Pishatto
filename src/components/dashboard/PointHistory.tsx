@@ -131,9 +131,8 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
     );
   }
 
-  console.log("Transaction", transactions);
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
+    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-20">
       <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-10">
         <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
           {onBack && (

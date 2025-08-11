@@ -71,7 +71,6 @@ const RankingTabSection: React.FC = () => {
     }).catch(() => setLoading(false));
   }, [userType, timePeriod, selectedCategory, selectedArea]);
 
-  console.log("RANKING", ranking);
   return (
     <div className="flex flex-col bg-gradient-to-br from-primary via-primary to-secondary min-h-[calc(100vh-10rem)] relative">
       <div className="px-4 pt-4">

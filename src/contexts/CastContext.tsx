@@ -27,7 +27,6 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   });
 
   const setCastId = (newCastId: number | null) => {
-    console.log('CastContext: setting castId:', newCastId);
     setCastIdState(newCastId);
     if (newCastId) {
       localStorage.setItem('castId', newCastId.toString());
@@ -39,13 +38,11 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   const updateCast = (updates: Partial<CastProfile>) => {
     if (cast) {
       const updatedCast = { ...cast, ...updates };
-      console.log('CastContext: updating cast:', updatedCast);
       setCastWrapper(updatedCast);
     }
   };
 
   const setCastWrapper = (newCast: CastProfile | null) => {
-    console.log('CastContext: setting cast:', newCast);
     setCast(newCast);
     // Store cast data in localStorage for fallback
     if (newCast) {
@@ -75,16 +72,13 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   const checkExistingAuth = async () => {
     try {
       setLoading(true);
-      console.log('CastContext: checking existing authentication...');
       const authResult = await checkCastAuth();
-      console.log('CastContext: auth result:', authResult);
       if (authResult.authenticated && authResult.cast) {
         console.log('CastContext: cast authenticated, setting cast data:', authResult.cast);
         setCastWrapper(authResult.cast);
         setCastId(authResult.cast.id);
         setLoading(false);
       } else {
-        console.log('CastContext: cast not authenticated, checking localStorage fallback...');
         // No existing authentication, check if we have cast data in localStorage
         const storedCastData = localStorage.getItem('castData');
         const storedCastId = localStorage.getItem('castId');
@@ -94,8 +88,6 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
             const parsedCastData = JSON.parse(storedCastData);
             const castIdNumber = parseInt(storedCastId, 10);
             
-            // Check if the stored cast data is still valid by making a request to get fresh data
-            console.log('CastContext: found stored cast data, refreshing...');
             const { cast: freshCastData } = await getCastProfileById(castIdNumber);
             if (freshCastData) {
               console.log('CastContext: stored cast data is still valid, setting cast data:', freshCastData);
@@ -112,7 +104,6 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
             setCastId(null);
           }
         } else {
-          console.log('CastContext: no stored cast data found');
           setCastWrapper(null);
           setCastId(null);
         }
@@ -128,7 +119,6 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
         try {
           const parsedCastData = JSON.parse(storedCastData);
           const castIdNumber = parseInt(storedCastId, 10);
-          console.log('CastContext: using stored cast data as fallback:', parsedCastData);
           setCastWrapper(parsedCastData);
           setCastId(castIdNumber);
         } catch (error) {
@@ -145,7 +135,6 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   };
 
   useEffect(() => {
-    console.log('CastContext: useEffect triggered, checking existing auth...');
     checkExistingAuth();
   }, []);
 
