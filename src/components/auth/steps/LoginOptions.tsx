@@ -6,7 +6,7 @@ interface LoginOptionsProps {
 
 const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
   return (
-    <div className="min-h-screen bg-primary flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-primary via-gray-800 to-secondary p-8 flex flex-col">
       <div className="flex-1 flex items-center justify-center">
         <div className="w-full px-4 space-y-4">
           <div className="p-2 text-center text-xs text-white">
@@ -15,14 +15,16 @@ const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
 
           <button
             onClick={onNext}
-            className="w-full flex items-center justify-center py-3 px-4 rounded-full bg-primary border border-secondary hover:bg-red-500 text-white font-medium relative"
+            aria-label="電話番号で始める"
+            className="w-full flex items-center justify-center py-3 px-4 rounded-full bg-primary border border-secondary hover:bg-red-500 text-white font-medium relative focus:outline-none focus:ring-2 focus:ring-secondary/60"
           >
             <span className="absolute left-4">📞</span>
             電話番号で始める
           </button>
 
           <button
-            className="w-full flex items-center justify-center py-3 px-4 rounded-full bg-secondary text-white border border-secondary font-medium relative"
+            aria-label="LINEで始める"
+            className="w-full flex items-center justify-center py-3 px-4 rounded-full bg-secondary hover:bg-red-400 text-white border border-secondary font-medium relative focus:outline-none focus:ring-2 focus:ring-secondary/60"
           >
             <span className="absolute left-4">
               <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current">
@@ -32,7 +34,7 @@ const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
             LINEで始める
           </button>
 
-          <button className="w-full flex items-center justify-center py-2 text-gray-400"
+          <button className="w-full flex items-center justify-center py-2 text-gray-400 hover:text-white"
             onClick={() => { window.location.href = "/"; }}>
             閉じる
           </button>

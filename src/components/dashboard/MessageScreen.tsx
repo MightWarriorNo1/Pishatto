@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FiBell, FiStar } from 'react-icons/fi';
+import React, { useState, useEffect, useMemo } from 'react';
+import { FiBell, FiStar, FiSearch, FiXCircle, FiCheckCircle } from 'react-icons/fi';
 import ChatScreen from './ChatScreen';
 import GroupChatScreen from './GroupChatScreen';
 import ConciergeChat from '../ConciergeChat';
@@ -25,6 +25,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const [chats, setChats] = useState<any[]>([]);
     const [messageNotifications, setMessageNotifications] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('');
+    const [debouncedQuery, setDebouncedQuery] = useState<string>('');
     const [castProfiles, setCastProfiles] = useState<{ [key: number]: any }>({});
     const [favoritedChatIds, setFavoritedChatIds] = useState<Set<number>>(new Set());
     const [showNotification, setShowNotification] = useState(false);
@@ -119,8 +120,14 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         }
     }, [userId, refreshKey, user]);
 
+    // Debounce user search input for smoother filtering
+    useEffect(() => {
+        const handle = setTimeout(() => setDebouncedQuery(searchQuery.trim().toLowerCase()), 250);
+        return () => clearTimeout(handle);
+    }, [searchQuery]);
+
     // Filter chats based on search query and notification settings
-    const filteredChats = chats.filter(chat => {
+    const filteredChats = useMemo(() => chats.filter(chat => {
         // Filter by notification settings first
         // If messages are disabled, hide all non-concierge chats
         if (!isNotificationEnabled('messages') && !chat.is_concierge_chat) {
@@ -133,9 +140,9 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         }
 
         // Then filter by search query
-        if (!searchQuery.trim()) return true;
+        if (!debouncedQuery) return true;
 
-        const query = searchQuery.toLowerCase();
+        const query = debouncedQuery;
 
         // Filter by nickname
         const nickname = chat.cast_nickname?.toLowerCase() || '';
@@ -149,10 +156,10 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         }
 
         return false;
-    });
+    }), [chats, isNotificationEnabled, debouncedQuery, castProfiles]);
 
     // Filter favorite chats based on search query and notification settings
-    const filteredFavoriteChats = chats.filter(chat => {
+    const filteredFavoriteChats = useMemo(() => chats.filter(chat => {
         // First filter by favorite status
         if (!favoritedChatIds.has(chat.id)) return false;
 
@@ -168,9 +175,9 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         }
 
         // Then filter by search query
-        if (!searchQuery.trim()) return true;
+        if (!debouncedQuery) return true;
 
-        const query = searchQuery.toLowerCase();
+        const query = debouncedQuery;
 
         // Filter by nickname
         const nickname = chat.cast_nickname?.toLowerCase() || '';
@@ -184,7 +191,19 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         }
 
         return false;
-    });
+    }), [chats, favoritedChatIds, isNotificationEnabled, debouncedQuery, castProfiles]);
+
+    // Sort chats to show unread first
+    const sortedFilteredChats = useMemo(() => {
+        return [...filteredChats].sort((a, b) => (b?.unread || 0) - (a?.unread || 0));
+    }, [filteredChats]);
+    const sortedFilteredFavoriteChats = useMemo(() => {
+        return [...filteredFavoriteChats].sort((a, b) => (b?.unread || 0) - (a?.unread || 0));
+    }, [filteredFavoriteChats]);
+
+    // Counts for tabs
+    const allCount = filteredChats.length;
+    const favoriteCount = filteredFavoriteChats.length;
     // Handle star toggle
     const handleStarToggle = async (chatId: number, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent chat opening
@@ -236,6 +255,27 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     //     setMessageNotifications((prev) => prev.filter((n) => n.id !== id));
     // };
 
+    // Mark all messages as read
+    const handleMarkAllAsRead = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            // Mark all notifications as read
+            await Promise.all(
+                messageNotifications.map((n: any) => markNotificationRead(n.id))
+            );
+            // Mark chats unread to 0 locally and on server
+            const chatsWithUnread = chats.filter(c => (c.unread || 0) > 0);
+            await Promise.all(
+                chatsWithUnread.map(c => markChatMessagesRead(c.id, userId, 'guest'))
+            );
+            setChats(prev => prev.map(c => ({ ...c, unread: 0 })));
+            setMessageNotifications([]);
+            onNotificationCountChange?.(0);
+        } catch (error) {
+            console.error('Error marking all as read:', error);
+        }
+    };
+
     if (showChat) {
         if (currentChat && currentChat.is_group_chat) {
             return <GroupChatScreen
@@ -266,10 +306,28 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     return (
         <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col pb-24">
             {/* Top bar */}
-            <div className="fixed max-w-md mx-auto top-0 left-0 right-0 flex items-center justify-between px-4 py-3 border-b border-secondary cursor-pointer bg-primary" onClick={() => setShowNotification(true)}>
-                <FiBell className="w-6 h-6 text-white" />
+            <div className="fixed max-w-md mx-auto top-0 left-0 right-0 flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary">
+                <button
+                    className="relative p-1"
+                    aria-label="通知を開く"
+                    onClick={() => setShowNotification(true)}
+                >
+                    <FiBell className="w-6 h-6 text-white" />
+                    {messageNotifications.length > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center font-bold">
+                            {messageNotifications.length}
+                        </span>
+                    )}
+                </button>
                 <div className="font-bold text-lg text-white">メッセージ一覧</div>
-                <div className="w-6 h-6" /> {/* Placeholder for right icon */}
+                <button
+                    onClick={handleMarkAllAsRead}
+                    className="flex items-center gap-1 text-xs font-bold text-white bg-secondary/80 hover:bg-secondary px-2 py-1 rounded-full border border-secondary"
+                    aria-label="すべて既読にする"
+                >
+                    <FiCheckCircle className="w-4 h-4" />
+                    <span>すべて既読</span>
+                </button>
             </div>
             {/* Message notifications section */}
             {/* {messageNotifications.length > 0 && (
@@ -286,35 +344,59 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
             {/* Tabs */}
             <div className="flex items-center px-4 pt-16">
                 <button
-                    className={`px-4 py-1 rounded-full font-bold text-sm mr-2 ${selectedTab === 'all' ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}
+                    className={`px-4 py-1 rounded-full font-bold text-sm mr-2 flex items-center gap-2 ${selectedTab === 'all' ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}
                     onClick={() => setSelectedTab('all')}
                 >
                     すべて
+                    <span className="text-[10px] font-bold bg-primary text-white border border-secondary rounded-full px-2 py-[2px]">
+                        {allCount}
+                    </span>
                 </button>
                 <button
-                    className={`px-4 py-1 rounded-full font-bold text-sm ${selectedTab === 'favorite' ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}
+                    className={`px-4 py-1 rounded-full font-bold text-sm flex items-center gap-2 ${selectedTab === 'favorite' ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}
                     onClick={() => setSelectedTab('favorite')}
                 >
                     お気に入り
+                    <span className="text-[10px] font-bold bg-primary text-white border border-secondary rounded-full px-2 py-[2px]">
+                        {favoriteCount}
+                    </span>
                 </button>
             </div>
             {/* Search bar */}
             <div className="px-4 mt-3">
-                <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-2 rounded-full border border-secondary bg-primary text-white text-sm placeholder-red-500"
-                    placeholder="ニックネーム・年齢で検索"
-                />
+                <div className="relative">
+                    <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70 w-4 h-4" />
+                    <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-9 py-2 rounded-full border border-secondary bg-primary text-white text-sm placeholder-red-500 focus:outline-none focus:ring-2 focus:ring-secondary"
+                        placeholder="ニックネーム・年齢で検索"
+                        aria-label="チャット検索"
+                    />
+                    {searchQuery && (
+                        <button
+                            aria-label="検索をクリア"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-white/80 hover:text-white"
+                            onClick={() => setSearchQuery('')}
+                        >
+                            <FiXCircle className="w-5 h-5" />
+                        </button>
+                    )}
+                </div>
             </div>
             {/* Loading indicator */}
             {isLoading ? (
-                <div className="flex-1 flex items-center justify-center">
-                    <div className="text-white text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                        <div className="text-lg">読み込み中...</div>
-                    </div>
+                <div className="px-4 mt-4">
+                    {[...Array(5)].map((_, idx) => (
+                        <div key={idx} className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary mb-3 animate-pulse">
+                            <div className="w-12 h-12 rounded-full mr-3 bg-white/10" />
+                            <div className="flex-1 space-y-2">
+                                <div className="h-4 bg-white/10 rounded w-1/2" />
+                                <div className="h-3 bg-white/10 rounded w-1/3" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             ) : (
                 /* Message list */
@@ -327,12 +409,12 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                     )}
 
                     {selectedTab === 'all' ? (
-                        filteredChats.length === 0 ? (
+                        sortedFilteredChats.length === 0 ? (
                             <div className="text-white text-center py-8">
                                 {searchQuery.trim() ? '検索結果がありません' : 'グループチャットがありません'}
                             </div>
                         ) : (
-                            filteredChats.map(chat => {
+                            sortedFilteredChats.map(chat => {
                                 // Find notification for this chat
                                 const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
                                 const isFavorited = favoritedChatIds.has(chat.id);
@@ -363,10 +445,11 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                     return getAvatarSrc();
                                 };
 
+                                const isUnread = (chat.unread || 0) > 0;
                                 return (
                                     <div key={chat.id} className="relative">
                                         <button
-                                            className="w-full"
+                                            className={`w-full text-left`}
                                             onClick={async () => {
                                                 setShowChat(chat.id);
                                                 setCurrentChat(chat); // Set current chat for GroupChatScreen
@@ -380,11 +463,11 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                                 await markChatMessagesRead(chat.id, userId, 'guest');
                                             }}
                                         >
-                                            <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
+                                            <div className={`flex items-center rounded-lg shadow-sm p-3 relative border ${isUnread ? 'bg-secondary/20 border-secondary' : 'bg-primary border-secondary'} hover:bg-secondary/30 transition-colors`}>
                                                 <img
                                                     src={getDisplayAvatar()}
                                                     alt="avatar"
-                                                    className="w-12 h-12 rounded-full mr-3 border border-secondary"
+                                                    className={`w-12 h-12 rounded-full mr-3 border ${isFavorited ? 'ring-2 ring-yellow-400 border-yellow-400' : 'border-secondary'}`}
                                                 />
                                                 <div className="flex-1">
                                                     <div className="flex items-center">
@@ -426,6 +509,8 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                         <button
                                             onClick={(e) => handleStarToggle(chat.id, e)}
                                             className="absolute top-2 right-2 p-1 rounded-full bg-primary border border-secondary hover:bg-secondary transition-colors"
+                                            aria-label={isFavorited ? 'お気に入り解除' : 'お気に入りに追加'}
+                                            aria-pressed={isFavorited}
                                         >
                                             <FiStar
                                                 className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`}
@@ -436,12 +521,12 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                             })
                         )
                     ) : (
-                        filteredFavoriteChats.length === 0 ? (
+                        sortedFilteredFavoriteChats.length === 0 ? (
                             <div className="text-white text-center py-8">
                                 {searchQuery.trim() ? '検索結果がありません' : 'お気に入りのチャットがありません'}
                             </div>
                         ) : (
-                            filteredFavoriteChats.map(chat => {
+                            sortedFilteredFavoriteChats.map(chat => {
                                 // Find notification for this chat
                                 const chatNotif = messageNotifications.find(n => n.chat_id === chat.id);
                                 const isFavorited = favoritedChatIds.has(chat.id);
@@ -472,10 +557,11 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                     return getAvatarSrc();
                                 };
 
+                                const isUnread = (chat.unread || 0) > 0;
                                 return (
                                     <div key={chat.id} className="relative">
                                         <button
-                                            className="w-full"
+                                            className={`w-full text-left`}
                                             onClick={async () => {
                                                 setShowChat(chat.id);
                                                 setCurrentChat(chat); // Set current chat for GroupChatScreen
@@ -489,11 +575,11 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                                 await markChatMessagesRead(chat.id, userId, 'guest');
                                             }}
                                         >
-                                            <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
+                                            <div className={`flex items-center rounded-lg shadow-sm p-3 relative border ${isUnread ? 'bg-secondary/20 border-secondary' : 'bg-primary border-secondary'} hover:bg-secondary/30 transition-colors`}>
                                                 <img
                                                     src={getDisplayAvatar()}
                                                     alt="avatar"
-                                                    className="w-12 h-12 rounded-full mr-3 border border-secondary"
+                                                    className={`w-12 h-12 rounded-full mr-3 border ${isFavorited ? 'ring-2 ring-yellow-400 border-yellow-400' : 'border-secondary'}`}
                                                 />
                                                 <div className="flex-1">
                                                     <div className="flex items-center">
@@ -535,6 +621,8 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                         <button
                                             onClick={(e) => handleStarToggle(chat.id, e)}
                                             className="absolute top-2 right-2 p-1 rounded-full bg-primary border border-secondary hover:bg-secondary transition-colors"
+                                            aria-label={isFavorited ? 'お気に入り解除' : 'お気に入りに追加'}
+                                            aria-pressed={isFavorited}
                                         >
                                             <FiStar
                                                 className={`w-4 h-4 ${isFavorited ? 'text-yellow-400 fill-current' : 'text-white'}`}

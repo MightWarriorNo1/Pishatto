@@ -100,7 +100,7 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
         <div className="max-w-md mx-auto min-h-screen bg-gradient-br-to from-primary via-primary to-secondary overflow-y-auto pb-8">
             {/* Top bar */}
             <div className="flex justify-center items-center px-4 pt-6 pb-6">
-                <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary">
+                <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer">
                     <ChevronLeft />
                 </button>
                 <span className="flex-1 text-center text-base font-bold text-white">本人認証</span>

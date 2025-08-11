@@ -45,7 +45,7 @@ const ReceiptTestPage: React.FC = () => {
     <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
       {/* Header */}
       <div className="flex items-center px-4 py-3 border-b border-gray-200 bg-primary">
-        <button onClick={() => window.history.back()} className="mr-2 text-white">
+        <button onClick={() => window.history.back()} className="mr-2 text-white hover:text-secondary cursor-pointer">
           <ChevronLeft size={20} />
         </button>
         <span className="text-sm font-medium flex-1 text-center text-white">領収書テスト</span>

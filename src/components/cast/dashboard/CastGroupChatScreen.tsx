@@ -1,14 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Image, Camera, FolderClosed,  ChevronLeft, X, Users, Calendar, Send } from 'lucide-react';
+import { Image, Camera, FolderClosed,  ChevronLeft, X, Users, Send } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
 import { useUser } from '../../../contexts/UserContext';
 import { useGroupMessages } from '../../../hooks/useRealtime';
-import { testEchoConnection } from '../../../services/echo';
 import dayjs from 'dayjs';
-import MessageProposalPage from './MessageProposalPage';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -72,7 +70,6 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     const [participants, setParticipants] = useState<any[]>([]);
     const [groupInfo, setGroupInfo] = useState<any>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const [messageProposal, setMessageProposal] = useState(false);
     const attachBtnRef = useRef<HTMLButtonElement>(null);
     
     // Camera functionality
@@ -192,6 +189,9 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    const popoverRef = useRef<HTMLDivElement>(null);
+    const fileSelectInputRef = useRef<HTMLInputElement>(null);
+
     const handleSend = async () => {
         if (!input.trim() && !attachedFile && !showGiftModal) return;
         
@@ -266,15 +266,22 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setAttachedFile(file);
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setImagePreview(e.target?.result as string);
-            };
-            reader.readAsDataURL(file);
+        const inputEl = e.target;
+        const file = inputEl.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            setSendError('画像ファイルを選択してください');
+            inputEl.value = '';
+            return;
         }
+        setAttachedFile(file);
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setImagePreview(ev.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+        // Allow selecting the same file again later
+        inputEl.value = '';
     };
 
     // Camera functionality
@@ -406,46 +413,11 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
         );
     }
 
-    if (messageProposal) {
-        return (
-            <MessageProposalPage
-                chatId={groupId}
-                groupInfo={{
-                    id: groupId,
-                    name: groupInfo?.name || `グループ ${groupId}`,
-                    participants: participants,
-                    isGroupChat: true
-                }}
-                onBack={() => setMessageProposal(false)}
-                onProposalSend={async (proposal) => {
-                    setSending(true);
-                    try {
-                        const userId = castId || user?.id;
-                        if (!userId) {
-                            throw new Error('No valid user ID available');
-                        }
-                        const messageData: any = {
-                            group_id: groupId,
-                            sender_cast_id: userId,
-                            message: JSON.stringify({ type: 'proposal', ...proposal }),
-                        };
-                        await sendGroupMessage(messageData);
-                    } catch (error) {
-                        // Handle error silently
-                    } finally {
-                        setSending(false);
-                        setMessageProposal(false);
-                    }
-                }}
-            />
-        );
-    }
-
     return (
         <div className=" min-h-screen flex flex-col">
             {/* Fixed Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
-                <button onClick={onBack} className="text-white hover:text-secondary">
+                <button onClick={onBack} className="text-white hover:text-secondary cursor-pointer">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
                 <div className="flex items-center">
@@ -469,15 +441,6 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         disabled={fetching}
                     >
                         {fetching ? '更新中...' : '更新'}
-                    </button>
-                    <button 
-                        onClick={() => {
-                            const isConnected = testEchoConnection();
-                            console.log('WebSocket connection test:', isConnected ? '✅ Connected' : '❌ Not connected');
-                        }}
-                        className="text-white hover:text-secondary text-sm"
-                    >
-                        🔌
                     </button>
                 </div>
             </div>
@@ -683,12 +646,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         )}
                     </div>
                     
-                    <button
-                        onClick={() => setMessageProposal(true)}
-                        className="text-white p-2"
-                    >
-                        <Calendar className="w-5 h-5" />
-                    </button>
+
                     
                     <button
                         onClick={handleSend}
@@ -696,41 +654,67 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm disabled:opacity-50"
                     >
                         {sending ? <Send className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-                    </button>
+                </button>
                 </div>
 
-                {/* File Upload */}
                 {showFile && (
-                    <div className="mt-2 flex space-x-2">
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="hidden"
-                        />
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex items-center space-x-2 bg-secondary text-white px-3 py-2 rounded text-sm"
+                        <div
+                            ref={popoverRef}
+                            className="absolute bottom-full mb-1  w-80 bg-primary rounded-xl shadow-lg border border-secondary z-50 animate-fade-in"
                         >
-                            <Image className="w-4 h-4" />
-                            <span>画像</span>
-                        </button>
-                        <button
-                            onClick={handleOpenCamera}
-                            className="flex items-center space-x-2 bg-secondary text-white px-3 py-2 rounded text-sm"
-                        >
-                            <Camera className="w-4 h-4" />
-                            <span>カメラ</span>
-                        </button>
-                    </div>
-                )}
+                            <button
+                                className="flex items-center justify-between w-full px-4 py-3 pt-6 hover:bg-secondary text-white text-base border-b border-secondary"
+                                onClick={() => {
+                                    setShowFile(false);
+                                    fileInputRef.current?.click();
+                                }}
+                            >
+                                <span>写真ライブラリ</span>
+                                <Image />
+                            </button>
+                            <button 
+                                className="flex items-center justify-between w-full px-4 py-3 hover:bg-secondary text-white text-base border-b border-secondary"
+                                onClick={handleOpenCamera}
+                            >
+                                <span>写真またはビデオを撮る</span>
+                                <Camera />
+                            </button>
+                            <button 
+                                className="flex items-center justify-between w-full px-4 py-3 hover:bg-secondary text-white text-base"
+                                onClick={() => {
+                                    setShowFile(false);
+                                    fileSelectInputRef.current?.click();
+                                }}
+                            >
+                                <span>ファイルを選択</span>
+                                <FolderClosed />
+                            </button>
+                        </div>
+                    )}
+
+                {/* Hidden inputs for image selection */}
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    aria-hidden="true"
+                />
+                <input
+                    ref={fileSelectInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    aria-hidden="true"
+                />
             </div>
 
             {/* Camera Modal */}
             {showCamera && (
                 <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50">
-                    <div className="bg-primary p-4 rounded-lg flex flex-col items-center">
+                    <div className="bg-primary p-4 rounded-lg flex flex-col items-center min-w-[420px] max-w-[420px]">
                         <video
                             ref={videoRef}
                             autoPlay

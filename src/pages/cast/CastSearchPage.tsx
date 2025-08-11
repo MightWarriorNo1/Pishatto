@@ -71,7 +71,7 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
     return (
         <div className="max-w-md  bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-8 auto">
             <div className="flex items-center px-2 pt-2 pb-2">
-                <button onClick={onBack} className="text-2xl text-white font-bold">
+                <button onClick={onBack} className="text-2xl text-white font-bold hover:text-secondary cursor-pointer">
                     <ChevronLeft />
                 </button>
             </div>
@@ -376,18 +376,34 @@ interface RankingItem {
 
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+    const defaultAvatar = '/assets/avatar/female.png';
+
     if (!avatarString) {
-        return '/assets/avatar/female.png';
+        return defaultAvatar;
     }
-    
+
     // Split by comma and get the first non-empty avatar
-    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-    
-    if (avatars.length === 0) {
-        return '/assets/avatar/female.png';
+    const firstNonEmpty = avatarString
+        .split(',')
+        .map((avatar) => avatar.trim())
+        .find((avatar) => avatar.length > 0);
+
+    if (!firstNonEmpty) {
+        return defaultAvatar;
     }
-    
-    return `${API_BASE_URL}/${avatars[0]}`;
+
+    // If the avatar is an absolute URL, use it as-is
+    if (/^https?:\/\//i.test(firstNonEmpty)) {
+        return firstNonEmpty;
+    }
+
+    // If the avatar already points to local assets, use as-is
+    if (firstNonEmpty.startsWith('/assets/')) {
+        return firstNonEmpty;
+    }
+
+    // Otherwise, treat it as a backend-relative path
+    return `${API_BASE_URL}/${firstNonEmpty}`;
 };
 
 // RankingPage component (updated with filters)
@@ -462,7 +478,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 name: item.name || item.nickname || 'Unknown',
                 nickname: item.nickname,
                 age: item.age || null,
-                avatar: item.avatar || '/assets/avatar/female.png',
+                avatar: item.avatar || '',
                 points: item.points || 0,
                 region: item.region || region
             }));
@@ -483,7 +499,13 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 return true;
             });
 
-            setRankingData(filteredData);
+            // Recompute ranks after filtering so the list always starts from 1
+            const reRankedData = filteredData.map((item, index) => ({
+                ...item,
+                rank: index + 1,
+            }));
+
+            setRankingData(reRankedData);
         } catch (error) {
             console.error('Failed to fetch ranking data:', error);
         } finally {
@@ -509,11 +531,12 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         fetchRankingData();
     }, [mainTab, region, category, dateTab, filters]);
 
+    console.log("RANKING", rankingData);
     return (
-        <div className="max-w-md pb-8 bg-gradient-to-br from-primary via-primary to-secondary min-h-screen">
+        <div className="max-w-md pb-28 bg-gradient-to-br from-primary via-primary to-secondary min-h-screen">
             {/* Header */}
             <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary">
-                <button onClick={onBack} className="text-2xl text-white font-bold">
+                <button onClick={onBack} className="text-2xl text-white font-bold hover:text-secondary cursor-pointer">
                     <ChevronLeft />
                 </button>
                 <span className="text-lg font-bold text-white">ランキング</span>
@@ -598,7 +621,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             </div>
                         ) : (
                             <div key={user.id} className="flex items-center px-4 py-2 border-b border-secondary">
-                                <div className={`flex items-center justify-center w-8 h-8 text-lg font-bold ${user.rank === 2 ? 'text-white bg-primary border border-secondary rounded' : user.rank === 3 ? 'text-white bg-secondary rounded' : 'text-white bg-primary border border-secondary rounded'}`}>{user.rank}</div>
+                                <div className={`flex items-center justify-center w-8 h-8 text-lg font-bold ${user.rank === 2 ? 'text-white bg-primary border border-secondary rounded' : user.rank === 3 ? 'text-white bg-primary border border-secondary rounded' : 'text-white bg-primary border border-secondary rounded'}`}>{user.rank}</div>
                                 <div className="mx-4">
                                     <img 
                                         src={getFirstAvatarUrl(user.avatar)} 
@@ -688,14 +711,60 @@ const EasyMessagePage: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     );
 };
 
+// Modal to show all repeat guests
+type RepeatGuestsModalProps = {
+    isOpen: boolean;
+    onClose: () => void;
+    guests: RepeatGuest[];
+    onSelectGuest: (guest: RepeatGuest) => void;
+};
+
+const RepeatGuestsModal: React.FC<RepeatGuestsModalProps> = ({ isOpen, onClose, guests, onSelectGuest }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-primary border border-secondary rounded-lg w-11/12 max-w-md max-h-[80vh] overflow-y-auto">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-secondary">
+                    <h2 className="text-lg font-bold text-white">リピートしそうなゲスト一覧</h2>
+                    <button onClick={onClose} className="text-white">
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className="p-4 grid grid-cols-2 gap-4">
+                    {guests.length === 0 ? (
+                        <div className="col-span-2 text-center text-white">該当ゲストなし</div>
+                    ) : (
+                        guests.map((guest) => (
+                            <div
+                                key={guest.id}
+                                className="bg-primary rounded-lg shadow cursor-pointer transition-transform hover:scale-105 border border-secondary flex flex-col items-center p-3"
+                                onClick={() => onSelectGuest(guest)}
+                            >
+                                <div className="w-24 h-24 mb-2 relative">
+                                    <img
+                                        src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'}
+                                        alt={guest.nickname}
+                                        className="w-full h-full object-cover rounded-lg border-2 border-secondary"
+                                    />
+                                </div>
+                                <div className="text-xs text-white font-bold truncate w-full text-center">{guest.nickname}</div>
+                                <div className="text-xs text-white">{guest.reservations_count}回利用</div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const CastSearchPage: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useUser();
     const { isNotificationEnabled } = useNotificationSettings();
     const [casts, setCasts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedArea, setSelectedArea] = useState('東京都');
-    const [likedCasts, setLikedCasts] = useState<Set<number>>(new Set());
     const [messageLoading, setMessageLoading] = useState<number | null>(null);
     const [ranking, setRanking] = useState<any[]>([]);
     const [rankingLoading, setRankingLoading] = useState(false);
@@ -705,6 +774,7 @@ const CastSearchPage: React.FC = () => {
     const [showGuestDetail, setShowGuestDetail] = useState(false);
     const [selectedGuest, setSelectedGuest] = useState<RepeatGuest | null>(null);
     const [repeatGuests, setRepeatGuests] = useState<RepeatGuest[]>([]);
+    const [showAllRepeatGuests, setShowAllRepeatGuests] = useState(false);
     React.useEffect(() => {
         getRepeatGuests().then(setRepeatGuests).finally(() => setLoading(false));
     }, []);
@@ -736,7 +806,7 @@ const CastSearchPage: React.FC = () => {
             {/* Repeat guests */}
             <div className="px-4 pt-2 pb-1 flex items-center justify-between">
                 <span className="text-base font-bold text-white">あなたにリピートしそうなゲスト <span className="text-xs text-white ml-1">i</span></span>
-                <button className="text-xs text-white font-bold">すべて見る &gt;</button>
+                <button className="text-xs text-white font-bold" onClick={() => setShowAllRepeatGuests(true)}>すべて見る &gt;</button>
             </div>
             <div className="gap-3 px-4 pb-4 max-w-md mx-auto overflow-x-auto flex flex-row">
                 {loading ? (
@@ -794,6 +864,18 @@ const CastSearchPage: React.FC = () => {
                 <span className="mr-2">
                     <MessageCircleQuestionMark /></span>らくらく
             </button> */}
+
+            {/* All Repeat Guests Modal */}
+            <RepeatGuestsModal
+                isOpen={showAllRepeatGuests}
+                onClose={() => setShowAllRepeatGuests(false)}
+                guests={repeatGuests}
+                onSelectGuest={(guest) => {
+                    setSelectedGuest(guest);
+                    setShowGuestDetail(true);
+                    setShowAllRepeatGuests(false);
+                }}
+            />
         </div>
     );
 };

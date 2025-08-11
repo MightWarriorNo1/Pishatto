@@ -263,7 +263,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
         <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary relative pb-24">
             {/* Header (fixed) */}  
             <div className="fixed max-w-md mx-auto left-0 right-0 h-16 flex items-center px-4 py-3 border-b border-secondary bg-primary">
-                <button onClick={onBack} className="mr-2">
+                <button onClick={onBack} className="mr-2 hover:text-secondary cursor-pointer">
                     <ChevronLeft className="text-white" size={24} />
                 </button>
                 <div className="flex items-center">

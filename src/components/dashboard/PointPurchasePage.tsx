@@ -105,7 +105,7 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       {/* Header */}
       <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary rounded-b-2xl shadow-md">
         {onBack && (
-          <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary" aria-label="戻る">
+          <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" aria-label="戻る">
             <ChevronLeft />
           </button>
         )}

@@ -139,7 +139,7 @@ const GuestDetail: React.FC = () => {
                 />
                 <button 
                     onClick={() => navigate(-1)}
-                    className="absolute top-4 left-4 bg-primary bg-opacity-80 rounded-full p-2 text-2xl shadow-lg text-white border border-secondary hover:bg-secondary hover:text-primary transition-colors duration-200 z-10"
+                    className="absolute top-4 left-4 bg-primary bg-opacity-80 rounded-full p-2 text-2xl shadow-lg text-white border border-secondary hover:bg-secondary cursor-pointer transition-colors duration-200 z-10"
                     title="戻る"
                 >
                     <ChevronLeft />

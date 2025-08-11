@@ -59,43 +59,49 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
     const isActive = isValidPhoneNumber(phone);
 
     return (
-        <div className="min-h-screen bg-white flex items-center justify-center">
-            <div className="max-w-md w-full mx-auto bg-primary rounded-2xl shadow-lg p-8 border border-secondary">
-                <div className="min-h-screen flex flex-col bg-primary">
-                    {/* Header */}
-                    <div className="flex items-center justify-center relative h-14 border-b border-secondary bg-primary">
-                        <button onClick={onBack} className="absolute left-4 text-2xl text-white hover:text-red-700 transition-all duration-200">
-                            <ChevronLeft className="w-6 h-6" />
-                        </button>
-                        <span className="text-base font-medium text-white">電話番号の入力</span>
-                    </div>
-                    {/* Content */}
-                    <div className="flex-1 flex flex-col px-4 pt-6">
-                        <label className="block text-sm font-medium text-white mb-2">電話番号を入力してください</label>
-                        <input
-                            type="tel"
-                            className="w-full border border-secondary rounded-lg px-4 py-3 text-white placeholder-red-400 focus:outline-none focus:ring-2 focus:ring-red-600 mb-1 bg-primary"
-                            placeholder="例）09012345346"
-                            value={phone}
-                            onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
-                            maxLength={11}
-                        />
-                        <div className="text-xs text-white mb-4">※ハイフンなし、0で始まる番号を入力してください</div>
-                        <div className="text-xs text-white">
-                            pishattoは、携帯電話番号の認証のため、SMS(テキスト)が送信されます。これには、SMS料金及びデータ料金がかかる場合があります。
-                        </div>
-                        {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
-                    </div>
-                    {/* Bottom Button */}
-                    <div className="w-full px-4 pb-6">
-                        <button
-                            className={`w-full h-20 py-3 font-medium text-base ${isActive && !loading ? 'bg-secondary text-white hover:bg-red-700 transition-all duration-200' : 'bg-pink-400 border border-secondary text-white cursor-not-allowed'}`}
-                            disabled={!isActive || loading}
-                            onClick={handleSendSMS}
-                        >
-                            {loading ? '送信中...' : 'SMS認証コードを送信する'}
-                        </button>
-                    </div>
+        <div className="min-h-screen max-w-md mx-auto bg-gradient-to-br from-primary via-gray-100 to-secondary flex items-center justify-center px-4">
+            <div className="w-full min-h-screen p-6 pb-28">
+                <div className="flex items-center justify-center relative h-14 border-b border-rose-200">
+                    <button
+                        onClick={onBack}
+                        className="absolute left-2 text-white hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300 rounded-full p-2"
+                        aria-label="戻る"
+                    >
+                        <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <span className="text-base font-medium text-white">電話番号の入力</span>
+                </div>
+
+                <div className="pt-6 space-y-4">
+                    <label htmlFor="phone" className="block text-sm font-medium text-white">電話番号を入力してください</label>
+                    <input
+                        id="phone"
+                        inputMode="numeric"
+                        type="tel"
+                        className="w-full border border-rose-200 rounded-xl px-4 py-3 text-rose-700 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-300 bg-white"
+                        placeholder="例）09012345678"
+                        aria-describedby="phone-help"
+                        value={phone}
+                        onChange={e => setPhone(e.target.value.replace(/[^0-9]/g, ''))}
+                        maxLength={11}
+                    />
+                    <div id="phone-help" className="text-xs text-white">ハイフンなし、0で始まる10〜11桁の番号</div>
+                    <div className="text-[13px] text-secondary">SMSによる本人確認のため、テキストメッセージをお送りします（通信料が発生する場合があります）。</div>
+                    {error && <div role="alert" className="text-rose-600 text-sm">{error}</div>}
+                </div>
+
+                {/* Spacer bottom is handled by pb-28 on container */}
+            </div>
+            <div className="fixed max-w-md mx-auto inset-x-0 bottom-0 z-20 backdrop-blur pb-10">
+                <div className="max-w-md mx-auto px-6 py-3">
+                    <button
+                        className={`w-full h-14 rounded-full font-medium text-base transition-colors ${isActive && !loading ? 'bg-rose-500 text-white hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-300' : 'bg-rose-100 text-rose-300 cursor-not-allowed'}`}
+                        disabled={!isActive || loading}
+                        onClick={handleSendSMS}
+                        type="button"
+                    >
+                        {loading ? '送信中…' : 'SMS認証コードを送信する'}
+                    </button>
                 </div>
             </div>
         </div>

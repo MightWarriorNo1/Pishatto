@@ -296,7 +296,7 @@ const GradeAbout: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <div className="flex items-center justify-between px-4 py-4">
                     <button 
                         onClick={onBack} 
-                        className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white hover:text-orange-400 transition-all duration-300 transform hover:scale-105"
+                        className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-secondary cursor-pointer text-white hover:text-orange-400 transition-all duration-300 transform hover:scale-105"
                     >
                         <ChevronLeft size={24} />
                     </button>

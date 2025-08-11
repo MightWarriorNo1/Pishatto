@@ -73,7 +73,7 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
     <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
       {/* Header */}
       <div className="flex items-center px-4 py-3 border-b border-gray-200 bg-primary">
-        <button onClick={onBack} className="mr-2 text-white">
+        <button onClick={onBack} className="mr-2 text-white hover:text-secondary cursor-pointer">
           <ChevronLeft size={20} />
         </button>
         <span className="text-sm font-medium flex-1 text-center text-white">全受信</span>

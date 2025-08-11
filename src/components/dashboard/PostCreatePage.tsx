@@ -125,20 +125,18 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
     const handleSubmit = () => {
         if (content.trim()) onSubmit(content, image);
     };
-
-    console.log('PostCreatePage: Rendering component with userProfile:', userProfile, 'loading:', loading);
     
     try {
         return (
             <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col">
             {/* Top bar */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-secondary bg-primary">
-                <button onClick={onClose} className="text-3xl text-white font-bold">
+                <button onClick={onClose} className="text-3xl text-white font-bol hover:text-tp,atp">
                     <X />
                 </button>
                 <span className="flex-1 text-center text-lg font-bold text-white">つぶやきを投稿</span>
                 <button
-                    className="text-white font-bold text-base"
+                    className="text-white font-bold text-base hover:text-secondary cursor-pointer"
                     disabled={!content.trim()}
                     onClick={handleSubmit}
                 >

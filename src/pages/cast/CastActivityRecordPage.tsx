@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { getPointTransactions } from '../../services/api';
+import { useCast } from '../../contexts/CastContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000/api"; 
 
@@ -34,10 +35,11 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
     const [transactions, setTransactions] = useState<PointTransaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const { castId } = require('../../contexts/CastContext');
+    const { castId, loading: castLoading } = useCast();
 
     useEffect(() => {
         const fetchTransactions = async () => {
+            if (castLoading) return;
             if (!castId) {
                 setError('Cast ID not found');
                 setLoading(false);
@@ -45,6 +47,7 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             }
 
             try {
+                setError(null);
                 setLoading(true);
                 const response = await getPointTransactions('cast', castId);
                 if (response.success) {
@@ -61,7 +64,7 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         };
 
         fetchTransactions();
-    }, [castId]);
+    }, [castId, castLoading]);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -104,7 +107,7 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             <div className='max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
                 <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
                     <button
-                        className="mr-2 text-2xl text-white"
+                        className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer"
                         onClick={onBack}
                     >
                         <ChevronLeft />
@@ -120,10 +123,10 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
 
     if (error) {
         return (
-            <div className='max-w-md bg-primary min-h-screen pb-24'>
+            <div className='max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
                 <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
                     <button
-                        className="mr-2 text-2xl text-white"
+                        className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer"
                         onClick={onBack}
                     >
                         <ChevronLeft />
@@ -138,11 +141,11 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
     }
 
     return (
-        <div className='max-w-md  bg-gradient-to-br from-primary  via-primary to-secondary min-h-screen pb-24'>
+        <div className='bg-gradient-to-br from-primary  via-primary to-secondary min-h-screen pb-24'>
             {/* Top bar */}
-            <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
+            <div className="fixed max-w-md mx-auto top-0 left-0 right-0  z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
                 <button
-                    className="mr-2 text-2xl text-white"
+                    className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer"
                     onClick={onBack}
                 >
                     <ChevronLeft />

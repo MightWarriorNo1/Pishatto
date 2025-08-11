@@ -26,10 +26,10 @@ const HangoutPlaces: React.FC = () => {
         setSelected(sel => sel.includes(city) ? sel.filter(c => c !== city) : [...sel, city]);
     };
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary p-6">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-gray-800 to-secondary p-6">
             <h1 className="text-xl font-bold mb-4 text-white">よく遊ぶ場所を選択</h1>
             {loading ? (
-                <div className="text-center py-8">
+                <div className="text-center py-8" aria-live="polite">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
                     <p className="text-white text-sm mt-2">読み込み中...</p>
                 </div>
@@ -39,14 +39,14 @@ const HangoutPlaces: React.FC = () => {
                         {cities.map(city => (
                             <button
                                 key={city}
-                                className={`px-4 py-2 rounded-full border font-bold ${selected.includes(city) ? 'bg-secondary hover:bg-red-400 text-white border-secondary' : 'bg-primary text-white border-secondary'}`}
+                                className={`px-4 py-2 rounded-full border font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/60 ${selected.includes(city) ? 'bg-secondary hover:bg-red-400 text-white border-secondary' : 'bg-primary text-white border-secondary hover:bg-secondary/20'}`}
                                 onClick={() => toggleCity(city)}
                             >
                                 {city}
                             </button>
                         ))}
                     </div>
-                    <button className={`w-full bg-secondary text-white py-3 rounded font-bold ${selected.length === 0 ? 'opacity-50' : ''}`} disabled={selected.length === 0}>次へ</button>
+                    <button className={`w-full bg-secondary text-white py-3 rounded-lg font-bold transition-colors ${selected.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-400'}`} disabled={selected.length === 0}>次へ</button>
                 </>
             )}
         </div>

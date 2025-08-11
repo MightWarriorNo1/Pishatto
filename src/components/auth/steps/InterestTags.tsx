@@ -44,7 +44,7 @@ const InterestTags: React.FC<InterestTagsProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-primary via-gray-800 to-secondary p-8 flex flex-col">
       {/* Header */}
       <div className="flex items-center p-4">
         <button onClick={onBack} className="text-white">
@@ -55,7 +55,7 @@ const InterestTags: React.FC<InterestTagsProps> = ({
       </div>
 
       {/* Progress Steps */}
-      <div className="px-4 py-4 bg-primary">
+      <div className="px-4 py-4">
         <StepIndicator totalSteps={6} currentStep={3} />
       </div>
 
@@ -75,10 +75,11 @@ const InterestTags: React.FC<InterestTagsProps> = ({
                   <button
                     key={tag}
                     onClick={() => handleTagSelect(category, tag)}
-                    className={`px-4 py-2 rounded-full border ${
+                    aria-pressed={selectedTags.some(t => t.tag === tag && t.category === category)}
+                    className={`px-4 py-2 rounded-full border transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/60 ${
                       selectedTags.some(t => t.tag === tag && t.category === category)
                         ? 'bg-secondary text-white border-secondary'
-                        : 'bg-primary text-white border-secondary hover:bg-secondary'
+                        : 'bg-primary text-white border-secondary hover:bg-secondary/20'
                     }`}
                   >
                     {tag}

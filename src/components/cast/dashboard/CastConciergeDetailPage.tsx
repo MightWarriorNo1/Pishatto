@@ -142,7 +142,7 @@ const CastConciergeDetailPage: React.FC<CastConciergeDetailPageProps> = ({ onBac
         <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col relative">
             {/* Header */}
             <div className="fixed top-0  z-20 flex items-center px-4 py-3 border-b border-secondary bg-primary">
-                <button onClick={onBack} className="mr-3 cursor-pointer">
+                <button onClick={onBack} className="mr-3 cursor-pointer hover:text-secondary">
                     <ChevronLeft className="w-6 h-6 text-white  hover:text-secondary" />
                 </button>
                 <div className="flex items-center flex-1">

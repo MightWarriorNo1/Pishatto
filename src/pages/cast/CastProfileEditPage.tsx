@@ -116,17 +116,17 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
     if (error && !avatarUploading && !saving) return <div className="text-center text-red-500">{error}</div>;
 
     return (
-        <div className="max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24">
-            <div className="flex items-center p-4">
+        <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24">
+            <div className="flex max-w-md mx-auto top-0 left-0 right-0 items-center p-4">
                 <button
                     type="button"
                     onClick={onBack}
-                    className="mr-2 text-white hover:text-secondary focus:outline-none"
+                    className="mr-2 text-white hover:text-secondary focus:outline-none cursor-pointer"
                     aria-label="戻る"
                 >
                     <ChevronLeft size={24} />
                 </button>
-                <span className="text-lg font-bold text-white">プロフィール編集</span>
+                <span className="text-lg font-bold text-white justify-center ">プロフィール編集</span>
             </div>
             <form onSubmit={handleSubmit} className="p-4">
                 <div className="mb-6">

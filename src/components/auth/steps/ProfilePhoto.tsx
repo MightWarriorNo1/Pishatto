@@ -88,9 +88,9 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-primary via-gray-800 to-secondary p-4 flex flex-col">
       <div className="px-4 py-4">
-        <button onClick={onBack} className="text-white text-xl">
+        <button onClick={onBack} className="text-white text-xl hover:text-secondary cursor-pointer">
           <ChevronLeft />
         </button>
       </div>
@@ -133,7 +133,8 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
             </div>
             <button
               onClick={() => setShowOptions(true)}
-              className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
+              aria-label="写真を追加"
+              className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-secondary/60"
             >
               +
             </button>
@@ -172,6 +173,7 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           onChange={handleFileSelect}
           className="hidden"
         />

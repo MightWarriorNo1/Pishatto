@@ -43,7 +43,7 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <div className="max-w-md mx-auto flex items-center px-4 py-4">
                     <button 
                         onClick={onBack} 
-                        className="mr-3 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200 text-white hover:text-secondary"
+                        className="mr-3 p-2 rounded-full hover:bg-gray-100 transition-colors duration-200 text-white hover:text-secondary cursor-pointer"
                     >
                         <ChevronLeft size={24} />
                     </button>

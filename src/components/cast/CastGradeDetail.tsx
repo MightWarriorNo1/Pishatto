@@ -2,29 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft,  MessageSquareMore, FileText, Gift, Gem, Settings,  Medal, Star } from 'lucide-react';
 import { getCastGrade, GradeInfo } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
+import { useCast } from '../../contexts/CastContext';
 
 const CastGradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [gradeInfo, setGradeInfo] = useState<GradeInfo | null>(null);
     const [loading, setLoading] = useState(true);
     const { user } = useUser();
+    const { castId } = useCast();
 
     useEffect(() => {
         const fetchGradeInfo = async () => {
-            if (user?.id) {
-                try {
-                    setLoading(true);
-                    const data = await getCastGrade(user.id);
-                    setGradeInfo(data);
-                } catch (error) {
-                    console.error('Error fetching cast grade info:', error);
-                } finally {
-                    setLoading(false);
-                }
+            const id = castId || user?.id;
+            if (!id) {
+                setLoading(false);
+                return;
+            }
+            try {
+                setLoading(true);
+                const data = await getCastGrade(id);
+                setGradeInfo(data);
+            } catch (error) {
+                console.error('Error fetching cast grade info:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
         fetchGradeInfo();
-    }, [user?.id]);
+    }, [castId, user?.id]);
 
     const getGradeIcon = (grade: string) => {
         switch (grade) {
@@ -80,7 +85,7 @@ const CastGradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     if (loading) {
         return (
-            <div className="max-w-md mx-auto min-h-screen bg-primary flex items-center justify-center">
+            <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex items-center justify-center">
                 <div className="text-white text-lg animate-pulse">読み込み中...</div>
             </div>
         );
@@ -88,7 +93,7 @@ const CastGradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     if (!gradeInfo) {
         return (
-            <div className="max-w-md mx-auto min-h-screen bg-primary flex items-center justify-center">
+            <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex items-center justify-center">
                 <div className="text-white text-lg">グレード情報を取得できませんでした</div>
             </div>
         );

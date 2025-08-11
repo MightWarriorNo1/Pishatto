@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Image, Camera, FolderClosed, Gift, ChevronLeft, X } from 'lucide-react';
+import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Send } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { sendMessage, getChatMessages, fetchAllGifts, updateReservation, getChatById, getGuestReservations } from '../../services/api';
@@ -333,7 +333,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col relative">
             {/* Top bar (fixed) */}
             <div className="fixed max-w-md mx-auto left-0 right-0 items-center flex px-4 py-3 border-b border-secondary bg-primary h-16">
-                <button onClick={onBack} className="mr-2">
+                <button onClick={onBack} className="mr-2 hover:text-secondary cursor-pointer">
                     <ChevronLeft size={30} />
                 </button>
                 <img
@@ -418,7 +418,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                     {(idx === 0 || currentDate !== prevDate) && (
                                         <div className="flex justify-center my-2">
                                             <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
-                                                {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''} */}
                                                 {formatTime(msg.created_at)}
                                             </span>
                                         </div>
@@ -447,7 +446,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                 {(idx === 0 || currentDate !== prevDate) && (
                                     <div className="flex justify-center my-2">
                                         <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
-                                            {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''} */}
                                             {formatTime(msg.created_at)}
                                         </span>
                                     </div>
@@ -559,7 +557,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         disabled={!isNotificationEnabled('messages')}
                     />
                     <span 
-                        className={`ml-2 cursor-pointer ${
+                        className={`cursor-pointer ${
                             isNotificationEnabled('messages') ? 'text-white' : 'text-gray-500'
                         }`} 
                         onClick={isNotificationEnabled('messages') ? handleImageButtonClick : undefined}
@@ -593,9 +591,21 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     >
                         <Gift size={30} />
                     </button>
-                    {sending && (
-                        <div className="ml-3 w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" aria-label="sending" />
-                    )}
+                    <button
+                        onClick={handleSend}
+                        disabled={sending || (!input.trim() && !attachedFile) || !isNotificationEnabled('messages')}
+                        className={`ml-2 px-6 py-2 rounded-full text-sm disabled:opacity-50 ${
+                            isNotificationEnabled('messages') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-gray-300'
+                        }`}
+                    >
+                        {sending ? (
+                            <div className="flex items-center">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                            </div>
+                        ) : (
+                            <Send className="w-4 h-4" />
+                        )}
+                    </button>
                     {/* Popover absolutely inside input bar */}
                     {showFile && (
                         <div

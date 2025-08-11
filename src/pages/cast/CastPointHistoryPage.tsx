@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { getPointTransactions } from '../../services/api';
+import { useCast } from '../../contexts/CastContext';
 
 interface PointTransaction {
   id: number;
@@ -33,15 +34,14 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [transactions, setTransactions] = useState<PointTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { castId } = require('../../contexts/CastContext');
+  const { castId, loading: castLoading } = useCast();
   
   console.log('CastPointHistoryPage render - castId:', castId);
 
   useEffect(() => {
     console.log('CastPointHistoryPage useEffect - castId:', castId);
-    
-    // For cast users, we should use castId from localStorage
-    // The user context might not be available for cast users
+    if (castLoading) return;
+    // Wait for context; then validate
     if (!castId) {
       console.log('No cast ID available');
       setError('キャストIDが見つかりません');
@@ -67,7 +67,7 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setError('ポイント履歴の取得に失敗しました');
       })
       .finally(() => setLoading(false));
-  }, [castId]);
+  }, [castId, castLoading]);
 
   const getTransactionTypeText = (type: string) => {
     switch (type) {
@@ -127,7 +127,7 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
       {/* Top bar */}
       <div className="flex items-center px-4 py-3 border-b border-secondary bg-gradient-to-br from-primary via-primary to-secondary">
-        <button className="mr-2 text-2xl text-white" onClick={onBack}>
+        <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" onClick={onBack}>
           <ChevronLeft />
         </button>
         <span className="text-lg font-bold flex-1 text-center text-white">ポイント履歴</span>

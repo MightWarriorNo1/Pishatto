@@ -178,7 +178,7 @@ const MessageProposalPage: React.FC<{
             <div className="w-full max-w-md flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
                 
                 <div className="flex items-center">
-                    <button onClick={onBack} className="mr-2">
+                    <button onClick={onBack} className="mr-2 hover:text-secondary cursor-pointer">
                         <ChevronLeft className="text-white" size={24} />
                     </button>
                     {groupInfo?.isGroupChat ? (

@@ -16,8 +16,8 @@ const Nickname: React.FC<NicknameProps> = ({ onNext, onBack, updateFormData, for
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nickname) {
-      setError('Please enter a nickname');
+    if (!nickname || nickname.trim().length < 2) {
+      setError('ニックネームは2文字以上で入力してください');
       return;
     }
     updateFormData({ nickname });
@@ -25,7 +25,7 @@ const Nickname: React.FC<NicknameProps> = ({ onNext, onBack, updateFormData, for
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-gradient-to-b from-primary via-gray-800 to-secondary min-h-screen p-6">
       <div>
         <h2 className="text-2xl font-bold text-center text-white mb-8">
           ニックネーム
@@ -42,9 +42,11 @@ const Nickname: React.FC<NicknameProps> = ({ onNext, onBack, updateFormData, for
               name="nickname"
               type="text"
               required
+              minLength={2}
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
-              className="appearance-none block w-full px-3 py-2 border border-secondary rounded-md shadow-sm placeholder-secondary focus:outline-none focus:ring-secondary focus:border-secondary bg-primary text-white"
+              aria-invalid={!!error}
+              className="appearance-none block w-full px-3 py-2 border border-secondary rounded-md shadow-sm placeholder-secondary focus:outline-none focus:ring-2 focus:ring-secondary/60 focus:border-secondary bg-primary text-white"
             />
           </div>
         </div>
@@ -57,13 +59,14 @@ const Nickname: React.FC<NicknameProps> = ({ onNext, onBack, updateFormData, for
           <button
             type="button"
             onClick={onBack}
-            className="flex-1 py-2 px-4 border border-secondary rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
+            className="flex-1 py-2 px-4 border border-secondary rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-secondary/60"
           >
             戻る
           </button>
           <button
             type="submit"
-            className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
+            disabled={nickname.trim().length < 2}
+            className="flex-1 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-secondary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-red-400 focus:outline-none focus:ring-2 focus:ring-secondary/60"
           >
             次へ
           </button>

@@ -279,7 +279,7 @@ const CastDetail: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => navigate(-1)}
-                            className="text-2xl text-white hover:text-secondary transition-colors"
+                            className="text-2xl text-white hover:text-secondary transition-colors cursor-pointer"
                         >
                             <ChevronLeft />
                         </button>
@@ -334,7 +334,7 @@ const CastDetail: React.FC = () => {
                             <>
                                 <button
                                     type="button"
-                                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-primary/50 hover:bg-primary/70 rounded-full p-2 text-white transition-colors"
+                                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-primary/50 hover:bg-secondary cursor-pointer rounded-full p-2 text-white transition-colors"
                                     onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
                                 >
                                     <ChevronLeft className="w-5 h-5" />

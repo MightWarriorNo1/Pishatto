@@ -68,7 +68,7 @@ const FreeCallResultScreen: React.FC<FreeCallResultScreenProps> = ({
     return (
         <div>
             <div className="flex items-center px-4 pt-6 pb-2">
-                <button onClick={onBack} className="mr-2 text-2xl text-white">
+                <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer">
                     <ChevronLeft />
                 </button>
                 <span className="text-2xl font-bold text-white">フリーコール結果</span>

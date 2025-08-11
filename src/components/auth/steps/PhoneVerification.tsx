@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '../../../contexts/UserContext';
 import { fetchAllGuestPhones, getGuestProfile, sendSmsVerificationCode, verifySmsCode } from '../../../services/api';
 import { ChevronLeft } from 'lucide-react';
@@ -25,12 +25,13 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
   const { setUser, setPhone } = useUser();
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [phoneNumber, setPhoneNumber] = useState(formData.phoneNumber || '');
-  const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
+  const [verificationCode, setVerificationCode] = useState<string[]>(['', '', '', '', '', '']);
   const [timeLeft, setTimeLeft] = useState(30);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [allPhones, setAllPhones] = useState<string[]>([]);
   const [displayedCode, setDisplayedCode] = useState<string | null>(null);
+  const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
     fetchAllGuestPhones().then(setAllPhones);
@@ -88,20 +89,46 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
     }
   };
 
-  const handleCodeChange = (index: number, value: string) => {
+  const handleCodeChange = (index: number, rawValue: string) => {
+    const value = rawValue.replace(/\D/g, '');
     if (value.length <= 1) {
       const newCode = [...verificationCode];
       newCode[index] = value;
       setVerificationCode(newCode);
 
-      console.log("VERIFICATION CODE", verificationCode);
-
-      // Auto-focus next input
+      // Auto-focus next input when a digit is entered
       if (value !== '' && index < 5) {
-        const nextInput = document.getElementById(`code-${index + 1}`);
-        nextInput?.focus();
+        inputsRef.current[index + 1]?.focus();
       }
     }
+  };
+
+  const handleCodeKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && verificationCode[index] === '' && index > 0) {
+      inputsRef.current[index - 1]?.focus();
+    }
+    if (e.key === 'ArrowLeft' && index > 0) {
+      e.preventDefault();
+      inputsRef.current[index - 1]?.focus();
+    }
+    if (e.key === 'ArrowRight' && index < 5) {
+      e.preventDefault();
+      inputsRef.current[index + 1]?.focus();
+    }
+  };
+
+  const handleCodePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    const text = e.clipboardData?.getData('text') || '';
+    const digits = text.replace(/\D/g, '').slice(0, 6).split('');
+    if (digits.length === 0) return;
+    e.preventDefault();
+    const newCode = [...verificationCode];
+    for (let i = 0; i < 6; i++) {
+      newCode[i] = digits[i] || '';
+    }
+    setVerificationCode(newCode);
+    const lastFilled = Math.max(0, digits.length - 1);
+    inputsRef.current[lastFilled]?.focus();
   };
 
   const normalizePhone = (phone: string) =>
@@ -186,19 +213,17 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
 
   if (step === 'phone') {
     return (
-      <div className="min-h-screen bg-primary flex flex-col">
+      <div className="min-h-screen bg-gradient-to-b from-primary via-gray-800 to-secondary p-8 flex flex-col">
         {/* Header */}
         <div className="flex items-center p-4 bg-primary">
-          <button onClick={onBack} className="text-white">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+          <button onClick={onBack} className="text-white hover:text-secondary cursor-pointer">
+            <ChevronLeft />
           </button>
           <h1 className="flex-1 text-center text-lg font-medium mr-6 text-white">電話番号の入力</h1>
         </div>
         {/* Main Content */}
         <div className="flex-1">
-          <div className="bg-primary p-4">
+          <div className="p-4">
             <div className="text-sm text-white mb-2">電話番号を入力してください</div>
             <div className="mt-4 p-0">
               <input
@@ -207,7 +232,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
                 placeholder='例) 07542132114'
                 maxLength={11}
                 onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9+]/g, ''))}
-                className="w-full text-lg border border-secondary rounded bg-primary text-white focus:ring-0 p-0 placeholder-secondary"
+                className="w-full text-lg border border-white/20 rounded bg-primary text-white placeholder-secondary p-2 focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/60"
                 disabled={loading}
               />
             </div>
@@ -233,30 +258,40 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-primary via-gray-800 to-secondary p-8 flex flex-col">
       {/* Header */}
       <div className="flex items-center p-4 bg-primary">
-        <button onClick={() => setStep('phone')} className="text-white">
+        <button onClick={() => setStep('phone')} className="text-white hover:text-secondary cursor-pointer">
           <ChevronLeft />
         </button>
         <h1 className="flex-1 text-center text-lg font-medium mr-6 text-white">認証コードの入力</h1>
       </div>
       {/* Main Content */}
-      <div className="flex-1">
-        <div className="p-4">
-          <div className="bg-primary p-4 rounded-lg">
+      <div className="flex-1">  
+        <div className="p-4" onPaste={handleCodePaste}>
+          <div className="p-4 rounded-lg">
             <div className="text-sm text-white mb-4">送信された6桁の認証コードを入力してください。</div>
             {/* Verification Code Input */}
-            <div className="flex justify-between space-x-2 mb-4">
+            <div
+              className="flex justify-between space-x-2 mb-4"
+              role="group"
+              aria-label="6桁の認証コード入力"
+            >
               {verificationCode.map((digit, index) => (
                 <input
                   key={index}
                   id={`code-${index}`}
-                  type="text"
+                  type="tel"
                   maxLength={1}
                   value={digit}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  aria-label={`コード ${index + 1} 桁目`}
                   onChange={(e) => handleCodeChange(index, e.target.value)}
-                  className="w-[45px] h-[45px] text-center text-lg border border-secondary rounded-md bg-primary text-white focus:outline-none focus:border-secondary"
+                  onKeyDown={(e) => handleCodeKeyDown(index, e)}
+                  onFocus={(e) => e.currentTarget.select()}
+                  ref={(el) => (inputsRef.current[index] = el)}
+                  className="w-[45px] h-[45px] text-center text-lg border border-white/20 rounded-md bg-primary text-white focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/60"
                   disabled={loading}
                 />
               ))}

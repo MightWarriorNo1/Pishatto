@@ -254,10 +254,6 @@ const CastProfilePage: React.FC = () => {
         fetchMonthlyRanking(month);
     };
 
-    // Get month display name
-    const getMonthDisplayName = (month: 'current' | 'last') => {
-        return month === 'current' ? '今月' : '先月';
-    };
 
     if (showGiftBox) return <CastGiftBoxPage onBack={() => setShowGiftBox(false)} />;
     if (showActivityRecord) return <CastActivityRecordPage onBack={() => setShowActivityRecord(false)} />;
@@ -317,7 +313,7 @@ const CastProfilePage: React.FC = () => {
                         <>
                             <button
                                 onClick={handlePreviousAvatar}
-                                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
+                                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:text-secondary cursor-pointer text-white p-2 rounded-full transition-all duration-200"
                                 aria-label="Previous avatar"
                             >
                                 <ChevronLeft size={20} />

@@ -19,10 +19,10 @@ const CastGiftBoxPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     }, [castId]);
 
     return (    
-        <div className='max-w-md  bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
+        <div className='bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
             {/* Top bar */}
-            <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
-                <button className="mr-2 text-2xl text-white hover:text-secondary" onClick={onBack}>
+            <div className="fixed max-w-md mx-auto top-0 left-0 right-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
+                <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" onClick={onBack}>
                     <ChevronLeft size={24} />
                 </button>
                 <span className="flex-1 text-center text-base font-bold text-white">ギフトボックス</span>

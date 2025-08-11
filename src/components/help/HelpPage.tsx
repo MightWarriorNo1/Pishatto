@@ -56,7 +56,7 @@ const HelpPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                     {onBack && (
                         <button 
                             onClick={onBack} 
-                            className="mr-3 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 text-white hover:scale-105"
+                            className="mr-3 p-2 rounded-full bg-white/10 hover:bg-secondary cursor-pointer transition-all duration-200 text-white hover:scale-105"
                         >
                             <ChevronLeft className="w-6 h-6" />
                         </button>
@@ -95,7 +95,7 @@ const HelpPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
                                         {item.question}
                                     </span>
                                 </div>
-                                <div className={`text-white/60 transition-transform duration-300 ${
+                                <div className={`text-white/60 hover:text-secondary cursor-pointer transition-transform duration-300 ${
                                     expandedItems.has(index) ? 'rotate-180' : ''
                                 }`}>
                                     <ChevronLeft className="w-5 h-5" />

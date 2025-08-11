@@ -201,7 +201,7 @@ const Timeline: React.FC = () => {
                                             e.stopPropagation();
                                             handleDeleteTweet(tweet.id);
                                         }}
-                                        className="text-red-400 hover:text-red-300 transition-colors p-1"
+                                        className="text-white hover:text-red-300 transition-colors p-1"
                                         title="削除"
                                     >
                                         <Trash2 size={16} />
@@ -257,9 +257,3 @@ const Timeline: React.FC = () => {
 };
 
 export default Timeline;
-
-
-
-
-
-

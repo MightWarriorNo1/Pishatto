@@ -204,7 +204,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
             onClick={() => setShowCardRegistration(false)}
             className="text-white hover:text-gray-300 mr-2"
           >
-            <ChevronLeft className="text-white hover:text-gray-300" />
+            <ChevronLeft className="text-white hover:text-secondary cursor-pointer" />
           </button>
           <h2 className="text-xl font-bold text-white">カード登録</h2>
         </div>

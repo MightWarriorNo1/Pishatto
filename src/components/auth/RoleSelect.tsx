@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircleUserRound, Sparkle } from 'lucide-react';
+import { CircleUserRound, Sparkle, ArrowRight } from 'lucide-react';
 
 interface RoleSelectProps {
     onSelect: (role: 'guest' | 'cast') => void;
@@ -7,35 +7,63 @@ interface RoleSelectProps {
 
 const RoleSelect: React.FC<RoleSelectProps> = ({ onSelect }) => {
     return (
-        <div className="flex flex-col min-h-screen bg-gradient-to-br from-primary to-secondary">
-            <div className="flex-1 flex items-center justify-center">
-                <div className="w-full px-4 space-y-6">
-                    <div className="p-2 text-center text-xs text-white">
-                        18歳以上全ての利用規約とプライバシーポリシーに同意し
+        <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-primary/80 to-secondary text-white">
+            {/* Decorative background blobs */}
+            <div aria-hidden className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+            <div aria-hidden className="pointer-events-none absolute -bottom-28 -right-24 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
+
+            <div className="relative z-10 w-full max-w-md px-6">
+                <div className="mb-6 flex justify-center">
+                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/20">
+                        <Sparkle className="h-6 w-6" aria-hidden />
+                    </span>
+                </div>
+
+                <div className="rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+                    <h1 className="mb-2 text-center text-2xl font-bold tracking-tight">はじめかたを選択</h1>
+                    <p className="mb-6 text-center text-sm text-white/80">あなたの目的に合ったモードをお選びください。</p>
+
+                    <div className="space-y-4">
+                        <button
+                            type="button"
+                            aria-label="ゲストとして始める"
+                            onClick={() => onSelect('guest')}
+                            className="group relative flex w-full items-center gap-4 rounded-2xl border border-white/15 bg-white/5 p-4 shadow-lg ring-1 ring-white/10 transition-all hover:-translate-y-0.5 hover:bg-white/10 hover:ring-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                        >
+                            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
+                                <CircleUserRound className="h-6 w-6" aria-hidden />
+                            </span>
+                            <span className="flex-1 text-left">
+                                <span className="block text-base font-semibold">ゲストとして始める</span>
+                                <span className="block text-xs text-white/70">閲覧のみ。かんたんに体験できます。</span>
+                            </span>
+                            <ArrowRight className="h-5 w-5 opacity-0 transition-opacity duration-200 group-hover:opacity-100" aria-hidden />
+                        </button>
+
+                        <button
+                            type="button"
+                            aria-label="キャストとして始める"
+                            onClick={() => onSelect('cast')}
+                            className="group relative flex w-full items-center gap-4 rounded-2xl border border-white/20 bg-gradient-to-br from-secondary/80 to-secondary/60 p-4 shadow-xl ring-1 ring-white/20 transition-all hover:-translate-y-0.5 hover:ring-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                        >
+                            <span className="absolute right-3 top-3 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold tracking-wide">おすすめ</span>
+                            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
+                                <Sparkle className="h-6 w-6" aria-hidden />
+                            </span>
+                            <span className="flex-1 text-left">
+                                <span className="block text-base font-semibold">キャストとして始める</span>
+                                <span className="block text-xs text-white/80">配信・投稿が可能。より多くの機能を利用できます。</span>
+                            </span>
+                            <ArrowRight className="h-5 w-5 opacity-0 transition-opacity duration-200 group-hover:opacity-100" aria-hidden />
+                        </button>
                     </div>
 
-                    <button
-                        onClick={() => onSelect('guest')}
-                        className="w-full flex items-center justify-center py-4 px-4 rounded-full bg-secondary text-white font-semibold relative shadow-lg hover:bg-red-700 transition-all duration-200"
-                    >
-                        <span className="absolute left-4">
-                            <CircleUserRound />
-                        </span>
-                        ゲストとして始める
-                    </button>
-
-                    <button
-                        onClick={() => onSelect('cast')}
-                        className="w-full flex items-center justify-center py-4 px-4 rounded-full bg-primary text-white border-2 border-secondary font-semibold relative shadow-lg hover:bg-red-700 hover:text-white transition-all duration-200"
-                    >
-                        <span className="absolute left-4">
-                            <Sparkle />
-                        </span>
-                        キャストとして始める
-                    </button>
+                    <p id="policy" className="mt-6 text-center text-[11px] leading-5 text-white/70">
+                        18歳以上の方のみご利用いただけます。利用規約 と プライバシーポリシーに同意のうえお進みください。
+                    </p>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 };
 

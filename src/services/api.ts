@@ -226,7 +226,6 @@ export const getGuestProfile = async (phone: string): Promise<{ guest: GuestProf
 
 export const getGuestProfileById = async (id: number) => {
   const response = await api.get(`/guest/profile/id/${id}`);
-  console.log("RESPONSE", response.data);
   return response.data.guest;
 };
 
@@ -319,7 +318,6 @@ export const cancelReservation = async (reservationId: number) => {
 
 export const updateReservation = async (reservationId: number, data: Partial<Reservation>) => {
   const response = await api.put(`/reservations/${reservationId}`, data);
-  console.log("UPDATE RESERVATION RESPONSE", response.data);
   return response.data.reservation;
 };
 
@@ -329,7 +327,6 @@ export const getCastReservations = async () => {
 };
 
 export const castUpdateProfile = async (data: any) => {
-  // expects data to include at least phone or id
   return api.post('/cast/profile', data).then(res => res.data);
 };
 
@@ -538,7 +535,6 @@ export const purchasePoints = async (user_id: number, user_type: 'guest' | 'cast
   const payload: any = { user_id, user_type, amount };
   if (token && token.trim() !== '') payload.token = token;
   if (payment_method) payload.payment_method = payment_method;
-  console.log("payload", payload);
   const response = await api.post('/payments/purchase', payload);
   return response.data;
 };
@@ -810,7 +806,6 @@ export const fetchCastReceivedGifts = async (castId: number) => {
 export const uploadCastAvatar = async (file: File) => {
   const formData = new FormData();
   formData.append('avatar', file);
-  // Adjust endpoint as needed; here we use /cast/avatar-upload
   const response = await api.post('/cast/avatar-upload', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
@@ -845,13 +840,11 @@ export const deleteCastAvatar = async (castId: number, avatarIndex: number) => {
 };
 
 export const likeGuest = async (cast_id: number, guest_id: number) => {
-  console.log("likeGuest", cast_id, guest_id);
   const response = await api.post('/guests/like', { cast_id, guest_id });
   return response.data;
 };
 
 export const createChat = async (cast_id: number, guest_id: number, reservation_id?: number) => {
-  console.log("createChat", cast_id, guest_id, reservation_id);
   const response = await api.post('/chats/create', { cast_id, guest_id, reservation_id });
   return response.data;
 };
@@ -891,9 +884,7 @@ export const getLikeStatus = async (cast_id: number, guest_id: number) => {
 };
 
 export const fetchRanking = async (params: { userType: string; timePeriod: string; category: string; area: string }) => {
-  console.log("params", params);
   const response = await api.get('/ranking', { params });
-  console.log("RES", response);
   return response.data;
 };
 
@@ -1157,6 +1148,7 @@ export const sendGroupMessage = async (data: {
   gift_id?: number;
   sender_guest_id?: number;
   sender_cast_id?: number;
+  receiver_cast_id?: number; // optional: target cast in the group when sending a gift
 }) => {
   const formData = new FormData();
   formData.append('group_id', data.group_id.toString());
@@ -1166,6 +1158,7 @@ export const sendGroupMessage = async (data: {
   if (data.gift_id) formData.append('gift_id', data.gift_id.toString());
   if (data.sender_guest_id) formData.append('sender_guest_id', data.sender_guest_id.toString());
   if (data.sender_cast_id) formData.append('sender_cast_id', data.sender_cast_id.toString());
+  if (data.receiver_cast_id) formData.append('receiver_cast_id', data.receiver_cast_id.toString());
 
   const response = await api.post('/chats/group-message', formData, {
     headers: {

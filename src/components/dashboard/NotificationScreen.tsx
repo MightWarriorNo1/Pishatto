@@ -181,8 +181,8 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
             {/* Top bar - Fixed */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50">
                 <div className="flex items-center px-4 py-3 border-b bg-gradient-to-br from-primary via-primary to-secondary">
-                    <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer">
-                        <ChevronLeft className="w-6 h-6 text-white" />
+                    <button onClick={onBack} className="mr-2 text-2xl text-white">
+                        <ChevronLeft className="w-6 h-6 text-white hover:text-secondary cursor-pointer" />
                     </button>
                     <span className="text-lg font-bold flex-1 text-center">お知らせ</span>
                 </div>

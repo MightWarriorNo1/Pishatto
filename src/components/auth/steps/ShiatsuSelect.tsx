@@ -20,25 +20,31 @@ const ShiatsuSelect: React.FC<ShiatsuSelectProps> = ({ onNext, onBack, updateFor
         }
     };
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary">
-            <button onClick={onBack} className="text-white text-xl">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-gray-800 to-secondary p-8 flex flex-col p-4">
+            <button aria-label="戻る" onClick={onBack} className="text-white text-xl hover:text-secondary cursor-pointer w-9 h-9 flex items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-secondary/60">
                 <ChevronLeft />
             </button>
-            <StepIndicator totalSteps={6} currentStep={5} />
+            <div className="px-1 py-4">
+                <StepIndicator totalSteps={6} currentStep={5} />
+            </div>
             <h1 className="text-xl font-bold mb-4 text-white">指圧の好みを選択</h1>
             <div className="flex flex-col gap-3 mb-6">
                 {shiatsuOptions.map(opt => (
                     <button
                         key={opt}
-                        className={`px-4 py-3 rounded-full border font-bold text-lg ${selected === opt ? 'bg-secondary text-white border-secondary' : 'bg-primary text-white border-primary'}`}
+                        type="button"
+                        className={`px-4 py-3 rounded-full border font-bold text-lg transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/60 ${selected === opt ? 'bg-secondary text-white border-secondary' : 'bg-primary text-white border-secondary hover:bg-secondary/20'}`}
+                        aria-pressed={selected === opt}
                         onClick={() => setSelected(opt)}
                     >
                         {opt}
                     </button>
                 ))}
             </div>
-            <button className={`w-full bg-secondary hover:bg-pink-400   text-white py-3 rounded font-bold ${!selected ? 'opacity-50' : ''}`} disabled={!selected} onClick={handleNext}>次へ</button>
-            <button className="w-full mt-2 bg-secondary hover:bg-pink-400 text-white py-3 rounded font-bold" onClick={onBack}>戻る</button>
+            <div className="mt-auto space-y-2">
+                <button className={`w-full bg-secondary hover:bg-red-400 text-white py-3 rounded-lg font-bold transition-colors ${!selected ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!selected} onClick={handleNext}>次へ</button>
+                <button className="w-full bg-primary border border-secondary hover:bg-secondary/20 text-white py-3 rounded-lg font-bold" onClick={onBack}>戻る</button>
+            </div>
         </div>
     );
 };

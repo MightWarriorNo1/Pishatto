@@ -137,7 +137,7 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
       <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-10">
         <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
           {onBack && (
-            <button onClick={onBack} className="mr-2 text-white hover:text-secondary">
+            <button onClick={onBack} className="mr-2 text-white hover:text-secondary cursor-pointer">
               <ChevronLeft size={24} />
             </button>
           )}

@@ -231,7 +231,7 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
         <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
             <Stepper step={0} />
             <div className="flex items-center px-4 pt-2 pb-2">
-                <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary transition-colors p-2 rounded-full hover:bg-white/10">
+                <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer transition-colors p-2 rounded-full hover:bg-white/10">
                     <ChevronLeft />
                 </button>
                 <span className="text-2xl font-bold text-white">注文の確認</span>
@@ -384,7 +384,7 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
         <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
             <Stepper step={1} />
             <div className="px-4 pt-2 pb-2 flex items-center">
-                <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary transition-colors p-2 rounded-full hover:bg-white/10">
+                <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary transition-colors p-2 rounded-full cursor-pointer">
                     <ChevronLeft />
                 </button>
                 <span className="text-xl font-bold text-white">その他詳細条件 <span className="bg-secondary text-xs px-2 py-1 rounded align-middle text-white">任意</span></span>
@@ -484,7 +484,7 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
             {/* Enhanced Header */}
             <div className="bg-gradient-to-r from-primary to-blue-900 backdrop-blur-md border-b border-white/10 shadow-lg">
                 <div className="flex items-center px-4 pt-6 pb-4">
-                    <button onClick={onBack} className="mr-3 text-2xl text-white hover:text-secondary transition-colors p-2 rounded-full hover:bg-white/10">
+                    <button onClick={onBack} className="mr-3 text-2xl text-white hover:text-secondary cursor-pointer transition-colors p-2 rounded-full">
                         <ChevronLeft />
                     </button>
                     <div className="flex-1">
@@ -702,7 +702,7 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
             <div className="bg-gradient-to-r from-primary to-blue-900 backdrop-blur-md border-b border-white/10 shadow-lg">
                 <div className="flex items-center justify-between px-4 pt-6 pb-4">
                     <div className="flex items-center">
-                        <button onClick={onBack} className="mr-3 text-2xl text-white hover:text-secondary transition-colors p-2 rounded-full hover:bg-white/10">
+                        <button onClick={onBack} className="mr-3 text-2xl text-white hover:text-secondary transition-colors p-2 rounded-full cursor-pointer">
                             <ChevronLeft />
                         </button>
                         <div>
@@ -800,7 +800,7 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
                                                     className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all duration-200 shadow-lg"
                                                     onClick={handlePreviousAvatar}
                                                 >
-                                                    <ChevronLeft className="w-6 h-6" />
+                                                    <ChevronLeft className="w-6 h-6 hover:text-secondary cursor-pointer" />
                                                 </button>
                                                 <button
                                                     className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-all duration-200 shadow-lg"
@@ -879,7 +879,7 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
                                                 onClick={handlePreviousCast}
                                                 disabled={currentCastIndex === 0}
                                             >
-                                                <ChevronLeft className="w-8 h-8" />
+                                                <ChevronLeft className="w-8 h-8 hover:text-secondary cursor-pointer" />
                                             </button>
 
                                             {/* Enhanced Meet Now Button */}
@@ -1051,7 +1051,7 @@ function OrderFinalConfirmationScreen({
             <Stepper step={2} />
             {/* Back and Title */}
             <div className="flex items-center px-4 pt-2 pb-2">
-                <button onClick={onBack} className="mr-2 text-2xl text-white cursor-pointer hover:text-secondary transition-colors p-2 rounded-full hover:bg-white/10">
+                <button onClick={onBack} className="mr-2 text-2xl text-white cursor-pointer hover:text-secondary transition-colors p-2 rounded-full cursor-pointer">
                     <ChevronLeft />
                 </button>
                 <span className="text-2xl font-bold text-white">注文の最終確認</span>
@@ -1528,9 +1528,9 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     if (showStepRequirement) return <StepRequirementScreen onBack={() => setShowStepRequirement(false)} />;
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20">
+        <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20">
             {/* Enhanced Header */}
-            <div className="bg-gradient-to-r from-secondary to-red-600 text-white px-4 py-6 text-lg font-bold shadow-lg">
+            <div className="fixed top-0 left-0 right-0 max-w-md mx-auto bg-gradient-to-r from-secondary to-red-600 text-white px-4 py-6 text-lg font-bold shadow-lg opacity-100 z-50">
                 <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
@@ -1541,7 +1541,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             </div>
 
             {/* Enhanced Warning Banner */}
-            <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 flex items-center justify-between shadow-lg">
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 flex items-center justify-between shadow-lg pt-20">
                 <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
                     <span className="text-sm font-semibold">ご利用準備が完了していません</span>

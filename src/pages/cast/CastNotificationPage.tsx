@@ -113,7 +113,7 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50">
                 <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-br from-primary via-primary to-secondary border-secondary">
                     <button onClick={onBack} className="text-white hover:text-secondary transition-colors">
-                        <ChevronLeft className="w-6 h-6" />
+                        <ChevronLeft className="w-6 h-6 hover:text-secondary cursor-pointer" />
                     </button>
                     <span className="text-lg font-bold text-white">お知らせ</span>
                     <div className="w-6"></div>

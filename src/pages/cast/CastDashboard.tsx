@@ -404,8 +404,6 @@ const CastDashboardInner: React.FC = () => {
             };
         });
 
-    console.log('CALLS', calls);
-
     const filteredByArea: CallWithActive[] = selectedArea === '全国'
         ? calls
         : calls.filter(call => call.title.includes(selectedArea));

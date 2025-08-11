@@ -61,10 +61,10 @@ const NicknameInput: React.FC<NicknameInputProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-primary flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-primary via-gray-800 to-secondary p-4 flex flex-col">
       {/* Header */}
       <div className="flex items-center p-4">
-        <button onClick={onBack} className="text-white">
+        <button onClick={onBack} className="text-white hover:text-secondary cursor-pointer">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
@@ -72,7 +72,7 @@ const NicknameInput: React.FC<NicknameInputProps> = ({
         <h1 className="flex-1 text-center text-lg font-medium mr-6 text-white">ニックネーム</h1>
       </div>
       {/* Progress Steps */}
-      <div className="px-4 py-6 bg-primary">
+      <div className="px-4 py-6">
         <StepIndicator totalSteps={6} currentStep={2} />
       </div>
       {/* Main Content */}
@@ -88,9 +88,12 @@ const NicknameInput: React.FC<NicknameInputProps> = ({
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               placeholder="ニックネーム（2文字以上）"
-              className="w-full px-4 py-3 border border-secondary rounded-lg focus:outline-none focus:border-secondary bg-primary text-white placeholder-secondary"
+              aria-describedby="nickname-hint"
+              minLength={2}
+              autoFocus
+              className="w-full px-4 py-3 border border-secondary rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary/60 focus:border-secondary bg-primary text-white placeholder-secondary"
             />
-            <div className="mt-1 text-xs text-white">
+            <div className="mt-1 text-xs text-white" id="nickname-hint">
               <p>※2文字以上</p>
               <p>※あとから変更可能</p>
             </div>

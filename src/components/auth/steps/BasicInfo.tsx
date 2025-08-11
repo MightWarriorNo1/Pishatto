@@ -28,7 +28,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ onNext, updateFormData, formData 
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-gradient-to-b from-primary via-gray-800 to-secondary min-h-screen p-6">
       <div>
         <h2 className="text-2xl font-bold text-center text-white mb-8">
           基本情報入力
@@ -48,7 +48,8 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ onNext, updateFormData, formData 
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="appearance-none block w-full px-3 py-2 border border-secondary rounded-md shadow-sm placeholder-secondary focus:outline-none focus:ring-secondary focus:border-secondary bg-primary text-white"
+              aria-invalid={!!error}
+              className="appearance-none block w-full px-3 py-2 border border-secondary rounded-md shadow-sm placeholder-secondary focus:outline-none focus:ring-2 focus:ring-secondary/60 focus:border-secondary bg-primary text-white"
             />
           </div>
         </div>
@@ -63,10 +64,12 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ onNext, updateFormData, formData 
               name="password"
               type="password"
               autoComplete="new-password"
+              minLength={6}
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="appearance-none block w-full px-3 py-2 border border-secondary rounded-md shadow-sm placeholder-secondary focus:outline-none focus:ring-secondary focus:border-secondary bg-primary text-white"
+              aria-invalid={!!error}
+              className="appearance-none block w-full px-3 py-2 border border-secondary rounded-md shadow-sm placeholder-secondary focus:outline-none focus:ring-2 focus:ring-secondary/60 focus:border-secondary bg-primary text-white"
             />
           </div>
         </div>
@@ -80,7 +83,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({ onNext, updateFormData, formData 
         <div>
           <button
             type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-secondary hover:bg-red-400 focus:outline-none focus:ring-2 focus:ring-secondary/60"
           >
             次へ
           </button>

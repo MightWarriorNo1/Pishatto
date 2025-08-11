@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { Bell, ChevronLeft, ChevronRight, CreditCard, HelpCircle, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User, Medal } from 'lucide-react';
+import { Bell, ChevronRight, CreditCard, HelpCircle, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User, Medal } from 'lucide-react';
 import PaymentHistory from './PaymentHistory';
 import GradeDetail from './GradeDetail';
 import AvatarEditPage from './AvatarEditPage';
@@ -186,7 +186,8 @@ const Profile: React.FC = () => {
                         {loading ? '---' : (user?.points || 0).toLocaleString()}P
                     </span>
                 </div>
-            </div>        {/* Grade section */}
+            </div>        
+            {/* Grade section */}
             <div className="bg-secondary text-white text-center py-2 font-bold">今期のグレード</div>
             <div className="bg-primary px-4 py-4 flex items-center gap-4 border border-secondary">
                 <Medal size={48} className="text-secondary" />
@@ -198,15 +199,15 @@ const Profile: React.FC = () => {
                 </button>
             </div>
             {/* Grade up section */}
-            <div className="bg-secondary px-4 py-4 flex items-center gap-4 mt-2 rounded-lg mx-4">
+            {/* <div className="bg-secondary px-4 py-4 flex items-center gap-4 mt-2 rounded-lg mx-4">
                 <div className="flex-1">
                     <div className="text-white font-bold text-sm mb-1">クレジットカードを登録するだけで次のグレードに!!</div>
                     <button onClick={() => alert('グレードアップ画面へ')} className="w-full bg-primary text-white rounded-full py-2 font-bold mt-2 border border-secondary">グレードアップする</button>
                 </div>
                 <img src="/assets/icons/gold-cup.png" alt="mascot" className="w-16 h-16 object-contain" />
-            </div>
+            </div> */}
             {/* Settings/Options menu */}
-            <div className="bg-white/10 my-4 rounded-lg shadow mx-2 divide-y divide-secondary">
+            <div className="bg-white/10 my-8 rounded-lg shadow mx-2 divide-y divide-secondary">
                 <button onClick={() => setShowPaymentHistory(true)} className="w-full flex hover:bg-secondary items-center px-4 py-4 text-left">
                     <span className="mr-3">
                         <TicketCheck />

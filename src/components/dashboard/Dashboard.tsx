@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopNavigation from './TopNavigation';
 import NewCastSection from './NewCastSection';
@@ -20,14 +20,38 @@ import { markAllNotificationsRead, getGuestChats } from '../../services/api';
 import { useChatMessages, useTweets, useNotifications, useUnreadMessageCount } from '../../hooks/useRealtime';// Assume a simple Modal component exists or will be created
 
 // Add Modal component above Dashboard
-const Modal: React.FC<{ onClose: () => void; children: React.ReactNode }> = ({ onClose, children }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-    <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 relative">
-      <button onClick={onClose} className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl">×</button>
-      {children}
+const Modal: React.FC<{ onClose: () => void; children: React.ReactNode }> = ({ onClose, children }) => {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div
+        className="bg-gradient-to-br from-primary via-primary to-secondary rounded-2xl p-0 max-w-md w-full mx-4 relative shadow-xl border border-secondary"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-white/80 hover:text-white text-2xl"
+          aria-label="閉じる"
+        >
+          ×
+        </button>
+        <div className="max-h-[80vh] overflow-y-auto p-6 text-white">{children}</div>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const Dashboard: React.FC = () => {
   const [activeBottomTab, setActiveBottomTab] = useState<'search' | 'message' | 'call' | 'tweet' | 'mypage'>('search');
@@ -56,6 +80,48 @@ const Dashboard: React.FC = () => {
   const [modalType, setModalType] = useState<null | 'satisfaction' | 'ranking'>(null);
   const [allSatisfactionCasts, setAllSatisfactionCasts] = useState<any[]>([]);
   const [allRankings, setAllRankings] = useState<any[]>([]);
+  const [satisfactionLoading, setSatisfactionLoading] = useState(false);
+  const [rankingLoading, setRankingLoading] = useState(false);
+  const [satisfactionSearch, setSatisfactionSearch] = useState('');
+  const [satisfactionSort, setSatisfactionSort] = useState<'rating' | 'feedback' | 'price' | 'name'>('rating');
+  const [rankingFilters] = useState<{ timePeriod: 'today' | 'yesterday' | 'week' | 'month'; category: 'gift' | 'points' }>({
+    timePeriod: 'yesterday',
+    category: 'gift',
+  });
+
+  const filteredAndSortedSatisfactionCasts = useMemo(() => {
+    let list = allSatisfactionCasts || [];
+    const query = satisfactionSearch.trim().toLowerCase();
+    if (query) {
+      list = list.filter((cast: any) => (cast.nickname || '').toLowerCase().includes(query));
+    }
+    const sorted = [...list].sort((a: any, b: any) => {
+      switch (satisfactionSort) {
+        case 'rating': {
+          const ar = Number(a.average_rating || 0);
+          const br = Number(b.average_rating || 0);
+          return br - ar; // desc
+        }
+        case 'feedback': {
+          const af = Number(a.feedback_count || 0);
+          const bf = Number(b.feedback_count || 0);
+          return bf - af; // desc
+        }
+        case 'price': {
+          const ap = Number(a.grade_points || 0);
+          const bp = Number(b.grade_points || 0);
+          return ap - bp; // asc
+        }
+        case 'name':
+        default: {
+          const an = (a.nickname || '').toLowerCase();
+          const bn = (b.nickname || '').toLowerCase();
+          return an.localeCompare(bn);
+        }
+      }
+    });
+    return sorted;
+  }, [allSatisfactionCasts, satisfactionSearch, satisfactionSort]);
 
   // Initialize message count from existing chats
   useEffect(() => {
@@ -123,15 +189,28 @@ const Dashboard: React.FC = () => {
   // Fetch all data for modals
   useEffect(() => {
     if (modalType === 'satisfaction') {
-      import('../../services/api').then(api => {
-        api.getAllSatisfactionCasts().then(setAllSatisfactionCasts);
-      });
+      setSatisfactionLoading(true);
+      import('../../services/api')
+        .then((api) => api.getAllSatisfactionCasts())
+        .then((data) => setAllSatisfactionCasts(data || []))
+        .catch(() => setAllSatisfactionCasts([]))
+        .finally(() => setSatisfactionLoading(false));
     } else if (modalType === 'ranking') {
-      import('../../services/api').then(api => {
-        api.fetchRanking({ userType: 'cast', timePeriod: 'yesterday', category: 'gift', area: '全国' }).then(res => setAllRankings(res.data || []));
-      });
+      setRankingLoading(true);
+      import('../../services/api')
+        .then((api) =>
+          api.fetchRanking({
+            userType: 'cast',
+            timePeriod: rankingFilters.timePeriod,
+            category: rankingFilters.category,
+            area: '全国',
+          })
+        )
+        .then((res) => setAllRankings((res && res.data) || []))
+        .catch(() => setAllRankings([]))
+        .finally(() => setRankingLoading(false));
     }
-  }, [modalType]);
+  }, [modalType, rankingFilters]);
 
   // Handle footprints tab being disabled
   useEffect(() => {
@@ -252,35 +331,88 @@ const Dashboard: React.FC = () => {
       {/* Modal rendering */}
       {modalType === 'satisfaction' && (
         <Modal onClose={() => setModalType(null)}>
-          <div className="p-4">
-            <h2 className="text-lg font-bold mb-4">ユーザー満足度の高いキャスト一覧</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {allSatisfactionCasts.map((cast: any) => (
-                <div key={cast.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer">
-                  <img src={cast.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${cast.avatar}` : '/assets/avatar/female.png'} alt={cast.nickname} className="w-full h-32 object-cover rounded-lg border border-secondary mb-2" />
-                  <div className="font-medium text-white text-sm">{cast.nickname}</div>
-                  <div className="text-xs text-white mt-1">{cast.average_rating?.toFixed(1)} ★ / {cast.feedback_count}件</div>
-                  <div className="text-xs text-white mt-1">{cast.grade_points}円/30分</div>
-                </div>
-              ))}
+          <div className="p-0">
+            <h2 className="text-lg font-bold mb-2">ユーザー満足度の高いキャスト一覧</h2>
+            <p className="text-sm text-white/80 mb-4">検索・並び替えで目的のキャストを見つけましょう。</p>
+            <div className="flex items-center gap-2 mb-4">
+              <input
+                type="text"
+                value={satisfactionSearch}
+                onChange={(e) => setSatisfactionSearch(e.target.value)}
+                placeholder="名前で検索"
+                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary text-primary"
+              />
+              <select
+                value={satisfactionSort}
+                onChange={(e) => setSatisfactionSort(e.target.value as any)}
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-primary"
+              >
+                <option value="rating">評価が高い順</option>
+                <option value="feedback">レビュー数が多い順</option>
+                <option value="price">料金が安い順</option>
+                <option value="name">名前順</option>
+              </select>
             </div>
+
+            {satisfactionLoading ? (
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-48 bg-gray-200 rounded-lg animate-pulse" />
+                ))}
+              </div>
+            ) : filteredAndSortedSatisfactionCasts.length === 0 ? (
+              <div className="text-center text-white/80 py-6">該当するキャストが見つかりませんでした。</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {filteredAndSortedSatisfactionCasts.map((cast: any) => (
+                  <div key={cast.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer relative">
+                    <img
+                      src={cast.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${cast.avatar}` : '/assets/avatar/female.png'}
+                      alt={cast.nickname}
+                      onClick={()=>navigate(`/cast/${cast.id}`)}  
+                      className="w-full h-32 object-cover rounded-lg border border-secondary mb-2"
+                    />
+                    <div className="font-medium text-white text-sm truncate">{cast.nickname}</div>
+                    <div className="text-xs text-white mt-1">{(cast.average_rating || 0).toFixed(1)} ★ / {cast.feedback_count || 0}件</div>
+                    <div className="text-xs text-white mt-1">{cast.grade_points || 0}P/30分</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </Modal>
       )}
       {modalType === 'ranking' && (
         <Modal onClose={() => setModalType(null)}>
-          <div className="p-4">
-            <h2 className="text-lg font-bold mb-4">昨日のランキングTOP10</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {allRankings.map((profile: any, index: number) => (
-                <div key={profile.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer">
-                  <img src={profile.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar}` : '/assets/avatar/female.png'} alt={profile.name} className="w-full h-32 object-cover rounded-lg border border-secondary mb-2" />
-                  <div className="font-medium text-white text-sm">{profile.name}</div>
-                  <div className="text-xs text-white mt-1">{profile.points}ポイント {profile.gift_count && `(${profile.gift_count}件)`}</div>
-                  <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">{index + 1}</div>
-                </div>
-              ))}
-            </div>
+          <div className="p-0">
+            <h2 className="text-lg font-bold mb-2">ランキング</h2>
+            <p className="text-sm text-white/80 mb-4">期間とカテゴリを選択して表示します。</p>
+
+            {rankingLoading ? (
+              <div className="grid grid-cols-2 gap-4">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="h-48 bg-gray-200 rounded-lg animate-pulse" />)
+                )}
+              </div>
+            ) : allRankings.length === 0 ? (
+              <div className="text-center text-white/80 py-6">ランキングはまだありません。</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4">
+                {allRankings.map((profile: any, index: number) => (
+                  <div key={profile.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer relative">
+                    <img
+                      src={profile.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar}` : '/assets/avatar/female.png'}
+                      alt={profile.name}
+                      onClick={()=>navigate(`/cast/${profile.id}`)}  
+                      className="w-full h-32 object-cover rounded-lg border border-secondary mb-2"
+                    />
+                    <div className="font-medium text-white text-sm truncate">{profile.name}</div>
+                    <div className="text-xs text-white mt-1">{profile.points}ポイント {profile.gift_count && `(${profile.gift_count}件)`}</div>
+                    <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">{index + 1}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </Modal>
       )}

@@ -134,7 +134,7 @@ const RegisterSteps: React.FC = () => {
 
   return (
     <div className="bg-white flex items-center justify-center min-h-screen">
-      <div className="max-w-md w-full mx-auto bg-primary rounded-2xl shadow-lg p-8 border border-secondary">
+      <div className="max-w-md w-full mx-auto bg-primary rounded-2xl shadow-lg border border-secondary">
         {renderStep()}
       </div>
     </div>

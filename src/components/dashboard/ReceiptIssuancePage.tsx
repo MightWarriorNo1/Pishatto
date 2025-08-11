@@ -61,7 +61,7 @@ const ReceiptIssuancePage: React.FC<ReceiptIssuancePageProps> = ({
     <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
       {/* Header */}
       <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
-        <button onClick={onBack} className="mr-2 text-white hover:text-secondary">
+        <button onClick={onBack} className="mr-2 text-white hover:text-secondary cursor-pointer">
           <ChevronLeft size={24} />
         </button>
         <span className="text-lg font-medium flex-1 text-center text-white">領収書を発行する</span>

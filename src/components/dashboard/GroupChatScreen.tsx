@@ -6,10 +6,10 @@ import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useGroupMessages } from '../../hooks/useRealtime';
-import { testEchoConnection } from '../../services/echo';
 import dayjs from 'dayjs';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const IMAGE_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
 
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
@@ -56,7 +56,8 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
     const [showFile, setShowFile] = useState(false);
     const [input, setInput] = useState('');
     const attachBtnRef = useRef<HTMLButtonElement>(null);
-    const [giftTab, setGiftTab] = useState<'standard' | 'local' | 'grade' | 'mygift'>('mygift');
+    const [selectedGift, setSelectedGift] = useState<any>(null);
+    const [showGiftDetailModal, setShowGiftDetailModal] = useState(false);
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,6 +78,11 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
     const [participants, setParticipants] = useState<any[]>([]);
     const [groupInfo, setGroupInfo] = useState<any>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const textInputRef = useRef<HTMLInputElement>(null);
+    // Mention and target cast for gifts
+    const [mentionOpen, setMentionOpen] = useState(false);
+    const [mentionQuery, setMentionQuery] = useState('');
+    const [selectedCastTarget, setSelectedCastTarget] = useState<{ id: number; nickname: string } | null>(null);
     
     
     // Camera functionality
@@ -137,7 +143,6 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
 
     // Real-time group messages
     const handleRealtimeMessage = useCallback((message: any) => {
-        console.log('GroupChatScreen: Received real-time message:', message);
         setMessages(prev => {
             const messageExists = prev.some(m => m.id === message.id);
             if (messageExists) return prev;
@@ -145,22 +150,6 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
         });
     }, []);
     useGroupMessages(groupId, handleRealtimeMessage);
-
-    // Debug WebSocket connection status
-    useEffect(() => {
-        const checkConnection = () => {
-            const echo = (window as any).Echo;
-            if (echo && echo.connector && echo.connector.pusher) {
-                const state = echo.connector.pusher.connection.state;
-                console.log('GroupChatScreen: WebSocket connection state:', state);
-            }
-        };
-        
-        checkConnection();
-        const interval = setInterval(checkConnection, 5000); // Check every 5 seconds
-        
-        return () => clearInterval(interval);
-    }, []);
 
     // Auto-scroll to bottom when new messages arrive
     useEffect(() => {
@@ -183,7 +172,6 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
         setSendError(null);
 
         try {
-            console.log('Sending message with data:', { groupId, input: input.trim(), userId: user.id });
             
             const messageData: any = {
                 group_id: groupId,
@@ -205,12 +193,9 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                     messageData.gift_id = selectedGift.id;
                 }
             }
-
-            console.log('Message data to send:', messageData);
             
             // Send the message
             const response = await sendGroupMessage(messageData);
-            console.log('Message sent successfully, response:', response);
             
             // Immediately add the sent message returned from API (has real id)
             if (response) {
@@ -219,8 +204,6 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                     return exists ? prev : [...prev, response];
                 });
             } else {
-                // If no response, try to refresh messages after a short delay
-                console.log('No response from server, will refresh messages in 1 second');
                 setTimeout(async () => {
                     try {
                         const response = await getGroupMessages(groupId, 'guest', user.id);
@@ -250,17 +233,9 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
         }
     };
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setAttachedFile(file);
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setImagePreview(e.target?.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+
+    const popoverRef = useRef<HTMLDivElement>(null);
+    const fileSelectInputRef = useRef<HTMLInputElement>(null);
 
     // Camera functionality
     const handleOpenCamera = async () => {
@@ -315,12 +290,6 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
         }
     };
 
-    const handleGiftSelect = (gift: any) => {
-        setSelectedGiftCategory(gift.id);
-        setShowGiftModal(false);
-        setInput(prev => prev + ` 🎁 ${gift.name}`);
-    };
-
     const formatTime = (timestamp: string) => {
         // Use mm for minutes, not MM (month)
         return dayjs.utc(timestamp).tz(userTz).format('YYYY-MM-DD HH:mm');
@@ -367,13 +336,12 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
         );
     }
 
-    console.log('messages', messages);
     return (
         <div className="min-h-screen flex flex-col">
             {/* Fixed Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
-                <button onClick={onBack} className="text-white hover:text-secondary">
-                    <ChevronLeft className="w-6 h-6" />
+                <button onClick={onBack} className="text-white">
+                    <ChevronLeft className="w-6 h-6 hover:text-secondary cursor-pointer" />
                 </button>
                 <div className="flex items-center">
                     <Users className="w-5 h-5 text-white mr-2" />
@@ -384,15 +352,6 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                         ({participants.length}人)
                     </span>
                 </div>
-                <button 
-                    onClick={() => {
-                        const isConnected = testEchoConnection();
-                        console.log('WebSocket connection test:', isConnected ? '✅ Connected' : '❌ Not connected');
-                    }}
-                    className="text-white hover:text-secondary text-sm"
-                >
-                    🔌
-                </button>
             </div>
 
             {/* Messages - Scrollable Area */}
@@ -503,7 +462,11 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                     }`}>
                                         {message.image && (
                                             <img
-                                                src={`${API_BASE_URL}/storage/${message.image}`}
+                                            src={
+                                                message.image.startsWith('http')
+                                                    ? message.image
+                                                    : `${IMAGE_BASE_URL}/storage/${message.image}`
+                                            }
                                                 alt="attached"
                                                 className="w-64 h-32 rounded mb-2"
                                             />
@@ -512,7 +475,11 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                         {message.gift && (
                                             <div className="bg-yellow-500 text-black rounded p-2 mb-2">
                                                 🎁 {message.gift.name}
+                                                <div className="text-xs mt-1 text-center">
+                                                    {message.gift.points}P
+                                                </div>
                                             </div>
+                                            
                                         )}
                                         
                                         {message.message && (
@@ -548,7 +515,13 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                     </button>
                     
                     <button
-                        onClick={() => setShowGiftModal(!showGiftModal)}
+                        onClick={() => {
+                            if (!selectedCastTarget) {
+                                setSendError('まず @ で贈る相手（キャスト）を選択してください');
+                                return;
+                            }
+                            setShowGiftModal(!showGiftModal);
+                        }}
                         className="text-white p-2"
                     >
                         <Gift className="w-5 h-5" />
@@ -557,8 +530,22 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                     <div className="flex-1 relative">
                         <input
                             type="text"
+                            ref={textInputRef}
                             value={input}
-                            onChange={(e) => setInput(e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setInput(val);
+                                const cursor = (e.target as HTMLInputElement).selectionStart ?? val.length;
+                                const beforeCaret = val.slice(0, cursor);
+                                const match = beforeCaret.match(/(^|\s)@(\S*)$/);
+                                if (match) {
+                                    setMentionOpen(true);
+                                    setMentionQuery((match[2] || '').toLowerCase());
+                                } else {
+                                    setMentionOpen(false);
+                                    setMentionQuery('');
+                                }
+                            }}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && !e.shiftKey && isNotificationEnabled('messages')) {
                                     e.preventDefault();
@@ -574,6 +561,36 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                             disabled={sending || !isNotificationEnabled('messages')}
                         />
                         
+                        {/* Mention dropdown */}
+                        {mentionOpen && participants.some((p) => p.type === 'cast') && (
+                            <div className="absolute left-0 right-0 bottom-full mb-1 bg-white rounded-md shadow-lg max-h-48 overflow-y-auto z-20">
+                                {participants
+                                    .filter((p: any) => p.type === 'cast')
+                                    .filter((p: any) => !mentionQuery || (p.nickname || '').toLowerCase().includes(mentionQuery))
+                                    .map((cast: any) => (
+                                        <button
+                                            key={`mention-${cast.id}`}
+                                            type="button"
+                                            className="w-full text-left px-3 py-2 hover:bg-gray-100 flex items-center"
+                                            onClick={() => {
+                                                const replaced = input.replace(/(^|\s)@(\S*)$/, (_m, prefix) => `${prefix}@${cast.nickname} `);
+                                                setInput(replaced.trimStart());
+                                                setMentionOpen(false);
+                                                setMentionQuery('');
+                                                setSelectedCastTarget({ id: cast.id, nickname: cast.nickname });
+                                                setTimeout(() => textInputRef.current?.focus(), 0);
+                                            }}
+                                        >
+                                            <img src={getFirstAvatarUrl(cast.avatar)} alt="avatar" className="w-6 h-6 rounded-full mr-2" />
+                                            <span className="text-gray-800">{cast.nickname}</span>
+                                        </button>
+                                    ))}
+                                {participants.filter((p: any) => p.type === 'cast').filter((p: any) => !mentionQuery || (p.nickname || '').toLowerCase().includes(mentionQuery)).length === 0 && (
+                                    <div className="px-3 py-2 text-sm text-gray-500">該当するキャストがいません</div>
+                                )}
+                            </div>
+                        )}
+
                         {imagePreview && (
                             <div className="absolute -top-20 left-0">
                                 <img
@@ -614,67 +631,128 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                     </button>
                 </div>
 
-                {/* File Upload */}
-                {showFile && (
-                    <div className="mt-2 flex space-x-2">
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageChange}
-                            className="hidden"
-                        />
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="flex items-center space-x-2 bg-secondary text-white px-3 py-2 rounded text-sm"
-                        >
-                            <Image className="w-4 h-4" />
-                            <span>画像</span>
-                        </button>
-                        <button
-                            onClick={handleOpenCamera}
-                            className="flex items-center space-x-2 bg-secondary text-white px-3 py-2 rounded text-sm"
-                        >
-                            <Camera className="w-4 h-4" />
-                            <span>カメラ</span>
-                        </button>
-                    </div>
-                )}
+                {/* Hidden file inputs for uploads */}
+                <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (!file.type.startsWith('image/')) {
+                            setSendError('画像ファイルを選択してください');
+                            e.target.value = '';
+                            return;
+                        }
+                        setAttachedFile(file);
+                        const reader = new FileReader();
+                        reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+                        reader.readAsDataURL(file);
+                        setShowFile(false);
+                    }}
+                />
+                <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileSelectInputRef}
+                    className="hidden"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (!file.type.startsWith('image/')) {
+                            setSendError('画像ファイルを選択してください');
+                            e.target.value = '';
+                            return;
+                        }
+                        setAttachedFile(file);
+                        const reader = new FileReader();
+                        reader.onload = (ev) => setImagePreview(ev.target?.result as string);
+                        reader.readAsDataURL(file);
+                        setShowFile(false);
+                    }}
+                />
 
-                {/* Gift Modal */}
-                {showGiftModal && (
-                    <div className="mt-4 bg-secondary rounded-lg p-4">
-                        <div className="flex space-x-2 mb-4">
-                            {['standard', 'local', 'grade', 'mygift'].map((tab) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setGiftTab(tab as any)}
-                                    className={`px-3 py-1 rounded text-sm ${
-                                        giftTab === tab ? 'bg-blue-500 text-white' : 'text-gray-300'
-                                    }`}
-                                >
-                                    {tab === 'standard' && '標準'}
-                                    {tab === 'local' && 'ローカル'}
-                                    {tab === 'grade' && 'グレード'}
-                                    {tab === 'mygift' && 'マイギフト'}
-                                </button>
-                            ))}
+                {showFile && (
+                        <div
+                            ref={popoverRef}
+                            className="absolute bottom-full mb-1  w-80 bg-primary rounded-xl shadow-lg border border-secondary z-50 animate-fade-in"
+                        >
+                            <button
+                                className="flex items-center justify-between w-full px-4 py-3 pt-6 hover:bg-secondary text-white text-base border-b border-secondary"
+                                onClick={() => {
+                                    setShowFile(false);
+                                    fileInputRef.current?.click();
+                                }}
+                            >
+                                <span>写真ライブラリ</span>
+                                <Image />
+                            </button>
+                            <button 
+                                className="flex items-center justify-between w-full px-4 py-3 hover:bg-secondary text-white text-base border-b border-secondary"
+                                onClick={handleOpenCamera}
+                            >
+                                <span>写真またはビデオを撮る</span>
+                                <Camera />
+                            </button>
+                            <button 
+                                className="flex items-center justify-between w-full px-4 py-3 hover:bg-secondary text-white text-base"
+                                onClick={() => {
+                                    setShowFile(false);
+                                    fileSelectInputRef.current?.click();
+                                }}
+                            >
+                                <span>ファイルを選択</span>
+                                <FolderClosed />
+                            </button>
                         </div>
-                        
-                        <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">
-                            {gifts
-                                .filter(gift => gift.category === giftTab)
-                                .map(gift => (
+                    )}
+
+                {showGiftModal && (
+                    <div className="fixed inset-0 z-50 bg-black bg-opacity-60">
+                        <div className="fixed left-0 right-0 bottom-0 bg-primary rounded-t-2xl shadow-lg p-6 flex flex-col items-center border-t border-secondary w-full max-w-md mx-auto animate-slide-up">
+                            <h2 className="font-bold text-lg mb-2 text-white">ギフトを選択</h2>
+                            {selectedCastTarget && (
+                                <div className="mb-2 text-white text-sm">宛先：<span className="font-bold">@{selectedCastTarget.nickname}</span></div>
+                            )}
+                            <div className="flex gap-2 mb-4">
+                                {['standard', 'regional', 'grade', 'mygift'].map(cat => (
                                     <button
-                                        key={gift.id}
-                                        onClick={() => handleGiftSelect(gift)}
-                                        className="bg-primary rounded p-2 text-center"
+                                        key={cat}
+                                        className={`px-3 py-1 rounded-full font-bold text-sm ${selectedGiftCategory === cat ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}
+                                        onClick={() => setSelectedGiftCategory(cat)}
                                     >
-                                        <div className="text-2xl mb-1">{gift.emoji}</div>
-                                        <div className="text-white text-xs">{gift.name}</div>
-                                        <div className="text-yellow-400 text-xs">{gift.points}P</div>
+                                        {cat === 'standard' ? '定番' : cat === 'regional' ? 'ご当地' : cat === 'grade' ? 'グレード' : 'Myギフト'}
                                     </button>
                                 ))}
+                            </div>
+                            <div className="grid grid-cols-4 gap-4 mb-4">
+                                {gifts.filter(g => g.category === selectedGiftCategory).map(gift => {
+                                    const hasEnoughPoints = user && user.points && user.points >= gift.points;
+                                    return (
+                                    <button
+                                        key={gift.id}
+                                        className={`flex flex-col items-center justify-center rounded-lg p-2 transition ${
+                                            hasEnoughPoints 
+                                                ? 'bg-secondary text-white hover:bg-red-700' 
+                                                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                        }`}
+                                        onClick={() => {
+                                            if (!hasEnoughPoints) return;
+                                            setSelectedGift(gift);
+                                            setShowGiftDetailModal(true);
+                                        }}
+                                    >
+                                        <span className="text-3xl mb-1">
+                                            {gift.icon}
+                                        </span>
+                                        <span className="text-xs">{gift.name}</span>
+                                        <span className="text-xs text-yellow-300 font-bold">{gift.points}P</span>
+                                    </button>
+                                    );
+                                })}
+                            </div>
+                            <button className="text-white mt-2 hover:text-red-700 transition-all duration-200 font-medium" onClick={() => setShowGiftModal(false)}>閉じる</button>
                         </div>
                     </div>
                 )}
@@ -813,11 +891,76 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                     </div>
                 </div>
             )}
+            {showGiftDetailModal && selectedGift && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                    <div className="bg-primary rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
+                        <h2 className="font-bold text-lg mb-4 text-white">ギフト詳細</h2>
+                        {selectedCastTarget && (
+                            <div className="text-white mb-2 text-sm">宛先：<span className="font-bold">@{selectedCastTarget.nickname}</span></div>
+                        )}
+                        <div className="flex flex-col items-center mb-4">
+                            <span className="text-5xl mb-2">{selectedGift.icon}</span>
+                            <span className="text-lg font-bold text-white mb-1">{selectedGift.name}</span>
+                            <span className="text-yellow-300 font-bold mb-2">{selectedGift.points}P</span>
+                            <span className="text-white text-sm whitespace-pre-line mb-2" style={{maxWidth: 320, textAlign: 'center'}}>{selectedGift.description || '説明はありません'}</span>
+                        </div>
+                        <div className="flex gap-4">
+                            <button
+                                className="px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
+                                disabled={sending || !user || (user.points ?? 0) < selectedGift.points}
+                                onClick={async () => {
+                                    if (!user || (user.points ?? 0) < selectedGift.points || !selectedCastTarget) return;
+                                    setSending(true);
+                                    setSendError(null);
+                                    try {
+                                        const payload: any = {
+                                            group_id: groupId,
+                                            sender_guest_id: user.id,
+                                            gift_id: selectedGift.id,
+                                            receiver_cast_id: selectedCastTarget.id,
+                                            message: input.trim() || `@${selectedCastTarget.nickname}`,
+                                        };
+                                        const sent = await sendGroupMessage(payload);
+                                        let giftObj = sent.gift;
+                                        if (!giftObj) {
+                                            giftObj = gifts.find((g: any) => g.id === selectedGift.id) || selectedGift;
+                                            sent.gift = {
+                                                id: giftObj.id,
+                                                name: giftObj.name || giftObj.label,
+                                                icon: giftObj.icon,
+                                                points: giftObj.points,
+                                                description: giftObj.description
+                                            };
+                                        }
+                                        setMessages((prev) => [...prev, sent]);
+                                        refreshUser();
+                                        setShowGiftDetailModal(false);
+                                        setSelectedGift(null);
+                                        setShowGiftModal(false);
+                                    } catch (e: any) {
+                                        setSendError('ギフトの送信に失敗しました');
+                                    } finally {
+                                        setSending(false);
+                                    }
+                                }}
+                            >
+                                送信
+                            </button>
+                            <button
+                                className="px-4 py-2 bg-gray-400 text-white rounded font-bold"
+                                onClick={() => { setShowGiftDetailModal(false); setSelectedGift(null); }}
+                            >
+                                キャンセル
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Camera Modal */}
             {showCamera && (
                 <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50">
-                    <div className="bg-primary p-4 rounded-lg flex flex-col items-center">
+                    <div className="bg-primary p-4 rounded-lg flex flex-col items-center min-w-[420px] max-w-[420px]">
                         <video
                             ref={videoRef}
                             autoPlay

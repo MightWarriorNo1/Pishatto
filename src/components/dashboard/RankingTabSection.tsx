@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchRanking } from '../../services/api';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -6,14 +7,14 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     if (!avatarString) {
-        return '/assets/avatar/avatar-1.png';
+        return '/assets/avatar/female.png';
     }
     
     // Split by comma and get the first non-empty avatar
     const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
     
     if (avatars.length === 0) {
-        return '/assets/avatar/avatar-1.png';
+        return '/assets/avatar/female.png';
     }
     
     return `${API_BASE_URL}/${avatars[0]}`;
@@ -34,6 +35,7 @@ const areas = [
 
 const RankingTabSection: React.FC = () => {
   const [userType, setUserType] = useState<UserType>('cast');
+  const navigate=useNavigate();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('current');
   const [selectedCategory, setSelectedCategory] = useState<Category>('gift');
   const [selectedArea, setSelectedArea] = useState<string>('全国');
@@ -44,6 +46,16 @@ const RankingTabSection: React.FC = () => {
   const handleAreaSelect = (area: string) => {
     setSelectedArea(area);
     setIsAreaDropdownOpen(false);
+  };
+
+  const handleProfileClick = (item: any) => {
+    const id = item?.id ?? item?.user_id;
+    if (!id) return;
+    if (userType === 'cast') {
+      navigate(`/cast/${id}`);
+    } else {
+      navigate(`/guest/${id}`);
+    }
   };
 
   useEffect(() => {
@@ -59,6 +71,7 @@ const RankingTabSection: React.FC = () => {
     }).catch(() => setLoading(false));
   }, [userType, timePeriod, selectedCategory, selectedArea]);
 
+  console.log("RANKING", ranking);
   return (
     <div className="flex flex-col bg-gradient-to-br from-primary via-primary to-secondary min-h-[calc(100vh-10rem)] relative">
       <div className="px-4 pt-4">
@@ -210,15 +223,15 @@ const RankingTabSection: React.FC = () => {
       {/* Empty State */}
       <div className="flex-1 flex-col items-center justify-center min-w-[360px]">
         {loading ? (
-          <div className="text-white">ローディング...</div>
+          <div className="text-white text-center">ローディング...</div>
         ) : ranking.length === 0 ? (
-          <div className="text-white">ランキングデータがありません</div>
+          <div className="text-white text-center">ランキングデータがありません</div>
         ) : (
           <div className="w-full">
             {ranking.map((item, idx) => (
               <div key={item.id || item.user_id} className="flex items-center p-2 border-b border-secondary">
                 <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-white text-base font-bold mr-2">{idx + 1}</div>
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-400 border-2 border-secondary mr-2">
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-400 border-2 border-secondary mr-2 cursor-pointer" onClick={() => handleProfileClick(item)}>
                   <img
                     src={getFirstAvatarUrl(item.avatar)}
                     alt={item.name || item.nickname || ''}
@@ -236,19 +249,6 @@ const RankingTabSection: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Bottom Profile Bar */}
-      {/* <div className="bg-primary text-white p-4 flex items-center space-x-3 mt-auto min-w-[360px] border-t border-secondary">
-        <span className="text-sm">圏外</span>
-        <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-400 border-2 border-secondary">
-          <img
-            src="/assets/avatar/avatar-2.png"
-            alt="Profile"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <span className="text-sm">まこちゃん</span>
-      </div> */}
     </div>
   );
 };

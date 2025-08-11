@@ -219,7 +219,7 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
 
             {/* Top bar */}
             <div className="flex items-center justify-between px-4 py-3 border-b bg-primary border-secondary">
-                <button onClick={onBack} className="text-2xl text-white">
+                <button onClick={onBack} className="text-2xl text-white hover:text-secondary cursor-pointer">
                     <ChevronLeft />
                 </button>
                 <span className="text-lg font-bold text-white">編集する</span>

@@ -1,3 +1,4 @@
+/*eslint-disable */
 import React from 'react';
 
 interface StepIndicatorProps {
@@ -7,22 +8,31 @@ interface StepIndicatorProps {
 
 const StepIndicator: React.FC<StepIndicatorProps> = ({ totalSteps, currentStep }) => {
   return (
-    <div className="flex items-center justify-between max-w-[320px] mx-auto">
-      {Array.from({ length: totalSteps }).map((_, idx) => (
-        <React.Fragment key={idx}>
-          <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center border border-secondary text-white font-bold ${
-              idx + 1 === currentStep
-                ? 'bg-secondary' // current step
-                : 'bg-primary'
-            }`}
-          >
-            {idx + 1}
-          </div>
-          {idx < totalSteps - 1 && <div className="flex-1 h-[2px] bg-secondary"></div>}
-        </React.Fragment>
-      ))}
-    </div>
+    <nav aria-label="進行状況">
+      <ol className="flex items-center justify-between max-w-[360px] mx-auto" role="list">
+        {Array.from({ length: totalSteps }).map((_, idx) => (
+          <li key={idx} className="flex items-center flex-1 min-w-0">
+            <div
+              aria-current={idx + 1 === currentStep ? 'step' : undefined}
+              aria-label={`ステップ${idx + 1} / ${totalSteps}`}
+              className={`w-9 h-9 rounded-full flex items-center justify-center border text-white font-bold transition-colors duration-200 ${
+                idx + 1 === currentStep
+                  ? 'bg-secondary border-secondary'
+                  : 'bg-primary border-secondary'
+              }`}
+            >
+              {idx + 1}
+            </div>
+            {idx < totalSteps - 1 && (
+              <div
+                className="flex-1 h-[2px] mx-2 bg-secondary/50"
+                aria-hidden="true"
+              />
+            )}
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 };
 

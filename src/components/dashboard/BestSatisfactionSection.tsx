@@ -3,8 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiStar } from 'react-icons/fi';
 import { getTopSatisfactionCasts } from '../../services/api';
+import getFirstAvatarUrl from '../../utils/avatar';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 interface SatisfactionCast {
   id: number;
@@ -59,7 +59,7 @@ const BestSatisfactionSection: React.FC = () => {
               <div className="flex space-x-3">
                 <div className="w-full">
                   <img
-                    src={cast.avatar ? `${API_BASE_URL}/${cast.avatar}` : '/assets/avatar/female.png'}
+                    src={cast.avatar ? getFirstAvatarUrl(cast.avatar) : '/assets/avatar/female.png'}
                     alt={cast.nickname}
                     className="w-full h-24 object-cover rounded-lg border border-secondary"
                   />
@@ -81,7 +81,7 @@ const BestSatisfactionSection: React.FC = () => {
                 <div className="text-white text-xs mt-1">
                   <div>レビュー {cast.feedback_count}件</div>
                   <div className="mt-1">
-                    {cast.grade_points}円/30分
+                  {cast.grade_points}P/30分
                   </div>
                 </div>
               </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import StepIndicator from './StepIndicator';
 import { locationService } from '../../../services/locationService';
+import { ChevronLeft } from 'lucide-react';
 
 interface LocationSelectProps {
   onNext: () => void;
@@ -72,18 +73,16 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-br-to from-primary via-primary to-secondary flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-primary via-gray-800 to-secondary p-4 flex flex-col">
       {/* Header */}
       <div className="flex items-center p-4">
-        <button onClick={onBack} className="text-white">
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
+        <button onClick={onBack} className="text-white hover:text-secondary cursor-pointer">
+          <ChevronLeft />
         </button>
       </div>
 
       {/* Progress Steps */}
-      <div className="px-4 py-4 bg-primary">
+      <div className="px-4 py-4">
         <StepIndicator totalSteps={6} currentStep={1} />
       </div>
 
@@ -94,17 +93,17 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
           <p className="text-xs text-white">※あとから変更可能</p>
         </div>
 
-        {loading ? (
-          <div className="text-center py-8">
+            {loading ? (
+          <div className="text-center py-8" aria-live="polite">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
             <p className="text-white text-sm mt-2">読み込み中...</p>
           </div>
         ) : error ? (
           <div className="text-center py-8">
             <p className="text-white text-sm mb-4">{error}</p>
-            <button
+              <button
               onClick={handleRetry}
-              className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-red-400"
+              className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-red-400 focus:outline-none focus:ring-2 focus:ring-secondary/60"
             >
               再試行
             </button>
@@ -119,9 +118,9 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
               <button
                 key={location}
                 onClick={() => handleLocationSelect(location)}
-                className={`py-3 text-center rounded-lg border ${selectedLocation === location
+                className={`py-3 text-center rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/60 ${selectedLocation === location
                   ? 'bg-secondary text-white border-secondary'
-                  : 'bg-primary text-white border-secondary hover:bg-secondary'
+                  : 'bg-primary text-white border-secondary hover:bg-secondary/20'
                   }`}
               >
                 {location}
@@ -133,10 +132,10 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
 
       {/* Fixed Bottom Button */}
       <div className="p-4">
-        <button
+          <button
           onClick={handleNext}
           disabled={!selectedLocation}
-          className={`w-full py-4 text-center text-white rounded-lg ${selectedLocation ? 'bg-secondary hover:bg-red-400' : 'bg-primary border border-secondary text-white hover:bg-secondary'
+            className={`w-full py-4 text-center text-white rounded-lg transition-colors ${selectedLocation ? 'bg-secondary hover:bg-red-400' : 'bg-primary border border-secondary text-white'
             }`}
         >
           次へ

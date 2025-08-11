@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiStar } from 'react-icons/fi';
 import { getAllSatisfactionCasts } from '../../services/api';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+import getFirstAvatarUrl from '../../utils/avatar';
 
 interface SatisfactionCast {
   id: number;
@@ -61,7 +60,7 @@ const UserSatisfactionSection: React.FC<UserSatisfactionSectionProps> = ({ onSee
               <div className="flex space-x-3">
                 <div className="w-full">
                   <img
-                    src={cast.avatar ? `${API_BASE_URL}/${cast.avatar}` : '/assets/avatar/female.png'}
+                    src={cast.avatar ? getFirstAvatarUrl(cast.avatar) : '/assets/avatar/female.png'}
                     alt={cast.nickname}
                     className="w-full h-48 object-cover rounded-lg border border-secondary"
                   />
@@ -83,7 +82,7 @@ const UserSatisfactionSection: React.FC<UserSatisfactionSectionProps> = ({ onSee
                 <div className="text-white text-xs mt-1">
                   <div>レビュー {cast.feedback_count}件</div>
                   <div className="mt-1">
-                    {cast.grade_points}円/30分
+                    {cast.grade_points}P/30分
                   </div>
                 </div>
               </div>
