@@ -78,7 +78,7 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
                         id="phone"
                         inputMode="numeric"
                         type="tel"
-                        className="w-full border border-rose-200 rounded-xl px-4 py-3 text-rose-700 placeholder-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-300 bg-white"
+                        className="w-full border border-rose-200 rounded-xl px-4 py-3 text-primary placeholder-primary focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-300 bg-white"
                         placeholder="例）09012345678"
                         aria-describedby="phone-help"
                         value={phone}

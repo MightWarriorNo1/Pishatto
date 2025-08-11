@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { useEffect, useState } from 'react';
-import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight, ChevronLeft, Medal, Calendar } from 'lucide-react';
+import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight, ChevronLeft, Medal, Calendar, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CastGiftBoxPage from './CastGiftBoxPage';
 import CastActivityRecordPage from './CastActivityRecordPage';
@@ -87,11 +87,12 @@ const CastProfilePage: React.FC = () => {
     const [showActivityRecord, setShowActivityRecord] = useState(false);
     const [showFriendReferral, setShowFriendReferral] = useState(false);
     const [showImmediatePayment, setShowImmediatePayment] = useState(false);
-    const { castId } = useCast();
+    const { castId, logout } = useCast();
     const [showEdit, setShowEdit] = useState(false);
     const [showPointHistory, setShowPointHistory] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
     const [showQRCode, setShowQRCode] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [cast, setCast] = useState<CastProfile | null>(null);
     const [pointsData, setPointsData] = useState<PointsData | null>(null);
     const [passportData, setPassportData] = useState<PassportData[]>([]);
@@ -252,6 +253,20 @@ const CastProfilePage: React.FC = () => {
     const handleMonthChange = (month: 'current' | 'last') => {
         setSelectedMonth(month);
         fetchMonthlyRanking(month);
+    };
+
+    // Handle logout with confirmation
+    const handleLogout = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = () => {
+        logout();
+        setShowLogoutConfirm(false);
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutConfirm(false);
     };
 
 
@@ -567,6 +582,45 @@ const CastProfilePage: React.FC = () => {
                 </ul>
                 <div>残念ながら毎月一定のキャストが該当してしまっています。日本一笑顔を作り、日本一稼げるサービスを一緒につくっていきましょう。</div>
             </div>
+
+            {/* Logout Section */}
+            <div className="px-4 pb-4">
+                <div className="bg-white/10 rounded-lg border border-red-400/30 overflow-hidden">
+                    <button 
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center gap-3 px-6 py-4 text-red-400 hover:bg-red-500/20 transition-all duration-200 group"
+                    >
+                        <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+                        <span className="font-medium">ログアウト</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Logout Confirmation Modal */}
+            {showLogoutConfirm && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+                        <div className="text-center mb-6">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">ログアウト確認</h3>
+                            <p className="text-gray-600">本当にログアウトしますか？</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={cancelLogout}
+                                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                onClick={confirmLogout}
+                                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                            >
+                                ログアウト
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

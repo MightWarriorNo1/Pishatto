@@ -12,6 +12,7 @@ interface UserContextType {
   setPhone: (phone: string | null) => void;
   refreshUser: () => void;
   updateUser: (updates: Partial<GuestProfile>) => void;
+  logout: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -41,6 +42,16 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     if (user) {
       setUser({ ...user, ...updates });
     }
+  };
+
+  const logout = () => {
+    setUser(null);
+    setInterests([]);
+    setPhone(null);
+    // Clear all localStorage data
+    localStorage.removeItem('phone');
+    localStorage.removeItem('castId');
+    localStorage.removeItem('castData');
   };
 
   const refreshUser = async () => {
@@ -110,7 +121,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   }, [phone, user]);
 
   return (
-    <UserContext.Provider value={{ user, interests, loading, setUser, setInterests, phone, setPhone, refreshUser, updateUser }}>
+    <UserContext.Provider value={{ user, interests, loading, setUser, setInterests, phone, setPhone, refreshUser, updateUser, logout }}>
       {children}
     </UserContext.Provider>
   );

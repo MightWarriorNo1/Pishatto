@@ -49,7 +49,7 @@ const FavoritesSection: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="text-white">ローディング...</div>;
+    return <div className="text-white text-center">ローディング...</div>;
   }
 
   if (favorites.length === 0) {

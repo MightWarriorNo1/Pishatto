@@ -10,6 +10,7 @@ interface CastContextType {
   setCastId: (castId: number | null) => void;
   refreshCast: () => void;
   updateCast: (updates: Partial<CastProfile>) => void;
+  logout: () => void;
 }
 
 const CastContext = createContext<CastContextType | undefined>(undefined);
@@ -50,6 +51,16 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     } else {
       localStorage.removeItem('castData');
     }
+  };
+
+  const logout = () => {
+    setCast(null);
+    setCastId(null);
+    // Clear all localStorage data
+    localStorage.removeItem('castId');
+    localStorage.removeItem('castData');
+    // Redirect to role selection page
+    window.location.href = '/';
   };
 
   const refreshCast = async () => {
@@ -139,7 +150,7 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   }, []);
 
   return (
-    <CastContext.Provider value={{ cast, loading, setCast: setCastWrapper, castId, setCastId, refreshCast, updateCast }}>
+    <CastContext.Provider value={{ cast, loading, setCast: setCastWrapper, castId, setCastId, refreshCast, updateCast, logout }}>
       {children}
     </CastContext.Provider>
   );

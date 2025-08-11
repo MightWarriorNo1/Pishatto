@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { Bell, ChevronRight, CreditCard, HelpCircle, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User, Medal } from 'lucide-react';
+import { Bell, ChevronRight, CreditCard, HelpCircle, Pencil, QrCode, Settings, TicketCheck, TicketPercent, User, Medal, LogOut } from 'lucide-react';
 import PaymentHistory from './PaymentHistory';
 import GradeDetail from './GradeDetail';
 import AvatarEditPage from './AvatarEditPage';
@@ -15,6 +15,7 @@ import { useUser } from '../../contexts/UserContext';
 import PointHistory from './PointHistory';
 import { getUnreadNotificationCount, getGuestGrade, GradeInfo } from '../../services/api';
 import { useNotifications } from '../../hooks/useRealtime';
+import { useNavigate } from 'react-router-dom';
     
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -34,7 +35,8 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
 };
 
 const Profile: React.FC = () => {
-    const { user, loading } = useUser();
+    const { user, loading, logout } = useUser();
+    const navigate = useNavigate();
     const [showNotification, setShowNotification] = useState(false);
     const [gradeInfo, setGradeInfo] = useState<GradeInfo | null>(null);
     const [gradeLoading, setGradeLoading] = useState(true);
@@ -48,6 +50,7 @@ const Profile: React.FC = () => {
     const [showIdentityVerification, setShowIdentityVerification] = useState(false);
     const [showQRCode, setShowQRCode] = useState(false);
     const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
     // Get avatar URL
     const getAvatarUrl = () => {
@@ -94,6 +97,21 @@ const Profile: React.FC = () => {
         setShowNotification(true);
     };
 
+    // Handle logout with confirmation
+    const handleLogout = () => {
+        setShowLogoutConfirm(true);
+    };
+
+    const confirmLogout = () => {
+        logout();
+        setShowLogoutConfirm(false);
+        navigate('/');
+    };
+
+    const cancelLogout = () => {
+        setShowLogoutConfirm(false);
+    };
+
     // Fetch grade information
     useEffect(() => {
         const fetchGradeInfo = async () => {
@@ -125,6 +143,35 @@ const Profile: React.FC = () => {
 
     return (
         <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20">
+            {/* Logout Confirmation Modal */}
+            {showLogoutConfirm && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <LogOut className="w-8 h-8 text-red-500" />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">ログアウトしますか？</h3>
+                            <p className="text-sm text-gray-600">ログアウトすると、再度ログインが必要になります。</p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={cancelLogout}
+                                className="flex-1 px-4 py-3 text-gray-700 bg-gray-100 rounded-lg font-medium hover:bg-gray-200 transition-colors duration-200"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                onClick={confirmLogout}
+                                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors duration-200"
+                            >
+                                ログアウト
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
             {/* Top bar */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 flex items-center justify-between px-4 py-3 border-b bg-primary border-secondary">
                 <button type="button" onClick={handleNotificationOpen} className="hover:text-secondary cursor-pointer relative">
@@ -255,6 +302,19 @@ const Profile: React.FC = () => {
                     </span>
                 </button>
             </div>
+            </div>
+            
+            {/* Logout Section */}
+            <div className="px-4 pb-8">
+                <div className="bg-white/10 rounded-lg border border-red-400/30 overflow-hidden">
+                    <button 
+                        onClick={handleLogout}
+                        className="w-full flex items-center justify-center gap-3 px-6 py-4 text-red-400 hover:bg-red-500/20 transition-all duration-200 group"
+                    >
+                        <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" />
+                        <span className="font-medium">ログアウト</span>
+                    </button>
+                </div>
             </div>
         </div>
     );

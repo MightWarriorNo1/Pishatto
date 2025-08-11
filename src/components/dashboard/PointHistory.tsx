@@ -3,6 +3,7 @@ import { getPointTransactions } from '../../services/api';
 import { ChevronLeft } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import ReceiptIssuancePage from './ReceiptIssuancePage';
+import { getFirstAvatarUrl } from '../../utils/avatar';
 
 interface PointTransactionData {
   id: number;
@@ -15,6 +16,16 @@ interface PointTransactionData {
   gift_type?: string;
   created_at: string;
   updated_at: string;
+  guest?: {
+    id: number;
+    nickname: string;
+    avatar?: string;
+  };
+  cast?: {
+    id: number;
+    nickname: string;
+    avatar?: string;
+  };
 }
 
 interface PointHistoryProps {
@@ -79,6 +90,31 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
   };
 
   const getTransactionIcon = (transaction: PointTransactionData) => {
+    // Try to get avatar from guest or cast data
+    let avatarUrl = '';
+    
+    if (transaction.guest?.avatar) {
+      avatarUrl = getFirstAvatarUrl(transaction.guest.avatar);
+    } else if (transaction.cast?.avatar) {
+      avatarUrl = getFirstAvatarUrl(transaction.cast.avatar);
+    }
+    
+    if (avatarUrl) {
+      return (
+        <img 
+          src={avatarUrl} 
+          alt="avatar" 
+          className="w-10 h-10 rounded-full object-cover"
+          onError={(e) => {
+            // Hide the image and show fallback icon if avatar fails to load
+            const imgElement = e.currentTarget as HTMLImageElement;
+            imgElement.style.display = 'none';
+          }}
+        />
+      );
+    }
+    
+    // Fallback to generic icon if no avatar available
     if (transaction.amount < 0) {
       return (
         <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">

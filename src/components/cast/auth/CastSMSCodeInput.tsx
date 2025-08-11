@@ -131,7 +131,7 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
                                 onChange={(e) => handleCodeChange(index, e.target.value.replace(/\D/g, ''))}
                                 onPaste={handlePaste}
                                 onKeyDown={(e) => handleKeyDown(e, index)}
-                                className="w-[46px] h-[52px] text-center text-lg border border-rose-200 rounded-xl bg-white text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                                className="w-[46px] h-[52px] text-center text-lg border border-rose-200 rounded-xl bg-white text-primary focus:outline-none focus:ring-2 focus:ring-rose-300"
                                 aria-label={`認証コード ${index + 1} 桁目`}
                             />
                         ))}

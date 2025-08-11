@@ -470,6 +470,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 category: backendCategory,
                 area: region
             });
+            console.log("RES", response);
 
             // Transform backend data to frontend format
             const transformedData: RankingItem[] = response.data.map((item: any, index: number) => ({
@@ -483,24 +484,8 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 region: item.region || region
             }));
 
-            const filteredData = transformedData.filter(item => {
-                if (item.age && (item.age < filters.ageRange.min || item.age > filters.ageRange.max)) {
-                    return false;
-                }
-                
-                if (item.points < filters.minPoints || item.points > filters.maxPoints) {
-                    return false;
-                }
-
-                if (filters.region !== '全国' && item.region && item.region !== filters.region) {
-                    return false;
-                }
-
-                return true;
-            });
-
             // Recompute ranks after filtering so the list always starts from 1
-            const reRankedData = filteredData.map((item, index) => ({
+            const reRankedData =transformedData.map((item, index) => ({
                 ...item,
                 rank: index + 1,
             }));
@@ -531,7 +516,6 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         fetchRankingData();
     }, [mainTab, region, category, dateTab, filters]);
 
-    console.log("RANKING", rankingData);
     return (
         <div className="max-w-md pb-28 bg-gradient-to-br from-primary via-primary to-secondary min-h-screen">
             {/* Header */}
