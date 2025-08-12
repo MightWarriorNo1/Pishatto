@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import ReceiptIssuancePage from './ReceiptIssuancePage';
 import { getFirstAvatarUrl } from '../../utils/avatar';
+import Spinner from '../ui/Spinner';
 
 interface PointTransactionData {
   id: number;
@@ -140,11 +141,6 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
   };
 
   const handleReceiptIssue = (receiptData: ReceiptData) => {
-    // Here you would typically call an API to issue the receipt
-    console.log('Issuing receipt:', {
-      transaction: selectedTransaction,
-      receiptData
-    });
     
     // For now, just show an alert and go back
     alert('領収書が発行されました。メールをご確認ください。');
@@ -194,7 +190,7 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
         </div>
 
         {loading ? (
-          <div className="text-white text-center">ローディング...</div>
+          <Spinner />
         ) : error ? (
           <div className="text-white text-center">{error}</div>
         ) : transactions.length === 0 ? (

@@ -3,6 +3,7 @@ import GradeAbout from './GradeAbout';
 import { ChevronLeft, ChevronRight, MessageSquareMore, FileText, Gift, Gem, Settings, UsersRound, Medal, Star} from 'lucide-react';
 import { getGuestGrade, GradeInfo } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
+import Spinner from '../ui/Spinner';
 
 const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [showAbout, setShowAbout] = useState(false);
@@ -51,48 +52,6 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         }
     };
 
-    // const getGradeColor = (grade: string) => {
-    //     switch (grade) {
-    //         case 'green':
-    //             return 'bg-green-500';
-    //         case 'orange':
-    //             return 'bg-orange-500';
-    //         case 'bronze':
-    //             return 'bg-amber-600';
-    //         case 'silver':
-    //             return 'bg-gray-400';
-    //         case 'gold':
-    //             return 'bg-yellow-500';
-    //         case 'platinum':
-    //             return 'bg-purple-500';
-    //         case 'centurion':
-    //             return 'bg-black';
-    //         default:
-    //             return 'bg-primary';
-    //     }
-    // };
-
-    // const getGradeGradient = (grade: string) => {
-    //     switch (grade) {
-    //         case 'green':
-    //             return 'from-green-400 to-green-600';
-    //         case 'orange':
-    //             return 'from-orange-400 to-orange-600';
-    //         case 'bronze':
-    //             return 'from-amber-500 to-amber-700';
-    //         case 'silver':
-    //             return 'from-gray-300 to-gray-500';
-    //         case 'gold':
-    //             return 'from-yellow-400 to-yellow-600';
-    //         case 'platinum':
-    //             return 'from-purple-400 to-purple-600';
-    //         case 'centurion':
-    //             return 'from-black to-gray-800';
-    //         default:
-    //             return 'from-blue-400 to-blue-600';
-    //     }
-    // };
-
     const getProgressPercentage = () => {
         if (!gradeInfo) return 0;
         
@@ -130,7 +89,7 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (loading) {
         return (
             <div className="max-w-md mx-auto min-h-screen bg-primary flex items-center justify-center">
-                <div className="text-white text-lg animate-pulse">読み込み中...</div>
+                <Spinner />
             </div>
         );
     }

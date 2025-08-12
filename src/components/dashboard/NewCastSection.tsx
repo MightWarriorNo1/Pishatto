@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getCastList } from '../../services/api';
+import Spinner from '../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -62,7 +63,7 @@ const NewCastSection: React.FC = () => {
       <div className="bg-white/10 rounded-lg shadow p-4 mb-4 border border-secondary">
         
         {loading ? (
-          <div className="text-white">ローディング...</div>
+          <Spinner />
         ) : castProfiles.length === 0 ? (
           <div className="text-white">本日登録されたキャストはいません</div>
         ) : (

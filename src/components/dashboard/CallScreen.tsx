@@ -9,6 +9,7 @@ import { locationService } from '../../services/locationService';
 import MyOrderPage from './MyOrderPage';
 import OrderConfirmationPage from './OrderConfirmationPage';
 import OrderCompletionPage from './OrderCompletionPage';
+import Spinner from '../ui/Spinner';
 
 import React from 'react'; // Added for React.useEffect
 
@@ -25,7 +26,7 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
 
     if (avatars.length === 0) {
-        return '/assets/avatar/avatar-1.png';
+        return '/assets/avatar/female.png';
     }
 
     return `${APP_BASE_URL}/${avatars[0]}`;
@@ -483,7 +484,7 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
         <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col pb-20">
             {/* Enhanced Header */}
             <div className="bg-gradient-to-r from-primary to-blue-900 backdrop-blur-md border-b border-white/10 shadow-lg">
-                <div className="flex items-center px-4 pt-6 pb-4">
+                <div className="flex items-center px-4 pt-4 pb-2">
                     <button onClick={onBack} className="mr-3 text-2xl text-white hover:text-secondary cursor-pointer transition-colors p-2 rounded-full">
                         <ChevronLeft />
                     </button>
@@ -495,7 +496,7 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
             </div>
 
             {/* Enhanced Main Content */}
-            <div className="flex-1 px-4 py-6">
+            <div className="flex-1 px-4 py-3">
                 <div className="mb-8">
                     <div className="flex items-center mb-4">
                         <div className="w-12 h-12 bg-gradient-to-br from-secondary to-red-500 rounded-full flex items-center justify-center mr-4 shadow-lg">
@@ -509,14 +510,7 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
                 </div>
 
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-16">
-                        <div className="relative mb-6">
-                            <div className="animate-spin rounded-full h-16 w-16 border-4 border-secondary/30 border-t-secondary"></div>
-                            <div className="absolute inset-0 animate-ping rounded-full h-16 w-16 border-2 border-secondary/50"></div>
-                        </div>
-                        <p className="text-white text-lg font-medium">読み込み中...</p>
-                        <p className="text-white/50 text-sm mt-2">エリア情報を取得しています</p>
-                    </div>
+                    <Spinner />
                 ) : error ? (
                     <div className="flex flex-col items-center justify-center py-16">
                         <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
@@ -700,7 +694,7 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
         <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col pb-20">
             {/* Enhanced Fixed Header */}
             <div className="bg-gradient-to-r from-primary to-blue-900 backdrop-blur-md border-b border-white/10 shadow-lg">
-                <div className="flex items-center justify-between px-4 pt-6 pb-4">
+                <div className="flex items-center justify-between px-4 pt-4 pb-2">
                     <div className="flex items-center">
                         <button onClick={onBack} className="mr-3 text-2xl text-white hover:text-secondary transition-colors p-2 rounded-full cursor-pointer">
                             <ChevronLeft />
@@ -739,14 +733,7 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
             {/* Enhanced Main Content */}
             <div className="flex-1 px-6 py-6 overflow-y-auto pt-4">
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-16">
-                        <div className="relative mb-6">
-                            <div className="animate-spin rounded-full h-16 w-16 border-4 border-secondary/30 border-t-secondary"></div>
-                            <div className="absolute inset-0 animate-ping rounded-full h-16 w-16 border-2 border-secondary/50"></div>
-                        </div>
-                        <p className="text-white text-lg font-medium">キャストを検索中...</p>
-                        <p className="text-white/50 text-sm mt-2">しばらくお待ちください</p>
-                    </div>
+                    <Spinner />
                 ) : error ? (
                     <div className="flex flex-col items-center justify-center py-16">
                         <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
@@ -1423,6 +1410,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     }, [user?.id]);
 
     if (showMyOrder) return <MyOrderPage onBack={() => setShowMyOrder(false)} />;
+    
     if (page === 'orderHistory') return (
         <OrderHistoryScreen
             onBack={() => setPage('main')}
@@ -1673,10 +1661,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                 </div>
 
                 {loadingAppliedCasts ? (
-                    <div className="flex items-center justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-secondary"></div>
-                        <span className="text-white ml-3">読み込み中...</span>
-                    </div>
+                    <Spinner />
                 ) : appliedCasts.length > 0 ? (
                     <div className="flex gap-3 overflow-x-auto pb-2">
                         {appliedCasts.slice(0, 4).map((cast, idx) => (

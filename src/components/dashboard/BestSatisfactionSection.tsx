@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiStar } from 'react-icons/fi';
 import { getTopSatisfactionCasts } from '../../services/api';
 import getFirstAvatarUrl from '../../utils/avatar';
-
+import Spinner from '../ui/Spinner';
 
 interface SatisfactionCast {
   id: number;
@@ -45,7 +45,7 @@ const BestSatisfactionSection: React.FC = () => {
     <div className="bg-white/10 rounded-lg shadow p-4 mb-4 border border-secondary">
       <h2 className="font-bold text-lg mb-2 text-white">最高満足度</h2>
       {loading ? (
-        <div className="text-white">ローディング...</div>
+        <Spinner />
       ) : casts.length === 0 ? (
         <div className="text-white">データがありません</div>
       ) : (

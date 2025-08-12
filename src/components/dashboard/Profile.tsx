@@ -16,6 +16,7 @@ import PointHistory from './PointHistory';
 import { getUnreadNotificationCount, getGuestGrade, GradeInfo } from '../../services/api';
 import { useNotifications } from '../../hooks/useRealtime';
 import { useNavigate } from 'react-router-dom';
+import Spinner from '../ui/Spinner';
     
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -206,7 +207,7 @@ const Profile: React.FC = () => {
                 <div className="relative">
                     {loading ? (
                         <div className="w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center border-4 border-secondary shadow">
-                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+                            <Spinner />
                         </div>
                     ) : (
                         <img 

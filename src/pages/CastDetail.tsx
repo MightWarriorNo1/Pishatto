@@ -7,6 +7,7 @@ import { useUser } from '../contexts/UserContext';
 import { useNotificationSettings } from '../contexts/NotificationSettingsContext';
 import Toast from '../components/ui/Toast';
 import { shareContent } from '../utils/clipboard';
+import Spinner from '../components/ui/Spinner';
 
 // Interface for badge data
 interface Badge {
@@ -261,7 +262,7 @@ const CastDetail: React.FC = () => {
     const timePosted = '10時間前';
 
     if (loading) {
-        return <div className="min-h-screen max-w-md mx-auto flex items-center justify-center bg-primary text-white">ローディング...</div>;
+        return <Spinner />;
     }
 
     return (

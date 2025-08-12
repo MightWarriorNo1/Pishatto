@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchRanking } from '../../services/api';
 import getFirstAvatarUrl from '../../utils/avatar';
+import Spinner from '../ui/Spinner';
 
 // use shared utility getFirstAvatarUrl
 
@@ -52,7 +53,7 @@ const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking }) => {
         <button className="text-sm text-white" onClick={onSeeRanking}>ランキングを見る＞</button>
       </div>
       {loading ? (
-        <div className="text-white">ローディング...</div>
+        <Spinner />
       ) : rankings.length === 0 ? (
         <div className="text-white">ランキングデータがありません</div>
       ) : (

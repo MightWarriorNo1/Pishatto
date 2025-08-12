@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import { getPaymentInfo, deletePaymentInfo } from '../../services/api';
 import CardRegistrationForm from './CardRegistrationForm';
+import Spinner from '../ui/Spinner';
 
 interface CardManagementPageProps {
   onBack?: () => void;
@@ -132,9 +133,7 @@ const CardManagementPage: React.FC<CardManagementPageProps> = ({
       </div>
 
       {loading ? (
-        <div className="text-center py-8">
-          <div className="text-white">読み込み中...</div>
-        </div>
+        <Spinner />
       ) : error ? (
         <div className="text-center py-8">
           <div className="text-red-400 mb-4">{error}</div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import { getFootprints } from '../../services/api';
+import Spinner from '../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -60,7 +61,7 @@ const FootprintsSection: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="text-white text-center">ローディング...</div>;
+    return <Spinner />;
   }
 
   if (error) {

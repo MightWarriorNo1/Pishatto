@@ -7,6 +7,8 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useCast } from '../../contexts/CastContext';
+import Spinner from '../../components/ui/Spinner';
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 // GuestDetailPage component
@@ -93,7 +95,7 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
             {/* Profile details */}
             <div className="px-4 py-2">
                 {loading ? (
-                  <div className="text-white">ローディング...</div>
+                  <Spinner />
                 ) : profile ? (
                 <table className="w-full text-sm text-white">
                     <tbody>
@@ -579,7 +581,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="pt-4">
                 {loading ? (
                     <div className="flex items-center justify-center py-8">
-                        <div className="text-white">ローディング中...</div>
+                        <Spinner />
                     </div>
                 ) : rankingData.length === 0 ? (
                     <div className="flex items-center justify-center py-8">
@@ -792,9 +794,9 @@ const CastSearchPage: React.FC = () => {
                 <span className="text-base font-bold text-white">あなたにリピートしそうなゲスト <span className="text-xs text-white ml-1">i</span></span>
                 <button className="text-xs text-white font-bold" onClick={() => setShowAllRepeatGuests(true)}>すべて見る &gt;</button>
             </div>
-            <div className="gap-3 px-4 pb-4 max-w-md mx-auto overflow-x-auto flex flex-row">
+            <div className="gap-3 px-4 pb-4 max-w-md mx-auto overflow-x-auto flex flex-row items-center">
                 {loading ? (
-                  <div className="text-white col-span-2">ローディング...</div>
+                        <Spinner />
                 ) : repeatGuests.length === 0 ? (
                   <div className="text-white col-span-2">該当ゲストなし</div>
                 ) : repeatGuests.map((guest) => (

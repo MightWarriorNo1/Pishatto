@@ -9,6 +9,7 @@ import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useTweets } from '../../hooks/useRealtime';
 import { useCast } from '../../contexts/CastContext';
+import Spinner from '../ui/Spinner';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
@@ -169,7 +170,7 @@ const Timeline: React.FC = () => {
             {/* Posts */}
             <div className="px-4 flex flex-col gap-4 py-6 pt-32">
                 {loading ? (
-                    <div className="text-white py-10 text-center">ローディング...</div>
+                    <Spinner />
                 ) : error ? (
                     <div className="text-red-400 py-10 text-center">{error}</div>
                 ) : tweets.length === 0 ? (

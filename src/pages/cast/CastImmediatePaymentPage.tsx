@@ -4,6 +4,7 @@ import { ChevronLeft } from 'lucide-react';
 import { getCastImmediatePaymentData, processCastImmediatePayment, getCastProfileById, getCastPointsData } from '../../services/api';
 import CardRegistrationForm from '../../components/payment/CardRegistrationForm';
 import { useCast } from '../../contexts/CastContext';
+import Spinner from '../../components/ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 interface ImmediatePaymentData {
@@ -176,14 +177,8 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
     if (loading) {
         return (
             <div className='max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
-                <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
-                    <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" onClick={onBack}>
-                        <ChevronLeft />
-                    </button>
-                    <span className="flex-1 text-center text-base font-bold text-white">すぐ入金</span>
-                </div>
                 <div className="px-4 py-6">
-                    <div className="text-white text-center">読み込み中...</div>
+                    <Spinner />
                 </div>
             </div>
         );

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiStar } from 'react-icons/fi';
 import { getAllSatisfactionCasts } from '../../services/api';
 import getFirstAvatarUrl from '../../utils/avatar';
+import Spinner from '../ui/Spinner';
 
 interface SatisfactionCast {
   id: number;
@@ -46,7 +47,7 @@ const UserSatisfactionSection: React.FC<UserSatisfactionSectionProps> = ({ onSee
         <button className="text-sm text-white" onClick={onSeeAll}>すべて見る＞</button>
       </div>
       {loading ? (
-        <div className="text-white">ローディング...</div>
+        <Spinner />
       ) : casts.length === 0 ? (
         <div className="text-white">データがありません</div>
       ) : (

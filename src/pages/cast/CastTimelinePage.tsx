@@ -8,6 +8,7 @@ import PostCreatePage from '../../components/dashboard/PostCreatePage';
 import CastNotificationPage from './CastNotificationPage';
 import { useTweets } from '../../hooks/useRealtime';
 import { useCast } from '../../contexts/CastContext';
+import Spinner from '../../components/ui/Spinner';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -158,7 +159,9 @@ const CastTimelinePage: React.FC = () => {
             {/* Posts - with top margin to account for fixed header */}
             <div className="px-4 flex flex-col gap-4 pt-28">
                 {loading ? (
-                    <div className="text-white py-10 text-center">ローディング...</div>
+                    <div className="flex items-center justify-center">
+                        <Spinner />
+                    </div>
                 ) : error ? (
                     <div className="text-red-400 py-10 text-center">{error}</div>
                 ) : tweets.length === 0 ? (

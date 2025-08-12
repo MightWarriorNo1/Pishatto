@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Bird, ChevronLeft, MessageSquare, Clock, AlertCircle, CheckCircle, XCircle, Info, Send } from 'lucide-react';
 import { getConciergeMessages, sendConciergeMessage, markConciergeAsRead } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
+import Spinner from '../../ui/Spinner';
 
 interface ConciergeMessage {
     id: number;
@@ -160,10 +161,7 @@ const CastConciergeDetailPage: React.FC<CastConciergeDetailPageProps> = ({ onBac
             <div className="flex-1 px-4 mt-20 mb-24 overflow-y-auto pb-20">
                 {loading ? (
                     <div className="flex items-center justify-center py-8">
-                        <div className="text-white text-center">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                            <div className="text-sm">読み込み中...</div>
-                        </div>
+                        <Spinner />
                     </div>
                 ) : (
                     <div className="space-y-4">

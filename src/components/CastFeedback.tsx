@@ -79,9 +79,8 @@ const CastFeedback: React.FC<CastFeedbackProps> = ({ castId }) => {
         {[1, 2, 3, 4, 5].map((star) => (
           <span
             key={star}
-            className={`text-lg ${
-              star <= rating ? 'text-yellow-400' : 'text-gray-300'
-            }`}
+            className={`text-lg ${star <= rating ? 'text-yellow-400' : 'text-gray-300'
+              }`}
           >
             ★
           </span>
@@ -92,8 +91,9 @@ const CastFeedback: React.FC<CastFeedbackProps> = ({ castId }) => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+        読み込み中...
       </div>
     );
   }
@@ -130,7 +130,7 @@ const CastFeedback: React.FC<CastFeedbackProps> = ({ castId }) => {
               <div className="text-sm text-gray-600">With Badges</div>
             </div>
           </div>
-          
+
           {/* Rating Distribution */}
           <div className="mt-6">
             <h4 className="font-medium mb-3">Rating Distribution</h4>
@@ -159,7 +159,7 @@ const CastFeedback: React.FC<CastFeedbackProps> = ({ castId }) => {
       {/* Feedback List */}
       <div className="space-y-4">
         <h3 className="text-xl font-semibold">Recent Feedback</h3>
-        
+
         {feedback.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             No feedback available yet.
@@ -191,7 +191,7 @@ const CastFeedback: React.FC<CastFeedbackProps> = ({ castId }) => {
                     </div>
                   </div>
                 </div>
-                
+
                 {item.rating && (
                   <div className="flex items-center space-x-2">
                     {renderStars(item.rating)}

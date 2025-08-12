@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { getReceipts } from '../../services/api';
+import Spinner from '../ui/Spinner';
 
 interface ReceiptListPageProps {
   onBack?: () => void;
@@ -32,7 +33,7 @@ const ReceiptListPage: React.FC<ReceiptListPageProps> = ({ onBack, userType = 'g
       </div>
       <div className="p-4">
         {loading ? (
-          <div className="text-white text-center">ローディング...</div>
+          <Spinner />
         ) : error ? (
           <div className="text-red-400 text-center">{error}</div>
         ) : receipts.length === 0 ? (

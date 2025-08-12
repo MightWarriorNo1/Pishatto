@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { locationService } from '../../../services/locationService';
+import Spinner from '../../ui/Spinner';
 
 const HangoutPlaces: React.FC = () => {
     const [selected, setSelected] = useState<string[]>([]);
@@ -29,10 +30,7 @@ const HangoutPlaces: React.FC = () => {
         <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-gray-800 to-secondary p-6">
             <h1 className="text-xl font-bold mb-4 text-white">よく遊ぶ場所を選択</h1>
             {loading ? (
-                <div className="text-center py-8" aria-live="polite">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-                    <p className="text-white text-sm mt-2">読み込み中...</p>
-                </div>
+                <Spinner />
             ) : (
                 <>
                     <div className="flex flex-wrap gap-3 mb-6">

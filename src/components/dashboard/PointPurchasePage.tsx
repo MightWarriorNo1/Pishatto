@@ -5,6 +5,7 @@ import { useUser } from '../../contexts/UserContext';
 import PayJPPaymentForm from '../payment/PayJPPaymentForm';
 import { ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { getPaymentInfo } from '../../services/api';
+import Spinner from '../ui/Spinner';
 
 const amounts = [1000, 3000, 5000, 10000, 30000, 50000];
 const prices = [1200, 3600, 6000, 12000, 36000, 60000];
@@ -13,11 +14,6 @@ const Skeleton = () => (
   <div className="animate-pulse bg-gray-200 h-20 rounded-2xl w-full mb-6" />
 );
 
-const Spinner = () => (
-  <div className="flex justify-center items-center py-8">
-    <div className="w-8 h-8 border-4 border-blue-300 border-t-transparent rounded-full animate-spin" />
-  </div>
-);
 
 const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const navigate = useNavigate();
@@ -129,7 +125,7 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
       {/* Point Options List */}
       <div className="px-4 pb-16">
         {loading ? (
-          <Spinner />
+            <Spinner />
         ) : (
           amounts.map((amount, idx) => (
             <div

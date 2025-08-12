@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ChevronLeft, Gift } from 'lucide-react';
 import { fetchCastReceivedGifts } from '../../services/api';
 import { useCast } from '../../contexts/CastContext';
+import Spinner from '../../components/ui/Spinner';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
@@ -31,7 +32,7 @@ const CastGiftBoxPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="divide-y divide-red-600 mt-16">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-16 text-white/50">
-                        <div className="text-lg font-bold mb-1">読み込み中...</div>
+                        <Spinner />
                     </div>
                 ) : gifts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 text-white/50">

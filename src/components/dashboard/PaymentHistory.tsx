@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getPaymentHistory } from '../../services/api';
 import { ChevronLeft } from 'lucide-react';
+import Spinner from '../ui/Spinner';
 
 interface PaymentData {
   id: number;
@@ -80,7 +81,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ onBack, userType = 'gue
       </div>
       <div className="p-4">
         {loading ? (
-          <div className="text-white text-center">ローディング...</div>
+          <Spinner />
         ) : error ? (
           <div className="text-red-400 text-center">{error}</div>
         ) : payments.length === 0 ? (

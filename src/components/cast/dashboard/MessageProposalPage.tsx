@@ -4,6 +4,7 @@ import { Calendar, Heart, ChevronLeft } from 'lucide-react';
 import { getChatById, getReservationById, getGuestProfileById, getCastProfileById } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
 import { useNavigate } from 'react-router-dom';
+import Spinner from '../../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -167,7 +168,7 @@ const MessageProposalPage: React.FC<{
     if (loading) {
         return (
             <div className="min-h-screen bg-primary flex flex-col items-center justify-center">
-                <div className="text-white text-lg">読み込み中...</div>
+                <Spinner />
             </div>
         );
     }

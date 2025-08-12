@@ -3,6 +3,7 @@ import { fetchUserChats, getCastProfileById } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import ChatScreen from './ChatScreen';
 import { MessageSquare } from 'lucide-react';
+import Spinner from '../ui/Spinner';
 
 const API_BASE_URL=process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -40,7 +41,7 @@ const HistorySection: React.FC = () => {
   return (
     <div className="space-y-4 p-4">
       {loading ? (
-        <div className="text-white">ローディング...</div>
+        <Spinner />
       ) : chats.length === 0 ? (
         <div className="text-white">履歴がありません</div>
       ) : (

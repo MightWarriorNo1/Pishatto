@@ -3,6 +3,7 @@ import React, { useState , useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import { getPaymentInfo } from '../../services/api';
+import Spinner from '../ui/Spinner';
 
 interface PaymentInfoSimplePageProps {
     onBack: () => void;
@@ -32,8 +33,6 @@ const PaymentInfoSimplePage: React.FC<PaymentInfoSimplePageProps> = ({ onBack })
         }
     }, [user?.id]);
 
-    console.log("PAYMENT INFO", paymentInfo);
-
     return (
         <div className="max-w-md mx-auto min-h-screen bg-gradient-br-to from-primary via-primary to-secondary relative">
             {/* Top bar */}
@@ -47,10 +46,7 @@ const PaymentInfoSimplePage: React.FC<PaymentInfoSimplePageProps> = ({ onBack })
             <div className="bg-primary border-b border-secondary">
                 <div className="text-white text-center font-bold px-4 py-4 border-b border-secondary">
                     {isLoading ? (
-                        <div className="flex items-center justify-center">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            読み込み中...
-                        </div>
+                        <Spinner />
                     ) : (
                         paymentInfo?.card_count > 0 ? "支払い情報は既に登録されています。" : "お支払い情報を登録する"
                     )}

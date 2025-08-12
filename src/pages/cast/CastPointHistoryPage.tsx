@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { getPointTransactions } from '../../services/api';
 import { useCast } from '../../contexts/CastContext';
+import Spinner from '../../components/ui/Spinner';
 
 interface PointTransaction {
   id: number;
@@ -135,7 +136,7 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       
       {/* Loading state */}
       {loading && (
-        <div className="text-white text-center py-8">ローディング...</div>
+        <Spinner />
       )}
       
       {/* Error state */}

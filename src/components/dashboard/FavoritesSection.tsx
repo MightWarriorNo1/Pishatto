@@ -3,6 +3,7 @@ import { FiStar } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import { getFavorites, unfavoriteCast } from '../../services/api';
+import Spinner from '../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -49,7 +50,7 @@ const FavoritesSection: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="text-white text-center">ローディング...</div>;
+    return <Spinner />
   }
 
   if (favorites.length === 0) {

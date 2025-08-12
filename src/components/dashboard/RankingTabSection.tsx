@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchRanking } from '../../services/api';
+import Spinner from '../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -222,7 +223,7 @@ const RankingTabSection: React.FC = () => {
       {/* Empty State */}
       <div className="flex-1 flex-col items-center justify-center min-w-[360px]">
         {loading ? (
-          <div className="text-white text-center">ローディング...</div>
+          <Spinner />
         ) : ranking.length === 0 ? (
           <div className="text-white text-center">ランキングデータがありません</div>
         ) : (

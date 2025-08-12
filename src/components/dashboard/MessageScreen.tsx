@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiBell, FiStar, FiSearch, FiXCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiBell, FiStar, FiSearch, FiCheckCircle, FiFilter } from 'react-icons/fi';
 import ChatScreen from './ChatScreen';
 import GroupChatScreen from './GroupChatScreen';
 import ConciergeChat from '../ConciergeChat';
@@ -10,6 +10,7 @@ import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useNotifications } from '../../hooks/useRealtime';
 import NotificationScreen from './NotificationScreen';
+import Spinner from '../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 interface MessageScreenProps {
@@ -25,7 +26,8 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const [chats, setChats] = useState<any[]>([]);
     const [messageNotifications, setMessageNotifications] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('');
-    const [debouncedQuery, setDebouncedQuery] = useState<string>('');
+    const [filterAge, setFilterAge] = useState('');
+    const [showFilters, setShowFilters] = useState(false);
     const [castProfiles, setCastProfiles] = useState<{ [key: number]: any }>({});
     const [favoritedChatIds, setFavoritedChatIds] = useState<Set<number>>(new Set());
     const [showNotification, setShowNotification] = useState(false);
@@ -120,16 +122,10 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         }
     }, [userId, refreshKey, user]);
 
-    // Debounce user search input for smoother filtering
-    useEffect(() => {
-        const handle = setTimeout(() => setDebouncedQuery(searchQuery.trim().toLowerCase()), 250);
-        return () => clearTimeout(handle);
-    }, [searchQuery]);
 
-    // Filter chats based on search query and notification settings
+
+    // Filter chats based on search query, age filter, and notification settings
     const filteredChats = useMemo(() => chats.filter(chat => {
-        // Filter by notification settings first
-        // If messages are disabled, hide all non-concierge chats
         if (!isNotificationEnabled('messages') && !chat.is_concierge_chat) {
             return false;
         }
@@ -139,26 +135,37 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
             return false;
         }
 
-        // Then filter by search query
-        if (!debouncedQuery) return true;
+        // Filter by search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.trim().toLowerCase();
+            
+            // Filter by nickname
+            const nickname = chat.cast_nickname?.toLowerCase() || '';
+            if (nickname.includes(query)) return true;
 
-        const query = debouncedQuery;
+            // Filter by age using cast profile
+            const castProfile = castProfiles[chat.cast_id];
+            if (castProfile) {
+                const age = (new Date().getFullYear() - castProfile.cast.birth_year).toString();
+                if (age.includes(query)) return true;
+            }
 
-        // Filter by nickname
-        const nickname = chat.cast_nickname?.toLowerCase() || '';
-        if (nickname.includes(query)) return true;
-
-        // Filter by age using cast profile
-        const castProfile = castProfiles[chat.cast_id];
-        if (castProfile) {
-            const age = (new Date().getFullYear() - castProfile.cast.birth_year).toString();
-            if (age.includes(query)) return true;
+            return false;
         }
 
-        return false;
-    }), [chats, isNotificationEnabled, debouncedQuery, castProfiles]);
+        // Filter by age if specified
+        if (filterAge.trim()) {
+            const castProfile = castProfiles[chat.cast_id];
+            if (castProfile) {
+                const age = (new Date().getFullYear() - castProfile.cast.birth_year).toString();
+                if (!age.includes(filterAge.trim())) return false;
+            }
+        }
 
-    // Filter favorite chats based on search query and notification settings
+        return true;
+    }), [chats, isNotificationEnabled, searchQuery, filterAge, castProfiles]);
+
+    // Filter favorite chats based on search query, age filter, and notification settings
     const filteredFavoriteChats = useMemo(() => chats.filter(chat => {
         // First filter by favorite status
         if (!favoritedChatIds.has(chat.id)) return false;
@@ -174,24 +181,35 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
             return false;
         }
 
-        // Then filter by search query
-        if (!debouncedQuery) return true;
+        // Filter by search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.trim().toLowerCase();
+            
+            // Filter by nickname
+            const nickname = chat.cast_nickname?.toLowerCase() || '';
+            if (nickname.includes(query)) return true;
 
-        const query = debouncedQuery;
+            // Filter by age using cast profile
+            const castProfile = castProfiles[chat.cast_id];
+            if (castProfile) {
+                const age = (new Date().getFullYear() - castProfile.cast.birth_year).toString();
+                if (age.includes(query)) return true;
+            }
 
-        // Filter by nickname
-        const nickname = chat.cast_nickname?.toLowerCase() || '';
-        if (nickname.includes(query)) return true;
-
-        // Filter by age using cast profile
-        const castProfile = castProfiles[chat.cast_id];
-        if (castProfile) {
-            const age = (new Date().getFullYear() - castProfile.cast.birth_year).toString();
-            if (age.includes(query)) return true;
+            return false;
         }
 
-        return false;
-    }), [chats, favoritedChatIds, isNotificationEnabled, debouncedQuery, castProfiles]);
+        // Filter by age if specified
+        if (filterAge.trim()) {
+            const castProfile = castProfiles[chat.cast_id];
+            if (castProfile) {
+                const age = (new Date().getFullYear() - castProfile.cast.birth_year).toString();
+                if (!age.includes(filterAge.trim())) return false;
+            }
+        }
+
+        return true;
+    }), [chats, favoritedChatIds, isNotificationEnabled, searchQuery, filterAge, castProfiles]);
 
     // Sort chats to show unread first
     const sortedFilteredChats = useMemo(() => {
@@ -302,7 +320,6 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     }
 
     if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
-
     return (
         <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col pb-24">
             {/* Top bar */}
@@ -364,40 +381,70 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
             </div>
             {/* Search bar */}
             <div className="px-4 mt-3">
-                <div className="relative">
-                    <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70 w-4 h-4" />
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-9 py-2 rounded-full border border-secondary bg-primary text-white text-sm placeholder-red-500 focus:outline-none focus:ring-2 focus:ring-secondary"
-                        placeholder="ニックネーム・年齢で検索"
-                        aria-label="チャット検索"
-                    />
-                    {searchQuery && (
-                        <button
-                            aria-label="検索をクリア"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-white/80 hover:text-white"
-                            onClick={() => setSearchQuery('')}
-                        >
-                            <FiXCircle className="w-5 h-5" />
-                        </button>
-                    )}
+                <div className="flex items-center">
+                    <div className="flex-1 relative">
+                        <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="ニックネームで検索..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 bg-secondary text-white rounded-lg border-none outline-none placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+                        />
+                        {searchQuery && (
+                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                                    {filteredChats.length}/{chats.length}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`ml-2 p-2 rounded-lg transition-colors ${
+                            showFilters || filterAge ? 'bg-secondary text-white' : 'bg-secondary/50 text-gray-400'
+                        }`}
+                        title="フィルター"
+                    >
+                        <FiFilter size={20} />
+                    </button>
                 </div>
+                
+                {/* Age Filter - Expandable */}
+                {showFilters && (
+                    <div className="mt-2">
+                        <div className="flex items-center">
+                            <input
+                                type="text"
+                                placeholder="年齢で検索 (例: 20, 30)"
+                                value={filterAge}
+                                onChange={(e) => setFilterAge(e.target.value)}
+                                className="flex-1 px-3 py-2 bg-secondary text-white rounded-lg border-none outline-none placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
+                            />
+                            {(searchQuery || filterAge) && (
+                                <button
+                                    onClick={() => {
+                                        setSearchQuery('');
+                                        setFilterAge('');
+                                    }}
+                                    className="ml-2 px-3 py-2 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 transition-colors"
+                                    title="フィルターをクリア"
+                                >
+                                    クリア
+                                </button>
+                            )}
+                        </div>
+                        {filterAge && (
+                            <div className="mt-2 text-xs text-gray-400">
+                                年齢フィルター: {filterAge} ({filteredChats.length}件)
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
             {/* Loading indicator */}
             {isLoading ? (
-                <div className="px-4 mt-4">
-                    {[...Array(5)].map((_, idx) => (
-                        <div key={idx} className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary mb-3 animate-pulse">
-                            <div className="w-12 h-12 rounded-full mr-3 bg-white/10" />
-                            <div className="flex-1 space-y-2">
-                                <div className="h-4 bg-white/10 rounded w-1/2" />
-                                <div className="h-3 bg-white/10 rounded w-1/3" />
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                <Spinner />
             ) : (
                 /* Message list */
                 <div className="px-4 mt-4">
@@ -436,10 +483,8 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
 
                                 const getDisplayAvatar = () => {
                                     if (chat.is_group_chat && chat.casts && chat.casts.length > 0) {
-                                        // For group chats, show the first cast avatar from possibly comma-separated list
                                         return getFirstAvatarUrl(chat.casts[0]?.avatar);
                                     } else if (chat.is_group_chat && (!chat.casts || chat.casts.length === 0)) {
-                                        // For guest-only groups, show a default avatar
                                         return '/assets/avatar/female.png';
                                     }
                                     return getAvatarSrc();
@@ -452,8 +497,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                             className={`w-full text-left`}
                                             onClick={async () => {
                                                 setShowChat(chat.id);
-                                                setCurrentChat(chat); // Set current chat for GroupChatScreen
-                                                // Immediately set unread to 0 for this chat in local state
+                                                setCurrentChat(chat); 
                                                 setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
                                                 if (chatNotif) {
                                                     await markNotificationRead(chatNotif.id);
@@ -463,7 +507,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                                 await markChatMessagesRead(chat.id, userId, 'guest');
                                             }}
                                         >
-                                            <div className={`flex items-center rounded-lg shadow-sm p-3 relative border ${isUnread ? 'bg-secondary/20 border-secondary' : 'bg-primary border-secondary'} hover:bg-secondary/30 transition-colors`}>
+                                            <div className={`flex items-center rounded-lg shadow-sm p-3 relative border ${isUnread ? 'bg-white/10 border-secondary' : 'bg-white/10 border-secondary'} hover:bg-secondary/30 transition-colors`}>
                                                 <img
                                                     src={getDisplayAvatar()}
                                                     alt="avatar"

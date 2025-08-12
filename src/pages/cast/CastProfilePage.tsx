@@ -13,6 +13,7 @@ import CastProfileEditPage from './CastProfileEditPage';
 import CastPointHistoryPage from './CastPointHistoryPage';
 import CastNotificationPage from './CastNotificationPage';
 import QRCodeModal from '../../components/dashboard/QRCodeModal';
+import Spinner from '../../components/ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -281,8 +282,8 @@ const CastProfilePage: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="max-w-md bg-primary min-h-screen pb-24 flex items-center justify-center">
-                <div className="text-white text-lg">読み込み中...</div>
+            <div className="max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24 flex items-center justify-center">
+                <Spinner />
             </div>
         );
     }

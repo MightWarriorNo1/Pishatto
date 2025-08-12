@@ -5,6 +5,7 @@ import { ChevronLeft, Heart, MessageSquare, User, MapPin, Briefcase, GraduationC
 import { getGuestProfileById, GuestProfile, likeGuest, createChat, sendCastMessage, getLikeStatus, recordGuestVisit } from '../services/api';
 import { useUser } from '../contexts/UserContext';
 import { useNotificationSettings } from '../contexts/NotificationSettingsContext';
+import Spinner from '../components/ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -108,13 +109,7 @@ const GuestDetail: React.FC = () => {
     if (loading) {
         return (
             <div className="max-w-md mx-auto min-h-screen bg-primary flex items-center justify-center">
-                <div className="flex flex-col items-center">
-                    <svg className="animate-spin h-8 w-8 text-secondary mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
-                    <div className="text-white">ローディング...</div>
-                </div>
+                <Spinner />
             </div>
         );
     }
@@ -160,10 +155,6 @@ const GuestDetail: React.FC = () => {
                     onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
                 />
                 <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-secondary rounded-full inline-block"></span>
-                        <span className="text-xs text-white">オンライン中</span>
-                    </div>
                     <div className="font-bold text-base text-white">{guest.nickname || ''}</div>
                     <div className="text-xs text-white font-bold">{guest.occupation || ''}</div>
                 </div>

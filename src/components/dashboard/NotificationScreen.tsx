@@ -4,6 +4,7 @@ import { Bell, ChevronLeft, Trash2 } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import { getNotifications, deleteNotification, Notification, createChat, sendGuestMessage, getAdminNews, AdminNews, getCastProfileById, markAllNotificationsRead } from '../../services/api';
 import { useAdminNews } from '../../hooks/useRealtime';
+import Spinner from '../ui/Spinner';
 
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
@@ -198,9 +199,7 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
                 {tab === '通知' && (
                     <div className="px-4 py-2 flex flex-col gap-4">
                         {loading ? (
-                            <div className="flex justify-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500"></div>
-                            </div>
+                            <Spinner />
                         ) : notifications.length === 0 ? (
                             <div className="text-center py-8 text-gray-500">
                                 通知はありません

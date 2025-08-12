@@ -13,6 +13,7 @@ import ConciergeChat from '../../ConciergeChat';
 import dayjs from 'dayjs';
 import CastConciergeDetailPage from './CastConciergeDetailPage';
 import CastGroupChatScreen from './CastGroupChatScreen';
+import Spinner from '../../ui/Spinner';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -605,7 +606,6 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                     return;
                 }
                 const chats = await getCastChats(castId);
-                console.log('Raw chats data from backend:', chats);
                 // Map chat data to Message interface
                 const mapped = (chats || []).map((chat: any) => ({
                     id: chat.id,
@@ -736,20 +736,16 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
             </div>
 
             {/* Content with top margin to account for fixed header and filter bar */}
-            <div className="pt-32">
-                <ConciergeChat 
-                        onClick={() => setShowConcierge(true)}
-                    />
+            <div className="px-4 mt-32">
+                
                 {loading ? (
-                    <div className="text-center text-white py-10">ローディング...</div>
+                    <Spinner />
                 ) : (
                     <div className="divide-y divide-secondary">
-                        {/* Show total count when no filters */}
-                        {!filterNickname && !filterAge && messages.length > 0 && (
-                            <div className="px-4 py-2 text-xs text-gray-400 text-center">
-                                全{messages.length}件のメッセージ
-                            </div>
-                        )}
+                        <ConciergeChat 
+                            onClick={() => setShowConcierge(true)}
+                        />
+                        
                         
                         {filteredMessages.length === 0 ? (
                             <div className="text-center text-gray-400 py-10">
@@ -764,7 +760,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                             filteredMessages.map((message) => (
                                 <div
                                     key={message.id}
-                                    className="flex items-center p-4 cursor-pointer hover:bg-secondary/10"
+                                    className="flex items-center p-3 cursor-pointer bg-white/10 hover:bg-secondary/10 border border-secondary"
                                     onClick={() => {
                                         setSelectedMessage(message);
                                         setMessages(prevMsgs => prevMsgs.map(m => m.id === message.id ? { ...m, unread: false } : m));
@@ -774,23 +770,15 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                                     <div className="flex-1">
                                         <div className="flex justify-between items-center mb-1">
                                             <div className="flex items-center">
-                                                <span className="font-bold text-white">
+                                                <span className="font-bold text-white text-base mr-2">
                                                     {message.is_group_chat ? message.group_name || 'Group Chat' : message.name}
                                                 </span>
-                                                {message.is_group_chat && (
-                                                    <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-0.5 rounded">
-                                                        グループ
-                                                    </span>
-                                                )}
                                             </div>
                                             <span className="text-xs text-gray-400">
                                                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
                                         <div className="flex items-center">
-                                            {/* <p className="text-sm text-gray-300 truncate">
-                                                {message.is_group_chat ? `${message.name}: ${message.lastMessage}` : message.lastMessage}
-                                            </p> */}
                                             {message.unread && (
                                                 <span className="ml-2 bg-secondary text-white text-xs font-bold rounded-full px-2 py-0.5">
                                                     NEW

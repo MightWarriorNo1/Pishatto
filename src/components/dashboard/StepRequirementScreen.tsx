@@ -4,7 +4,7 @@ import { ChevronLeft, CreditCard, IdCard, RefreshCw, CheckCircle2, XCircle, Load
 import PaymentInfoRegisterPage from './PaymentInfoRegisterPage';
 import IdentityVerificationScreen from './IdentityVerificationScreen';
 import { useUser } from '../../contexts/UserContext';
-import { getPaymentInfo } from '../../services/api';
+import { getGuestProfileById, getPaymentInfo } from '../../services/api';
 
 const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const { user } = useUser();
@@ -12,6 +12,7 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     const [showIdentityVerification, setShowIdentityVerification] = useState(false);
     const [hasRegisteredCard, setHasRegisteredCard] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
+    const [verificationStatus, setVerificationStatus] = useState<'pending' | 'success' | 'failed' | null>(null);
     const [fetchError, setFetchError] = useState<string | null>(null);
 
     const checkRegisteredCards = async () => {
@@ -26,6 +27,19 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             console.error('Failed to check registered cards:', error);
             setHasRegisteredCard(false);
             setFetchError('カード登録状況の取得に失敗しました。ネットワークをご確認のうえ、再試行してください。');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getIdentityVerificationStatus = async () => {
+        if (!user?.id) return;
+        setLoading(true);
+        try {
+            const res = await getGuestProfileById(user.id);
+            setVerificationStatus(res.identity_verification_completed);
+        } catch (error) {
+            console.error('Failed to fetch verification status:', error);
         } finally {
             setLoading(false);
         }
@@ -193,7 +207,7 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                 <div className="relative bg-white/10 h-32 flex items-center justify-center">
                     {/* ID icon */}
                     <IdCard size={40} className="text-white" />
-                    <div className="absolute inset-0 bg-primary bg-opacity-40 flex flex-col items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-secondary bg-opacity-40 flex flex-col items-center justify-center">
                         <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-primary text-xs font-bold inline-flex items-center gap-1">
                             {loading ? (
                                 <>

@@ -60,10 +60,7 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
         setIsLoadingStatus(true);
         try {
             const res = await getGuestProfileById(user.id);
-            console.log("Res", res);
-            console.log("Res.identity_verification", res.identity_verification);
             setVerificationImage(res.identity_verification);
-            console.log("Verification Image", verificationImage);
             setVerificationStatus(res.identity_verification_completed);
         } catch (error) {
             console.error('Failed to fetch verification status:', error);
@@ -88,7 +85,7 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
     // Show loading screen while fetching initial status
     if (isLoadingStatus) {
         return (
-            <div className="max-w-md items-center min-h-screen bg-primary flex flex-col justify-center">
+            <div className="max-w-md items-center min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col justify-center">
                 <LoadingSpinner size="lg" />
                 <div className="text-center mt-4">
                     <div className="text-white mt-4 text-sm">読み込み中...</div>
@@ -96,6 +93,8 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
             </div>
         );
     }
+
+    console.log("USER", user);
     return (
         <div className="max-w-md mx-auto min-h-screen bg-gradient-br-to from-primary via-primary to-secondary overflow-y-auto pb-8">
             {/* Top bar */}

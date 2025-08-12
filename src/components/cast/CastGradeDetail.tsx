@@ -3,6 +3,7 @@ import { ChevronLeft,  MessageSquareMore, FileText, Gift, Gem, Settings,  Medal,
 import { getCastGrade, GradeInfo } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useCast } from '../../contexts/CastContext';
+import Spinner from '../ui/Spinner';
 
 const CastGradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [gradeInfo, setGradeInfo] = useState<GradeInfo | null>(null);
@@ -86,7 +87,7 @@ const CastGradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     if (loading) {
         return (
             <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex items-center justify-center">
-                <div className="text-white text-lg animate-pulse">読み込み中...</div>
+                <Spinner />
             </div>
         );
     }

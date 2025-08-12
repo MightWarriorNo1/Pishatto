@@ -134,14 +134,14 @@ function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime, currentDu
 
 const getAllAvatarUrls = (avatarString: string | null | undefined): string[] => {
     if (!avatarString) {
-        return ['/assets/avatar/avatar-1.png'];
+        return ['/assets/avatar/female.png'];
     }
     
     // Split by comma and get all non-empty avatars
     const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
     
     if (avatars.length === 0) {
-        return ['/assets/avatar/avatar-1.png'];
+        return ['/assets/avatar/female.png'];
     }
     
     return avatars.map(avatar => `${API_BASE_URL}/${avatar}`);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import StepIndicator from './StepIndicator';
 import { locationService } from '../../../services/locationService';
 import { ChevronLeft } from 'lucide-react';
+import Spinner from '../../ui/Spinner';
 
 interface LocationSelectProps {
   onNext: () => void;
@@ -94,10 +95,7 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
         </div>
 
             {loading ? (
-          <div className="text-center py-8" aria-live="polite">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
-            <p className="text-white text-sm mt-2">読み込み中...</p>
-          </div>
+                <Spinner />
         ) : error ? (
           <div className="text-center py-8">
             <p className="text-white text-sm mb-4">{error}</p>

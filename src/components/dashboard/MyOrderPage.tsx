@@ -5,6 +5,7 @@ import { ChevronLeft, Clock, MapPin, Users, Calendar, Award, MessageCircle } fro
 import { useReservationUpdates } from '../../hooks/useRealtime';
 import dayjs from 'dayjs';
 import FeedbackModal from '../feedback/FeedbackModal';
+import Spinner from '../ui/Spinner';
 
 const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const { user } = useUser();
@@ -58,8 +59,7 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="max-w-md mx-auto px-4 pb-24 pt-24">
                 {loading ? (
                     <div className="flex items-center justify-center py-12">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <span className="ml-3 text-gray-600">読み込み中...</span>
+                        <Spinner />
                     </div>
                 ) : reservations.length === 0 ? (
                     <div className="text-center py-12">

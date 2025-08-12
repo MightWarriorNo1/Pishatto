@@ -4,6 +4,7 @@ import { ChevronLeft, Trash2 } from 'lucide-react';
 import { getNotifications, markNotificationRead, deleteNotification, getAdminNews, AdminNews } from '../../services/api';
 import { useAdminNews } from '../../hooks/useRealtime';
 import { useCast } from '../../contexts/CastContext';
+import Spinner from '../../components/ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -142,9 +143,7 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
                 {tab === '通知' && (
                     <div className="px-4 py-4 flex flex-col gap-4">
                         {loading ? (
-                            <div className="flex justify-center py-8">
-                                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-orange-500"></div>
-                            </div>
+                            <Spinner />
                         ) : error ? (
                             <div className="text-center py-8 text-red-500">
                                 {error}

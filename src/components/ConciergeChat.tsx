@@ -21,13 +21,14 @@ const ConciergeChat: React.FC<ConciergeChatProps> = ({ onClick }) => {
             loadMessages(user.id, userType);
         }
     }, [user?.id]); // Removed loadMessages from dependencies since it is now memoized
+    
     return (
         <div className="relative">
             <button
                 className="w-full"
                 onClick={onClick}
             >
-                <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
+                <div className="flex items-center bg-white/10 rounded-lg shadow-sm p-3 relative border border-secondary">
                     {/* Concierge Avatar - Yellow bird with tuxedo */}
                     {/* <ConciergeAvatar size="md" className="mr-3" /> */}
                     <Bird className="w-10 h-10 text-yellow-500 cursor-pointer mr-3" />

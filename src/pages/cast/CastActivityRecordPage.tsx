@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { getPointTransactions } from '../../services/api';
 import { useCast } from '../../contexts/CastContext';
+import Spinner from '../../components/ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000/api"; 
 
@@ -105,17 +106,8 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
     if (loading) {
         return (
             <div className='max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24'>
-                <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
-                    <button
-                        className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer"
-                        onClick={onBack}
-                    >
-                        <ChevronLeft />
-                    </button>
-                    <span className="text-lg font-bold flex-1 text-center text-white">売上履歴一覧</span>
-                </div>
                 <div className="flex items-center justify-center h-64">
-                    <div className="text-white">読み込み中...</div>
+                    <Spinner />
                 </div>
             </div>
         );

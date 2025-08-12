@@ -51,10 +51,6 @@ const PreviewProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className="flex items-center gap-3 px-4 mt-4 ">
                 <img src={getAvatarUrl()} alt="avatar" className="w-14 h-14 rounded-full object-cover border-2 border-secondary shadow" />
                 <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-secondary rounded-full inline-block"></span>
-                        <span className="text-xs text-white">オンライン中</span>
-                    </div>
                     <div className="font-bold text-base text-white">{user?.nickname || ''}</div>
                     <div className="text-xs text-white font-bold">{user?.occupation || ''}</div>
                 </div>

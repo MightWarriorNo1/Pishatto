@@ -20,6 +20,7 @@ import { useTweets, useUnreadMessageCount, useNotifications } from '../../hooks/
 import echo from '../../services/echo';
 import { getCastProfileById } from '../../services/api';
 import { useCast } from '../../contexts/CastContext';
+import Spinner from '../../components/ui/Spinner';
 
 // Modal component for call details (unchanged)
 const CallDetailModal = ({ call, onClose, onApply }: { call: any, onClose: () => void, onApply: () => void }) => {
@@ -458,7 +459,7 @@ const CastDashboardInner: React.FC = () => {
         <div className="min-h-screen bg-white flex flex-col items-center">
             <div className="w-full max-w-md mx-auto flex flex-col flex-1 min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
                 {loading ? (
-                    <div className="flex justify-center items-center h-40 text-lg">ローディング...</div>
+                    <Spinner />
                 ) : (
                     <>
                         {/* Top Navigation Bar: Only show on Home */}
