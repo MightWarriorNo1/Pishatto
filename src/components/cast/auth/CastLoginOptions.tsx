@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState } from 'react';
 import CastPhoneNumberInput from './CastPhoneNumberInput';
 
@@ -7,6 +8,24 @@ interface CastLoginOptionsProps {
 
 const CastLoginOptions: React.FC<CastLoginOptionsProps> = ({ onNext }) => {
     const [showPhoneInput, setShowPhoneInput] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const userType = 'cast';
+
+    const handleLineLogin = () => {
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const redirectUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/redirect?user_type=${userType}`;
+            window.location.href = redirectUrl;
+        } catch (err: any) {
+            const errorMessage = err.message || 'Line login failed';
+            setError(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     if (showPhoneInput) {
         return <CastPhoneNumberInput onBack={() => setShowPhoneInput(false)} />;
@@ -33,6 +52,7 @@ const CastLoginOptions: React.FC<CastLoginOptionsProps> = ({ onNext }) => {
                         </button>
 
                         <button
+                            onClick={handleLineLogin}
                             className="w-full flex items-center justify-center gap-2 py-4 px-4 rounded-full bg-white text-emerald-600 border-2 border-emerald-300 font-semibold shadow-sm hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-200 transition-colors hover:text-secondary cursor-pointer"
                             aria-label="LINEで始める"
                             type="button"

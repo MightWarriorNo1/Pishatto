@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Clock3, UserRound, MessageCircle } from 'lucide-react';
 import TopNavigationBar from '../../components/cast/dashboard/TopNavigationBar';
 import TabBar from '../../components/cast/dashboard/TabBar';
@@ -177,6 +177,7 @@ const CastDashboardInner: React.FC = () => {
 
     const { cast, castId, loading: castLoading } = useCast();
     const navigate = useNavigate();
+    const location = useLocation();
 
     // Redirect unauthenticated casts to the first page
     useEffect(() => {
@@ -184,6 +185,17 @@ const CastDashboardInner: React.FC = () => {
             navigate('/cast/login');
         }
     }, [castLoading, cast, navigate]);
+
+    // If navigated with an openChatId, switch to Message page and open that chat
+    useEffect(() => {
+        const state = location.state as any;
+        if (state && state.openChatId) {
+            setMainPage(2);
+            const event = new CustomEvent('open-cast-chat', { detail: { chatId: state.openChatId } });
+            window.dispatchEvent(event);
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location, navigate]);
 
     // Fetch cast profile to get category
     useEffect(() => {

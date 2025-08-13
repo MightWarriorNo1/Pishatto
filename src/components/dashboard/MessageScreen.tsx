@@ -320,6 +320,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     }
 
     if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
+    
     return (
         <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col pb-24">
             {/* Top bar */}

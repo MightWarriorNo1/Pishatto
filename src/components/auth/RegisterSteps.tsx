@@ -41,26 +41,33 @@ const RegisterSteps: React.FC = () => {
   const [registrationError, setRegistrationError] = useState<string | null>(null);
 
   const handleNextStep = async () => {
+    console.log('RegisterSteps: handleNextStep called, current step:', currentStep);
+    
     // Special logic after PhoneVerification (step 2)
     if (currentStep === 2) {
+      console.log('RegisterSteps: Processing step 2 (PhoneVerification)');
       // Normalize phone number
       const normalizePhone = (phone: string) => phone.replace(/[^0-9]/g, '').trim();
       const normalizedInput = normalizePhone(formData.phoneNumber);
       try {
         const { guest } = await getGuestProfile(formData.phoneNumber);
         if (guest && normalizePhone(guest.phone) === normalizedInput) {
+          console.log('RegisterSteps: Existing guest found, redirecting to dashboard');
           setUser(guest);
           setPhone(formData.phoneNumber);
           window.location.href = '/dashboard';
           return;
         }
       } catch (e) {
+        console.log('RegisterSteps: No existing guest found, continuing to registration');
         // Not found, continue to registration steps
       }
     }
+    
     // If we're moving to the completion step, submit the data
     // New: ProfilePhoto is step 8, so completion is step 9 -> Now ProfilePhoto is step 8, so completion is step 9
     if (currentStep === 8) { // ProfilePhoto step, next is Completion
+      console.log('RegisterSteps: Processing step 8 (ProfilePhoto), submitting registration');
       setIsSubmitting(true);
       setRegistrationError(null);
       try {
@@ -77,11 +84,13 @@ const RegisterSteps: React.FC = () => {
         });
         // Store the user data in context
         if (response.guest) {
+          console.log('RegisterSteps: Registration successful, setting user data');
           setUser(response.guest);
           setPhone(formData.phoneNumber); 
         }
         setCurrentStep((prev) => prev + 1);
       } catch (error: any) {
+        console.error('RegisterSteps: Registration failed:', error);
         if (error.response && error.response.data) {
           console.error('Registration failed:', error.response.data);
           setRegistrationError(JSON.stringify(error.response.data.errors));
@@ -95,6 +104,7 @@ const RegisterSteps: React.FC = () => {
         setIsSubmitting(false);
       }
     } else {
+      console.log('RegisterSteps: Moving from step', currentStep, 'to step', currentStep + 1);
       setCurrentStep((prev) => prev + 1);
     }
   };

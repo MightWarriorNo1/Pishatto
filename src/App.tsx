@@ -11,6 +11,9 @@ import CastGradeDetailPage from './pages/cast/CastGradeDetailPage';
 import CastProfilePage from './pages/cast/CastProfilePage';
 import CastMessageDetailPage from './pages/cast/CastMessageDetailPage';
 import ReceiptTestPage from './components/dashboard/ReceiptTestPage';
+import LineLogin from './pages/LineLogin';
+import CastLineLogin from './pages/cast/CastLineLogin';
+import LineRegister from './pages/LineRegister';
 import { UserProvider } from './contexts/UserContext';
 import { CastProvider } from './contexts/CastContext';
 import { ConciergeProvider } from './contexts/ConciergeContext';
@@ -31,6 +34,9 @@ const App: React.FC = () => {
                 <Route path="/" element={<RoleSelectPage />} />
                 <Route path="/register" element={<RegisterSteps />} />
                 <Route path="/cast/login" element={<CastLoginWrapper />} />
+                <Route path="/line-login" element={<LineLogin />} />
+                <Route path="/cast/line-login" element={<CastLineLogin />} />
+                <Route path="/line-register" element={<LineRegister />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/cast/:id" element={<CastDetail />} />
                 <Route path="/guest/:id" element={<GuestDetail />} />

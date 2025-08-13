@@ -188,9 +188,8 @@ const ReservationTimer: React.FC<{
     const scheduled = scheduled_at ? new Date(scheduled_at) : undefined;
     const plannedEnd = (scheduled && duration) ? new Date(scheduled.getTime() + duration * 60 * 60 * 1000) : undefined;
     const started = started_at ? new Date(started_at).toISOString() : undefined;
-    const ended = ended_at ? new Date(ended_at) : undefined;
+    const ended = ended_at ? new Date(ended_at).toISOString() : undefined;
 
-    // Timer states
     const now = currentTime;
     let state: 'before' | 'during' | 'after' = 'before';
 
@@ -242,7 +241,9 @@ const ReservationTimer: React.FC<{
 
                 // Then complete the reservation to process point settlement
                 const completion = await completeReservation(reservationId, {});
+                console.log(completion);
                 const updated = completion?.reservation || {};
+                console.log(updated);
                 setLocalPoints(updated.points_earned);
                 setSuccessMsg('予約が正常に終了しました');
                 setErrorMsg(null);
@@ -322,7 +323,7 @@ const ReservationTimer: React.FC<{
                     <div className="space-y-3">
                         {ended && (
                             <div className="text-xs text-gray-500">
-                                終了時刻: {format(ended)}
+                                終了時刻: {ended.split('T')[0]} {ended.split('T')[1].split('.')[0]}
                             </div>
                         )}
                         {exceededAt && (

@@ -40,12 +40,12 @@ const parseDuration = (val: string) => {
     }
     return 60; // default 1 hour
 };
-const calcPoints = (people: string, duration: string, castCategory?: string) => {
-    const numPeople = parsePeople(people);
+
+const calcPoints = (duration: string, castCategory?: string) => {
     const minutes = parseDuration(duration);
     const units = Math.ceil(minutes / 30);
     const basePoints = castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000;
-    return basePoints * numPeople * units;
+    return basePoints * units;
 };
 
 interface GuestData {
@@ -151,19 +151,19 @@ const MessageProposalPage: React.FC<{
         fetchData();
     }, [chatId, groupInfo]);
 
-    const totalPoints = calcPoints(people, duration, castCategory);
+    const totalPoints = calcPoints(duration, castCategory);
 
     const handleProposalSend = () => {
         if (onProposalSend) {
             onProposalSend({
                 date,
-                people,
                 duration,
                 totalPoints,
-                extensionPoints: Math.round((castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000) * parsePeople(people) / 2), // 15min = half of 30min
+                extensionPoints: Math.round((castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000) / 2), // 15min = half of 30min
             });
         }
     };
+    const basePoints = castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000;
 
     if (loading) {
         return (
@@ -261,14 +261,6 @@ const MessageProposalPage: React.FC<{
                 
                 <div className="flex gap-2 mb-2">
                     <div className="flex-1">
-                        <div className="text-lg font-bold text-white mb-1">キャスト人数</div>
-                        <input
-                            className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary"
-                            value={people}
-                            onChange={e => setPeople(e.target.value)}
-                        />
-                    </div>
-                    <div className="flex-1">
                         <div className="text-lg font-bold text-white mb-1">時間</div>
                         <input
                             className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary"
@@ -278,7 +270,7 @@ const MessageProposalPage: React.FC<{
                     </div>
                 </div>
                 <div className="text-md text-white font-bold mt-2 mb-1">
-                    9,000 (キャストP/30分) × {parsePeople(people)}名 × {Math.ceil(parseDuration(duration) / 60)}時間 <span className="float-right">{totalPoints.toLocaleString()}P</span>
+                    {basePoints} (キャストP/30分) ×  {Math.ceil(parseDuration(duration) / 60)}時間 <span className="float-right">{totalPoints.toLocaleString()}P</span>
                 </div>
                 <div className="text-md text-white mb-2 text-right w-full">※延長15分につきpが発生します</div>
                 <div className="text-md  text-white flex justify-between text-center font-bold mb-2">実際に合流するまでポイントは消費されません</div>

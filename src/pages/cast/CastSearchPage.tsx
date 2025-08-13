@@ -8,6 +8,7 @@ import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useCast } from '../../contexts/CastContext';
 import Spinner from '../../components/ui/Spinner';
+import { formatPoints } from '../../utils/formatters';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -593,7 +594,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             <div key={user.id} className="flex flex-col items-center px-4 py-4">
                                 <div className="flex items-center mb-2 w-full">
                                     <div className="w-6 h-6 bg-secondary text-white flex items-center justify-center rounded font-bold mr-2">{user.rank}</div>
-                                    <div className="text-xs text-white ml-auto">{user.points}pt</div>
+                                    <div className="text-xs text-white ml-auto">{formatPoints(user.points)}</div>
                                 </div>
                                 <div className="flex flex-col items-center w-full">
                                     <div className="w-28 h-28 rounded-full border-4 border-secondary overflow-hidden mb-2 cursor-pointer" onClick={() => handleUserClick(user)}>
@@ -622,7 +623,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                         <div className="text-sm text-white opacity-70">{user.region}</div>
                                     )}
                                 </div>
-                                <div className="text-sm text-white">{user.points}pt</div>
+                                <div className="text-sm text-white">{formatPoints(user.points)}</div>
                             </div>
                         )
                     ))

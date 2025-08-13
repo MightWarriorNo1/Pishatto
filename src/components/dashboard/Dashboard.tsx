@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import TopNavigation from './TopNavigation';
 import NewCastSection from './NewCastSection';
 import UserSatisfactionSection from './UserSatisfactionSection';
@@ -17,7 +17,8 @@ import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useChatRefresh } from '../../contexts/ChatRefreshContext';
 import { markAllNotificationsRead, getGuestChats } from '../../services/api';
-import { useChatMessages, useTweets, useNotifications, useUnreadMessageCount } from '../../hooks/useRealtime';// Assume a simple Modal component exists or will be created
+import { useChatMessages, useTweets, useNotifications, useUnreadMessageCount } from '../../hooks/useRealtime';
+import { formatPoints } from '../../utils/formatters';// Assume a simple Modal component exists or will be created
 
 // Add Modal component above Dashboard
 const Modal: React.FC<{ onClose: () => void; children: React.ReactNode }> = ({ onClose, children }) => {
@@ -61,6 +62,7 @@ const Dashboard: React.FC = () => {
   const [showConcierge, setShowConcierge] = useState(false);
   const { user, loading } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
 
 
   // Redirect unauthenticated guests to the first page
@@ -69,6 +71,21 @@ const Dashboard: React.FC = () => {
       navigate('/register');
     }
   }, [loading, user, navigate]);
+
+  // Open specific chat when navigated with state
+  useEffect(() => {
+    const state = location.state as any;
+    if (state && state.openChatId) {
+      setActiveBottomTab('message');
+      setShowChat(state.openChatId as number);
+      // Clear the navigation state so back/forward doesn't re-open
+      navigate(location.pathname, { replace: true, state: {} });
+    } else if (state && state.openMessageTab) {
+      setActiveBottomTab('message');
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { isNotificationEnabled } = useNotificationSettings();
   const { refreshChats } = useChatRefresh();
   const [messageCount, setMessageCount] = useState(0);
@@ -374,7 +391,7 @@ const Dashboard: React.FC = () => {
                     />
                     <div className="font-medium text-white text-sm truncate">{cast.nickname}</div>
                     <div className="text-xs text-white mt-1">{(cast.average_rating || 0).toFixed(1)} ★ / {cast.feedback_count || 0}件</div>
-                    <div className="text-xs text-white mt-1">{cast.grade_points || 0}P/30分</div>
+                    <div className="text-xs text-white mt-1">{formatPoints(cast.grade_points)}/30分</div>
                   </div>
                 ))}
               </div>

@@ -24,9 +24,12 @@ const RoleSelectPage: React.FC = () => {
     }, [user, cast, userLoading, castLoading, navigate]);
 
     const handleSelect = (role: 'guest' | 'cast') => {
+        console.log('RoleSelectPage: Role selected:', role);
         if (role === 'guest') {
+            console.log('RoleSelectPage: Navigating to /register for guest');
             navigate('/register'); // Guest registration flow
         } else {
+            console.log('RoleSelectPage: Navigating to /cast/login for cast');
             navigate('/cast/login'); // Cast login flow
         }
     };

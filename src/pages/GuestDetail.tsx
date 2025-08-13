@@ -2,9 +2,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Heart, MessageSquare, User, MapPin, Briefcase, GraduationCap, DollarSign, GlassWater, Cigarette, Users, Home, Star } from 'lucide-react';
-import { getGuestProfileById, GuestProfile, likeGuest, createChat, sendCastMessage, getLikeStatus, recordGuestVisit } from '../services/api';
-import { useUser } from '../contexts/UserContext';
+import { getGuestProfileById, GuestProfile, likeGuest, createChat, getLikeStatus, recordGuestVisit } from '../services/api';
 import { useNotificationSettings } from '../contexts/NotificationSettingsContext';
+import { useCast } from '../contexts/CastContext';
 import Spinner from '../components/ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -26,15 +26,18 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
 };
 
 const GuestDetail: React.FC = () => {
-    const { id, castId } = useParams();
+    const { id } = useParams();
+    const { castId } = useCast() as any;
     const navigate = useNavigate();
-    const { user } = useUser();
     const { isNotificationEnabled } = useNotificationSettings();
     const [guest, setGuest] = useState<GuestProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [liked, setLiked] = useState(false);
     const [messageLoading, setMessageLoading] = useState(false);
 
+
+    console.log('castId', castId);
+    console.log('id', id);
     useEffect(() => {
         if (id) {
             setLoading(true);
@@ -61,6 +64,17 @@ const GuestDetail: React.FC = () => {
         }
     }, [castId, guest?.id, isNotificationEnabled]);
     
+    // Initialize liked state from localStorage to avoid reset on refresh
+    useEffect(() => {
+        if (castId && id) {
+            const key = `guest_like_${castId}_${id}`;
+            const stored = localStorage.getItem(key);
+            if (stored === 'true') {
+                setLiked(true);
+            }
+        }
+    }, [castId, id]);
+    
     useEffect(() => {
         if (guest && castId) {
             checkLikeStatus();
@@ -73,36 +87,46 @@ const GuestDetail: React.FC = () => {
             // Only check like status if we're a cast member
             if (castId) {
                 const res = await getLikeStatus(Number(castId), guest.id);
-                setLiked(res.liked);
+                // Only update to true to avoid overriding locally persisted like state
+                if (res.liked) {
+                    setLiked(true);
+                    const key = `guest_like_${castId}_${guest.id}`;
+                    localStorage.setItem(key, 'true');
+                }
             }
         } catch (error) {
             console.error('Error checking like status:', error);
         }
     };
 
-    const handleLike = async () => {
+    const handleAction = async () => {
         if (!guest || !castId) return;
-        try {
-            const res = await likeGuest(Number(castId), guest.id);
-            setLiked(res.liked);
-        } catch (error) {
-            console.error('Error liking guest:', error);
-        }
-    };
-
-    const handleMessage = async () => {
-        if (!guest || !castId) return;
-        setMessageLoading(true);
-        try {
-            const chatRes = await createChat(Number(castId), guest.id);
-            const chatId = chatRes.chat.id;
-            await sendCastMessage(chatId, Number(castId), '👍');
-            // Navigate to chat or show success message
-            navigate(`/cast/${castId}/message`);
-        } catch (error) {
-            console.error('Error sending message:', error);
-        } finally {
-            setMessageLoading(false);
+        if (!liked) {
+            // First click: like the guest and persist locally
+            setMessageLoading(true);
+            try {
+                const res = await likeGuest(Number(castId), guest.id);
+                const isLiked = Boolean(res?.liked ?? true);
+                setLiked(isLiked);
+                const key = `guest_like_${castId}_${guest.id}`;
+                localStorage.setItem(key, isLiked ? 'true' : 'false');
+            } catch (error) {
+                console.error('Error liking guest:', error);
+            } finally {
+                setMessageLoading(false);
+            }
+        } else {
+            // Second click: navigate to message detail (create/open chat)
+            setMessageLoading(true);
+            try {
+                const chatRes = await createChat(Number(castId), guest.id);
+                const chatId = chatRes.chat.id;
+                navigate(`/cast/${chatId}/message`);
+            } catch (error) {
+                console.error('Error opening message:', error);
+            } finally {
+                setMessageLoading(false);
+            }
         }
     };
 
@@ -160,29 +184,21 @@ const GuestDetail: React.FC = () => {
                 </div>
             </div>
 
-            {/* Action buttons - only show for cast members */}
+            {/* Single action button - only show for cast members */}
             {castId && (
-                <div className="flex gap-2 px-4 mt-4">
+                <div className="px-4 mt-4">
                     <button
-                        onClick={handleLike}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold shadow transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-secondary/50 ${
-                            liked 
-                                ? 'bg-red-500 text-white scale-105' 
-                                : 'bg-primary border border-secondary text-white hover:bg-secondary hover:text-primary'
-                        }`}
-                        title={liked ? 'すでにいいねしています' : 'いいねする'}
-                    >
-                        <Heart size={20} fill={liked ? 'white' : 'none'} />
-                        {liked ? 'いいね済み' : 'いいね'}
-                    </button>
-                    <button
-                        onClick={handleMessage}
+                        onClick={handleAction}
                         disabled={messageLoading}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold bg-secondary text-white shadow hover:bg-secondary/80 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-secondary/50 disabled:opacity-60"
-                        title="メッセージを送る"
+                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-bold shadow transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-secondary/50 ${
+                            liked
+                                ? 'bg-secondary text-white hover:bg-secondary/80 disabled:opacity-60'
+                                : 'bg-primary border border-secondary text-white hover:bg-secondary hover:text-primary disabled:opacity-60'
+                        }`}
+                        title={liked ? 'メッセージページへ' : 'いいねする'}
                     >
-                        <MessageSquare size={20} />
-                        {messageLoading ? '送信中...' : 'メッセージ'}
+                        {liked ? <MessageSquare size={20} /> : <Heart size={20} fill={'none'} />}
+                        {messageLoading ? (liked ? '移動中...' : '処理中...') : liked ? 'メッセージ' : 'いいね'}
                     </button>
                 </div>
             )}

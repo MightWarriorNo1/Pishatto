@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronLeft, Calendar, Image, Search, Filter, Camera, FolderClosed } from 'lucide-react';
+import { ChevronLeft, Calendar, Image, Search, Filter, Camera, FolderClosed, Send } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { useNavigate } from 'react-router-dom';
@@ -21,6 +21,11 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const userTz=dayjs.tz.guess();
+const buildAvatarUrl = (path?: string) => {
+    if (!path) return '/assets/avatar/1.jpg';
+    if (path.startsWith('http')) return path;
+    return `${APP_BASE_URL}/${path}`;
+};
 interface Message {
     id: string;
     avatar: string;
@@ -332,19 +337,6 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     const isFromGuest = msg.sender_guest_id && !msg.sender_cast_id;
                     const isSent = isSentByCast && !isFromGuest;
                     
-                    // Debug logging for message ownership issues
-                    if (process.env.NODE_ENV === 'development') {
-                        console.log('Cast message ownership debug:', {
-                            messageId: msg.id,
-                            sender_guest_id: msg.sender_guest_id,
-                            sender_cast_id: msg.sender_cast_id,
-                            currentCastId: castId,
-                            isSentByCast,
-                            isFromGuest,
-                            isSent,
-                            message: msg.message?.substring(0, 50) + '...'
-                        });
-                    }
                     
                     return (
                         <React.Fragment key={msg.id || idx}>
@@ -459,6 +451,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                             }
                         }}
                     />
+                    
                     <span className="text-white ml-2 cursor-pointer" onClick={handleImageButtonClick}>
                         <Image size={30} />
                     </span>
@@ -479,6 +472,52 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     <span className="text-white ml-2 cursor-pointer" onClick={() => setMessageProposal(true)}>
                         <Calendar size={30}/>
                     </span>
+                    <button
+                        onClick={async () => {
+                            if ((newMessage.trim() || attachedFile) && !sending) {
+                                setSending(true);
+                                try {
+                                    if (!castId) return;
+                                    const payload: any = {
+                                        chat_id: Number(message.id),
+                                        sender_cast_id: castId,
+                                    };
+                                    if (newMessage.trim()) payload.message = newMessage.trim();
+                                    if (attachedFile) payload.image = attachedFile;
+
+                                    // Optimistically add the message (text or image)
+                                    const optimisticId = `optimistic-${Date.now()}`;
+                                    // setMessages(prev => [...prev, optimisticMsg]);
+
+                                    // Send to backend
+                                    const realMsg = await sendMessage(payload);
+
+                                    // Replace optimistic message with real one
+                                    setMessages(prev => prev.map(m => m.id === optimisticId ? realMsg : m));
+
+                                    setNewMessage('');
+                                    setAttachedFile(null);
+                                    setImagePreview(null);
+                                } finally {
+                                    setSending(false);
+                                }
+                            }
+                        }}
+                        disabled={(!newMessage.trim() && !attachedFile) || sending}
+                        className={`ml-2 px-6 py-2 rounded-full text-sm font-medium disabled:opacity-50 transition-colors ${
+                            (newMessage.trim() || attachedFile) && !sending
+                                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                : 'bg-blue-500 text-gray-300 cursor-not-allowed'
+                        }`}
+                    >
+                        {sending ? (
+                            <div className="flex items-center">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                            </div>
+                        ) : (
+                            <Send className="w-4 h-4" />
+                        )}
+                    </button>
                     {/* Popover absolutely inside input bar */}
                     {showFile && (
                         <div
@@ -591,6 +630,35 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
         if (setIsMessageDetailOpen) setIsMessageDetailOpen(!!selectedMessage);
     }, [selectedMessage, setIsMessageDetailOpen]);
 
+    // Listen for external request to open a specific chat by ID
+    useEffect(() => {
+        const handler = (e: any) => {
+            const chatId = e?.detail?.chatId;
+            if (!chatId) return;
+            setLoading(true);
+            getCastChats(castId || 0).then((chats) => {
+                const target = (chats || []).find((c: any) => c.id === chatId);
+                if (target) {
+                    const mapped: Message = {
+                        id: target.id,
+                        avatar: buildAvatarUrl(target.avatar),
+                        name: target.name,
+                        lastMessage: target.last_message || '',
+                        timestamp: target.updated_at ? new Date(target.updated_at) : new Date(),
+                        unread: false,
+                        guestAge: target.guest_age,
+                        is_group_chat: Boolean(target.group_id),
+                        group_id: target.group_id,
+                        group_name: target.group_name,
+                    } as any;
+                    setSelectedMessage(mapped);
+                }
+            }).finally(() => setLoading(false));
+        };
+        window.addEventListener('open-cast-chat', handler as any);
+        return () => window.removeEventListener('open-cast-chat', handler as any);
+    }, [castId]);
+
     // Notify parent when concierge state changes
     useEffect(() => {
         onConciergeStateChange?.(showConcierge);
@@ -609,7 +677,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                 // Map chat data to Message interface
                 const mapped = (chats || []).map((chat: any) => ({
                     id: chat.id,
-                    avatar: `${APP_BASE_URL}/${chat.avatar}` || '/assets/avatar/1.jpg',
+                    avatar: buildAvatarUrl(chat.avatar),
                     name: chat.guest_nickname || `ゲスト ${chat.guest_id}`,
                     lastMessage: chat.last_message || '',
                     timestamp: chat.updated_at ? new Date(chat.updated_at) : new Date(),

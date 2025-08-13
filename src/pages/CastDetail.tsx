@@ -8,6 +8,7 @@ import { useNotificationSettings } from '../contexts/NotificationSettingsContext
 import Toast from '../components/ui/Toast';
 import { shareContent } from '../utils/clipboard';
 import Spinner from '../components/ui/Spinner';
+import { formatPoints } from '../utils/formatters';
 
 // Interface for badge data
 interface Badge {
@@ -190,12 +191,8 @@ const CastDetail: React.FC = () => {
             await sendGuestMessage(chatId, Number(user?.id), '👍');
             // await sendCastMessage(chatId, Number(id), '👍');
             
-            // Show success toast
-            setToastMessage('メッセージを送信しました。');
-            setToastType('success');
-            setShowToast(true);
-            // Auto-hide toast after 10 seconds
-            setTimeout(() => setShowToast(false), 10000);
+            // Navigate directly to guest dashboard message tab with this chat opened
+            navigate('/dashboard', { state: { openChatId: chatId, openMessageTab: true } });
         } catch (error) {
             // Show error toast
             setToastMessage('メッセージの送信に失敗しました。再度お試しください。');
@@ -262,7 +259,11 @@ const CastDetail: React.FC = () => {
     const timePosted = '10時間前';
 
     if (loading) {
-        return <Spinner />;
+        return (
+            <div className="min-h-screen flex justify-center bg-gradient-to-br from-primary via-primary to-secondary max-w-md mx-auto">
+                <Spinner />
+            </div>
+        );
     }
 
     return (
@@ -381,7 +382,7 @@ const CastDetail: React.FC = () => {
                         {/* Points Info */}
                         <div className="flex justify-between items-center">
                             <div className="text-sm text-white">30分あたりのポイント</div>
-                            <div className="text-xl font-bold text-white">{cast.grade_points || '0'}</div>
+                            <div className="text-xl font-bold text-white">{formatPoints(cast.grade_points)}</div>
                         </div>
                     </div>
                 </div>

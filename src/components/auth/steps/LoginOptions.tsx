@@ -1,10 +1,31 @@
-import React from 'react';
+/* eslint-disable */
+import React, { useState } from 'react';
 
 interface LoginOptionsProps {
   onNext: () => void;
 }
 
+
 const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const userType = 'guest';
+
+  const handleLineLogin = () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+        const redirectUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/redirect?user_type=${userType}`;
+        window.location.href = redirectUrl;
+    } catch (err: any) {
+        const errorMessage = err.message || 'Line login failed';
+        setError(errorMessage);
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary via-gray-800 to-secondary p-8 flex flex-col">
       <div className="flex-1 flex items-center justify-center">
@@ -23,6 +44,7 @@ const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
           </button>
 
           <button
+            onClick={handleLineLogin}
             aria-label="LINEで始める"
             className="w-full flex items-center justify-center py-3 px-4 rounded-full bg-secondary hover:bg-red-400 text-white border border-secondary font-medium relative focus:outline-none focus:ring-2 focus:ring-secondary/60"
           >
