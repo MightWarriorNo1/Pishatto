@@ -34,16 +34,10 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
         }
     };
 
-    const handleLineCallback = async (code: string, state?: string | null) => {
+    const handleLineCallback = async (code: string) => {
         try {
             // Use web route for callback to maintain session
-            const callbackUrl = new URL(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/callback`);
-            callbackUrl.searchParams.set('code', code);
-            if (state) {
-                callbackUrl.searchParams.set('state', state);
-            }
-
-            const response = await fetch(callbackUrl.toString(), {
+            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/callback?code=${code}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -87,14 +81,13 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
         }
     };
 
-    // Check for Line callback code/state in URL
+    // Check for Line callback code in URL
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
         const code = urlParams.get('code');
-        const state = urlParams.get('state');
         
         if (code) {
-            handleLineCallback(code, state);
+            handleLineCallback(code);
         }
     }, []);
 
