@@ -52,6 +52,8 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
             console.log(data);
             if (data.success) {
                 if (data.user_type === 'guest') {
+                    // Persist to localStorage so Dashboard doesn't rely on server session
+                    try { localStorage.setItem('guestData', JSON.stringify(data.user)); } catch (_) {}
                     setUser(data.user);
                     onSuccess?.(data.user);
                     navigate('/dashboard');
