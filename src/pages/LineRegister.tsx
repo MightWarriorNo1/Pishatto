@@ -30,8 +30,15 @@ const LineRegister: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     
-    const lineData: LineData = location.state?.lineData || {};
-    const userType: 'guest' | 'cast' = location.state?.userType || 'guest';
+    // Prefer state passed from navigation; fallback to query params when arriving via server redirect
+    const queryParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    const lineData: LineData = location.state?.lineData || {
+        line_id: queryParams.get('line_id') || '',
+        line_email: queryParams.get('line_email') || undefined,
+        line_name: queryParams.get('line_name') || undefined,
+        line_avatar: queryParams.get('line_avatar') || undefined,
+    };
+    const userType: 'guest' | 'cast' = (location.state?.userType as 'guest' | 'cast') || ((queryParams.get('user_type') as 'guest' | 'cast') || 'guest');
 
     useEffect(() => {
         // Pre-fill form with Line data if available
