@@ -70,11 +70,6 @@ const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking }) => {
                   alt={profile.name}
                   className="w-full aspect-square object-cover rounded border border-secondary"
                 />
-                {profile.category && (
-                    <div className='absolute top-2 left-2 rounded text-xs font-medium text-white'>
-                      {profile.category}
-                    </div>
-                  )}
                 <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
                   {index + 1}
                 </div>

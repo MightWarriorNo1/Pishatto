@@ -12,6 +12,7 @@ interface CastContextType {
   updateCast: (updates: Partial<CastProfile>) => void;
   logout: () => void;
   checkLineAuthentication: () => Promise<boolean>;
+  isSettingCastExternally: boolean;
 }
 
 const CastContext = createContext<CastContextType | undefined>(undefined);
@@ -27,6 +28,7 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     const storedCastId = localStorage.getItem('castId');
     return storedCastId ? parseInt(storedCastId, 10) : null;
   });
+  const [isSettingCastExternally, setIsSettingCastExternally] = useState(false);
 
   const setCastId = (newCastId: number | null) => {
     setCastIdState(newCastId);
@@ -46,15 +48,38 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
 
   const setCastWrapper = (newCast: CastProfile | null) => {
     console.log('CastContext: Setting cast data:', newCast);
-    setCast(newCast);
-    // Store cast data in localStorage for fallback
-    if (newCast) {
+    
+    // Mark that we're setting cast data externally
+    setIsSettingCastExternally(true);
+    
+    // Ensure we have valid cast data
+    if (newCast && newCast.id) {
+      console.log('CastContext: Valid cast data, updating state...');
+      setCast(newCast);
+      // Store cast data in localStorage for fallback
       localStorage.setItem('castData', JSON.stringify(newCast));
       // Also store cast ID for consistency
       setCastId(newCast.id);
+      console.log('CastContext: Cast data successfully set and stored:', { id: newCast.id, nickname: newCast.nickname });
+      
+      // Verify the data was stored correctly
+      setTimeout(() => {
+        const storedData = localStorage.getItem('castData');
+        const storedId = localStorage.getItem('castId');
+        console.log('CastContext: Verification - stored data:', { storedData, storedId, expectedId: newCast.id });
+        
+        // Clear the external flag after a delay to allow context to stabilize
+        setTimeout(() => {
+          setIsSettingCastExternally(false);
+          console.log('CastContext: External cast setting flag cleared');
+        }, 500);
+      }, 100);
     } else {
+      console.warn('CastContext: Invalid cast data provided:', newCast);
+      setCast(null);
       localStorage.removeItem('castData');
       setCastId(null);
+      setIsSettingCastExternally(false);
     }
   };
 
@@ -108,14 +133,22 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   const checkExistingAuth = async () => {
     try {
       setLoading(true);
-      console.log('CastContext: Starting authentication check...');
+      console.log('CastContext: Starting authentication check...', { isSettingCastExternally });
+      
+      // If we're currently setting cast data externally, skip the auth check
+      if (isSettingCastExternally) {
+        console.log('CastContext: Skipping auth check - cast data being set externally');
+        setLoading(false);
+        return;
+      }
       
       // First check Line authentication
       const lineAuthSuccess = await checkLineAuthentication();
+      console.log('CastContext: Line auth check result:', { lineAuthSuccess, currentCast: cast });
       
       // If Line auth didn't set a cast, check regular cast auth
       if (!cast && !lineAuthSuccess) {
-        console.log('CastContext: No Line auth, checking regular cast auth...');
+        console.log('CastContext: No Line auth and no cast, checking regular cast auth...');
         const authResult = await checkCastAuth();
         if (authResult.authenticated && authResult.cast) {
           console.log('CastContext: Regular cast auth successful:', authResult.cast);
@@ -154,6 +187,8 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
         }
       } else if (lineAuthSuccess) {
         console.log('CastContext: Line authentication successful, cast already set');
+      } else if (cast) {
+        console.log('CastContext: Cast already exists in context, skipping auth check');
       }
       
       setLoading(false);
@@ -187,6 +222,11 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     checkExistingAuth();
   }, []);
 
+  // Monitor external cast setting flag
+  useEffect(() => {
+    console.log('CastContext: External cast setting flag changed:', isSettingCastExternally);
+  }, [isSettingCastExternally]);
+
   return (
     <CastContext.Provider value={{ 
       cast, 
@@ -197,7 +237,8 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
       refreshCast, 
       updateCast, 
       logout,
-      checkLineAuthentication
+      checkLineAuthentication,
+      isSettingCastExternally
     }}>
       {children}
     </CastContext.Provider>

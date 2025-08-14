@@ -4,7 +4,7 @@ import { FiGift, FiImage } from 'react-icons/fi';
 import { useConcierge } from '../contexts/ConciergeContext';
 import { useUser } from '../contexts/UserContext';
 import { getConciergeInfo, ConciergeInfo } from '../services/api';
-import { Bird, ChevronLeft } from 'lucide-react';
+import { Bird, ChevronLeft, Send } from 'lucide-react';
 
 interface ConciergeDetailPageProps {
     onBack: () => void;
@@ -17,6 +17,8 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
     const { user } = useUser();
     const [conciergeInfo, setConciergeInfo] = useState<ConciergeInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [sending, setSending] = useState(false);
+    const [attachedFile, setAttachedFile] = useState<File | null>(null);
 
     // Load concierge info and messages on component mount
     useEffect(() => {
@@ -96,7 +98,7 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
     return (
         <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col relative">
             {/* Header */}
-            <div className="fixed flex items-center px-4 py-3 border-b border-secondary bg-primary">
+            <div className="fixed max-w-md mx-auto left-0 right-0 z-20 flex items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button onClick={onBack} className="mr-3">
                     <ChevronLeft className="w-6 h-6 text-white hover:text-secondary cursor-pointer" />
                 </button>
@@ -275,9 +277,19 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
                         <button className="p-2 text-white hover:bg-secondary rounded-full transition-colors">
                             <FiImage className="w-5 h-5" />
                         </button>
-                        <button className="p-2 text-white hover:bg-secondary rounded-full transition-colors">
-                            <FiGift className="w-5 h-5" />
-                        </button>
+                        <button
+                        onClick={handleSendMessage}
+                        disabled={sending || (!message.trim() && !attachedFile)}
+                        className={`ml-2 px-6 py-2 rounded-full text-sm disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600`}
+                    >
+                        {sending ? (
+                            <div className="flex items-center">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
+                            </div>
+                        ) : (
+                            <Send className="w-4 h-4" />
+                        )}
+                    </button>
                     </div>
                 </div>
             )}

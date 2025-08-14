@@ -1706,7 +1706,9 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                 ) : (
                     <div className="bg-white/10 rounded-xl p-6 text-center">
                         <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <span className="text-white/50 text-2xl">👥</span>
+                            <span className="text-white/50 text-2xl">
+                                <Users className="w-10 h-10" />
+                            </span>
                         </div>
                         <div className="text-white/70 text-sm">まだキャストからの応募はありません</div>
                         <div className="text-white/50 text-xs mt-1">フリーコールでキャストを呼んでみましょう</div>

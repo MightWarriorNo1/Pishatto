@@ -18,7 +18,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { user, loading: userLoading, checkLineAuthentication } = useUser();
-  const { cast, loading: castLoading, checkLineAuthentication: checkCastLineAuth } = useCast();
+  const { cast, loading: castLoading, checkLineAuthentication: checkCastLineAuth, isSettingCastExternally } = useCast();
   const [isCheckingLine, setIsCheckingLine] = useState(false);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
@@ -42,7 +42,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         setIsCheckingLine(true);
         checkLineAuth();
       } else if (userType === 'cast' && !cast) {
-        console.log('ProtectedRoute: Checking Line authentication for cast...');
+        console.log('ProtectedRoute: Checking Line authentication for cast...', { cast, castLoading });
         setIsCheckingLine(true);
         checkLineAuth();
       } else {
@@ -84,6 +84,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Show loading spinner while checking authentication
   if (userLoading || castLoading || isCheckingLine) {
+    console.log(`ProtectedRoute: Showing loading spinner for ${userType}`, { userLoading, castLoading, isCheckingLine, isSettingCastExternally });
     return (
       <div className="min-h-screen max-w-md mx-auto flex items-center justify-center bg-gradient-to-b from-primary via-gray-800 to-secondary">
         <div className="text-center">
@@ -95,20 +96,23 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Don't render anything while we're still checking authentication
   if (!hasCheckedAuth) {
+    console.log(`ProtectedRoute: Waiting for auth check to complete for ${userType}`, { isSettingCastExternally });
     return null;
   }
 
   // Check if user is authenticated for the required user type
   if (userType === 'guest' && !user) {
+    console.log('ProtectedRoute: Guest not authenticated, will redirect');
     return null; // Will redirect in useEffect
   }
 
   if (userType === 'cast' && !cast) {
+    console.log('ProtectedRoute: Cast not authenticated, will redirect', { isSettingCastExternally });
     return null; // Will redirect in useEffect
   }
 
   // User is authenticated, render the protected content
-  console.log(`ProtectedRoute: Rendering protected content for ${userType}`, { user, cast });
+  console.log(`ProtectedRoute: Rendering protected content for ${userType}`, { user, cast, isSettingCastExternally });
   return <>{children}</>;
 };
 

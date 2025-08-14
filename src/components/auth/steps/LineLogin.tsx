@@ -36,6 +36,8 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
 
     const handleLineCallback = async (code: string, state?: string) => {
         try {
+            console.log('LineLogin: Starting LINE callback handling...', { code, state, userType });
+            
             // Use web route for callback to maintain session
             const params = new URLSearchParams({ code });
             if (state) params.set('state', state);
@@ -49,9 +51,20 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
             });
             
             const data = await response.json();
+            console.log('LineLogin: Received callback response:', data);
+            console.log('LineLogin: Response structure:', {
+                success: data.success,
+                user_type: data.user_type,
+                user: data.user,
+                hasUser: !!data.user,
+                userId: data.user?.id,
+                userKeys: data.user ? Object.keys(data.user) : [],
+                userStringified: data.user ? JSON.stringify(data.user) : 'null'
+            });
             
             if (data.success) {
                 if (data.user_type === 'guest') {
+                    console.log('LineLogin: Processing guest login...');
                     // Set user in context first
                     setUser(data.user);
                     onSuccess?.(data.user);
@@ -61,15 +74,39 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                         navigate('/dashboard');
                     }, 100);
                 } else if (data.user_type === 'cast') {
-                    // Set cast in context first
+                    console.log('LineLogin: Processing cast login...', data.user);
+                    // Set cast in context first and wait for it to be properly set
                     setCast(data.user);
                     onSuccess?.(data.user);
                     
-                    // Small delay to ensure context is updated
+                    // For cast users, we need to ensure the context is fully updated
+                    // before navigation to avoid race conditions with ProtectedRoute
                     setTimeout(() => {
-                        navigate('/cast/dashboard');
-                    }, 100);
+                        // Double-check that cast is set in context before navigation
+                        if (data.user && data.user.id) {
+                            console.log('Cast context updated, navigating to dashboard:', data.user);
+                            
+                            // Additional debugging: check localStorage and context state
+                            const storedCastData = localStorage.getItem('castData');
+                            const storedCastId = localStorage.getItem('castId');
+                            console.log('LineLogin: LocalStorage state after setCast:', { 
+                                storedCastData, 
+                                storedCastId,
+                                expectedId: data.user.id 
+                            });
+                            
+                            // Wait a bit more to ensure context is fully updated
+                            setTimeout(() => {
+                                console.log('LineLogin: Final navigation to cast dashboard');
+                                navigate('/cast/dashboard');
+                            }, 100);
+                        } else {
+                            console.error('Cast data is missing, cannot navigate');
+                            setError('キャストデータの取得に失敗しました。もう一度お試しください。');
+                        }
+                    }, 300); // Increased delay for cast users to ensure context stability
                 } else if (data.user_type === 'new') {
+                    console.log('LineLogin: Processing new user registration...');
                     // Handle new user registration for guest only
                     if (userType === 'guest') {
                         navigate('/line-register', { 
@@ -84,9 +121,11 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                     }
                 }
             } else {
+                console.error('LineLogin: Authentication failed:', data.message);
                 throw new Error(data.message || 'Line authentication failed');
             }
         } catch (err: any) {
+            console.error('LineLogin: Error in callback handling:', err);
             const errorMessage = err.message || 'Line callback failed';
             setError(errorMessage);
             onError?.(errorMessage);
