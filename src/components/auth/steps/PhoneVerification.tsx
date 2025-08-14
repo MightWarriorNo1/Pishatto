@@ -46,6 +46,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
     }
   }, [step, timeLeft]);
 
+  console.log(allPhones);
   function isValidPhoneNumber(phone: string) {
     // Japanese mobile: 10 or 11 digits, must start with 0
     return /^0\d{9,10}$/.test(phone);
@@ -149,14 +150,15 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
     try {
       // Verify SMS code via Twilio
       const response = await verifySmsCode(phoneNumber, code);
-      
+      console.log(response);
       if (response.success) {
         updateFormData({ verificationCode: code });
 
         // Check if user exists
         const normalizedPhones = allPhones.map(normalizePhone);
         const normalizedInput = normalizePhone(phoneNumber);
-
+        console.log(normalizedPhones);
+        console.log(normalizedInput);
         if (normalizedPhones.includes(normalizedInput)) {
           setPhone(phoneNumber);
           try {
