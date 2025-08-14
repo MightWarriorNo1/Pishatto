@@ -15,6 +15,7 @@ import LineLogin from './pages/LineLogin';
 import CastLineLogin from './pages/cast/CastLineLogin';
 import LineRegister from './pages/LineRegister';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import AuthDebugger from './components/debug/AuthDebugger';
 import { UserProvider } from './contexts/UserContext';
 import { CastProvider } from './contexts/CastContext';
 import { ConciergeProvider } from './contexts/ConciergeContext';
@@ -67,6 +68,7 @@ const App: React.FC = () => {
                 } />
                 <Route path="/receipt-test" element={<ReceiptTestPage />} />
               </Routes>
+              <AuthDebugger />
             </Router>
           </ConciergeProvider>
         </NotificationSettingsProvider>

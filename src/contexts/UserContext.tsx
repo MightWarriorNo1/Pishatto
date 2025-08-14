@@ -13,7 +13,7 @@ interface UserContextType {
   refreshUser: () => void;
   updateUser: (updates: Partial<GuestProfile>) => void;
   logout: () => void;
-  checkLineAuthentication: () => Promise<void>;
+  checkLineAuthentication: () => Promise<boolean>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -84,10 +84,12 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         if (lineAuthResult.user.phone) {
           setPhone(lineAuthResult.user.phone);
         }
-        return;
+        return true; // Indicate success
       }
+      return false; // Indicate failure
     } catch (error) {
       console.error('Error checking Line authentication:', error);
+      return false; // Indicate failure
     }
   };
 
@@ -97,10 +99,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       setLoading(true);
       
       // First check Line authentication
-      await checkLineAuthentication();
+      const lineAuthSuccess = await checkLineAuthentication();
       
       // If Line auth didn't set a user, check regular guest auth
-      if (!user) {
+      if (!user && !lineAuthSuccess) { // Only check guest auth if line auth failed or user is null
         const authResult = await checkGuestAuth();
         
         if (authResult.authenticated && authResult.guest) {

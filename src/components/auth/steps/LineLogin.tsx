@@ -52,13 +52,23 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
             
             if (data.success) {
                 if (data.user_type === 'guest') {
+                    // Set user in context first
                     setUser(data.user);
                     onSuccess?.(data.user);
-                    navigate('/dashboard');
+                    
+                    // Small delay to ensure context is updated
+                    setTimeout(() => {
+                        navigate('/dashboard');
+                    }, 100);
                 } else if (data.user_type === 'cast') {
+                    // Set cast in context first
                     setCast(data.user);
                     onSuccess?.(data.user);
-                    navigate('/cast/dashboard');
+                    
+                    // Small delay to ensure context is updated
+                    setTimeout(() => {
+                        navigate('/cast/dashboard');
+                    }, 100);
                 } else if (data.user_type === 'new') {
                     // Handle new user registration for guest only
                     if (userType === 'guest') {

@@ -11,7 +11,7 @@ interface CastContextType {
   refreshCast: () => void;
   updateCast: (updates: Partial<CastProfile>) => void;
   logout: () => void;
-  checkLineAuthentication: () => Promise<void>;
+  checkLineAuthentication: () => Promise<boolean>;
 }
 
 const CastContext = createContext<CastContextType | undefined>(undefined);
@@ -45,12 +45,16 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   };
 
   const setCastWrapper = (newCast: CastProfile | null) => {
+    console.log('CastContext: Setting cast data:', newCast);
     setCast(newCast);
     // Store cast data in localStorage for fallback
     if (newCast) {
       localStorage.setItem('castData', JSON.stringify(newCast));
+      // Also store cast ID for consistency
+      setCastId(newCast.id);
     } else {
       localStorage.removeItem('castData');
+      setCastId(null);
     }
   };
 
@@ -75,6 +79,7 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
       const { cast: castData } = await getCastProfileById(castId);
       setCastWrapper(castData);
     } catch (error) {
+      console.error('Error refreshing cast data:', error);
       setCastWrapper(null);
     } finally {
       setLoading(false);
@@ -83,33 +88,41 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
 
   const checkLineAuthentication = async () => {
     try {
+      console.log('CastContext: Checking Line authentication...');
       const lineAuthResult = await checkLineAuth();
+      console.log('CastContext: Line auth result:', lineAuthResult);
+      
       if (lineAuthResult.success && lineAuthResult.authenticated && lineAuthResult.user_type === 'cast') {
+        console.log('CastContext: Line authentication successful for cast:', lineAuthResult.user);
         setCastWrapper(lineAuthResult.user);
         setCastId(lineAuthResult.user.id);
-        return;
+        return true;
       }
+      return false;
     } catch (error) {
       console.error('Error checking Line authentication:', error);
+      return false;
     }
   };
 
   const checkExistingAuth = async () => {
     try {
       setLoading(true);
+      console.log('CastContext: Starting authentication check...');
       
       // First check Line authentication
-      await checkLineAuthentication();
+      const lineAuthSuccess = await checkLineAuthentication();
       
       // If Line auth didn't set a cast, check regular cast auth
-      if (!cast) {
+      if (!cast && !lineAuthSuccess) {
+        console.log('CastContext: No Line auth, checking regular cast auth...');
         const authResult = await checkCastAuth();
         if (authResult.authenticated && authResult.cast) {
-          console.log('CastContext: cast authenticated, setting cast data:', authResult.cast);
+          console.log('CastContext: Regular cast auth successful:', authResult.cast);
           setCastWrapper(authResult.cast);
           setCastId(authResult.cast.id);
-          setLoading(false);
         } else {
+          console.log('CastContext: No regular cast auth found');
           // No existing authentication, check if we have cast data in localStorage
           const storedCastData = localStorage.getItem('castData');
           const storedCastId = localStorage.getItem('castId');
@@ -121,11 +134,11 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
               
               const { cast: freshCastData } = await getCastProfileById(castIdNumber);
               if (freshCastData) {
-                console.log('CastContext: stored cast data is still valid, setting cast data:', freshCastData);
+                console.log('CastContext: Stored cast data is still valid:', freshCastData);
                 setCastWrapper(freshCastData);
                 setCastId(freshCastData.id);
               } else {
-                console.log('CastContext: stored cast data is no longer valid, clearing...');
+                console.log('CastContext: Stored cast data is no longer valid, clearing...');
                 setCastWrapper(null);
                 setCastId(null);
               }
@@ -138,11 +151,12 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
             setCastWrapper(null);
             setCastId(null);
           }
-          setLoading(false);
         }
-      } else {
-        setLoading(false);
+      } else if (lineAuthSuccess) {
+        console.log('CastContext: Line authentication successful, cast already set');
       }
+      
+      setLoading(false);
     } catch (error) {
       console.error('Error checking cast authentication:', error);
       // If auth check fails, try to use stored cast data as fallback
@@ -153,6 +167,7 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
         try {
           const parsedCastData = JSON.parse(storedCastData);
           const castIdNumber = parseInt(storedCastId, 10);
+          console.log('CastContext: Using stored cast data as fallback:', parsedCastData);
           setCastWrapper(parsedCastData);
           setCastId(castIdNumber);
         } catch (error) {

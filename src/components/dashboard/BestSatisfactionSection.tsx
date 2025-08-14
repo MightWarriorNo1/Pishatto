@@ -63,11 +63,6 @@ const BestSatisfactionSection: React.FC = () => {
                     alt={cast.nickname}
                     className="w-full h-24 object-cover rounded-lg border border-secondary"
                   />
-                  {cast.category && (
-                    <div className='absolute top-2 left-2 rounded text-xs font-medium text-white'>
-                      {cast.category}
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="mt-2">

@@ -1,18 +1,23 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import RoleSelect from '../components/auth/RoleSelect';
 import { useUser } from '../contexts/UserContext';
 import { useCast } from '../contexts/CastContext';
+import Spinner from '../components/ui/Spinner';
 
 const RoleSelectPage: React.FC = () => {
     const navigate = useNavigate();
     const { user, loading: userLoading } = useUser();
     const { cast, loading: castLoading } = useCast();
+    const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
     useEffect(() => {
         console.log('RoleSelectPage: checking authentication state:', { user, cast, userLoading, castLoading });
         
-        if (!userLoading && !castLoading) {
+        // Only proceed with navigation after both contexts have finished loading
+        if (!userLoading && !castLoading && !hasCheckedAuth) {
+            setHasCheckedAuth(true);
+            
             if (user) {
                 console.log('RoleSelectPage: user authenticated, navigating to /dashboard');
                 navigate('/dashboard');
@@ -21,7 +26,7 @@ const RoleSelectPage: React.FC = () => {
                 navigate('/cast/dashboard');
             }
         }
-    }, [user, cast, userLoading, castLoading, navigate]);
+    }, [user, cast, userLoading, castLoading, hasCheckedAuth, navigate]);
 
     const handleSelect = (role: 'guest' | 'cast') => {
         console.log('RoleSelectPage: Role selected:', role);
@@ -35,14 +40,15 @@ const RoleSelectPage: React.FC = () => {
     };
 
     // Show loading while checking authentication
-    if (userLoading || castLoading) {
+    if (userLoading || castLoading || !hasCheckedAuth) {
         return (
             <div className="min-h-screen max-w-md mx-auto bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <div className="text-white text-lg">Loading...</div>
+                <Spinner />
             </div>
         );
     }
 
+    // Don't render anything if user is already authenticated
     if (user || cast) {
         return null;
     }

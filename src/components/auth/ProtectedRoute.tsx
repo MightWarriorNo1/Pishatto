@@ -20,33 +20,43 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, loading: userLoading, checkLineAuthentication } = useUser();
   const { cast, loading: castLoading, checkLineAuthentication: checkCastLineAuth } = useCast();
   const [isCheckingLine, setIsCheckingLine] = useState(false);
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   useEffect(() => {
     const checkLineAuth = async () => {
+      let success = false;
       if (userType === 'guest') {
-        await checkLineAuthentication();
+        success = await checkLineAuthentication();
       } else if (userType === 'cast') {
-        await checkCastLineAuth();
+        success = await checkCastLineAuth();
       }
       setIsCheckingLine(false);
+      setHasCheckedAuth(true);
+      console.log(`ProtectedRoute: Line authentication ${success ? 'succeeded' : 'failed'} for ${userType}`);
     };
 
     // Check Line authentication if not already authenticated
-    if (!userLoading && !castLoading && !isCheckingLine) {
+    if (!userLoading && !castLoading && !isCheckingLine && !hasCheckedAuth) {
       if (userType === 'guest' && !user) {
+        console.log('ProtectedRoute: Checking Line authentication for guest...');
         setIsCheckingLine(true);
         checkLineAuth();
       } else if (userType === 'cast' && !cast) {
+        console.log('ProtectedRoute: Checking Line authentication for cast...');
         setIsCheckingLine(true);
         checkLineAuth();
+      } else {
+        setHasCheckedAuth(true);
       }
     }
-  }, [user, cast, userLoading, castLoading, userType, checkLineAuthentication, checkCastLineAuth, isCheckingLine]);
+  }, [user, cast, userLoading, castLoading, userType, checkLineAuthentication, checkCastLineAuth, isCheckingLine, hasCheckedAuth]);
 
   useEffect(() => {
-    if (!userLoading && !castLoading && !isCheckingLine) {
+    // Only redirect after we've completed all authentication checks
+    if (!userLoading && !castLoading && !isCheckingLine && hasCheckedAuth) {
       if (userType === 'guest') {
         if (!user) {
+          console.log('ProtectedRoute: Guest not authenticated, redirecting to register');
           // Redirect to appropriate login page
           const redirectPath = redirectTo || '/register';
           navigate(redirectPath, { 
@@ -58,6 +68,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         }
       } else if (userType === 'cast') {
         if (!cast) {
+          console.log('ProtectedRoute: Cast not authenticated, redirecting to cast login');
           // Redirect to cast login page
           const redirectPath = redirectTo || '/cast/login';
           navigate(redirectPath, { 
@@ -69,18 +80,22 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         }
       }
     }
-  }, [user, cast, userLoading, castLoading, isCheckingLine, userType, navigate, location.pathname, redirectTo]);
+  }, [user, cast, userLoading, castLoading, isCheckingLine, hasCheckedAuth, userType, navigate, location.pathname, redirectTo]);
 
   // Show loading spinner while checking authentication
   if (userLoading || castLoading || isCheckingLine) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-primary via-gray-800 to-secondary">
+      <div className="min-h-screen max-w-md mx-auto flex items-center justify-center bg-gradient-to-b from-primary via-gray-800 to-secondary">
         <div className="text-center">
           <Spinner size="lg" />
-          <p className="mt-4 text-white text-lg">Checking authentication...</p>
         </div>
       </div>
     );
+  }
+
+  // Don't render anything while we're still checking authentication
+  if (!hasCheckedAuth) {
+    return null;
   }
 
   // Check if user is authenticated for the required user type
@@ -93,6 +108,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // User is authenticated, render the protected content
+  console.log(`ProtectedRoute: Rendering protected content for ${userType}`, { user, cast });
   return <>{children}</>;
 };
 
