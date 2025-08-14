@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useUser } from '../../../contexts/UserContext';
-import { fetchAllGuestPhones, getGuestProfile, sendSmsVerificationCode, verifySmsCode } from '../../../services/api';
+import { fetchAllGuestPhones, getGuestProfile, sendSmsVerificationCode, verifySmsCode, guestLogin } from '../../../services/api';
 import { ChevronLeft } from 'lucide-react';
 
 interface PhoneVerificationData {
@@ -149,7 +149,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
     try {
       // Verify SMS code via Twilio
       const response = await verifySmsCode(phoneNumber, code);
-
+      
       if (response.success) {
         updateFormData({ verificationCode: code });
 
@@ -160,11 +160,13 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
         if (normalizedPhones.includes(normalizedInput)) {
           setPhone(phoneNumber);
           try {
+            // Log the guest in; backend will honor previously verified phone
+            await guestLogin(phoneNumber, code);
             const { guest } = await getGuestProfile(phoneNumber);
             if (guest) setUser(guest);
             window.location.href = '/dashboard';
           } catch (e) {
-            setError('ユーザー情報の取得に失敗しました');
+            setError('ログインに失敗しました');
           }
           return;
         }

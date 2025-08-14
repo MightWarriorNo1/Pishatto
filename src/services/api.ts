@@ -204,8 +204,10 @@ export const guestRegister = async (data: GuestRegisterData) => {
   return response.data;
 };
 
-export const guestLogin = async (phone: string) => {
-  const response = await api.post('/guest/login', { phone }, { withCredentials: true });
+export const guestLogin = async (phone: string, verificationCode?: string) => {
+  const payload: any = { phone };
+  if (verificationCode) payload.verification_code = verificationCode;
+  const response = await api.post('/guest/login', payload, { withCredentials: true });
   return response.data;
 };
 
