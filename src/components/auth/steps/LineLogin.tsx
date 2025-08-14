@@ -1,9 +1,9 @@
 /* eslint-disable */
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../../contexts/UserContext';
-import { useCast } from '../../../contexts/CastContext';    
-import Spinner from '../../../components/ui/Spinner';
+import { useCast } from '../../../contexts/CastContext';
+import Spinner from '../../ui/Spinner';
 
 interface LineLoginProps {
     userType?: 'guest' | 'cast';
@@ -47,9 +47,9 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                 },
                 credentials: 'include'
             });
-            console.log(response);
+            
             const data = await response.json();
-            console.log(data);
+            
             if (data.success) {
                 if (data.user_type === 'guest') {
                     setUser(data.user);

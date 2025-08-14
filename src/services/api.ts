@@ -1383,5 +1383,36 @@ export const getGradeBenefits = async (grade: string): Promise<{
 
 export default api; 
 
+export const checkLineAuth = async () => {
+  const response = await api.get('/line/check-auth', { withCredentials: true });
+  return response.data;
+};
+
+export const lineLogout = async () => {
+  const response = await api.post('/line/logout', {}, { withCredentials: true });
+  return response.data;
+};
+
+export const registerWithLine = async (lineData: any, additionalData: any) => {
+  const response = await api.post('/line/register', {
+    user_type: lineData.user_type || 'guest',
+    line_id: lineData.line_id,
+    line_email: lineData.line_email,
+    line_name: lineData.line_name,
+    line_avatar: lineData.line_avatar,
+    additional_data: additionalData
+  }, { withCredentials: true });
+  return response.data;
+};
+
+export const linkAccountWithLine = async (userType: 'guest' | 'cast', userId: number, lineId: string) => {
+  const response = await api.post('/line/link-account', {
+    user_type: userType,
+    user_id: userId,
+    line_id: lineId
+  }, { withCredentials: true });
+  return response.data;
+}; 
+
 
 

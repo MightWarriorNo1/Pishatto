@@ -14,6 +14,7 @@ import ReceiptTestPage from './components/dashboard/ReceiptTestPage';
 import LineLogin from './pages/LineLogin';
 import CastLineLogin from './pages/cast/CastLineLogin';
 import LineRegister from './pages/LineRegister';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import { UserProvider } from './contexts/UserContext';
 import { CastProvider } from './contexts/CastContext';
 import { ConciergeProvider } from './contexts/ConciergeContext';
@@ -37,13 +38,33 @@ const App: React.FC = () => {
                 <Route path="/line-login" element={<LineLogin />} />
                 <Route path="/cast/line-login" element={<CastLineLogin />} />
                 <Route path="/line-register" element={<LineRegister />} />
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/dashboard" element={
+                  <ProtectedRoute userType="guest">
+                    <Dashboard />
+                  </ProtectedRoute>
+                } />
                 <Route path="/cast/:id" element={<CastDetail />} />
                 <Route path="/guest/:id" element={<GuestDetail />} />
-                <Route path="/cast/dashboard" element={<CastDashboard />} />
-                <Route path="/cast/grade-detail" element={<CastGradeDetailPage />} />
-                <Route path="/cast/profile" element={<CastProfilePage />} />
-                <Route path="/cast/:id/message" element={<CastMessageDetailPage />} />
+                <Route path="/cast/dashboard" element={
+                  <ProtectedRoute userType="cast">
+                    <CastDashboard />
+                  </ProtectedRoute>
+                } />
+                <Route path="/cast/grade-detail" element={
+                  <ProtectedRoute userType="cast">
+                    <CastGradeDetailPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/cast/profile" element={
+                  <ProtectedRoute userType="cast">
+                    <CastProfilePage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/cast/:id/message" element={
+                  <ProtectedRoute userType="cast">
+                    <CastMessageDetailPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/receipt-test" element={<ReceiptTestPage />} />
               </Routes>
             </Router>

@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { GuestProfile, getGuestProfile, GuestInterest, checkGuestAuth } from '../services/api';
+import { GuestProfile, getGuestProfile, GuestInterest, checkGuestAuth, checkLineAuth } from '../services/api';
 
 interface UserContextType {
   user: GuestProfile | null;
@@ -13,6 +13,7 @@ interface UserContextType {
   refreshUser: () => void;
   updateUser: (updates: Partial<GuestProfile>) => void;
   logout: () => void;
+  checkLineAuthentication: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -74,26 +75,50 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
+  const checkLineAuthentication = async () => {
+    try {
+      const lineAuthResult = await checkLineAuth();
+      if (lineAuthResult.success && lineAuthResult.authenticated && lineAuthResult.user_type === 'guest') {
+        setUser(lineAuthResult.user);
+        setInterests(lineAuthResult.user.interests || []);
+        if (lineAuthResult.user.phone) {
+          setPhone(lineAuthResult.user.phone);
+        }
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking Line authentication:', error);
+    }
+  };
+
   // Check for existing authentication on app load
   const checkExistingAuth = async () => {
     try {
       setLoading(true);
-      const authResult = await checkGuestAuth();
       
-      if (authResult.authenticated && authResult.guest) {
-        // User is already authenticated, set the user data
-        setUser(authResult.guest);
-        setInterests(authResult.guest.interests || []);
-        setPhone(authResult.guest.phone);
-        setLoading(false);
-      } else {
-        const storedPhone = localStorage.getItem('phone');
-        if (storedPhone) {
-          setPhone(storedPhone);
-          // Don't set loading to false here, let the second useEffect handle it
+      // First check Line authentication
+      await checkLineAuthentication();
+      
+      // If Line auth didn't set a user, check regular guest auth
+      if (!user) {
+        const authResult = await checkGuestAuth();
+        
+        if (authResult.authenticated && authResult.guest) {
+          // User is already authenticated, set the user data
+          setUser(authResult.guest);
+          setInterests(authResult.guest.interests || []);
+          setPhone(authResult.guest.phone);
         } else {
-          setLoading(false);
+          const storedPhone = localStorage.getItem('phone');
+          if (storedPhone) {
+            setPhone(storedPhone);
+            // Don't set loading to false here, let the second useEffect handle it
+          } else {
+            setLoading(false);
+          }
         }
+      } else {
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error checking authentication:', error);
@@ -121,7 +146,19 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   }, [phone, user]);
 
   return (
-    <UserContext.Provider value={{ user, interests, loading, setUser, setInterests, phone, setPhone, refreshUser, updateUser, logout }}>
+    <UserContext.Provider value={{ 
+      user, 
+      interests, 
+      loading, 
+      setUser, 
+      setInterests, 
+      phone, 
+      setPhone, 
+      refreshUser, 
+      updateUser, 
+      logout,
+      checkLineAuthentication
+    }}>
       {children}
     </UserContext.Provider>
   );
