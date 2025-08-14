@@ -83,12 +83,11 @@ const LineRegister: React.FC = () => {
 
             const data = await response.json();
 
-                if (data.success) {
-                	if (data.user_type === 'guest') {
-                		try { localStorage.setItem('guestData', JSON.stringify(data.user)); } catch (_) {}
-                		setUser(data.user);
-                		navigate('/dashboard');
-                	} else if (data.user_type === 'cast') {
+            if (data.success) {
+                if (data.user_type === 'guest') {
+                    setUser(data.user);
+                    navigate('/dashboard');
+                } else if (data.user_type === 'cast') {
                     setCast(data.user);
                     navigate('/cast/dashboard');
                 }

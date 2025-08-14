@@ -50,7 +50,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     setPhone(null);
     // Clear all localStorage data
     localStorage.removeItem('phone');
-    localStorage.removeItem('guestData');
     localStorage.removeItem('castId');
     localStorage.removeItem('castData');
   };
@@ -79,20 +78,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const checkExistingAuth = async () => {
     try {
       setLoading(true);
-      // Prefer SPA persistence first to avoid relying on cross-site cookies
-      const storedGuestJson = localStorage.getItem('guestData');
-      if (storedGuestJson) {
-        try {
-          const storedGuest: GuestProfile = JSON.parse(storedGuestJson);
-          setUser(storedGuest);
-          setInterests(storedGuest.interests || []);
-          if (storedGuest.phone) setPhone(storedGuest.phone);
-          setLoading(false);
-          return;
-        } catch (_) {
-          localStorage.removeItem('guestData');
-        }
-      }
       const authResult = await checkGuestAuth();
       
       if (authResult.authenticated && authResult.guest) {
@@ -134,19 +119,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       setLoading(false);
     }
   }, [phone, user]);
-
-  // Keep localStorage in sync with the current user to persist across reloads
-  useEffect(() => {
-    if (user) {
-      try {
-        localStorage.setItem('guestData', JSON.stringify(user));
-      } catch (_) {
-        // ignore storage errors
-      }
-    } else {
-      localStorage.removeItem('guestData');
-    }
-  }, [user]);
 
   return (
     <UserContext.Provider value={{ user, interests, loading, setUser, setInterests, phone, setPhone, refreshUser, updateUser, logout }}>
