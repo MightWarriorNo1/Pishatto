@@ -657,7 +657,8 @@ export const fetchUserChats = async (userType: 'guest' | 'cast', userId: number)
 
 export const fetchAllGuestPhones = async (): Promise<string[]> => {
   const response = await api.get('/guests/phones');
-  return response.data.phones;
+  const phones: Array<string | null | undefined> = response.data.phones || [];
+  return phones.map((p) => (p ?? ''));
 };
 
 export const applyReservation = async (reservation_id: number, cast_id: number) => {
