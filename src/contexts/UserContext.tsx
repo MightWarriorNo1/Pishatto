@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { GuestProfile, getGuestProfile, GuestInterest, checkGuestAuth, checkLineAuth } from '../services/api';
+import { GuestProfile, getGuestProfile, GuestInterest, checkGuestAuth, checkLineAuthGuest } from '../services/api';
 
 interface UserContextType {
   user: GuestProfile | null;
@@ -77,7 +77,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   const checkLineAuthentication = async () => {
     try {
-      const lineAuthResult = await checkLineAuth();
+      const lineAuthResult = await checkLineAuthGuest();
       if (lineAuthResult.success && lineAuthResult.authenticated && lineAuthResult.user_type === 'guest') {
         setUser(lineAuthResult.user);
         setInterests(lineAuthResult.user.interests || []);

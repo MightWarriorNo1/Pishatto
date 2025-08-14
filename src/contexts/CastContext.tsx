@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { CastProfile, getCastProfileById, checkCastAuth, checkLineAuth } from '../services/api';
+import { CastProfile, getCastProfileById, checkCastAuth, checkLineAuthCast } from '../services/api';
 
 interface CastContextType {
   cast: CastProfile | null;
@@ -114,7 +114,7 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   const checkLineAuthentication = async () => {
     try {
       console.log('CastContext: Checking Line authentication...');
-      const lineAuthResult = await checkLineAuth();
+      const lineAuthResult = await checkLineAuthCast();
       console.log('CastContext: Line auth result:', lineAuthResult);
       
       if (lineAuthResult.success && lineAuthResult.authenticated && lineAuthResult.user_type === 'cast') {

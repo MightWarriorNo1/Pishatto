@@ -1388,6 +1388,16 @@ export const checkLineAuth = async () => {
   return response.data;
 };
 
+export const checkLineAuthGuest = async () => {
+  const response = await api.get('/line/check-auth/guest', { withCredentials: true });
+  return response.data;
+};
+
+export const checkLineAuthCast = async () => {
+  const response = await api.get('/line/check-auth/cast', { withCredentials: true });
+  return response.data;
+};
+
 export const lineLogout = async () => {
   const response = await api.post('/line/logout', {}, { withCredentials: true });
   return response.data;

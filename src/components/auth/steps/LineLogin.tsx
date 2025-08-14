@@ -129,6 +129,10 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
             const errorMessage = err.message || 'Line callback failed';
             setError(errorMessage);
             onError?.(errorMessage);
+            // For cast, redirect to cast/login on failure
+            if (userType === 'cast') {
+                navigate('/cast/login');
+            }
         }
     };
 

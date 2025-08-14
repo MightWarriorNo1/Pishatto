@@ -161,7 +161,7 @@ const CastDashboardInner: React.FC = () => {
     const [showApplicationComplete, setShowApplicationComplete] = useState(false);
     const [chats, setChats] = useState<any[]>([]);
     const [reservationApplications, setReservationApplications] = useState<any[]>([]);
-    const { refreshChats } = useChatRefresh();
+    const { refreshChats } = useChatRefresh()
     const [tweetBadgeCount, setTweetBadgeCount] = useState(0);
     const [messageBadgeCount, setMessageBadgeCount] = useState(0);
     const prevMainPage = React.useRef(mainPage);
