@@ -30,7 +30,10 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
       try {
         setError(null);
         const activeLocations = await locationService.getActiveLocations();
-        setLocations(activeLocations);
+        
+        // Remove duplicates from locations to prevent React key warnings
+        const uniqueLocations = Array.from(new Set(activeLocations));
+        setLocations(uniqueLocations);
       } catch (error) {
         console.error('Error fetching locations:', error);
         setError('場所の読み込みに失敗しました。しばらく待ってから再度お試しください。');
@@ -61,7 +64,26 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
       try {
         setError(null);
         const activeLocations = await locationService.getActiveLocations();
-        setLocations(activeLocations);
+        
+        // Remove duplicates from locations to prevent React key warnings
+        const uniqueLocations = Array.from(new Set(activeLocations));
+        setLocations(uniqueLocations);
+        
+        // Additional safety check - ensure no duplicates remain
+        if (uniqueLocations.length !== activeLocations.length) {
+            console.warn('Duplicate locations detected and removed:', {
+                original: activeLocations,
+                unique: uniqueLocations
+            });
+        }
+        
+        // Additional safety check - ensure no duplicates remain
+        if (uniqueLocations.length !== activeLocations.length) {
+            console.warn('Duplicate locations detected and removed:', {
+                original: activeLocations,
+                unique: uniqueLocations
+            });
+        }
       } catch (error) {
         console.error('Error fetching locations:', error);
         setError('場所の読み込みに失敗しました。しばらく待ってから再度お試しください。');
@@ -112,9 +134,9 @@ const LocationSelect: React.FC<LocationSelectProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-3 gap-3">
-            {locations.map((location) => (
+            {locations.map((location, index) => (
               <button
-                key={location}
+                key={`${location}-${index}`}
                 onClick={() => handleLocationSelect(location)}
                 className={`py-3 text-center rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/60 ${selectedLocation === location
                   ? 'bg-secondary text-white border-secondary'

@@ -1,8 +1,7 @@
 /*eslint-disable */
 import React, { useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Share2, Eye, ExternalLink } from 'lucide-react';
 import { createReceipt,  Receipt } from '../../services/api';
-import ReceiptDisplay from './ReceiptDisplay';
 
 interface ReceiptConfirmationPageProps {
   onBack: () => void;
@@ -27,10 +26,7 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showReceipt, setShowReceipt] = useState(false);
-
-  // Generate a mock receipt URL (in real app, this would come from the backend)
-  const receiptUrl = `https://pishatto.today/reciepts/${Math.random().toString(36).substr(2, 9)}-${Math.random().toString(36).substr(2, 9)}_${Math.random().toString(36).substr(2, 9)}/reciept.pdf`;
+  const [shareableUrl, setShareableUrl] = useState<string>('');
 
   const handleCreateReceipt = async () => {
     if (!transactionData) {
@@ -51,7 +47,11 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
       });
 
       setReceipt(newReceipt);
-      setShowReceipt(true);
+      
+      // Generate shareable URL for the receipt
+      const baseUrl = window.location.origin;
+      const receiptUrl = `${baseUrl}/receipt/${newReceipt.receipt_number}-${Math.random().toString(36).slice(2,10)}_${Math.random().toString(36).slice(2,10)}`;
+      setShareableUrl(receiptUrl);
     } catch (err) {
       setError('領収書の作成に失敗しました');
       console.error('Receipt creation failed:', err);
@@ -59,15 +59,6 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
       setLoading(false);
     }
   };
-
-  const handleBackFromReceipt = () => {
-    setShowReceipt(false);
-    setReceipt(null);
-  };
-
-  if (showReceipt && receipt) {
-    return <ReceiptDisplay receipt={receipt} onBack={handleBackFromReceipt} />;
-  }
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
@@ -77,14 +68,6 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
           <ChevronLeft size={20} />
         </button>
         <span className="text-sm font-medium flex-1 text-center text-white">全受信</span>
-        {/* <div className="flex space-x-1">
-          <button className="text-white">
-            <ChevronUp size={16} />
-          </button>
-            <button className="text-white">
-            <ChevronDown size={16} />
-          </button>
-        </div> */}
       </div>
 
       {/* Reply-to Address */}
@@ -123,10 +106,57 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
           <button
             onClick={handleCreateReceipt}
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed mb-3"
           >
-            {loading ? '領収書を作成中...' : '領収書を表示'}
+            {loading ? '領収書を作成中...' : '領収書を発行'}
           </button>
+          
+          {/* Share and Display Options */}
+          {shareableUrl && (
+            <div className="space-y-2">
+              <div className="text-xs text-white opacity-80 mb-2">
+                領収書のURLを共有するか、直接アクセスできます
+              </div>
+              
+              {/* Share Button */}
+              {/* <button
+                onClick={() => {
+                  if (navigator.share) {
+                    navigator.share({
+                      title: '領収書',
+                      text: 'pishattoの領収書です',
+                      url: shareableUrl
+                    });
+                  } else {
+                    // Fallback: copy to clipboard
+                    navigator.clipboard.writeText(shareableUrl);
+                    alert('URLをクリップボードにコピーしました');
+                  }
+                }}
+                className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+              >
+                <Share2 size={16} />
+                URLを共有
+              </button> */}
+
+              {/* Open Receipt Button */}
+              <a
+                href={shareableUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2"
+              >
+                <ExternalLink size={16} />
+                領収書を表示
+              </a>
+              
+              {/* Direct URL Display */}
+              <div className="bg-white bg-opacity-10 rounded-lg p-3">
+                <div className="text-xs text-white opacity-80 mb-1">共有用URL:</div>
+                <a href={shareableUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-200 underline break-all">{shareableUrl}</a>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Closing */}

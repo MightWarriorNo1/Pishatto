@@ -53,15 +53,29 @@ const classOptions = [
 const timeOptions = ['30分後', '60分後', '90分後', 'それ以外'];
 const durationOptions = ['1時間', '2時間', '3時間', '4時間以上'];
 
-const situationOptions = [
-    'プライベート', '接待', 'わいわい', 'しっとり', 'カラオケ', 'タバコNG', 'マナー重視', 'ギフト大盤振る舞い', '誕生日会'
-];
+const ageOptions = [
+    '20代前半', '20代後半', '30代前半', '30代後半'
+]
+
 const castTypeOptions = [
-    '20代前半', '20代後半', '30代', '学生', '童顔', '綺麗系', 'ギャル', '清楚', 'スレンダー', 'グラマー', 'ハーフ', '小柄', 'プロ歓迎', '最近入会'
+    '学生', '童顔', '綺麗系', 'ギャル', '清楚', 'スレンダー', 'グラマー', 'ハーフ', '小柄', 'プロ歓迎', '最近入会'
 ];
-const castSkillOptions = [
-    'お酒好き', '英語が話せる', '中国語が話せる', '韓国語が話せる', '盛り上げ上手', '歌うま'
+
+const massageIntensityOptions = [
+    '弱め', '普通', '強め'
+];  
+
+const tiredAreasOptions = [
+    'ふくらはぎ', '太もも', '足の裏', '肩', '腕', '背中'
 ];
+
+const conversationOptions = [
+    '多め', '普通', '少なめ', '無し'
+];
+
+const oilScentOptions = [
+    '無香料', 'イランイラン', '柑橘系', 'ラベンダー'
+];  
 
 // Add modal component for custom time selection
 function CustomTimeModal({ isOpen, onClose, onConfirm }: {
@@ -392,9 +406,21 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
             </div>
             {/* シチュエーション */}
             <div className="px-4 mt-8">
-                <div className="font-bold mb-6 text-white">シチュエーション</div>
+                <div className="font-bold mb-6 text-white">年代</div>
                 <div className="flex flex-wrap gap-2">
-                    {situationOptions.map(opt => (
+                    {ageOptions.map(opt => (
+                        <button
+                            key={opt}
+                            className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedSituations.includes(opt) ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
+                            onClick={() => toggle(selectedSituations, setSelectedSituations, opt)}
+                        >{opt}</button>
+                    ))}
+                </div>
+            </div>
+            <div className="px-4 mt-8">
+                <div className="font-bold mb-6 text-white">キャストタイプ</div>
+                <div className="flex flex-wrap gap-2">
+                    {castTypeOptions.map(opt => (
                         <button
                             key={opt}
                             className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedSituations.includes(opt) ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
@@ -405,9 +431,9 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
             </div>
             {/* キャストタイプ */}
             <div className="px-4 mt-4">
-                <div className="font-bold mb-6 text-white">キャストタイプ</div>
+                <div className="font-bold mb-6 text-white">指圧</div>
                 <div className="flex flex-wrap gap-2">
-                    {castTypeOptions.map(opt => (
+                    {massageIntensityOptions.map(opt => (
                         <button
                             key={opt}
                             className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedCastTypes.includes(opt) ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
@@ -418,13 +444,37 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
             </div>
             {/* キャストスキル */}
             <div className="px-4 mt-4">
-                <div className="font-bold mb-6 text-white">キャストスキル</div>
+                <div className="font-bold mb-6 text-white">お疲れ箇所</div>
                 <div className="flex flex-wrap gap-2">
-                    {castSkillOptions.map(opt => (
+                    {tiredAreasOptions.map(opt => (
                         <button
                             key={opt}
                             className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedCastSkills.includes(opt) ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
                             onClick={() => toggle(selectedCastSkills, setSelectedCastSkills, opt)}
+                        >{opt}</button>
+                    ))}
+                </div>
+            </div>
+            <div className="px-4 mt-8">
+                <div className="font-bold mb-6 text-white">会話</div>
+                <div className="flex flex-wrap gap-2">
+                    {conversationOptions.map(opt => (
+                        <button
+                            key={opt}
+                            className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedSituations.includes(opt) ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
+                            onClick={() => toggle(selectedSituations, setSelectedSituations, opt)}
+                        >{opt}</button>
+                    ))}
+                </div>
+            </div>
+            <div className="px-4 mt-8">
+                <div className="font-bold mb-6 text-white">オイルの香り</div>
+                <div className="flex flex-wrap gap-2">
+                    {oilScentOptions.map(opt => (
+                        <button
+                            key={opt}
+                            className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedSituations.includes(opt) ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
+                            onClick={() => toggle(selectedSituations, setSelectedSituations, opt)}
                         >{opt}</button>
                     ))}
                 </div>
@@ -439,7 +489,7 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
 
 function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
     onBack: () => void,
-    onNext: (selectedLoc?: string) => void,
+    onNext: (selectedLoc?: string, selectedPrefecture?: string) => void,
     isProcessingFreeCall: boolean,
 }) {
     const [locations, setLocations] = useState<string[]>([]);
@@ -447,22 +497,44 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+    const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
+
 
     useEffect(() => {
         const fetchLocationsAndCounts = async () => {
             try {
                 setError(null);
                 const activeLocations = await locationService.getActiveLocations();
-                setLocations(activeLocations);
+                
+                // Remove duplicates from locations to prevent React key warnings
+                const uniqueLocations = Array.from(new Set(activeLocations));
+                setLocations(uniqueLocations);
+                
+                // Additional safety check - ensure no duplicates remain
+                if (uniqueLocations.length !== activeLocations.length) {
+                    console.warn('Duplicate locations detected and removed:', {
+                        original: activeLocations,
+                        unique: uniqueLocations
+                    });
+                }
 
+                console.log("ACTIVE LOCATIONS", uniqueLocations);
+                
                 // Fetch cast counts by location
                 const countsData = await getCastCountsByLocation();
                 setLocationCastCounts(countsData);
+                
+                // Fetch prefectures data from database
+                const prefecturesData = await locationService.getPrefecturesByLocation();
+                setLocationToPrefectures(prefecturesData);
+                
+                console.log("PREFECTURES DATA FROM DATABASE", prefecturesData);
             } catch (error) {
                 console.error('Error fetching locations and counts:', error);
                 setError('場所の読み込みに失敗しました。しばらく待ってから再度お試しください。');
                 setLocations([]);
                 setLocationCastCounts({});
+                setLocationToPrefectures({});
             } finally {
                 setLoading(false);
             }
@@ -470,13 +542,19 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
         fetchLocationsAndCounts();
     }, []);
 
+    // State for prefectures data from database
+    const [locationToPrefectures, setLocationToPrefectures] = useState<Record<string, string[]>>({});
+
     const handleLocationSelect = (location: string) => {
         setSelectedLocation(location);
+        setSelectedPrefecture(null);
     };
+
+
 
     const handleNext = () => {
         if (selectedLocation) {
-            onNext(selectedLocation);
+            onNext(selectedLocation, selectedPrefecture || undefined);
         }
     };
 
@@ -525,41 +603,87 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
                         </button>
                     </div>
                 ) : (
-                    <div className='grid grid-cols-2 gap-4'>
-                        {locations.map((location) => (
-                            <div
-                                key={location}
-                                className={`relative p-6 flex flex-col items-center justify-between rounded-2xl cursor-pointer transition-all duration-300 shadow-lg hover:shadow-2xl ${selectedLocation === location
-                                    ? 'bg-gradient-to-br from-secondary to-red-600 text-white border-2 border-white transform scale-105'
-                                    : 'bg-gradient-to-br from-white/15 to-white/5 text-white hover:bg-secondary/20 hover:scale-105 border border-white/20'
-                                    }`}
-                                onClick={() => handleLocationSelect(location)}
-                            >
-                                <div className="text-center mb-4">
-                                    <span className="text-lg font-bold mb-2 block">{location}</span>
-                                    <div className="flex items-center justify-center">
-                                        <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-                                        <span className="text-xs opacity-80">アクティブ</span>
+                    <>
+                        <div className='grid grid-cols-2 gap-4'>
+                            {locations.map((location, index) => (
+                                <div key={`${location}-${index}`} className="space-y-3">
+                                    {/* Main Location Card */}
+                                    <div
+                                        className={`relative p-6 flex flex-col items-center justify-between rounded-2xl cursor-pointer transition-all duration-300 shadow-lg hover:shadow-2xl ${selectedLocation === location
+                                            ? 'bg-gradient-to-br from-secondary to-red-600 text-white border-2 border-white transform scale-105'
+                                            : 'bg-gradient-to-br from-white/15 to-white/5 text-white hover:bg-secondary/20 hover:scale-105 border border-white/20'
+                                            }`}
+                                        onClick={() => handleLocationSelect(location)}
+                                    >
+                                        <div className="text-center mb-4">
+                                            <span className="text-lg font-bold mb-2 block">{location}</span>
+                                            <div className="flex items-center justify-center">
+                                                <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                                                <span className="text-xs opacity-80">アクティブ</span>
+                                            </div>
+                                        </div>
+
+                                        <div className={`px-4 py-2 rounded-full font-bold text-sm ${selectedLocation === location
+                                            ? 'bg-white/20 text-white'
+                                            : 'bg-gradient-to-r from-secondary to-red-500 text-white'
+                                            }`}>
+                                            {locationCastCounts[location] || 0}人
+                                        </div>
+
+                                        {selectedLocation === location && (
+                                            <div className="absolute top-2 right-2">
+                                                <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                                                    <span className="text-secondary text-xs font-bold">✓</span>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
+                            ))}
+                        </div>
 
-                                <div className={`px-4 py-2 rounded-full font-bold text-sm ${selectedLocation === location
-                                    ? 'bg-white/20 text-white'
-                                    : 'bg-gradient-to-r from-secondary to-red-500 text-white'
-                                    }`}>
-                                    {locationCastCounts[location] || 0}人
-                                </div>
-
-                                {selectedLocation === location && (
-                                    <div className="absolute top-2 right-2">
-                                        <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                                            <span className="text-secondary text-xs font-bold">✓</span>
+                        {/* Prefectures Section - Display below all locations */}
+                        {selectedLocation && locationToPrefectures[selectedLocation] && (
+                            <div className="mt-8">
+                                <div className="bg-white/10 rounded-2xl p-6 border border-white/20 backdrop-blur-sm">
+                                    <div className="text-center mb-6">
+                                        <h3 className="text-xl font-bold text-white mb-2">{selectedLocation}の主要エリア</h3>
+                                        <p className="text-white/70 text-sm">選択されたエリアの詳細情報</p>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-64 overflow-y-auto">
+                                        {locationToPrefectures[selectedLocation].map((prefecture, idx) => (
+                                            <div
+                                                key={idx}
+                                                className={`text-sm px-3 py-2 rounded-lg text-center truncate transition-all duration-200 hover:scale-105 cursor-pointer ${selectedPrefecture === prefecture ? 'bg-secondary text-white' : 'bg-white/20 text-white/90 hover:bg-white/30'}`}
+                                                onClick={() => setSelectedPrefecture(prev => prev === prefecture ? null : prefecture)}
+                                            >
+                                                {prefecture}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    <div className="text-center mt-4">
+                                        <div className="text-white/60 text-sm">
+                                            合計 {locationToPrefectures[selectedLocation].length} エリア
                                         </div>
                                     </div>
-                                )}
+                                </div>
                             </div>
-                        ))}
-                    </div>
+                        )}
+
+                        {/* Loading state for prefectures */}
+                        {selectedLocation && !locationToPrefectures[selectedLocation] && (
+                            <div className="mt-8">
+                                <div className="bg-white/10 rounded-2xl p-6 border border-white/20 backdrop-blur-sm">
+                                    <div className="text-center py-8">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+                                        <div className="text-white/70 text-sm">エリア情報を読み込み中...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
 
@@ -591,9 +715,10 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
     );
 }
 
-function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }: {
+function CastSelectionScreen({ onBack, selectedLocation, selectedPrefecture, onNext, onCastSelect }: {
     onBack: () => void,
     selectedLocation: string,
+    selectedPrefecture?: string | null,
     onNext: () => void,
     onCastSelect: (cast: any) => void,
 }) {
@@ -611,7 +736,66 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
                 setError(null);
                 console.log("SELECTED LOCATION", selectedLocation);
                 const response = await getCastList({ area: selectedLocation });
-                setCasts(response.casts || []);
+                console.log("API Response:", response);
+                console.log("Raw casts data:", response.casts);
+                let list = response.casts || [];
+                if (selectedPrefecture) {
+                    // Filter by selected prefecture, handling both 'residence' and 'residence/prefecture' formats
+                    const normalize = (s: string) => (s || '').replace(/\s+/g, '').toLowerCase();
+                    const matchesPrefecture = (residence: string | null | undefined, pref: string) => {
+                        if (!residence) return false;
+                        const normResidence = normalize(residence);
+                        const normPref = normalize(pref);
+                        
+                        // Handle 'residence/prefecture' format
+                        if (normResidence.includes('/')) {
+                            const parts = normResidence.split('/');
+                            // Check if any part contains the prefecture
+                            return parts.some(part => part.includes(normPref));
+                        }
+                        
+                        // Handle 'residence' format (when residence name is the same as prefecture)
+                        if (normResidence === normPref) {
+                            return true;
+                        }
+                        
+                        // Check if residence contains the prefecture
+                        return normResidence.includes(normPref);
+                    };
+                    list = list.filter((c: any) => matchesPrefecture(c.residence, selectedPrefecture));
+                } else {
+                    // If no prefecture selected, filter by location (residence should match the selected location)
+                    const normalize = (s: string) => (s || '').replace(/\s+/g, '').toLowerCase();
+                    const matchesLocation = (residence: string | null | undefined, location: string) => {
+                        if (!residence) {
+                            console.log("Residence is null/undefined for cast");
+                            return false;
+                        }
+                        const normResidence = normalize(residence);
+                        const normLocation = normalize(location);
+                        
+                        console.log(`Checking residence: "${residence}" (normalized: "${normResidence}") against location: "${location}" (normalized: "${normLocation}")`);
+                        
+                        // Handle 'residence/prefecture' format - check if residence part matches location
+                        if (normResidence.includes('/')) {
+                            const parts = normResidence.split('/');
+                            const residencePart = parts[0]; // First part is the residence
+                            const matches = residencePart.includes(normLocation) || normLocation.includes(residencePart);
+                            console.log(`Residence has '/' format. Parts: [${parts.join(', ')}]. Residence part: "${residencePart}". Matches: ${matches}`);
+                            return matches;
+                        }
+                        
+                        // Handle 'residence' format - check if residence matches location
+                        const matches = normResidence.includes(normLocation) || normLocation.includes(normResidence);
+                        console.log(`Residence format. Matches: ${matches}`);
+                        return matches;
+                    };
+                    list = list.filter((c: any) => matchesLocation(c.residence, selectedLocation));
+                }
+                console.log("Filtered casts list:", list);
+                console.log("Original count:", response.casts?.length || 0);
+                console.log("Filtered count:", list.length);
+                setCasts(list);
             } catch (error) {
                 setError('キャストの読み込みに失敗しました。しばらく待ってから再度お試しください。');
                 setCasts([]);
@@ -620,8 +804,9 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
             }
         };
         fetchCastsForLocation();
-    }, [selectedLocation]);
+    }, [selectedLocation, selectedPrefecture]);
 
+    console.log("SelectedLocation", selectedLocation, selectedPrefecture);
 
     const handlePreviousCast = () => {
         if (currentCastIndex > 0) {
@@ -718,8 +903,13 @@ function CastSelectionScreen({ onBack, selectedLocation, onNext, onCastSelect }:
                                 <MapPin className="text-white w-5 h-5" />
                             </div>
                             <div>
-                                <span className="text-white font-bold text-lg">{selectedLocation}</span>
-                                <div className="text-white/70 text-xs">利用可能なキャスト: {casts.length}人</div>
+                                <span className="text-white font-bold text-lg">{selectedLocation}{selectedPrefecture ? `・${selectedPrefecture}` : ''}</span>
+                                <div className="text-white/70 text-xs">
+                                    利用可能なキャスト: {casts.length}人
+                                    {selectedPrefecture && (
+                                        <span className="ml-2 text-white/50">({selectedPrefecture}エリア限定)</span>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         <div className="text-right">
@@ -1299,6 +1489,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     const [showMyOrder, setShowMyOrder] = useState(false);
     const [showStepRequirement, setShowStepRequirement] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState<string>('');
+    const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
 
     // Add state for applied casts
     const [appliedCasts, setAppliedCasts] = useState<AppliedCast[]>([]);
@@ -1459,9 +1650,10 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     if (page === 'freeCall') return (
         <PishattoCallScreen
             onBack={() => setPage('main')}
-            onNext={(selectedLoc?: string) => {
+            onNext={(selectedLoc?: string, selectedPrefectureArg?: string) => {
                 if (selectedLoc) {
                     setSelectedLocation(selectedLoc);
+                    setSelectedPrefecture(selectedPrefectureArg || null);
                     setPage('castSelection');
                 }
             }}
@@ -1472,6 +1664,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
         <CastSelectionScreen
             onBack={() => setPage('freeCall')}
             selectedLocation={selectedLocation}
+            selectedPrefecture={selectedPrefecture}
             onNext={() => {
                 // Navigate to order confirmation page
                 setPage('orderConfirmation');

@@ -35,7 +35,7 @@ const RoleSelect: React.FC<RoleSelectProps> = ({ onSelect }) => {
                             </span>
                             <span className="flex-1 text-left">
                                 <span className="block text-base font-semibold">ゲストとして始める</span>
-                                <span className="block text-xs text-white/70">閲覧のみ。かんたんに体験できます。</span>
+                                <span className="block text-xs text-white/70">女性キャストを検索・マッチングし、メンズエステの施術を受けることができます。</span>
                             </span>
                             <ArrowRight className="h-5 w-5 opacity-0 transition-opacity duration-200 group-hover:opacity-100" aria-hidden />
                         </button>
@@ -52,7 +52,7 @@ const RoleSelect: React.FC<RoleSelectProps> = ({ onSelect }) => {
                             </span>
                             <span className="flex-1 text-left">
                                 <span className="block text-base font-semibold">キャストとして始める</span>
-                                <span className="block text-xs text-white/80">配信・投稿が可能。より多くの機能を利用できます。</span>
+                                <span className="block text-xs text-white/80">男性ゲストを検索・マッチングし、メンズエステの施術を提供します。</span>
                             </span>
                             <ArrowRight className="h-5 w-5 opacity-0 transition-opacity duration-200 group-hover:opacity-100" aria-hidden />
                         </button>

@@ -11,7 +11,18 @@ const HangoutPlaces: React.FC = () => {
         const fetchLocations = async () => {
             try {
                 const activeLocations = await locationService.getActiveLocations();
-                setCities(activeLocations);
+                
+                // Remove duplicates from locations to prevent React key warnings
+                const uniqueLocations = Array.from(new Set(activeLocations));
+                setCities(uniqueLocations);
+                
+                // Additional safety check - ensure no duplicates remain
+                if (uniqueLocations.length !== activeLocations.length) {
+                    console.warn('Duplicate locations detected and removed:', {
+                        original: activeLocations,
+                        unique: uniqueLocations
+                    });
+                }
             } catch (error) {
                 console.error('Error fetching locations:', error);
                 // Keep default cities if API fails
@@ -34,9 +45,9 @@ const HangoutPlaces: React.FC = () => {
             ) : (
                 <>
                     <div className="flex flex-wrap gap-3 mb-6">
-                        {cities.map(city => (
+                        {cities.map((city, index) => (
                             <button
-                                key={city}
+                                key={`${city}-${index}`}
                                 className={`px-4 py-2 rounded-full border font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-secondary/60 ${selected.includes(city) ? 'bg-secondary hover:bg-red-400 text-white border-secondary' : 'bg-primary text-white border-secondary hover:bg-secondary/20'}`}
                                 onClick={() => toggleCity(city)}
                             >

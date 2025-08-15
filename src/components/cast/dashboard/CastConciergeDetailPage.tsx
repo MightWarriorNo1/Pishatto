@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { Bird, ChevronLeft, MessageSquare, Clock, AlertCircle, CheckCircle, XCircle, Info, Send } from 'lucide-react';
+import { Bird, ChevronLeft, MessageSquare, Clock, AlertCircle, CheckCircle, XCircle, Info, Send, Image} from 'lucide-react';
 import { getConciergeMessages, sendConciergeMessage, markConciergeAsRead } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
 import Spinner from '../../ui/Spinner';
@@ -144,7 +144,7 @@ const CastConciergeDetailPage: React.FC<CastConciergeDetailPageProps> = ({ onBac
             {/* Header */}
             <div className="fixed top-0 max-w-md mx-auto left-0 right-0 z-20 flex items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button onClick={onBack} className="mr-3 cursor-pointer hover:text-secondary">
-                    <ChevronLeft className="w-6 h-6 text-white" />
+                    <ChevronLeft className="w-6 h-6" />
                 </button>
                 <div className="flex items-center flex-1">
                     <Bird className="w-10 h-10 text-yellow-500 cursor-pointer mr-3" />
@@ -290,6 +290,9 @@ const CastConciergeDetailPage: React.FC<CastConciergeDetailPageProps> = ({ onBac
                         className="flex-1 px-4 py-2 rounded-full border border-secondary bg-white text-gray-800 text-sm placeholder-gray-400"
                         disabled={sending}
                     />
+                    <button className="p-2 text-white hover:bg-secondary rounded-full transition-colors">
+                        <Image className="w-5 h-5" />
+                    </button>
                     <button 
                         onClick={handleSendMessage}
                         disabled={sending || !newMessage.trim()}

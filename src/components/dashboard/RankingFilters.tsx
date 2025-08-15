@@ -14,7 +14,18 @@ const RankingFilters: React.FC = () => {
         const fetchLocations = async () => {
             try {
                 const activeLocations = await locationService.getActiveLocations();
-                setRegions(['全国', ...activeLocations]);
+                
+                // Remove duplicates from locations to prevent React key warnings
+                const uniqueLocations = Array.from(new Set(activeLocations));
+                setRegions(['全国', ...uniqueLocations]);
+                
+                // Additional safety check - ensure no duplicates remain
+                if (uniqueLocations.length !== activeLocations.length) {
+                    console.warn('Duplicate locations detected and removed:', {
+                        original: activeLocations,
+                        unique: uniqueLocations
+                    });
+                }
             } catch (error) {
                 console.error('Error fetching locations:', error);
                 // Keep default regions if API fails

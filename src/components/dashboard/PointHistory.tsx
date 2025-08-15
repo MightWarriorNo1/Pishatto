@@ -240,7 +240,7 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
                 {(transaction.type==='pending' || transaction.type==='gift') && (
                   <div className="py-3 text-center border-b border-white">
                     <button 
-                      className="text-white text-sm"
+                      className="text-white text-sm hover:text-secondary"
                       onClick={() => handleReceiptClick(transaction)}
                     >
                       領収書を発行する

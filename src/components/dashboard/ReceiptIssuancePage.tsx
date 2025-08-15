@@ -72,9 +72,9 @@ const ReceiptIssuancePage: React.FC<ReceiptIssuancePageProps> = ({
           <div className="flex items-center">
             <button 
               onClick={onBack} 
-              className="mr-3 p-2 text-white hover:text-gray-800 hover:bg-gray-100 rounded-full transition-all duration-200"
+              className="mr-3 p-2 text-white hover:text-secondary rounded-full transition-all duration-200"
             >
-              <ChevronLeft size={20} />
+              <ChevronLeft size={24} />
             </button>
             <span className="text-xl font-semibold text-white flex-1 text-center">領収書を発行する</span>
             <button 
@@ -100,11 +100,11 @@ const ReceiptIssuancePage: React.FC<ReceiptIssuancePageProps> = ({
       {/* Main Content */}
       <div className="max-w-md mx-auto px-4 py-6 space-y-6">
         {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="bg-white/10 rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
           <div className="p-6 space-y-6">
             {/* Recipient Name */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <label className="flex items-center gap-2 text-sm font-semibold text-white">
                 <User size={16} className="text-blue-600" />
                 宛名
               </label>
@@ -124,7 +124,7 @@ const ReceiptIssuancePage: React.FC<ReceiptIssuancePageProps> = ({
 
             {/* Memo/Description */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <label className="flex items-center gap-2 text-sm font-semibold text-white">
                 <FileText size={16} className="text-indigo-600" />
                 但し書き
               </label>
@@ -147,7 +147,7 @@ const ReceiptIssuancePage: React.FC<ReceiptIssuancePageProps> = ({
 
             {/* Email Address */}
             <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <label className="flex items-center gap-2 text-sm font-semibold text-white">
                 <Mail size={16} className="text-purple-600" />
                 メールアドレス
               </label>
@@ -200,9 +200,9 @@ const ReceiptIssuancePage: React.FC<ReceiptIssuancePageProps> = ({
         )}
 
         {/* Explanatory Text Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white/10 rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6">
-            <div className="text-sm text-gray-600 space-y-3 leading-relaxed">
+            <div className="text-sm text-white space-y-3 leading-relaxed">
               <div className="flex items-start gap-3">
                 <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
                 <span>領収書はポイント利用毎に発行ができます。</span>

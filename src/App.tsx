@@ -10,7 +10,7 @@ import CastDashboard from './pages/cast/CastDashboard';
 import CastGradeDetailPage from './pages/cast/CastGradeDetailPage';
 import CastProfilePage from './pages/cast/CastProfilePage';
 import CastMessageDetailPage from './pages/cast/CastMessageDetailPage';
-import ReceiptTestPage from './components/dashboard/ReceiptTestPage';
+import PublicReceiptView from './components/dashboard/PublicReceiptView';
 import LineLogin from './pages/LineLogin';
 import CastLineLogin from './pages/cast/CastLineLogin';
 import LineRegister from './pages/LineRegister';
@@ -39,6 +39,7 @@ const App: React.FC = () => {
                 <Route path="/line-login" element={<LineLogin />} />
                 <Route path="/cast/line-login" element={<CastLineLogin />} />
                 <Route path="/line-register" element={<LineRegister />} />
+                <Route path="/receipt/:receiptNumber" element={<PublicReceiptView />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute userType="guest">
                     <Dashboard />
@@ -66,7 +67,6 @@ const App: React.FC = () => {
                     <CastMessageDetailPage />
                   </ProtectedRoute>
                 } />
-                <Route path="/receipt-test" element={<ReceiptTestPage />} />
               </Routes>
               <AuthDebugger />
             </Router>

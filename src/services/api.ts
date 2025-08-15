@@ -595,6 +595,11 @@ export const getReceipt = async (receiptId: number): Promise<Receipt> => {
   return response.data.receipt;
 };
 
+export const getReceiptByNumber = async (receiptNumber: string): Promise<Receipt> => {
+  const response = await api.get(`/receipts/by-number/${receiptNumber}`);
+  return response.data.receipt;
+};
+
 export const registerPaymentInfo = async (user_id: number, user_type: 'guest' | 'cast', payment_info: string) => {
   const response = await api.post('/payments/info', { user_id, user_type, payment_info });
   return response.data;
