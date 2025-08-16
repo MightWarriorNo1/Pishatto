@@ -166,31 +166,45 @@ const RegisterSteps: React.FC = () => {
         const finalLineData = lineData || (storedLineData ? JSON.parse(storedLineData) : null);
         
         if ((fromLine || storedLineData) && finalLineData) {
+          // Use FormData to handle file upload properly
+          const formDataToSend = new FormData();
+          formDataToSend.append('user_type', 'guest');
+          formDataToSend.append('line_id', finalLineData.line_id);
+          if (finalLineData.line_email) {
+            formDataToSend.append('line_email', finalLineData.line_email);
+          }
+          if (finalLineData.line_name) {
+            formDataToSend.append('line_name', finalLineData.line_name);
+          }
+          if (finalLineData.line_avatar) {
+            formDataToSend.append('line_avatar', finalLineData.line_avatar);
+          }
+          
+          // Add additional data as JSON string
+          const additionalData = {
+            phone: formData.phoneNumber,
+            verificationCode: formData.verificationCode,
+            nickname: formData.nickname,
+            favorite_area: formData.favorite_area,
+            location: formData.favorite_area,
+            interests: formData.interests,
+            age: formData.age,
+            shiatsu: formData.shiatsu,
+          };
+          formDataToSend.append('additional_data', JSON.stringify(additionalData));
+          
+          // Add profile photo if present
+          if (formData.profilePhoto) {
+            formDataToSend.append('profile_photo', formData.profilePhoto);
+          }
+
           const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/register`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
               'Accept': 'application/json',
             },
             credentials: 'include',
-            body: JSON.stringify({
-              user_type: 'guest',
-              line_id: finalLineData.line_id,
-              line_email: finalLineData.line_email,
-              line_name: finalLineData.line_name,
-              line_avatar: finalLineData.line_avatar,
-              additional_data: {
-                phone: formData.phoneNumber,
-                verificationCode: formData.verificationCode,
-                nickname: formData.nickname,
-                favorite_area: formData.favorite_area,
-                location: formData.favorite_area,
-                profilePhoto: formData.profilePhoto,
-                interests: formData.interests,
-                age: formData.age,
-                shiatsu: formData.shiatsu,
-              }
-            })
+            body: formDataToSend
           });
 
           const data = await response.json();
