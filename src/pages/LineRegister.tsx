@@ -1,6 +1,8 @@
 /* eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { getCsrfToken } from '../utils/csrf';
+import { API_ENDPOINTS } from '../config/api';
 import { useUser } from '../contexts/UserContext';
 import { useCast } from '../contexts/CastContext';
 
@@ -64,21 +66,25 @@ const LineRegister: React.FC = () => {
         setError(null);
 
         try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/register`, {
+            const csrfToken = await getCsrfToken();
+            const formDataToSend = JSON.stringify({
+                user_type: userType,
+                line_id: lineData.line_id,
+                line_email: lineData.line_email,
+                line_name: lineData.line_name,
+                line_avatar: lineData.line_avatar,
+                additional_data: formData
+            });
+
+            const response = await fetch(API_ENDPOINTS.LINE_REGISTER, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Accept': 'application/json',
+                    ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'include',
-                body: JSON.stringify({
-                    user_type: userType,
-                    line_id: lineData.line_id,
-                    line_email: lineData.line_email,
-                    line_name: lineData.line_name,
-                    line_avatar: lineData.line_avatar,
-                    additional_data: formData
-                })
+                body: formDataToSend
             });
 
             const data = await response.json();

@@ -1,3 +1,5 @@
+import { CSRF_ENDPOINT } from '../config/api';
+
 /**
  * CSRF Token Utility Functions
  * Provides centralized CSRF token management for the React application
@@ -24,8 +26,7 @@ export async function getCsrfToken(): Promise<string | null> {
     if (!csrfToken) {
         try {
             console.log('Fetching CSRF token from server...');
-            const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            const tokenResponse = await fetch(`${baseUrl}/csrf-token`, {
+            const tokenResponse = await fetch(CSRF_ENDPOINT, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -55,8 +56,7 @@ export async function getCsrfToken(): Promise<string | null> {
 export async function refreshCsrfToken(): Promise<string | null> {
     try {
         console.log('Refreshing CSRF token...');
-        const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-        const response = await fetch(`${baseUrl}/csrf-token`, {
+        const response = await fetch(CSRF_ENDPOINT, {
             method: 'GET',
             credentials: 'include',
             headers: {
@@ -85,50 +85,4 @@ export async function refreshCsrfToken(): Promise<string | null> {
         console.error('Error refreshing CSRF token:', error);
         return null;
     }
-}
-
-/**
- * Create headers object with CSRF token
- */
-export async function createCsrfHeaders(additionalHeaders: Record<string, string> = {}): Promise<Record<string, string>> {
-    const csrfToken = await getCsrfToken();
-    
-    return {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
-        ...additionalHeaders
-    };
-}
-
-/**
- * Validate CSRF token format
- */
-export function validateCsrfToken(token: string | null): boolean {
-    if (!token) {
-        return false;
-    }
-    
-    // Basic validation - CSRF tokens are typically 40+ characters
-    if (token.length < 20) {
-        return false;
-    }
-    
-    return true;
-}
-
-/**
- * Debug CSRF token state
- */
-export async function debugCsrfToken(): Promise<void> {
-    const token = await getCsrfToken();
-    const metaTag = document.querySelector('meta[name="csrf-token"]');
-    
-    console.log('CSRF Token Debug Info:', {
-        token: token ? `${token.substring(0, 10)}...` : 'null',
-        tokenLength: token?.length || 0,
-        isValid: validateCsrfToken(token),
-        metaTagExists: !!metaTag,
-        metaTagContent: metaTag?.getAttribute('content') ? `${metaTag.getAttribute('content')?.substring(0, 10)}...` : 'null'
-    });
 }

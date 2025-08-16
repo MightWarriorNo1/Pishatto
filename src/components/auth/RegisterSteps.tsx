@@ -1,6 +1,5 @@
 /* eslint-disable */
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import LoginOptions from './steps/LoginOptions';
 import PhoneVerification from './steps/PhoneVerification';
@@ -14,6 +13,7 @@ import Completion from './steps/Completion';
 import { guestRegister, GuestInterest, getGuestProfile } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { getCsrfToken, refreshCsrfToken } from '../../utils/csrf';
+import { API_ENDPOINTS } from '../../config/api';
 
 interface LineData {
   line_id: string;
@@ -106,18 +106,18 @@ const RegisterSteps: React.FC = () => {
             
             if (finalLineData) {
               try {
-                const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/link-account`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                  },
-                  credentials: 'include',
-                  body: JSON.stringify({
-                    user_type: 'guest',
-                    user_id: guest.id,
-                    line_id: finalLineData.line_id
-                  })
+                const response = await fetch(API_ENDPOINTS.LINE_LINK_ACCOUNT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        user_type: 'guest',
+                        user_id: guest.id,
+                        line_id: finalLineData.line_id
+                    })
                 });
 
                 const data = await response.json();
@@ -205,11 +205,11 @@ const RegisterSteps: React.FC = () => {
             throw new Error('CSRF token not found. Please refresh the page and try again.');
           }
 
-          let response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/register`, {
+          let response = await fetch(API_ENDPOINTS.LINE_REGISTER, {
             method: 'POST',
             headers: {
               'Accept': 'application/json',
-              'X-CSRF-TOKEN': csrfToken,
+              ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
               'X-Requested-With': 'XMLHttpRequest',
             },
             credentials: 'include',
@@ -222,11 +222,11 @@ const RegisterSteps: React.FC = () => {
             const newToken = await refreshCsrfToken();
             if (newToken) {
               // Retry with new token
-              response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/register`, {
+              response = await fetch(API_ENDPOINTS.LINE_REGISTER, {
                 method: 'POST',
                 headers: {
                   'Accept': 'application/json',
-                  'X-CSRF-TOKEN': newToken,
+                  ...(newToken && { 'X-CSRF-TOKEN': newToken }),
                   'X-Requested-With': 'XMLHttpRequest',
                 },
                 credentials: 'include',

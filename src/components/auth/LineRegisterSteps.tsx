@@ -1,6 +1,5 @@
 /* eslint-disable */
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import LocationSelect from './steps/LocationSelect';
 import NicknameInput from './steps/NicknameInput';
@@ -12,6 +11,7 @@ import Completion from './steps/Completion';
 import { guestRegister, GuestInterest } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { getCsrfToken, refreshCsrfToken } from '../../utils/csrf';
+import { API_ENDPOINTS } from '../../config/api';
 
 interface LineData {
     line_id: string;
@@ -108,11 +108,11 @@ const LineRegisterSteps: React.FC = () => {
                     throw new Error('CSRF token not found. Please refresh the page and try again.');
                 }
 
-                let response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/register`, {
+                let response = await fetch(API_ENDPOINTS.LINE_REGISTER, {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
+                        ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
                         'X-Requested-With': 'XMLHttpRequest',
                     },
                     credentials: 'include',
@@ -125,11 +125,11 @@ const LineRegisterSteps: React.FC = () => {
                     const newToken = await refreshCsrfToken();
                     if (newToken) {
                         // Retry with new token
-                        response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/register`, {
+                        response = await fetch(API_ENDPOINTS.LINE_REGISTER, {
                             method: 'POST',
                             headers: {
                                 'Accept': 'application/json',
-                                'X-CSRF-TOKEN': newToken,
+                                ...(newToken && { 'X-CSRF-TOKEN': newToken }),
                                 'X-Requested-With': 'XMLHttpRequest',
                             },
                             credentials: 'include',
