@@ -13,6 +13,7 @@ import ProfilePhoto from './steps/ProfilePhoto';
 import Completion from './steps/Completion';
 import { guestRegister, GuestInterest, getGuestProfile } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
+import { getCsrfToken, refreshCsrfToken } from '../../utils/csrf';
 
 interface LineData {
   line_id: string;
@@ -198,11 +199,8 @@ const RegisterSteps: React.FC = () => {
             formDataToSend.append('profile_photo', formData.profilePhoto);
           }
 
-          // Get CSRF token from meta tag or global function
-          let csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-          if (!csrfToken && (window as any).csrfUtils?.getToken) {
-            csrfToken = (window as any).csrfUtils.getToken();
-          }
+          // Get CSRF token using utility function
+          const csrfToken = await getCsrfToken();
           if (!csrfToken) {
             throw new Error('CSRF token not found. Please refresh the page and try again.');
           }
@@ -221,21 +219,19 @@ const RegisterSteps: React.FC = () => {
           // If we get a 419 error, try to refresh the CSRF token and retry
           if (response.status === 419) {
             console.log('CSRF token expired, refreshing...');
-            if ((window as any).csrfUtils?.refreshToken) {
-              const newToken = await (window as any).csrfUtils.refreshToken();
-              if (newToken) {
-                // Retry with new token
-                response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/register`, {
-                  method: 'POST',
-                  headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': newToken,
-                    'X-Requested-With': 'XMLHttpRequest',
-                  },
-                  credentials: 'include',
-                  body: formDataToSend
-                });
-              }
+            const newToken = await refreshCsrfToken();
+            if (newToken) {
+              // Retry with new token
+              response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/register`, {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json',
+                  'X-CSRF-TOKEN': newToken,
+                  'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'include',
+                body: formDataToSend
+              });
             }
           }
 
