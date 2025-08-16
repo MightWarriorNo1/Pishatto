@@ -95,8 +95,16 @@ const RegisterSteps: React.FC = () => {
   const handleNextStep = async () => {
     console.log('RegisterSteps: handleNextStep called, current step:', currentStep);
     
-    // Special logic after PhoneVerification (step 2)
-    if (currentStep === 2) {
+    // Special logic after LocationSelect (step 1) for LINE users
+    if (currentStep === 1 && (fromLine || sessionStorage.getItem('lineData'))) {
+      console.log('RegisterSteps: LINE user completed LocationSelect, skipping to NicknameInput');
+      // For LINE users, skip phone verification and go directly to nickname input
+      setCurrentStep(3); // Skip step 2 (PhoneVerification)
+      return;
+    }
+    
+    // Special logic after PhoneVerification (step 2) - only for non-LINE users
+    if (currentStep === 2 && !(fromLine || sessionStorage.getItem('lineData'))) {
       console.log('RegisterSteps: Processing step 2 (PhoneVerification)');
       // Normalize phone number
       const normalizePhone = (phone: string) => phone.replace(/[^0-9]/g, '').trim();
@@ -164,7 +172,7 @@ const RegisterSteps: React.FC = () => {
     }
     
     // If we're moving to the completion step, submit the data
-    // ProfilePhoto is step 7, so completion is step 8
+    // ProfilePhoto is step 7 for regular users, step 6 for LINE users (since they skip phone verification)
     if (currentStep === 7) { // ProfilePhoto step, next is Completion
       console.log('RegisterSteps: Processing step 7 (ProfilePhoto), submitting registration');
       setIsSubmitting(true);
@@ -307,6 +315,9 @@ const RegisterSteps: React.FC = () => {
   const renderStep = () => {
     console.log('RegisterSteps: Rendering step', currentStep, 'fromLine:', fromLine, 'isLineRegistration:', isLineRegistration);
     
+    // For LINE users, adjust step numbers since they skip phone verification
+    const effectiveStep = (fromLine || sessionStorage.getItem('lineData')) && currentStep > 1 ? currentStep - 1 : currentStep;
+    
     switch (currentStep) {
       case 1:
         // For LINE users, show LocationSelect directly (skip LoginOptions)
@@ -317,25 +328,32 @@ const RegisterSteps: React.FC = () => {
         console.log('RegisterSteps: Regular user at step 1, showing LoginOptions');
         return <LoginOptions onNext={handleNextStep} />;
       case 2:
-        console.log('RegisterSteps: Rendering PhoneVerification at step 2');
+        // PhoneVerification - only show for non-LINE users
+        if (fromLine || sessionStorage.getItem('lineData')) {
+          console.log('RegisterSteps: LINE user at step 2, should not see this - redirecting to step 3');
+          // This shouldn't happen, but just in case
+          setCurrentStep(3);
+          return null;
+        }
+        console.log('RegisterSteps: Regular user at step 2, showing PhoneVerification');
         return <PhoneVerification onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
       case 3:
-        console.log('RegisterSteps: Rendering NicknameInput at step 3');
+        console.log('RegisterSteps: Rendering NicknameInput at step 3 (effective step 2 for LINE users)');
         return <NicknameInput onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
       case 4:
-        console.log('RegisterSteps: Rendering InterestTags at step 4');
+        console.log('RegisterSteps: Rendering InterestTags at step 4 (effective step 3 for LINE users)');
         return <InterestTags onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
       case 5:
-        console.log('RegisterSteps: Rendering AgeSelect at step 5');
+        console.log('RegisterSteps: Rendering AgeSelect at step 5 (effective step 4 for LINE users)');
         return <AgeSelect onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
       case 6:
-        console.log('RegisterSteps: Rendering ShiatsuSelect at step 6');
+        console.log('RegisterSteps: Rendering ShiatsuSelect at step 6 (effective step 5 for LINE users)');
         return <ShiatsuSelect onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
       case 7:
-        console.log('RegisterSteps: Rendering ProfilePhoto at step 7');
+        console.log('RegisterSteps: Rendering ProfilePhoto at step 7 (effective step 6 for LINE users)');
         return <ProfilePhoto onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} isSubmitting={isSubmitting} />;
       case 8:
-        console.log('RegisterSteps: Rendering Completion at step 8');
+        console.log('RegisterSteps: Rendering Completion at step 8 (effective step 7 for LINE users)');
         return <Completion />;
       default:
         console.log('RegisterSteps: Unknown step', currentStep);
