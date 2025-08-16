@@ -61,17 +61,28 @@ const RegisterSteps: React.FC = () => {
     const storedLineData = sessionStorage.getItem('lineData');
     const storedLineUserType = sessionStorage.getItem('lineUserType');
     
-    if (storedLineData && storedLineUserType === 'guest' && !fromLine) {
-      // User has LINE data in sessionStorage but not in location state
-      // This might happen if they refreshed the page
+    console.log('RegisterSteps: Checking for LINE data', { storedLineData, storedLineUserType, fromLine });
+    
+    if (storedLineData && storedLineUserType === 'guest') {
       try {
         const parsedLineData = JSON.parse(storedLineData);
-        // Update the component state to reflect LINE registration
-        setCurrentStep(2); // Start at PhoneVerification
-        setFormData(prev => ({
-          ...prev,
-          nickname: parsedLineData.line_name || prev.nickname
-        }));
+        console.log('RegisterSteps: Found stored LINE data', parsedLineData);
+        
+        // If we have LINE data but no fromLine state, update the state
+        if (!fromLine) {
+          console.log('RegisterSteps: Setting fromLine to true based on sessionStorage');
+          // We can't directly set fromLine, but we can update the form data
+          setFormData(prev => ({
+            ...prev,
+            nickname: parsedLineData.line_name || prev.nickname
+          }));
+        }
+        
+        // Always start at step 2 (PhoneVerification) for LINE users
+        if (currentStep === 1) {
+          console.log('RegisterSteps: Starting LINE user at step 2');
+          setCurrentStep(2);
+        }
       } catch (error) {
         console.error('Error parsing stored LINE data:', error);
         // Clear invalid data
@@ -79,7 +90,7 @@ const RegisterSteps: React.FC = () => {
         sessionStorage.removeItem('lineUserType');
       }
     }
-  }, [fromLine]);
+  }, [fromLine, currentStep]);
 
   // Add a header message for LINE users
   const isLineRegistration = fromLine || sessionStorage.getItem('lineData');
@@ -297,30 +308,43 @@ const RegisterSteps: React.FC = () => {
   };
 
   const renderStep = () => {
+    console.log('RegisterSteps: Rendering step', currentStep, 'fromLine:', fromLine, 'isLineRegistration:', isLineRegistration);
+    
     switch (currentStep) {
       case 1:
         // If coming from LINE, skip LoginOptions and go to PhoneVerification
         if (fromLine) {
+          console.log('RegisterSteps: LINE user at step 1, redirecting to PhoneVerification');
           return <PhoneVerification onNext={handleNextStep} onBack={() => window.history.back()} updateFormData={updateFormData} formData={formData} />;
         }
+        console.log('RegisterSteps: Regular user at step 1, showing LoginOptions');
         return <LoginOptions onNext={handleNextStep} />;
       case 2:
+        console.log('RegisterSteps: Rendering PhoneVerification at step 2');
         return <PhoneVerification onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
       case 3:
+        console.log('RegisterSteps: Rendering LocationSelect at step 3');
         return <LocationSelect onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
       case 4:
+        console.log('RegisterSteps: Rendering NicknameInput at step 4');
         return <NicknameInput onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
       case 5:
+        console.log('RegisterSteps: Rendering InterestTags at step 5');
         return <InterestTags onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
       case 6:
+        console.log('RegisterSteps: Rendering AgeSelect at step 6');
         return <AgeSelect onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
       case 7:
+        console.log('RegisterSteps: Rendering ShiatsuSelect at step 7');
         return <ShiatsuSelect onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
       case 8:
+        console.log('RegisterSteps: Rendering ProfilePhoto at step 8');
         return <ProfilePhoto onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} isSubmitting={isSubmitting} />;
       case 9:
+        console.log('RegisterSteps: Rendering Completion at step 9');
         return <Completion />;
       default:
+        console.log('RegisterSteps: Unknown step', currentStep);
         return null;
     }
   };
