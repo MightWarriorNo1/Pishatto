@@ -7,6 +7,7 @@ import ConciergeChat from '../../components/ConciergeChat';
 import ConciergeDetailPage from '../ConciergeDetailPage';
 import { useChatRefresh } from '../../contexts/ChatRefreshContext';
 import { getCastChats } from '../../services/api';
+import { useCastChats } from '../../hooks/useQueries';
 
 interface MessageScreenProps {
     showChat: number | null;
@@ -15,19 +16,20 @@ interface MessageScreenProps {
 
 const CastMessage: React.FC<MessageScreenProps & { userId: number }> = ({ showChat, setShowChat, userId }) => {
     const [selectedTab, setSelectedTab] = useState<'all' | 'favorite'>('all');
-    const [chats, setChats] = useState<any[]>([]);
     const [showConcierge, setShowConcierge] = useState(false);
     const navigate = useNavigate();
     const { refreshKey } = useChatRefresh();
 
-    useEffect(() => {
-        getCastChats(userId)
-            .then(chats => setChats(chats || []));
-    }, [userId, refreshKey]);
+    // Use React Query hook for chats
+    const {
+        data: chats = [],
+        isLoading: chatsLoading,
+        error: chatsError
+    } = useCastChats(userId);
 
     if (showChat) {
         // Check if this is a group chat (has group_id) or individual chat
-        const chat = chats.find(c => c.id === showChat);
+        const chat = chats.find((c: any) => c.id === showChat);
         if (chat && chat.group_id) {
             return <CastGroupChatScreen groupId={chat.group_id} onBack={() => setShowChat(null)} />;
         } else {
@@ -91,7 +93,7 @@ const CastMessage: React.FC<MessageScreenProps & { userId: number }> = ({ showCh
                     chats.length === 0 ? (
                         <div className="text-white text-center py-8">グループチャットがありません</div>
                     ) : (
-                        chats.map(chat => (
+                        chats.map((chat: any) => (
                             <button key={chat.id} className="w-full" onClick={() => setShowChat(chat.id)}>
                                 <div className="flex items-center bg-primary rounded-lg shadow-sm p-3 relative border border-secondary">
                                     <img

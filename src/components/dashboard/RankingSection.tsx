@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchRanking } from '../../services/api';
+import { useRanking } from '../../hooks/useQueries';
 import getFirstAvatarUrl from '../../utils/avatar';
 import Spinner from '../ui/Spinner';
 
@@ -22,25 +22,13 @@ interface RankingSectionProps {
 
 const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking }) => {
   const navigate = useNavigate();
-  const [rankings, setRankings] = useState<RankingProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    // Get yesterday's ranking for casts by gifts
-    fetchRanking({
-      userType: 'cast',
-      timePeriod: 'yesterday',
-      category: 'gift',
-      area: '全国'
-    }).then((data) => {
-      setRankings(data.data || []);
-      setLoading(false);
-    }).catch((error) => {
-      console.error('Failed to fetch rankings:', error);
-      setLoading(false);
-    });
-  }, []);
+  const { data: rankingData, isLoading: loading } = useRanking({
+    userType: 'cast',
+    timePeriod: 'yesterday',
+    category: 'gift',
+    area: '全国'
+  });
+  const rankings = rankingData?.data || [];
 
   const handleCastClick = (castId: number) => {
     navigate(`/cast/${castId}`);
@@ -58,7 +46,7 @@ const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking }) => {
         <div className="text-white">ランキングデータがありません</div>
       ) : (
         <div className="grid grid-cols-3 gap-4">
-          {rankings.slice(0, 3).map((profile, index) => (
+          {rankings.slice(0, 3).map((profile: any, index: number) => (
             <div 
               key={profile.id} 
               className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer"
@@ -68,7 +56,7 @@ const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking }) => {
                 <img
                   src={profile.avatar ? getFirstAvatarUrl(profile.avatar) : '/assets/avatar/female.png'}
                   alt={profile.name}
-                  className="w-full aspect-square object-cover rounded border border-secondary"
+                  className="w-full h-32 object-cover rounded border border-secondary"
                 />
                 <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
                   {index + 1}

@@ -1,7 +1,18 @@
 /*eslint-disable */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Heart, SlidersHorizontal, Bell, ChevronLeft, MessageSquare, X } from 'lucide-react';
-import { getRepeatGuests, RepeatGuest, getGuestProfileById, GuestProfile, likeGuest, createChat, sendCastMessage, getLikeStatus, fetchRanking, recordGuestVisit } from '../../services/api';
+import { RepeatGuest, GuestProfile } from '../../services/api';
+import { 
+  useRepeatGuests, 
+  useGuestProfileById, 
+  useLikeGuest, 
+  useCreateChat, 
+  useSendCastMessage, 
+  useLikeStatus, 
+  useRecordGuestVisit
+} from '../../hooks/useQueries';
+import { fetchRanking } from '../../services/api';
 import CastNotificationPage from './CastNotificationPage';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
@@ -18,16 +29,16 @@ type GuestDetailPageProps = { onBack: () => void; guest: RepeatGuest };
 const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
     const { isNotificationEnabled } = useNotificationSettings();
     const [showEasyMessage, setShowEasyMessage] = useState(false);
-    const [profile, setProfile] = useState<GuestProfile | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [liked, setLiked] = useState(false);
-    const [messageLoading, setMessageLoading] = useState(false);
     const { castId } = useCast();
-    React.useEffect(() => {
-        getGuestProfileById(guest.id).then(setProfile).finally(() => setLoading(false));
-        setLiked(false); // Reset like state on guest change
-    }, [guest.id]);
-    
+
+    // React Query hooks
+    const { data: profile, isLoading: loading } = useGuestProfileById(guest.id);
+    const { data: likeStatusData } = useLikeStatus(castId || 0, guest.id);
+    const likeGuestMutation = useLikeGuest();
+    const createChatMutation = useCreateChat();
+    const sendCastMessageMutation = useSendCastMessage();
+    const recordGuestVisitMutation = useRecordGuestVisit();
+
     // Record visit when cast views guest profile
     useEffect(() => {
         if (castId && guest.id) {
@@ -35,39 +46,27 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
             const isFootprintNotificationEnabled = isNotificationEnabled('footprints');
             
             if (isFootprintNotificationEnabled) {
-                recordGuestVisit(castId, guest.id);
+                recordGuestVisitMutation.mutate({ castId, guestId: guest.id });
             }
         }
-    }, [castId, guest.id, isNotificationEnabled]);
-    
-    useEffect(()=>{
-        likeStatus();
-    },[castId, guest.id]);
+    }, [castId, guest.id, isNotificationEnabled, recordGuestVisitMutation]);
     
     if (showEasyMessage) {
         return <EasyMessagePage onClose={() => setShowEasyMessage(false)} />
     }
     const handleLike = async () => {
         if (!castId) return;
-        const res = await likeGuest(castId as number, guest.id);
-        if (res.liked) setLiked(true);
+        await likeGuestMutation.mutateAsync({ castId: castId as number, guestId: guest.id });
     };
 
-    const likeStatus = async () => {
-        if (!castId) return;
-        const res = await getLikeStatus(castId as number, guest.id);
-        if (res.liked) setLiked(true);
-        else setLiked(false);
-    };
     const handleMessage = async () => {
-        setMessageLoading(true);
         try {
             if (!castId) return;
-            const chatRes = await createChat(castId as number, guest.id);
+            const chatRes = await createChatMutation.mutateAsync({ castId: castId as number, guestId: guest.id });
             const chatId = chatRes.chat.id;
-            await sendCastMessage(chatId, castId as number, '👍');
-        } finally {
-            setMessageLoading(false);
+            await sendCastMessageMutation.mutateAsync({ chatId, castId: castId as number, message: '👍' });
+        } catch (error) {
+            console.error('Failed to send message:', error);
         }
     };
 
@@ -117,15 +116,23 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
             </div>
             {/* Like button */}
             <div className="px-4 py-2">
-                {!liked ? (
-                    <button className="w-full border border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" onClick={handleLike}>
+                {!likeStatusData?.liked ? (
+                    <button 
+                        className="w-full border border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" 
+                        onClick={handleLike}
+                        disabled={likeGuestMutation.isPending}
+                    >
                         <span className="mr-2">
                             <Heart /></span>
                         <span className="text-base">
                         </span>いいね
                     </button>
                 ) : (
-                    <button className="w-full border bg-secondary border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" onClick={handleMessage} disabled={messageLoading}>
+                    <button 
+                        className="w-full border bg-secondary border-secondary text-white rounded py-2 flex items-center justify-center font-bold hover:bg-secondary hover:text-white transition" 
+                        onClick={handleMessage} 
+                        disabled={createChatMutation.isPending || sendCastMessageMutation.isPending}
+                    >
                         <span className="mr-2">
                             <MessageSquare /></span>
                         <span className="text-base">
@@ -417,7 +424,6 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const [category, setCategory] = useState('ギフト');
     const [dateTab, setDateTab] = useState('昨日');
     const [showFilterModal, setShowFilterModal] = useState(false);
-    const [rankingData, setRankingData] = useState<RankingItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [filters, setFilters] = useState<FilterOptions>({
         region: '全国',
@@ -460,10 +466,10 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         }
     };
 
-    // Fetch ranking data from backend
-    const fetchRankingData = async () => {
-        setLoading(true);
-        try {
+    // Use React Query for ranking data
+    const { data: rankingResponse, isLoading: rankingLoading } = useQuery({
+        queryKey: ['ranking', mainTab, region, category, dateTab],
+        queryFn: async () => {
             const backendCategory = getBackendCategory(category);
             const backendTimePeriod = getBackendTimePeriod(dateTab);
             
@@ -473,33 +479,32 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 category: backendCategory,
                 area: region
             });
-            console.log("RES", response);
+            return response;
+        },
+        enabled: !!mainTab && !!region && !!category && !!dateTab,
+    });
 
-            // Transform backend data to frontend format
-            const transformedData: RankingItem[] = response.data.map((item: any, index: number) => ({
-                id: item.id || item.user_id || index + 1,
-                rank: index + 1,
-                name: item.name || item.nickname || 'Unknown',
-                nickname: item.nickname,
-                age: item.age || null,
-                avatar: item.avatar || '',
-                points: item.points || 0,
-                region: item.region || region
-            }));
+    // Transform ranking data
+    const rankingData = React.useMemo(() => {
+        if (!rankingResponse?.data) return [];
+        
+        const transformedData: RankingItem[] = rankingResponse.data.map((item: any, index: number) => ({
+            id: item.id || item.user_id || index + 1,
+            rank: index + 1,
+            name: item.name || item.nickname || 'Unknown',
+            nickname: item.nickname,
+            age: item.age || null,
+            avatar: item.avatar || '',
+            points: item.points || 0,
+            region: item.region || region
+        }));
 
-            // Recompute ranks after filtering so the list always starts from 1
-            const reRankedData =transformedData.map((item, index) => ({
-                ...item,
-                rank: index + 1,
-            }));
-
-            setRankingData(reRankedData);
-        } catch (error) {
-            console.error('Failed to fetch ranking data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        // Recompute ranks after filtering so the list always starts from 1
+        return transformedData.map((item, index) => ({
+            ...item,
+            rank: index + 1,
+        }));
+    }, [rankingResponse, region]);
 
     // Apply filters
     const handleApplyFilters = (newFilters: FilterOptions) => {
@@ -514,10 +519,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setMainTab(newFilters.userType as 'cast' | 'guest');
     };
 
-    // Fetch data when filters change
-    useEffect(() => {
-        fetchRankingData();
-    }, [mainTab, region, category, dateTab, filters]);
+    // React Query handles data fetching automatically
 
     return (
         <div className="max-w-md pb-28 bg-gradient-to-br from-primary via-primary to-secondary min-h-screen">
@@ -750,21 +752,17 @@ const CastSearchPage: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useUser();
     const { isNotificationEnabled } = useNotificationSettings();
-    const [casts, setCasts] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
     const [messageLoading, setMessageLoading] = useState<number | null>(null);
-    const [ranking, setRanking] = useState<any[]>([]);
     const [rankingLoading, setRankingLoading] = useState(false);
     const [showNotification, setShowNotification]=useState(false);
     const [showEasyMessage, setShowEasyMessage] = useState(false);
     const [showRanking, setShowRanking] = useState(false);
     const [showGuestDetail, setShowGuestDetail] = useState(false);
     const [selectedGuest, setSelectedGuest] = useState<RepeatGuest | null>(null);
-    const [repeatGuests, setRepeatGuests] = useState<RepeatGuest[]>([]);
     const [showAllRepeatGuests, setShowAllRepeatGuests] = useState(false);
-    React.useEffect(() => {
-        getRepeatGuests().then(setRepeatGuests).finally(() => setLoading(false));
-    }, []);
+
+    // React Query hooks
+    const { data: repeatGuests = [], isLoading: loading } = useRepeatGuests();
     if (showGuestDetail && selectedGuest) {
         return <GuestDetailPage onBack={() => setShowGuestDetail(false)} guest={selectedGuest} />;
     }

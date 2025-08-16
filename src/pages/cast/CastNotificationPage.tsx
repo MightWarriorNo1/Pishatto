@@ -5,6 +5,7 @@ import { getNotifications, markNotificationRead, deleteNotification, getAdminNew
 import { useAdminNews } from '../../hooks/useRealtime';
 import { useCast } from '../../contexts/CastContext';
 import Spinner from '../../components/ui/Spinner';
+import { useCastNotifications } from '../../hooks/useQueries';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -14,12 +15,17 @@ interface CastNotificationPageProps {
 
 const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) => {
     const [tab, setTab] = useState<'通知' | 'Admin News'>('通知');
-    const [notifications, setNotifications] = useState<any[]>([]);
     const [adminNews, setAdminNews] = useState<AdminNews[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [showNotification, setShowNotification] = useState(false);
     // Use authenticated cast context
     const { castId } = useCast() as any;
+
+    // Use React Query hook for notifications
+    const {
+        data: notifications = [],
+        isLoading: notificationsLoading,
+        error: notificationsError
+    } = useCastNotifications(castId || 0);
 
     const loadAdminNews = async () => {
         try {
@@ -31,28 +37,8 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
     };
 
     useEffect(() => {
-        const fetchNotifications = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                const notificationsData = await getNotifications('cast', castId);
-                
-                // Filter out admin news from notifications - they should only appear in the news tab
-                const nonAdminNotifications = notificationsData.filter(notification => notification.type !== 'admin_news');
-                
-                setNotifications(nonAdminNotifications);
-                await loadAdminNews();
-            } catch (error) {
-                console.error('Failed to fetch notifications:', error);
-                setError('通知の取得に失敗しました');
-                setNotifications([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-
         if (castId) {
-            fetchNotifications();
+            loadAdminNews();
         }
     }, [castId]);
 
@@ -71,13 +57,8 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
     const handleMarkAsRead = async (notificationId: number) => {
         try {
             await markNotificationRead(notificationId);
-            setNotifications(prev => 
-                prev.map(notification => 
-                    notification.id === notificationId 
-                        ? { ...notification, read: true }
-                        : notification
-                )
-            );
+            // React Query will handle the update automatically
+            // No need to manually update state
         } catch (error) {
             console.error('Failed to mark notification as read:', error);
         }
@@ -86,9 +67,8 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
     const handleDeleteNotification = async (notificationId: number) => {
         try {
             await deleteNotification(notificationId);
-            setNotifications(prev => 
-                prev.filter(notification => notification.id !== notificationId)
-            );
+            // React Query will handle the update automatically
+            // No need to manually update state
         } catch (error) {
             console.error('Failed to delete notification:', error);
         }
@@ -142,11 +122,11 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
                 {/* Notification list */}
                 {tab === '通知' && (
                     <div className="px-4 py-4 flex flex-col gap-4">
-                        {loading ? (
+                        {notificationsLoading ? (
                             <Spinner />
-                        ) : error ? (
+                        ) : notificationsError ? (
                             <div className="text-center py-8 text-red-500">
-                                {error}
+                                {notificationsError.message || '通知の取得に失敗しました'}
                             </div>
                         ) : notifications.length === 0 ? (
                             <div className="text-center py-8 text-gray-500">

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiStar } from 'react-icons/fi';
-import { getAllSatisfactionCasts } from '../../services/api';
+import { useSatisfactionCasts } from '../../hooks/useQueries';
 import getFirstAvatarUrl from '../../utils/avatar';
 import Spinner from '../ui/Spinner';
 
@@ -21,20 +21,7 @@ interface UserSatisfactionSectionProps {
 
 const UserSatisfactionSection: React.FC<UserSatisfactionSectionProps> = ({ onSeeAll }) => {
   const navigate = useNavigate();
-  const [casts, setCasts] = useState<SatisfactionCast[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    // Get all casts with feedback
-    getAllSatisfactionCasts().then((data: SatisfactionCast[]) => {
-      setCasts(data);
-      setLoading(false);
-    }).catch((error) => {
-      console.error('Failed to fetch satisfaction data:', error);
-      setLoading(false);
-    });
-  }, []);
+  const { data: casts = [], isLoading: loading } = useSatisfactionCasts();
 
   const handleCastClick = (castId: number) => {
     navigate(`/cast/${castId}`);

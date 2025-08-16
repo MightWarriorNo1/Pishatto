@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { FiStar } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
-import { getFavorites, unfavoriteCast } from '../../services/api';
+import { useGuestFavorites, useUnfavoriteCast } from '../../hooks/useQueries';
+import { CastProfile } from '../../services/api';
 import Spinner from '../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -26,23 +27,17 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
 const FavoritesSection: React.FC = () => {
   const { user } = useUser();
   const navigate = useNavigate();
-  const [favorites, setFavorites] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      setLoading(true);
-      getFavorites(user.id).then((data) => {
-        setFavorites(data.casts || []);
-        setLoading(false);
-      });
-    }
-  }, [user]);
+  const { data: favoritesData, isLoading: loading } = useGuestFavorites(user?.id || 0);
+  const unfavoriteCastMutation = useUnfavoriteCast();
+  const favorites = favoritesData?.casts || [];
 
   const handleUnfavorite = async (castId: number) => {
     if (!user) return;
-    await unfavoriteCast(user.id, castId);
-    setFavorites(favorites.filter((c) => c.id !== castId));
+    try {
+      await unfavoriteCastMutation.mutateAsync({ userId: user.id, castId });
+    } catch (error) {
+      console.error('Failed to unfavorite cast:', error);
+    }
   };
 
   const handleAvatarClick = (castId: number) => {
@@ -69,7 +64,7 @@ const FavoritesSection: React.FC = () => {
   return (
     <div className="bg-primary rounded-lg shadow p-4 mb-4">
       <h2 className="font-bold text-lg mb-2 text-white">お気に入り</h2>
-      {favorites.map((profile) => (
+      {favorites.map((profile: CastProfile) => (
         <div key={profile.id} className="bg-white/10 rounded-lg shadow p-3 border border-secondary mb-2">
           <div className="flex space-x-4 items-center">
             <div className="w-16 h-16">

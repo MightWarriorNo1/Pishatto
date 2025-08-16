@@ -5,7 +5,8 @@ import GroupChatScreen from './GroupChatScreen';
 import ConciergeChat from '../ConciergeChat';
 import ConciergeDetailPage from '../../pages/ConciergeDetailPage';
 import { useChatRefresh } from '../../contexts/ChatRefreshContext';
-import { getGuestChats, getNotifications, markNotificationRead, getCastProfileById, favoriteChat, unfavoriteChat, getFavoriteChats, isChatFavorited, markChatMessagesRead } from '../../services/api';
+import { getNotifications, markNotificationRead, getCastProfileById, favoriteChat, unfavoriteChat, getFavoriteChats, isChatFavorited, markChatMessagesRead } from '../../services/api';
+import { useGuestChats, useGuestFavorites, useFavoriteChat, useUnfavoriteChat } from '../../hooks/useQueries';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useNotifications } from '../../hooks/useRealtime';
@@ -23,109 +24,71 @@ interface MessageScreenProps {
 
 const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ showChat, setShowChat, userId, onNotificationCountChange, activeBottomTab, onConciergeStateChange }) => {
     const [selectedTab, setSelectedTab] = useState<'all' | 'favorite'>('all');
-    const [chats, setChats] = useState<any[]>([]);
     const [messageNotifications, setMessageNotifications] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState<string>('');
     const [filterAge, setFilterAge] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [castProfiles, setCastProfiles] = useState<{ [key: number]: any }>({});
-    const [favoritedChatIds, setFavoritedChatIds] = useState<Set<number>>(new Set());
     const [showNotification, setShowNotification] = useState(false);
     const [showConcierge, setShowConcierge] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
     const [currentChat, setCurrentChat] = useState<any>(null);
     const { user } = useUser();
     const { refreshKey } = useChatRefresh();
     const { isNotificationEnabled } = useNotificationSettings();
+
+    // React Query hooks
+    const { data: chats = [], isLoading } = useGuestChats(userId);
+    const { data: favoritesData } = useGuestFavorites(user?.id || 0);
+    const favoritedChatIds = new Set<number>((favoritesData?.chats || []).map((chat: any) => chat.id));
+    
+    // Mutation hooks
+    const favoriteChatMutation = useFavoriteChat();
+    const unfavoriteChatMutation = useUnfavoriteChat();
 
     // Notify parent when concierge state changes
     useEffect(() => {
         onConciergeStateChange?.(showConcierge);
     }, [showConcierge, onConciergeStateChange]);
 
+    // Fetch cast profiles when chats change
     useEffect(() => {
-        const loadChatsAndFavorites = async () => {
-            setIsLoading(true);
-            try {
-                // Fetch chats and favorites in parallel
-                const [chatsData, favoritesData] = await Promise.all([
-                    getGuestChats(userId, 'guest'),
-                    user ? getFavoriteChats(user.id) : Promise.resolve({ chats: [] })
-                ]);
+        if (chats.length > 0) {
+            const uniqueCastIds = Array.from(new Set(chats.map((chat: any) => chat.cast_id).filter(Boolean))) as number[];
+            const profilePromises = uniqueCastIds.map((castId: number) =>
+                getCastProfileById(castId)
+                    .then(profile => ({ castId, profile }))
+                    .catch(error => {
+                        console.error(`Failed to fetch cast profile for cast ID ${castId}:`, error);
+                        return { castId, profile: null };
+                    })
+            );
 
-                const chats = chatsData || [];
-                setChats(chats);
+            Promise.all(profilePromises).then(results => {
+                const profilesMap: { [key: number]: any } = {};
+                results.forEach(({ castId, profile }) => {
+                    if (profile) {
+                        profilesMap[castId] = profile;
+                    }
+                });
+                setCastProfiles(profilesMap);
+            });
+        }
+    }, [chats]);
 
-                // Set favorited chat IDs
-                const favoriteChats = favoritesData.chats || [];
-                const favoritedIds = new Set<number>(favoriteChats.map((chat: any) => chat.id as number));
-                setFavoritedChatIds(favoritedIds);
-
-                // Also check favorite status for each chat to ensure accuracy
-                if (user && chats.length > 0) {
-                    const favoriteStatusPromises = chats.map(async (chat: any) => {
-                        try {
-                            const status = await isChatFavorited(chat.id, user.id);
-                            return { chatId: chat.id, favorited: status.favorited };
-                        } catch (error) {
-                            console.error(`Error checking favorite status for chat ${chat.id}:`, error);
-                            return { chatId: chat.id, favorited: false };
-                        }
-                    });
-
-                    const favoriteStatuses = await Promise.all(favoriteStatusPromises);
-                    const actualFavoritedIds = new Set<number>(
-                        favoriteStatuses
-                            .filter(status => status.favorited)
-                            .map(status => status.chatId)
-                    );
-                    setFavoritedChatIds(actualFavoritedIds);
-                }
-
-                // Fetch cast profiles for each chat
-                if (chats.length > 0) {
-                    const uniqueCastIds = Array.from(new Set(chats.map((chat: any) => chat.cast_id).filter(Boolean))) as number[];
-                    const profilePromises = uniqueCastIds.map((castId: number) =>
-                        getCastProfileById(castId)
-                            .then(profile => ({ castId, profile }))
-                            .catch(error => {
-                                console.error(`Failed to fetch cast profile for cast ID ${castId}:`, error);
-                                return { castId, profile: null };
-                            })
-                    );
-
-                    await Promise.all(profilePromises).then(results => {
-                        const profilesMap: { [key: number]: any } = {};
-                        results.forEach(({ castId, profile }) => {
-                            if (profile) {
-                                profilesMap[castId] = profile;
-                            }
-                        });
-                        setCastProfiles(profilesMap);
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading chats and favorites:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        loadChatsAndFavorites();
-
-        // Fetch message notifications
+    // Fetch message notifications
+    useEffect(() => {
         if (user) {
             getNotifications('guest', user.id).then((notifications) => {
                 const messageNotifs = (notifications || []).filter((n: any) => n.type === 'message');
                 setMessageNotifications(messageNotifs);
             });
         }
-    }, [userId, refreshKey, user]);
+    }, [user]);
 
 
 
     // Filter chats based on search query, age filter, and notification settings
-    const filteredChats = useMemo(() => chats.filter(chat => {
+    const filteredChats = useMemo(() => chats.filter((chat: any) => {
         if (!isNotificationEnabled('messages') && !chat.is_concierge_chat) {
             return false;
         }
@@ -166,7 +129,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     }), [chats, isNotificationEnabled, searchQuery, filterAge, castProfiles]);
 
     // Filter favorite chats based on search query, age filter, and notification settings
-    const filteredFavoriteChats = useMemo(() => chats.filter(chat => {
+    const filteredFavoriteChats = useMemo(() => chats.filter((chat: any) => {
         // First filter by favorite status
         if (!favoritedChatIds.has(chat.id)) return false;
 
@@ -229,15 +192,9 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
 
         try {
             if (favoritedChatIds.has(chatId)) {
-                await unfavoriteChat(user.id, chatId);
-                setFavoritedChatIds(prev => {
-                    const newSet = new Set(prev);
-                    newSet.delete(chatId);
-                    return newSet;
-                });
+                await unfavoriteChatMutation.mutateAsync({ userId: user.id, chatId });
             } else {
-                await favoriteChat(user.id, chatId);
-                setFavoritedChatIds(prev => new Set(Array.from(prev).concat([chatId])));
+                await favoriteChatMutation.mutateAsync({ userId: user.id, chatId });
             }
         } catch (error) {
             console.error('Error toggling star:', error);
@@ -281,12 +238,11 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
             await Promise.all(
                 messageNotifications.map((n: any) => markNotificationRead(n.id))
             );
-            // Mark chats unread to 0 locally and on server
-            const chatsWithUnread = chats.filter(c => (c.unread || 0) > 0);
+            // Mark chats unread to 0 on server
+            const chatsWithUnread = chats.filter((c: any) => (c.unread || 0) > 0);
             await Promise.all(
-                chatsWithUnread.map(c => markChatMessagesRead(c.id, userId, 'guest'))
+                chatsWithUnread.map((c: any) => markChatMessagesRead(c.id, userId, 'guest'))
             );
-            setChats(prev => prev.map(c => ({ ...c, unread: 0 })));
             setMessageNotifications([]);
             onNotificationCountChange?.(0);
         } catch (error) {
@@ -306,7 +262,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
             />;
         } else {
             // Check if this is a group chat (has group_id) or individual chat
-            const chat = chats.find(c => c.id === showChat);
+            const chat = chats.find((c: any) => c.id === showChat);
             if (chat && chat.group_id) {
                 return <GroupChatScreen groupId={chat.group_id} onBack={() => setShowChat(null)} />;
             } else {
@@ -499,7 +455,6 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                             onClick={async () => {
                                                 setShowChat(chat.id);
                                                 setCurrentChat(chat); 
-                                                setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
                                                 if (chatNotif) {
                                                     await markNotificationRead(chatNotif.id);
                                                     setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));
@@ -610,8 +565,6 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                             onClick={async () => {
                                                 setShowChat(chat.id);
                                                 setCurrentChat(chat); // Set current chat for GroupChatScreen
-                                                // Immediately set unread to 0 for this chat in local state
-                                                setChats(prevChats => prevChats.map(c => c.id === chat.id ? { ...c, unread: 0 } : c));
                                                 if (chatNotif) {
                                                     await markNotificationRead(chatNotif.id);
                                                     setMessageNotifications(prev => prev.filter(n => n.id !== chatNotif.id));

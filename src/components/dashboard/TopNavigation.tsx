@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {useNavigate} from 'react-router-dom'
-import { Search, QrCode, X } from 'lucide-react';
+import { Search, QrCode, X, RefreshCw } from 'lucide-react';
 import { getCastList } from '../../services/api';
 import { CastProfile } from '../../services/api';
 import QRCodeModal from './QRCodeModal';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../lib/react-query';
 
 interface TopNavigationProps {
   activeTab: 'home' | 'favorites' | 'footprints' | 'ranking';
@@ -23,6 +25,8 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
   const [showQRCode, setShowQRCode] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const { isNotificationEnabled } = useNotificationSettings();
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Filter tabs based on notification settings
   const getAvailableTabs = () => {
@@ -87,6 +91,27 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showResults]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // Invalidate and refetch all relevant queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.cast.all() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.cast.new() }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() }),
+        queryClient.refetchQueries()
+      ]);
+      
+      // Also refresh the local cast list
+      const response = await getCastList({});
+      setAllCasts(response.casts || []);
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) {
@@ -187,7 +212,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
   return (
     <div className="fixed max-w-md mx-auto top-0 left-0 right-0 bg-primary z-50 border-b border-secondary">
       <div className="max-w-md mx-auto px-4 pt-5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex-1 relative" ref={searchRef}>
             <input
               type="text"
@@ -206,92 +231,109 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
                 <X size={16} />
               </button>
             )}
-            
-            {/* Search Results */}
-            {showResults && (
-              <div className="mt-2 max-h-96 overflow-y-auto bg-primary border border-secondary rounded-lg absolute left-0 right-0 z-50 shadow-lg">
-                {isLoading ? (
-                  <div className="p-4 text-center text-white">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto"></div>
-                    <p className="mt-2">キャスト情報を読み込み中...</p>
-                  </div>
-                ) : isSearching ? (
-                  <div className="p-4 text-center text-white">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto"></div>
-                    <p className="mt-2">検索中...</p>
-                  </div>
-                ) : searchResults.length > 0 ? (
-                  <div className="p-2">
-                    <div className="text-white text-sm mb-2 px-2">
-                      {searchQuery.trim() ? `検索結果: ${searchResults.length}件` : `全キャスト: ${searchResults.length}件`}
-                    </div>
-                    {searchResults.map((cast) => (
-                      <div
-                        key={cast.id}
-                        className="flex items-center p-3 border-b border-secondary last:border-b-0 hover:bg-secondary/20 rounded-lg cursor-pointer"
-                        onClick={() => {
-                          // Navigate to cast profile or handle cast selection
-                          handleCastClick(cast.id);
-                          // You can add navigation logic here
-                          // For now, just close the search results
-                          setShowResults(false);
-                          setSearchQuery('');
-                        }}
-                      >
-                        <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mr-3 overflow-hidden">
-                          {cast.avatar ? (
-                            <img
-                              src={getFirstAvatarUrl(cast.avatar)}
-                              alt={cast.nickname}
-                              className="w-12 h-12 rounded-full object-cover"
-                              onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.src = '/assets/avatar/female.png';
-                              }}
-                            />
-                          ) : (
-                            <span className="text-white text-lg font-bold">
-                              {cast.nickname?.charAt(0) || '?'}
-                            </span>
-                          )}
-
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-white font-bold text-sm">{cast.nickname || 'No Name'}</div>
-                          <div className="text-gray-300 text-xs">
-                            {getAgeFromBirthYear(cast.birth_year) && (
-                              <span className="mr-2">{getAgeFromBirthYear(cast.birth_year)}歳</span>
-                            )}
-                            {cast.height && <span>{cast.height}cm</span>}
-                          </div>
-                          {cast.profile_text && (
-                            <div className="text-gray-400 text-xs mt-1 line-clamp-2">
-                              {cast.profile_text}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : searchQuery.trim() ? (
-                  <div className="p-4 text-center text-white">
-                    <p>検索結果が見つかりませんでした</p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      別のキーワードで検索してください
-                    </p>
-                  </div>
-                ) : allCasts.length === 0 ? (
-                  <div className="p-4 text-center text-white">
-                    <p>キャスト情報がありません</p>
-                    <p className="text-sm text-gray-400 mt-1">
-                      しばらくしてから再度お試しください
-                    </p>
-                  </div>
-                ) : null}
-              </div>
-            )}
           </div>
-          <button className="ml-4 hover:text-secondary" onClick={() => setShowQRCode(true)}>
+          
+          {/* Refresh Button */}
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className={`p-2 rounded-full border border-secondary text-white hover:bg-secondary/20 transition-colors ${
+              isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            title="データを更新"
+          >
+            <RefreshCw 
+              size={20} 
+              className={isRefreshing ? 'animate-spin' : ''} 
+            />
+          </button>
+        </div>
+        
+        {/* Search Results */}
+        {showResults && (
+          <div className="mt-2 max-h-96 overflow-y-auto bg-primary border border-secondary rounded-lg absolute left-0 right-0 z-50 shadow-lg">
+            {isLoading ? (
+              <div className="p-4 text-center text-white">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto"></div>
+                <p className="mt-2">キャスト情報を読み込み中...</p>
+              </div>
+            ) : isSearching ? (
+              <div className="p-4 text-center text-white">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto"></div>
+                <p className="mt-2">検索中...</p>
+              </div>
+            ) : searchResults.length > 0 ? (
+              <div className="p-2">
+                <div className="text-white text-sm mb-2 px-2">
+                  {searchQuery.trim() ? `検索結果: ${searchResults.length}件` : `全キャスト: ${searchResults.length}件`}
+                </div>
+                {searchResults.map((cast) => (
+                  <div
+                    key={cast.id}
+                    className="flex items-center p-3 border-b border-secondary last:border-b-0 hover:bg-secondary/20 rounded-lg cursor-pointer"
+                    onClick={() => {
+                      // Navigate to cast profile or handle cast selection
+                      handleCastClick(cast.id);
+                      // You can add navigation logic here
+                      // For now, just close the search results
+                      setShowResults(false);
+                      setSearchQuery('');
+                    }}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mr-3 overflow-hidden">
+                      {cast.avatar ? (
+                        <img
+                          src={getFirstAvatarUrl(cast.avatar)}
+                          alt={cast.nickname}
+                          className="w-12 h-12 rounded-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/assets/avatar/female.png';
+                          }}
+                        />
+                      ) : (
+                        <span className="text-white text-lg font-bold">
+                          {cast.nickname?.charAt(0) || '?'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-white font-bold text-sm">{cast.nickname || 'No Name'}</div>
+                      <div className="text-gray-300 text-xs">
+                        {getAgeFromBirthYear(cast.birth_year) && (
+                          <span className="mr-2">{getAgeFromBirthYear(cast.birth_year)}歳</span>
+                        )}
+                        {cast.height && <span>{cast.height}cm</span>}
+                      </div>
+                      {cast.profile_text && (
+                        <div className="text-gray-400 text-xs mt-1 line-clamp-2">
+                          {cast.profile_text}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : searchQuery.trim() ? (
+              <div className="p-4 text-center text-white">
+                <p>検索結果が見つかりませんでした</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  別のキーワードで検索してください
+                </p>
+              </div>
+            ) : allCasts.length === 0 ? (
+              <div className="p-4 text-center text-white">
+                <p>キャスト情報がありません</p>
+                <p className="text-sm text-gray-400 mt-1">
+                  しばらくしてから再度お試しください
+                </p>
+              </div>
+            ) : null}
+          </div>
+        )}
+        
+        <div className="flex items-center justify-between mt-3">
+          <button className="hover:text-secondary" onClick={() => setShowQRCode(true)}>
             <QrCode />
           </button>
         </div>

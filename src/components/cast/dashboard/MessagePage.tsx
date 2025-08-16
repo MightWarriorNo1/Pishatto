@@ -5,10 +5,17 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { useNavigate } from 'react-router-dom';
 import MessageProposalPage from './MessageProposalPage';
-import { sendMessage, getChatMessages,getChatById, getGuestReservations } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
-import { getCastChats } from '../../../services/api';
-import { useChatMessages } from '../../../hooks/useRealtime';
+import { useChatMessages as useRealtimeChatMessages } from '../../../hooks/useRealtime';
+import { 
+  useCastChats, 
+  useChatMessages, 
+  useChatById, 
+  useGuestReservations, 
+  useSendMessage 
+} from '../../../hooks/useQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../../lib/react-query';
 import ConciergeChat from '../../ConciergeChat';
 import dayjs from 'dayjs';
 import CastConciergeDetailPage from './CastConciergeDetailPage';
@@ -58,16 +65,12 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     const navigate = useNavigate();
     const [messageProposal, setMessageProposal] = useState(false);
     const [newMessage, setNewMessage] = useState('');
-    const [sending, setSending] = useState(false);
-    const [messages, setMessages] = useState<any[]>([]);
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const fileSelectInputRef = useRef<HTMLInputElement>(null);
     const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
     const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
-    const [guestId, setGuestId] = useState<number | null>(null);
-    const [guestReservations, setGuestReservations] = useState<any[]>([]);
     const [showFile, setShowFile] = useState(false);
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -82,24 +85,22 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     const inputBarRef = useRef<HTMLDivElement>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
     const { castId } = useCast() as any;
-    useEffect(() => {
-        const fetchMessages = async () => {
-            if (!castId) return;
-            const msgs = await getChatMessages(Number(message.id), castId, 'cast');
-            setMessages(Array.isArray(msgs) ? msgs : []);
-        };
-        fetchMessages();
-        // Fetch guest_id for this chat
-        getChatById(Number(message.id)).then(chat => {
-            if (chat && chat.guest_id) setGuestId(chat.guest_id);
-        });
-    }, [message.id, castId]);
+    const queryClient = useQueryClient();
 
-    // Fetch guest reservations only when guestId is available
-    useEffect(() => {
-        if (guestId == null) return;
-        getGuestReservations(guestId).then(setGuestReservations).catch(() => setGuestReservations([]));
-    }, [guestId]);
+    // React Query hooks
+    const { data: messages = [], isLoading: messagesLoading } = useChatMessages(Number(message.id), castId);
+    const { data: chatInfo } = useChatById(Number(message.id));
+    const { data: guestReservations = [] } = useGuestReservations(chatInfo?.guest_id || 0);
+    const sendMessageMutation = useSendMessage();
+    
+    // Real-time updates using the existing hook
+    useRealtimeChatMessages(Number(message.id), (msg: any) => {
+        // Invalidate React Query cache to trigger refetch
+        // This ensures real-time updates are reflected in the UI
+        queryClient.invalidateQueries({ 
+            queryKey: queryKeys.cast.chatMessages(Number(message.id), castId) 
+        });
+    });
 
     // Close popover when clicking outside input bar or popover
     useEffect(() => {
@@ -140,30 +141,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
         return () => window.removeEventListener('keydown', onKeyDown);
     }, []);
 
-    // Real-time updates
-    useChatMessages(message.id, (msg) => {
-        setMessages((prev) => {
-            // Remove optimistic message if real one matches (by image or message and sender information)
-            // Also check for duplicate messages by ID to prevent duplicates
-            const filtered = prev.filter(m => {
-                // Remove optimistic messages that match the real message
-                if (m.id && m.id.toString().startsWith('optimistic-') &&
-                    ((m.image && msg.image && m.image === msg.image) ||
-                     (m.message && msg.message && m.message === msg.message)) &&
-                    // Check both sender_guest_id and sender_cast_id for proper matching
-                    ((m.sender_guest_id && msg.sender_guest_id && String(m.sender_guest_id) === String(msg.sender_guest_id)) ||
-                     (m.sender_cast_id && msg.sender_cast_id && String(m.sender_cast_id) === String(msg.sender_cast_id)))) {
-                    return false;
-                }
-                // Remove duplicate messages by ID
-                if (m.id === msg.id) {
-                    return false;
-                }
-                return true;
-            });
-            return [...filtered, msg];
-        });
-    });
+    // Real-time updates are handled by React Query automatically
 
     const formatTime = (timestamp: string) => {
     
@@ -238,8 +216,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     };
 
     const handleAvatarClick = () => {
-        if (guestId) {
-            navigate(`/guest/${guestId}`);
+        if (chatInfo?.guest_id) {
+            navigate(`/guest/${chatInfo.guest_id}`);
         }
     };
 
@@ -247,7 +225,6 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
         chatId={Number(message.id)}
         onBack={() => setMessageProposal(false)}
         onProposalSend={async (proposal) => {
-            setSending(true);
             try {
                 // use castId from component scope
                 if (!castId) return;
@@ -256,10 +233,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     sender_cast_id: castId,
                     message: JSON.stringify({ type: 'proposal', ...proposal }),
                 };
-                const sent = await sendMessage(payload);
-                setMessages((prev) => [...prev, sent]);
+                await sendMessageMutation.mutateAsync(payload);
             } finally {
-                setSending(false);
                 setMessageProposal(false);
             }
         }}
@@ -292,7 +267,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     minHeight: 0,
                 }}
             >
-                {(messages || []).map((msg, idx) => {
+                {(messages || []).map((msg: any, idx: number) => {
                     // Date separator
                     const currentDate = msg.created_at ? dayjs(msg.created_at).format('YYYY-MM-DD') : '';
                     const prev = (messages || [])[idx - 1];
@@ -304,8 +279,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     } catch (e) {}
                     if (proposal) {
                         // Check if proposal is accepted by matching guest_id and scheduled_at
-                        const isAccepted = guestReservations.some(res =>
-                            res.guest_id === guestId &&
+                        const isAccepted = guestReservations.some((res: any) =>
+                            res.guest_id === chatInfo?.guest_id &&
                             dayjs(res.scheduled_at).isSame(proposal?.date)
                         );
                         return (
@@ -350,7 +325,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                             )}
                         <div className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
                             <div className="flex flex-col">
-                                <div className={isSent ? 'w-full bg-secondary text-white rounded-lg px-4 py-2' : 'w-full bg-white text-black rounded-lg px-4 py-2'}>
+                                <div className={`${isSent ? 'w-full bg-secondary text-white rounded-lg px-4 py-2' : 'w-full bg-white text-black rounded-lg px-4 py-2'} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
                                     {/* Gift display */}
                                     {msg.gift_id && msg.gift && (
                                         <div className="flex items-center mb-1">
@@ -359,6 +334,9 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                             </span>
                                             <span className="font-bold">{msg.gift.name}</span>
                                             <span className="ml-2 text-xs text-primary font-bold">{msg.gift.points}P</span>
+                                            {msg.isOptimistic && (
+                                                <span className="ml-2 text-xs text-yellow-300">送信中...</span>
+                                            )}
                                         </div>
                                     )}
                                     {msg.image && (
@@ -376,6 +354,9 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                         />
                                     )}
                                     {msg.message}
+                                    {msg.isOptimistic && !msg.gift_id && (
+                                        <div className="text-xs text-yellow-300 mt-1">送信中...</div>
+                                    )}
                                 </div>
                                 <div className={`text-xs text-gray-400 mt-1 ${isSent ? 'text-right' : 'text-left'}`}>
                                     {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''} */}
@@ -421,32 +402,29 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                         value={newMessage}
                         onChange={e => setNewMessage(e.target.value)}
                         onKeyDown={async (e) => {
-                            if (e.key === 'Enter' && (newMessage.trim() || attachedFile) && !sending) {
-                                setSending(true);
+                            if (e.key === 'Enter' && (newMessage.trim() || attachedFile) && !sendMessageMutation.isPending) {
                                 try {
                                     if (!castId) return;
+                                    
+                                    // Store values before clearing
+                                    const messageText = newMessage.trim();
+                                    const imageFile = attachedFile;
+                                    
+                                    // Clear input immediately for optimistic UI
+                                    setNewMessage('');
+                                    setAttachedFile(null);
+                                    setImagePreview(null);
+                                    
                                     const payload: any = {
                                         chat_id: Number(message.id),
                                         sender_cast_id: castId,
                                     };
-                                    if (newMessage.trim()) payload.message = newMessage.trim();
-                                    if (attachedFile) payload.image = attachedFile;
+                                    if (messageText) payload.message = messageText;
+                                    if (imageFile) payload.image = imageFile;
 
-                                    // Optimistically add the message (text or image)
-                                    const optimisticId = `optimistic-${Date.now()}`;
-                                    // setMessages(prev => [...prev, optimisticMsg]);
-
-                                    // Send to backend
-                                    const realMsg = await sendMessage(payload);
-
-                                    // Replace optimistic message with real one
-                                    setMessages(prev => prev.map(m => m.id === optimisticId ? realMsg : m));
-
-                                    setNewMessage('');
-                                    setAttachedFile(null);
-                                    setImagePreview(null);
-                                } finally {
-                                    setSending(false);
+                                    await sendMessageMutation.mutateAsync(payload);
+                                } catch (error) {
+                                    console.error('Failed to send message:', error);
                                 }
                             }
                         }}
@@ -474,43 +452,40 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     </span>
                     <button
                         onClick={async () => {
-                            if ((newMessage.trim() || attachedFile) && !sending) {
-                                setSending(true);
+                            if ((newMessage.trim() || attachedFile) && !sendMessageMutation.isPending) {
                                 try {
                                     if (!castId) return;
+                                    
+                                    // Store values before clearing
+                                    const messageText = newMessage.trim();
+                                    const imageFile = attachedFile;
+                                    
+                                    // Clear input immediately for optimistic UI
+                                    setNewMessage('');
+                                    setAttachedFile(null);
+                                    setImagePreview(null);
+                                    
                                     const payload: any = {
                                         chat_id: Number(message.id),
                                         sender_cast_id: castId,
                                     };
-                                    if (newMessage.trim()) payload.message = newMessage.trim();
-                                    if (attachedFile) payload.image = attachedFile;
+                                    if (messageText) payload.message = messageText;
+                                    if (imageFile) payload.image = imageFile;
 
-                                    // Optimistically add the message (text or image)
-                                    const optimisticId = `optimistic-${Date.now()}`;
-                                    // setMessages(prev => [...prev, optimisticMsg]);
-
-                                    // Send to backend
-                                    const realMsg = await sendMessage(payload);
-
-                                    // Replace optimistic message with real one
-                                    setMessages(prev => prev.map(m => m.id === optimisticId ? realMsg : m));
-
-                                    setNewMessage('');
-                                    setAttachedFile(null);
-                                    setImagePreview(null);
-                                } finally {
-                                    setSending(false);
+                                    await sendMessageMutation.mutateAsync(payload);
+                                } catch (error) {
+                                    console.error('Failed to send message:', error);
                                 }
                             }
                         }}
-                        disabled={(!newMessage.trim() && !attachedFile) || sending}
+                        disabled={(!newMessage.trim() && !attachedFile) || sendMessageMutation.isPending}
                         className={`ml-2 px-6 py-2 rounded-full text-sm font-medium disabled:opacity-50 transition-colors ${
-                            (newMessage.trim() || attachedFile) && !sending
+                            (newMessage.trim() || attachedFile) && !sendMessageMutation.isPending
                                 ? 'bg-blue-500 text-white hover:bg-blue-600'
                                 : 'bg-blue-500 text-gray-300 cursor-not-allowed'
                         }`}
                     >
-                        {sending ? (
+                        {sendMessageMutation.isPending ? (
                             <div className="flex items-center">
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
                             </div>
@@ -618,13 +593,14 @@ interface MessagePageProps {
 
 const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onConciergeStateChange }) => {
     const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [loading, setLoading] = useState(true);
     const [filterNickname, setFilterNickname] = useState('');
     const [filterAge, setFilterAge] = useState('');
     const [showConcierge, setShowConcierge] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
     const { castId } = useCast() as any;
+
+    // React Query hooks
+    const { data: chats = [], isLoading: loading } = useCastChats(castId);
 
     useEffect(() => {
         if (setIsMessageDetailOpen) setIsMessageDetailOpen(!!selectedMessage);
@@ -635,70 +611,48 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
         const handler = (e: any) => {
             const chatId = e?.detail?.chatId;
             if (!chatId) return;
-            setLoading(true);
-            getCastChats(castId || 0).then((chats) => {
-                const target = (chats || []).find((c: any) => c.id === chatId);
-                if (target) {
-                    const mapped: Message = {
-                        id: target.id,
-                        avatar: buildAvatarUrl(target.avatar),
-                        name: target.name,
-                        lastMessage: target.last_message || '',
-                        timestamp: target.updated_at ? new Date(target.updated_at) : new Date(),
-                        unread: false,
-                        guestAge: target.guest_age,
-                        is_group_chat: Boolean(target.group_id),
-                        group_id: target.group_id,
-                        group_name: target.group_name,
-                    } as any;
-                    setSelectedMessage(mapped);
-                }
-            }).finally(() => setLoading(false));
+            const target = (chats || []).find((c: any) => c.id === chatId);
+            if (target) {
+                const mapped: Message = {
+                    id: target.id,
+                    avatar: buildAvatarUrl(target.avatar),
+                    name: target.name,
+                    lastMessage: target.last_message || '',
+                    timestamp: target.updated_at ? new Date(target.updated_at) : new Date(),
+                    unread: false,
+                    guestAge: target.guest_age,
+                    is_group_chat: Boolean(target.group_id),
+                    group_id: target.group_id,
+                    group_name: target.group_name,
+                } as any;
+                setSelectedMessage(mapped);
+            }
         };
         window.addEventListener('open-cast-chat', handler as any);
         return () => window.removeEventListener('open-cast-chat', handler as any);
-    }, [castId]);
+    }, [castId, chats]);
 
     // Notify parent when concierge state changes
     useEffect(() => {
         onConciergeStateChange?.(showConcierge);
     }, [showConcierge, onConciergeStateChange]);
 
-    useEffect(() => {
-        const fetchMessages = async () => {
-            setLoading(true);
-            try {
-                if (!castId) {
-                    setMessages([]);
-                    setLoading(false);
-                    return;
-                }
-                const chats = await getCastChats(castId);
-                // Map chat data to Message interface
-                const mapped = (chats || []).map((chat: any) => ({
-                    id: chat.id,
-                    avatar: buildAvatarUrl(chat.avatar),
-                    name: chat.guest_nickname || `ゲスト ${chat.guest_id}`,
-                    lastMessage: chat.last_message || '',
-                    timestamp: chat.updated_at ? new Date(chat.updated_at) : new Date(),
-                    unread: !!chat.unread,
-                    guestAge: chat.guest_age || '', // Backend returns 'guest_age' but it contains birth year
-                    is_group_chat: !!chat.is_group_chat,
-                    group_id: chat.group_id,
-                    group_name: chat.group_name,
-                }));
-                setMessages(mapped);
-            } catch (err) {
-                setMessages([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchMessages();
-    }, []);
+    // Map chat data to Message interface
+    const messages = (chats || []).map((chat: any) => ({
+        id: chat.id,
+        avatar: buildAvatarUrl(chat.avatar),
+        name: chat.guest_nickname || `ゲスト ${chat.guest_id}`,
+        lastMessage: chat.last_message || '',
+        timestamp: chat.updated_at ? new Date(chat.updated_at) : new Date(),
+        unread: !!chat.unread,
+        guestAge: chat.guest_age || '', // Backend returns 'guest_age' but it contains birth year
+        is_group_chat: !!chat.is_group_chat,
+        group_id: chat.group_id,
+        group_name: chat.group_name,
+    }));
 
     // Filter messages based on nickname and age
-    const filteredMessages = messages.filter(message => {
+    const filteredMessages = messages.filter((message: Message) => {
         const nicknameMatch = !filterNickname || 
             message.name.toLowerCase().includes(filterNickname.toLowerCase());
         
@@ -825,13 +779,12 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                                 )}
                             </div>
                         ) : (
-                            filteredMessages.map((message) => (
+                            filteredMessages.map((message: Message) => (
                                 <div
                                     key={message.id}
                                     className="flex items-center p-3 cursor-pointer bg-white/10 hover:bg-secondary/10 border border-secondary"
                                     onClick={() => {
                                         setSelectedMessage(message);
-                                        setMessages(prevMsgs => prevMsgs.map(m => m.id === message.id ? { ...m, unread: false } : m));
                                     }}
                                 >
                                     <img src={message.avatar} alt={message.name} className="w-12 h-12 rounded-full mr-4" />

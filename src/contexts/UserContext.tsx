@@ -1,6 +1,8 @@
 /*eslint-disable */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { GuestProfile, getGuestProfile, GuestInterest, checkGuestAuth, checkLineAuthGuest } from '../services/api';
+import { createSessionTimeout, checkSessionValidity, clearSession } from '../utils/sessionTimeout';
+import SessionWarningModal from '../components/ui/SessionWarningModal';
 
 interface UserContextType {
   user: GuestProfile | null;
@@ -14,6 +16,9 @@ interface UserContextType {
   updateUser: (updates: Partial<GuestProfile>) => void;
   logout: () => void;
   checkLineAuthentication: () => Promise<boolean>;
+  showSessionWarning: boolean;
+  remainingSessionTime: number;
+  extendSession: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -28,6 +33,21 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [phone, setPhoneState] = useState<string | null>(() => {
     return localStorage.getItem('phone');
+  });
+  const [showSessionWarning, setShowSessionWarning] = useState(false);
+  const [remainingSessionTime, setRemainingSessionTime] = useState(15);
+
+  // Session timeout manager
+  const sessionTimeout = createSessionTimeout({
+    onExpire: () => {
+      console.log('Session expired, logging out user');
+      logout();
+    },
+    onWarning: () => {
+      console.log('Session warning, showing modal');
+      setShowSessionWarning(true);
+      setRemainingSessionTime(2); // 2 minutes warning
+    }
   });
 
   const setPhone = (newPhone: string | null) => {
@@ -49,10 +69,19 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     setUser(null);
     setInterests([]);
     setPhone(null);
+    setShowSessionWarning(false);
     // Clear all localStorage data
     localStorage.removeItem('phone');
     localStorage.removeItem('castId');
     localStorage.removeItem('castData');
+    // Clear session timeout
+    sessionTimeout.stop();
+    clearSession();
+  };
+
+  const extendSession = () => {
+    sessionTimeout.reset();
+    setShowSessionWarning(false);
   };
 
   const refreshUser = async () => {
@@ -67,6 +96,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       const { guest } = await getGuestProfile(phone);
       setUser(guest);
       setInterests(guest.interests || []);
+      // Reset session timeout when user data is refreshed
+      sessionTimeout.reset();
     } catch (error) {
       setUser(null);
       setInterests([]);
@@ -84,6 +115,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         if (lineAuthResult.user.phone) {
           setPhone(lineAuthResult.user.phone);
         }
+        // Start session timeout for authenticated user
+        sessionTimeout.start();
         return true; // Indicate success
       }
       return false; // Indicate failure
@@ -98,6 +131,14 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       
+      // Check if session is still valid
+      if (user && !checkSessionValidity()) {
+        console.log('Session expired, logging out user');
+        logout();
+        setLoading(false);
+        return;
+      }
+      
       // First check Line authentication
       const lineAuthSuccess = await checkLineAuthentication();
       
@@ -110,6 +151,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
           setUser(authResult.guest);
           setInterests(authResult.guest.interests || []);
           setPhone(authResult.guest.phone);
+          // Start session timeout for authenticated user
+          sessionTimeout.start();
         } else {
           const storedPhone = localStorage.getItem('phone');
           if (storedPhone) {
@@ -137,6 +180,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
 
   useEffect(() => {
     checkExistingAuth();
+    
+    // Cleanup session timeout on unmount
+    return () => {
+      sessionTimeout.destroy();
+    };
   }, []);
 
   useEffect(() => {
@@ -159,9 +207,21 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       refreshUser, 
       updateUser, 
       logout,
-      checkLineAuthentication
+      checkLineAuthentication,
+      showSessionWarning,
+      remainingSessionTime,
+      extendSession
     }}>
       {children}
+      
+      {/* Session Warning Modal */}
+      <SessionWarningModal
+        isOpen={showSessionWarning}
+        remainingMinutes={remainingSessionTime}
+        onExtend={extendSession}
+        onLogout={logout}
+        onClose={() => setShowSessionWarning(false)}
+      />
     </UserContext.Provider>
   );
 };

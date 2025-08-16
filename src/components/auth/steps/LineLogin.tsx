@@ -109,8 +109,13 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                     console.log('LineLogin: Processing new user registration...');
                     // Handle new user registration for guest only
                     if (userType === 'guest') {
-                        navigate('/line-register', { 
+                        // For new LINE users, redirect to phone registration flow
+                        // Store LINE data in sessionStorage for later use
+                        sessionStorage.setItem('lineData', JSON.stringify(data.line_data));
+                        sessionStorage.setItem('lineUserType', userType);
+                        navigate('/register', { 
                             state: { 
+                                fromLine: true,
                                 lineData: data.line_data,
                                 userType: userType 
                             } 

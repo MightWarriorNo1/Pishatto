@@ -31,8 +31,6 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     const getGradeIcon = (grade: string) => {
         switch (grade) {
-            case 'beginner':
-                return <Medal color='#D4AF37' size={64} />;
             case 'green':
                 return <Medal color='#4CAF50' size={64} />;
             case 'orange':
@@ -48,7 +46,7 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             case 'centurion':
                 return <Medal color='#B8860B' size={64} />;
             default:
-                return <Medal color='#D4AF37' size={64} />;
+                return <Medal color='#4CAF50' size={64} />; // Default to green (lowest level)
         }
     };
 
@@ -73,7 +71,6 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     const getGradeData = () => {
         return [
-            { name: 'ビギナー', grade: 'beginner', icon: <Medal color='#D4AF37' size={32} />, color: 'text-amber-300' },
             { name: 'グリーン', grade: 'green', icon: <Medal color='#4CAF50' size={32} />, color: 'text-green-400' },
             { name: 'オレンジ', grade: 'orange', icon: <Medal color='#FF9800' size={32} />, color: 'text-orange-400' },
             { name: 'ブロンズ', grade: 'bronze', icon: <Medal color='#CD7F32' size={32} />, color: 'text-amber-600' },
@@ -173,7 +170,7 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         </div>
                         <div className="relative h-3 bg-white/20 rounded-full overflow-hidden">
                             <div 
-                                className="absolute left-0 top-0 h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-1000 ease-out" 
+                                className="absolute left-0 top-0 h-full bg-gradient-to-r from-green-400 to-green-600 rounded-full transition-all duration-1000 ease-out" 
                                 style={{ width: `${getProgressPercentage()}%` }}
                             />
                         </div>
@@ -198,7 +195,7 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 key={grade.grade}
                                 className={`flex items-center p-3 rounded-lg border-2 transition-all duration-300 ${
                                     isCurrent 
-                                        ? 'border-orange-400 bg-orange-400/20 shadow-lg scale-105' 
+                                        ? 'border-green-400 bg-green-400/20 shadow-lg scale-105' 
                                         : isCompleted 
                                         ? 'border-green-400 bg-green-400/20' 
                                         : 'border-gray-600 bg-gray-600/20'
@@ -209,19 +206,19 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 </div>
                                 <div className="flex-1">
                                     <div className={`font-bold ${
-                                        isCurrent ? 'text-orange-400' : isCompleted ? 'text-green-400' : 'text-gray-400'
+                                        isCurrent ? 'text-green-400' : isCompleted ? 'text-green-400' : 'text-gray-400'
                                     }`}>
                                         {grade.name}
                                     </div>
                                     {isCurrent && (
-                                        <div className="text-xs text-orange-300 mt-1">
+                                        <div className="text-xs text-green-300 mt-1">
                                             現在のグレード
                                         </div>
                                     )}
                                 </div>
                                 <div className="text-right">
                                     {isCurrent && (
-                                        <div className="text-orange-400 animate-pulse">
+                                        <div className="text-green-400 animate-pulse">
                                             <Star size={20} />
                                         </div>
                                     )}

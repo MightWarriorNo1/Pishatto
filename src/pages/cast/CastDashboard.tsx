@@ -21,6 +21,8 @@ import echo from '../../services/echo';
 import { getCastProfileById } from '../../services/api';
 import { useCast } from '../../contexts/CastContext';
 import Spinner from '../../components/ui/Spinner';
+import { useCastData } from '../../hooks/useCastData';
+import { useCastReservations, useCastApplications, useApplyReservation, useStartReservation, useStopReservation } from '../../hooks/useQueries';
 
 // Modal component for call details (unchanged)
 const CallDetailModal = ({ call, onClose, onApply }: { call: any, onClose: () => void, onApply: () => void }) => {
@@ -156,12 +158,7 @@ const CastDashboardInner: React.FC = () => {
     const [selectedTab, setSelectedTab] = useState(0); 
     const [selectedArea, setSelectedArea] = useState<string>(areaOptions[0]);
     const [selectedSort, setSelectedSort] = useState<string>(sortOptions[0]);
-    const [reservations, setReservations] = useState<Reservation[]>([]);
-    const [loading, setLoading] = useState(true);
     const [showApplicationComplete, setShowApplicationComplete] = useState(false);
-    const [chats, setChats] = useState<any[]>([]);
-    const [reservationApplications, setReservationApplications] = useState<any[]>([]);
-    const { refreshChats } = useChatRefresh()
     const [tweetBadgeCount, setTweetBadgeCount] = useState(0);
     const [messageBadgeCount, setMessageBadgeCount] = useState(0);
     const prevMainPage = React.useRef(mainPage);
@@ -178,6 +175,34 @@ const CastDashboardInner: React.FC = () => {
     const { cast, castId, loading: castLoading } = useCast();
     const navigate = useNavigate();
     const location = useLocation();
+
+    // Use React Query hooks for data fetching
+    const {
+        chats,
+        notifications,
+        isLoading: castDataLoading,
+        error: castDataError
+    } = useCastData(castId || 0);
+
+    const {
+        data: reservations = [],
+        isLoading: reservationsLoading,
+        error: reservationsError
+    } = useCastReservations(castId || 0);
+
+    const {
+        data: reservationApplications = [],
+        isLoading: applicationsLoading,
+        error: applicationsError
+    } = useCastApplications(castId || 0);
+
+    // Use mutation hooks
+    const applyReservationMutation = useApplyReservation();
+    const startReservationMutation = useStartReservation();
+    const stopReservationMutation = useStopReservation();
+
+    // Combined loading state
+    const loading = castDataLoading || reservationsLoading || applicationsLoading;
 
     // Redirect unauthenticated casts to the first page
     useEffect(() => {
@@ -244,74 +269,52 @@ const CastDashboardInner: React.FC = () => {
       prevMainPage.current = mainPage;
     }, [mainPage]);
 
+    // Update message badge count when chats change
     useEffect(() => {
-        setLoading(true);
-
-        const fetchReservations = () => {
-            getAllReservations()
-                .then((reservations) => {
-                    setReservations(reservations || []);
-                })
-                .finally(() => setLoading(false));
-        };
-        fetchReservations();
-
-        const interval = setInterval(fetchReservations, 5000);
-
-        getAllChats()
-            .then(chats => {
-                setChats(chats || []);
-                const unreadCount = (chats || []).reduce((acc: number, chat: any) => acc + (chat.unread || 0), 0);
-                setMessageBadgeCount(unreadCount);
-            });
-
-        if (castId) {
-            getAllCastApplications(castId)
-                .then(applications => setReservationApplications(applications || []));
+        if (chats && chats.length > 0) {
+            const unreadCount = chats.reduce((acc: number, chat: any) => acc + (chat.unread || 0), 0);
+            setMessageBadgeCount(unreadCount);
         }
-
-        return () => clearInterval(interval);
-    }, [castId]);
+    }, [chats]);
 
     React.useEffect(() => {
   const channels = reservations
-    .filter(r => r.id)
-    .map(r => {
+    .filter((r: any) => r.id)
+    .map((r: any) => {
       const channel = echo.channel(`reservation.${r.id}`);
       const handler = (e: any) => {
-        setReservations(prev =>
-          prev.map(res => res.id === e.reservation.id ? { ...res, ...e.reservation } : res)
-        );
+        // React Query will handle the update automatically
+        // No need to manually update state
       };
       channel.listen("ReservationUpdated", handler);
       return { channel, handler };
     });
 
   return () => {
-    channels.forEach(({ channel, handler }) => {
+    channels.forEach(({ channel, handler }: { channel: any; handler: any }) => {
       channel.stopListening("ReservationUpdated", handler);
     });
   };
-}, [reservations.map(r => r.id).join(",")]);
+}, [reservations.map((r: any) => r.id).join(",")]);
 
     const isReservationInChat = (reservationId: number | undefined) => {
         if (typeof reservationId !== 'number' || !castId) return false;
-        return chats.some(chat => chat.reservation_id === reservationId && chat.cast_id === castId);
+        return chats.some((chat: any) => chat.reservation_id === reservationId && chat.cast_id === castId);
     };
 
     const isReservationApplied = (reservationId: number | undefined) => {
         if (typeof reservationId !== 'number') return false;
-        return reservationApplications.some(app => app.reservation_id === reservationId && app.status === 'pending');
+        return reservationApplications.some((app: any) => app.reservation_id === reservationId && app.status === 'pending');
     };
 
     const isReservationApproved = (reservationId: number | undefined) => {
         if (typeof reservationId !== 'number') return false;
-        return reservationApplications.some(app => app.reservation_id === reservationId && app.status === 'approved');
+        return reservationApplications.some((app: any) => app.reservation_id === reservationId && app.status === 'approved');
     };
 
     const getReservationApplicationStatus = (reservationId: number | undefined) => {
         if (typeof reservationId !== 'number') return null;
-        const application = reservationApplications.find(app => app.reservation_id === reservationId);
+        const application = reservationApplications.find((app: any) => app.reservation_id === reservationId);
         return application ? application.status : null;
     };
 
@@ -360,18 +363,20 @@ const CastDashboardInner: React.FC = () => {
     };
 
     const calls: CallWithActive[] = reservations
-        .filter((r) => {
+        .filter((r: any) => {
             // Only show free type reservations
             if (r.type !== 'free') {
                 return false;
             }
-
+            // Only show reservations that are not in chat and not applied
             return true;
         })
-        .map((r) => {
+        .map((r: any) => {
             const alreadyInChat = isReservationInChat(r.id); // Only disable if THIS cast has applied
             const isApplied = isReservationApplied(r.id); // Check if cast has applied (pending)
             const isApproved = isReservationApproved(r.id); // Check if cast has been approved
+            const applicationStatus = getReservationApplicationStatus(r.id);
+            
             const hasStarted = r.started_at && r.started_at !== null && r.started_at !== '';
             const hasEnded = r.ended_at && r.ended_at !== null && r.ended_at !== '';
             const isInProgress = Boolean(hasStarted && !hasEnded);
@@ -403,17 +408,14 @@ const CastDashboardInner: React.FC = () => {
                 time: r.scheduled_at ? parseLocalDateTime(r.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '〜' : '',
                 typeLabel: r.type === 'pishatto' ? 'プレミアム' : 'スタンダード',
                 people: r.details
-                    ? (r.details.match(/(\d+)人/g)?.map(s => Number(s.replace('人', ''))).reduce((a, b) => a + b, 0) || 1)
+                    ? (r.details.match(/(\d+)人/g)?.map((s: any) => Number(s.replace('人', ''))).reduce((a: any, b: any) => a + b, 0) || 1)
                     : 1,
                 points:  r.duration ? `${r.duration * 60 / 30 * (cast?.category === 'VIP' ? 12000 : cast?.category === 'ロイヤルVIP' ? 15000 : 9000)}P〜` : '0P〜',
                 extra: '',
-                closed: false,
                 active: !inactive,
-                isApplied: isApplied, // Add this flag for styling
-                isApproved: isApproved, // Add this flag for styling
-                isInProgress: isInProgress,
-                isCompleted: isActuallyCompleted,
-                statusText: statusText,
+                statusText,
+                isInProgress,
+                isActuallyCompleted
             };
         });
 
@@ -467,6 +469,52 @@ const CastDashboardInner: React.FC = () => {
         tabFilteredCalls = sortedCalls.filter(call => isReservationInChat(call.id) || isReservationApplied(call.id));
     }
 
+    const handleApply = async (call: any) => {
+        if (!castId || !call.id) return;
+        
+        try {
+            await applyReservationMutation.mutateAsync({ 
+                reservationId: call.id, 
+                castId: castId 
+            });
+            setShowApplicationComplete(true);
+            // React Query will automatically refetch data
+        } catch (error) {
+            console.error('Failed to apply for reservation:', error);
+            alert('応募に失敗しました');
+        }
+    };
+
+    const handleStartReservation = async (reservationId: number) => {
+        if (!castId) return;
+        
+        try {
+            await startReservationMutation.mutateAsync({ 
+                reservationId, 
+                castId 
+            });
+            // React Query will automatically refetch data
+        } catch (error) {
+            console.error('Failed to start reservation:', error);
+            alert('予約の開始に失敗しました');
+        }
+    };
+
+    const handleStopReservation = async (reservationId: number) => {
+        if (!castId) return;
+        
+        try {
+            await stopReservationMutation.mutateAsync({ 
+                reservationId, 
+                castId 
+            });
+            // React Query will automatically refetch data
+        } catch (error) {
+            console.error('Failed to stop reservation:', error);
+            alert('予約の停止に失敗しました');
+        }
+    };
+
     return (
         <div className="min-h-screen bg-white flex flex-col items-center">
             <div className="w-full max-w-md mx-auto flex flex-col flex-1 min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
@@ -512,12 +560,18 @@ const CastDashboardInner: React.FC = () => {
                                                     isOwnReservation={castId ? call.cast_id === castId : false}
                                                     statusText={call.statusText}
                                                     onStart={castId && call.cast_id === castId && !call.started_at && typeof call.id === 'number' ? async () => {
-                                                        const updated = await startReservation(call.id as number, castId);
-                                                        setReservations(prev => prev.map(r => r.id === call.id ? { ...r, ...updated } : r));
+                                                        const updated = await startReservationMutation.mutateAsync({ 
+                                                            reservationId: call.id as number, 
+                                                            castId: castId 
+                                                        });
+                                                        // React Query will handle the update automatically
                                                     } : undefined}
                                                     onStop={castId && call.cast_id === castId && call.started_at && !call.ended_at && typeof call.id === 'number' ? async () => {
-                                                        const updated = await stopReservation(call.id as number, castId);
-                                                        setReservations(prev => prev.map(r => r.id === call.id ? { ...r, ...updated } : r));
+                                                        const updated = await stopReservationMutation.mutateAsync({ 
+                                                            reservationId: call.id as number, 
+                                                            castId: castId 
+                                                        });
+                                                        // React Query will handle the update automatically
                                                     } : undefined}
                                                 />
                                             </div>
@@ -565,14 +619,16 @@ const CastDashboardInner: React.FC = () => {
                                 return;
                             }
                             try {
-                                await applyReservation(selectedCall.id, castId);
+                                await applyReservationMutation.mutateAsync({ 
+                                    reservationId: selectedCall.id, 
+                                    castId: castId 
+                                });
                                 // Don't set reservation as inactive - allow multiple casts to apply
                                 setSelectedCall(null);
                                 setShowApplicationComplete(true);
                                 
                                 // Refresh reservation applications
-                                const applications = await getAllCastApplications(castId);
-                                setReservationApplications(applications || []);
+                                // React Query will handle the update automatically
                                 
                                 // Refresh ranking after successful application
                                 fetchRanking({
@@ -606,7 +662,7 @@ const CastDashboardInner: React.FC = () => {
                             setCurrentReservationId(null);
                             setExitedInfo(null);
                             // Refresh reservations to show updated status
-                            getAllReservations().then(setReservations);
+                            // React Query will handle the update automatically
                         }}
                     />
                 )}

@@ -16,9 +16,12 @@ import FootprintsSection from './FootprintsSection';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useChatRefresh } from '../../contexts/ChatRefreshContext';
-import { markAllNotificationsRead, getGuestChats } from '../../services/api';
+import { useGuestChats, useSatisfactionCasts, useRanking, useMarkNotificationsRead } from '../../hooks/useQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../lib/react-query';
 import { useChatMessages, useTweets, useNotifications, useUnreadMessageCount } from '../../hooks/useRealtime';
-import { formatPoints } from '../../utils/formatters';// Assume a simple Modal component exists or will be created
+import { formatPoints } from '../../utils/formatters';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 
 // Add Modal component above Dashboard
 const Modal: React.FC<{ onClose: () => void; children: React.ReactNode }> = ({ onClose, children }) => {
@@ -63,6 +66,28 @@ const Dashboard: React.FC = () => {
   const { user, loading } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Set up auto-refresh for dashboard data every 30 seconds
+  useAutoRefresh({
+    interval: 30 * 1000, // 30 seconds
+    enabled: true,
+    queryKeys: [
+      queryKeys.guest.profile(user?.id || 0),
+      queryKeys.guest.chats(user?.id || 0),
+      queryKeys.guest.notifications(user?.id || 0),
+      queryKeys.guest.favorites(user?.id || 0),
+      queryKeys.guest.footprints(user?.id || 0),
+      queryKeys.cast.all(),
+      queryKeys.cast.new(),
+      queryKeys.tweets.all()
+    ]
+  });
+
+  // Set up global auto-refresh for all queries every 50 seconds
+  useAutoRefresh({
+    interval: 50 * 1000, // 50 seconds
+    enabled: true
+  });
 
 
   // Redirect unauthenticated guests to the first page
@@ -95,16 +120,23 @@ const Dashboard: React.FC = () => {
   const [hasSearchResults] = useState(false);
   const prevTab = React.useRef(activeBottomTab);
   const [modalType, setModalType] = useState<null | 'satisfaction' | 'ranking'>(null);
-  const [allSatisfactionCasts, setAllSatisfactionCasts] = useState<any[]>([]);
-  const [allRankings, setAllRankings] = useState<any[]>([]);
-  const [satisfactionLoading, setSatisfactionLoading] = useState(false);
-  const [rankingLoading, setRankingLoading] = useState(false);
   const [satisfactionSearch, setSatisfactionSearch] = useState('');
   const [satisfactionSort, setSatisfactionSort] = useState<'rating' | 'feedback' | 'price' | 'name'>('rating');
   const [rankingFilters] = useState<{ timePeriod: 'today' | 'yesterday' | 'week' | 'month'; category: 'gift' | 'points' }>({
     timePeriod: 'yesterday',
     category: 'gift',
   });
+  const queryClient = useQueryClient();
+
+  // React Query hooks for data fetching
+  const { data: allSatisfactionCasts = [], isLoading: satisfactionLoading } = useSatisfactionCasts();
+  const { data: rankingData, isLoading: rankingLoading } = useRanking({
+    userType: 'cast',
+    timePeriod: rankingFilters.timePeriod,
+    category: rankingFilters.category,
+    area: '全国',
+  });
+  const allRankings = rankingData?.data || [];
 
   const filteredAndSortedSatisfactionCasts = useMemo(() => {
     let list = allSatisfactionCasts || [];
@@ -140,15 +172,16 @@ const Dashboard: React.FC = () => {
     return sorted;
   }, [allSatisfactionCasts, satisfactionSearch, satisfactionSort]);
 
+  // React Query hook for guest chats
+  const { data: guestChats = [] } = useGuestChats(user?.id || 0);
+
   // Initialize message count from existing chats
   useEffect(() => {
-    if (user) {
-      getGuestChats(user.id, 'guest').then((chats) => {
-        const totalUnread = (chats || []).reduce((sum: any, chat: any) => sum + (chat.unread || 0), 0);
-        setMessageCount(totalUnread);
-      });
+    if (guestChats.length > 0) {
+      const totalUnread = guestChats.reduce((sum: any, chat: any) => sum + (chat.unread || 0), 0);
+      setMessageCount(totalUnread);
     }
-  }, [user]);
+  }, [guestChats]);
 
   // Real-time unread message count updates
   useUnreadMessageCount(user?.id || 0, 'guest', (count) => {
@@ -174,6 +207,11 @@ const Dashboard: React.FC = () => {
     if (activeBottomTab !== 'tweet') {
       setTweetCount((c) => c + 1);
     }
+    // Invalidate tweet caches when new tweets arrive
+    queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() });
+    if (user) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('guest', user.id) });
+    }
     console.log("Tweet count", tweetCount);
   });
 
@@ -193,9 +231,7 @@ const Dashboard: React.FC = () => {
       // Mark all notifications as read when entering message tab
       setMessageCount(0); // Reset immediately for UI responsiveness
       if (user) {
-        markAllNotificationsRead('guest', user.id).then(() => {
-          // setMessageCount(0); // Already reset above
-        });
+        markNotificationsReadMutation.mutate({ userType: 'guest', userId: user.id });
       }
     }
     
@@ -203,31 +239,8 @@ const Dashboard: React.FC = () => {
     prevTab.current = activeBottomTab;
   }, [activeBottomTab, user]);
 
-  // Fetch all data for modals
-  useEffect(() => {
-    if (modalType === 'satisfaction') {
-      setSatisfactionLoading(true);
-      import('../../services/api')
-        .then((api) => api.getAllSatisfactionCasts())
-        .then((data) => setAllSatisfactionCasts(data || []))
-        .catch(() => setAllSatisfactionCasts([]))
-        .finally(() => setSatisfactionLoading(false));
-    } else if (modalType === 'ranking') {
-      setRankingLoading(true);
-      import('../../services/api')
-        .then((api) =>
-          api.fetchRanking({
-            userType: 'cast',
-            timePeriod: rankingFilters.timePeriod,
-            category: rankingFilters.category,
-            area: '全国',
-          })
-        )
-        .then((res) => setAllRankings((res && res.data) || []))
-        .catch(() => setAllRankings([]))
-        .finally(() => setRankingLoading(false));
-    }
-  }, [modalType, rankingFilters]);
+  // React Query mutation for marking notifications as read
+  const markNotificationsReadMutation = useMarkNotificationsRead();
 
   // Handle footprints tab being disabled
   useEffect(() => {

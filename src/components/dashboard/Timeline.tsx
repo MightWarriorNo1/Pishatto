@@ -4,15 +4,54 @@ import {useNavigate} from 'react-router-dom';
 import PostCreatePage from './PostCreatePage';
 import NotificationScreen from './NotificationScreen';
 import { Bell, Plus, SlidersHorizontal, Heart, Trash2 } from 'lucide-react';
-import { fetchAllTweets, fetchUserTweets, createTweet, likeTweet, getTweetLikeStatus, deleteTweet } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useTweets } from '../../hooks/useRealtime';
 import { useCast } from '../../contexts/CastContext';
+import { useAllTweets, useUserTweets, useTweetLikeStatus, useCreateTweet, useLikeTweet, useDeleteTweet } from '../../hooks/useQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../lib/react-query';
 import Spinner from '../ui/Spinner';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
+
+// TweetLikeButton component for handling likes with React Query
+const TweetLikeButton: React.FC<{
+    tweetId: number;
+    userId?: number;
+    isNotificationEnabled: boolean;
+    onLike: (tweetId: number) => void;
+}> = ({ tweetId, userId, isNotificationEnabled, onLike }) => {
+    const { data: likeData } = useTweetLikeStatus(tweetId, userId);
+    const liked = likeData?.liked || false;
+    const count = likeData?.count || 0;
+
+    return (
+        <div className="flex items-center mt-2">
+            <button
+                className={`mr-2 text-lg ${
+                    !isNotificationEnabled 
+                        ? 'text-gray-500 cursor-not-allowed' 
+                        : liked 
+                            ? 'text-red-500' 
+                            : 'text-gray-400'
+                }`}
+                onClick={() => onLike(tweetId)}
+                disabled={!isNotificationEnabled}
+            >
+                <Heart fill={
+                    !isNotificationEnabled 
+                        ? 'gray' 
+                        : liked 
+                            ? 'red' 
+                            : 'white'
+                } />
+            </button>
+            <span className="text-white text-sm">{count}</span>
+        </div>
+    );
+};
 
 const Timeline: React.FC = () => {
     const { user } = useUser();
@@ -20,67 +59,36 @@ const Timeline: React.FC = () => {
     const navigate = useNavigate();
     const [showPostCreate, setShowPostCreate] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
-    const [tweets, setTweets] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [likeStatuses, setLikeStatuses] = useState<{ [tweetId: number]: boolean }>({});
-    const [likeCounts, setLikeCounts] = useState<{ [tweetId: number]: number }>({});
     const { castId } = useCast() as any;
     const [tab, setTab] = useState<'all' | 'cast'>('all');
+    const queryClient = useQueryClient();
 
-    const loadTweets = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            let data;
-            if (tab === 'cast' && (user?.id || castId)) {
-                // Load user's own tweets when "ゲスト専用" tab is selected
-                const userType = user ? 'guest' : 'cast';
-                const userId = user ? user.id : (castId || 0);
-                data = await fetchUserTweets(userType, userId);
-            } else {
-                // Load all tweets for "みんなのつぶやき" tab
-                data = await fetchAllTweets();
-            }
-            setTweets(data);
-        } catch (e) {
-            setError('つぶやきの取得に失敗しました');
-        } finally {
-            setLoading(false);
-        }
-    };
+    // React Query hooks
+    const { data: allTweets = [], isLoading: allTweetsLoading, error: allTweetsError } = useAllTweets();
+    const { data: userTweets = [], isLoading: userTweetsLoading, error: userTweetsError } = useUserTweets(
+        user ? 'guest' : 'cast',
+        user ? user.id : (castId || 0)
+    );
 
-    // Fetch like status and count for all tweets
-    const fetchLikes = async (tweets: any[]) => {
-        const promises = tweets.map(async (tweet) => {
-            const { liked, count } = await getTweetLikeStatus(tweet.id, user ? user.id : undefined, undefined);
-            return { id: tweet.id, liked, count };
-        });
-        const results = await Promise.all(promises);
-        const statuses: { [tweetId: number]: boolean } = {};
-        const counts: { [tweetId: number]: number } = {};
-        results.forEach(({ id, liked, count }) => {
-            statuses[id] = liked;
-            counts[id] = count;
-        });
-        setLikeStatuses(statuses);
-        setLikeCounts(counts);
-    };
+    // Determine which data to use based on tab
+    const tweets = tab === 'cast' && (user?.id || castId) ? userTweets : allTweets;
+    const loading = tab === 'cast' && (user?.id || castId) ? userTweetsLoading : allTweetsLoading;
+    const error = tab === 'cast' && (user?.id || castId) ? userTweetsError : allTweetsError;
 
-    useEffect(() => {
-        loadTweets();
-    }, [tab, user, castId]);
-
-    useEffect(() => {
-        if (tweets.length > 0 && (user || castId)) fetchLikes(tweets);
-    }, [tweets, user, castId]);
+    // React Query mutations
+    const createTweetMutation = useCreateTweet();
+    const likeTweetMutation = useLikeTweet();
+    const deleteTweetMutation = useDeleteTweet();
 
     useTweets((tweet) => {
-        setTweets((prev) => {
-            // Avoid duplicates if tweet already exists
-            if (prev.some(t => t.id === tweet.id)) return prev;
-            return [tweet, ...prev];
-        });
+        // Invalidate tweet caches when new tweets arrive
+        queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() });
+        if (user) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('guest', user.id) });
+        }
+        if (castId) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('cast', castId) });
+        }
     });
 
     const handleAvatarClick = (tweet: any) => {
@@ -94,9 +102,8 @@ const Timeline: React.FC = () => {
     const handleAddTweet = async (content: string, image?: File | null) => {
         if (!user) return;
         try {
-            await createTweet({ content, guest_id: user.id, image });
+            await createTweetMutation.mutateAsync({ content, guest_id: user.id, image });
             setShowPostCreate(false);
-            loadTweets();
         } catch (e) {
             alert('投稿に失敗しました');
         }
@@ -108,13 +115,14 @@ const Timeline: React.FC = () => {
             return; // Silently ignore if likes are disabled
         }
         
-        const res = await likeTweet(tweetId, user ? user.id : undefined, !user && castId ? castId : undefined);
-        if (res.liked) {
-            setLikeStatuses(prev => ({ ...prev, [tweetId]: true }));
-            setLikeCounts(prev => ({ ...prev, [tweetId]: (prev[tweetId] || 0) + 1 }));
-        } else {
-            setLikeStatuses(prev => ({ ...prev, [tweetId]: false }));
-            setLikeCounts(prev => ({ ...prev, [tweetId]: Math.max(0, (prev[tweetId] || 0) - 1) }));
+        try {
+            await likeTweetMutation.mutateAsync({
+                tweetId,
+                userId: user ? user.id : undefined,
+                castId: !user && castId ? castId : undefined
+            });
+        } catch (e) {
+            console.error('Failed to like tweet:', e);
         }
     };
 
@@ -122,20 +130,7 @@ const Timeline: React.FC = () => {
         if (!confirm('このつぶやきを削除しますか？')) return;
         
         try {
-            await deleteTweet(tweetId);
-            // Remove the deleted tweet from the state
-            setTweets((prev) => prev.filter(tweet => tweet.id !== tweetId));
-            // Remove from like statuses and counts
-            setLikeStatuses((prev) => {
-                const newStatuses = { ...prev };
-                delete newStatuses[tweetId];
-                return newStatuses;
-            });
-            setLikeCounts((prev) => {
-                const newCounts = { ...prev };
-                delete newCounts[tweetId];
-                return newCounts;
-            });
+            await deleteTweetMutation.mutateAsync(tweetId);
         } catch (e) {
             alert('削除に失敗しました');
         }
@@ -172,11 +167,11 @@ const Timeline: React.FC = () => {
                 {loading ? (
                     <Spinner />
                 ) : error ? (
-                    <div className="text-red-400 py-10 text-center">{error}</div>
+                    <div className="text-red-400 py-10 text-center">{error.message || 'エラーが発生しました'}</div>
                 ) : tweets.length === 0 ? (
                     <div className="text-gray-400 py-10 text-center">つぶやきがありません</div>
                 ) : (
-                    tweets.map((tweet, idx) => (
+                    tweets.map((tweet: any, idx: number) => (
                         <div key={tweet.id || idx} className="bg-white/10 rounded-lg shadow-sm p-4 flex flex-col border border-secondary cursor-pointer" >
                             <div className="flex items-center mb-1">
                                 <img
@@ -222,28 +217,12 @@ const Timeline: React.FC = () => {
                                 />
                             )}
                             {/* Like button and count */}
-                            <div className="flex items-center mt-2">
-                                <button
-                                    className={`mr-2 text-lg ${
-                                        !isNotificationEnabled('likes') 
-                                            ? 'text-gray-500 cursor-not-allowed' 
-                                            : likeStatuses[tweet.id] 
-                                                ? 'text-red-500' 
-                                                : 'text-gray-400'
-                                    }`}
-                                    onClick={() => handleLike(tweet.id)}
-                                    disabled={!isNotificationEnabled('likes')}
-                                >
-                                    <Heart fill={
-                                        !isNotificationEnabled('likes') 
-                                            ? 'gray' 
-                                            : likeStatuses[tweet.id] 
-                                                ? 'red' 
-                                                : 'white'
-                                    } />
-                                </button>
-                                <span className="text-white text-sm">{likeCounts[tweet.id] || 0}</span>
-                            </div>
+                            <TweetLikeButton 
+                                tweetId={tweet.id} 
+                                userId={user?.id} 
+                                isNotificationEnabled={isNotificationEnabled('likes')}
+                                onLike={handleLike}
+                            />
                         </div>
                     ))
                 )}

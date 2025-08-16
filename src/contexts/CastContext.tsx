@@ -1,6 +1,8 @@
 /*eslint-disable */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CastProfile, getCastProfileById, checkCastAuth, checkLineAuthCast } from '../services/api';
+import { createSessionTimeout, checkSessionValidity, clearSession } from '../utils/sessionTimeout';
+import SessionWarningModal from '../components/ui/SessionWarningModal';
 
 interface CastContextType {
   cast: CastProfile | null;
@@ -13,6 +15,9 @@ interface CastContextType {
   logout: () => void;
   checkLineAuthentication: () => Promise<boolean>;
   isSettingCastExternally: boolean;
+  showSessionWarning: boolean;
+  remainingSessionTime: number;
+  extendSession: () => void;
 }
 
 const CastContext = createContext<CastContextType | undefined>(undefined);
@@ -29,6 +34,21 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     return storedCastId ? parseInt(storedCastId, 10) : null;
   });
   const [isSettingCastExternally, setIsSettingCastExternally] = useState(false);
+  const [showSessionWarning, setShowSessionWarning] = useState(false);
+  const [remainingSessionTime, setRemainingSessionTime] = useState(15);
+
+  // Session timeout manager
+  const sessionTimeout = createSessionTimeout({
+    onExpire: () => {
+      console.log('Cast session expired, logging out user');
+      logout();
+    },
+    onWarning: () => {
+      console.log('Cast session warning, showing modal');
+      setShowSessionWarning(true);
+      setRemainingSessionTime(2); // 2 minutes warning
+    }
+  });
 
   const setCastId = (newCastId: number | null) => {
     setCastIdState(newCastId);
@@ -62,6 +82,9 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
       setCastId(newCast.id);
       console.log('CastContext: Cast data successfully set and stored:', { id: newCast.id, nickname: newCast.nickname });
       
+      // Start session timeout for authenticated cast
+      sessionTimeout.start();
+      
       // Verify the data was stored correctly
       setTimeout(() => {
         const storedData = localStorage.getItem('castData');
@@ -86,11 +109,20 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   const logout = () => {
     setCast(null);
     setCastId(null);
+    setShowSessionWarning(false);
     // Clear all localStorage data
     localStorage.removeItem('castId');
     localStorage.removeItem('castData');
+    // Clear session timeout
+    sessionTimeout.stop();
+    clearSession();
     // Redirect to role selection page
     window.location.href = '/';
+  };
+
+  const extendSession = () => {
+    sessionTimeout.reset();
+    setShowSessionWarning(false);
   };
 
   const refreshCast = async () => {
@@ -103,6 +135,8 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
       setLoading(true);
       const { cast: castData } = await getCastProfileById(castId);
       setCastWrapper(castData);
+      // Reset session timeout when cast data is refreshed
+      sessionTimeout.reset();
     } catch (error) {
       console.error('Error refreshing cast data:', error);
       setCastWrapper(null);
@@ -134,6 +168,14 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     try {
       setLoading(true);
       console.log('CastContext: Starting authentication check...', { isSettingCastExternally });
+      
+      // Check if session is still valid
+      if (cast && !checkSessionValidity()) {
+        console.log('Cast session expired, logging out user');
+        logout();
+        setLoading(false);
+        return;
+      }
       
       // If we're currently setting cast data externally, skip the auth check
       if (isSettingCastExternally) {
@@ -220,6 +262,11 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
 
   useEffect(() => {
     checkExistingAuth();
+    
+    // Cleanup session timeout on unmount
+    return () => {
+      sessionTimeout.destroy();
+    };
   }, []);
 
   // Monitor external cast setting flag
@@ -238,9 +285,21 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
       updateCast, 
       logout,
       checkLineAuthentication,
-      isSettingCastExternally
+      isSettingCastExternally,
+      showSessionWarning,
+      remainingSessionTime,
+      extendSession
     }}>
       {children}
+      
+      {/* Session Warning Modal */}
+      <SessionWarningModal
+        isOpen={showSessionWarning}
+        remainingMinutes={remainingSessionTime}
+        onExtend={extendSession}
+        onLogout={logout}
+        onClose={() => setShowSessionWarning(false)}
+      />
     </CastContext.Provider>
   );
 };

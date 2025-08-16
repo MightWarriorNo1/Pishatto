@@ -3,6 +3,7 @@ import CardManagementPage from '../payment/CardManagementPage';
 import CardRegistrationForm from '../payment/CardRegistrationForm';
 import { getPaymentInfo } from '../../services/api';
 import {ChevronLeft} from 'lucide-react';
+import Spinner from '../ui/Spinner';
 
 interface PaymentInfoRegisterPageProps {
   onBack?: () => void;
@@ -57,7 +58,7 @@ const PaymentInfoRegisterPage: React.FC<PaymentInfoRegisterPageProps> = ({ onBac
           <span className="text-lg font-bold flex-1 text-center text-white">支払い情報登録</span>
         </div>
         <div className="p-4">
-          <div className="text-white text-center">ローディング...</div>
+          <Spinner />
         </div>
       </div>
     );

@@ -14,6 +14,8 @@ import CastPointHistoryPage from './CastPointHistoryPage';
 import CastNotificationPage from './CastNotificationPage';
 import QRCodeModal from '../../components/dashboard/QRCodeModal';
 import Spinner from '../../components/ui/Spinner';
+import { useCastData } from '../../hooks/useCastData';
+import { useCastMonthlyRanking } from '../../hooks/useQueries';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -94,48 +96,27 @@ const CastProfilePage: React.FC = () => {
     const [showNotification, setShowNotification] = useState(false);
     const [showQRCode, setShowQRCode] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
-    const [cast, setCast] = useState<CastProfile | null>(null);
-    const [pointsData, setPointsData] = useState<PointsData | null>(null);
-    const [passportData, setPassportData] = useState<PassportData[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [notificationCount, setNotificationCount] = useState(0);
-    const [gradeInfo, setGradeInfo] = useState<GradeInfo | null>(null);
-    const [gradeLoading, setGradeLoading] = useState(true);
-    const [ranking, setRanking] = useState<MonthlyRankingResponse | null>(null);
     const [selectedMonth, setSelectedMonth] = useState<'current' | 'last'>('current');
-    const [rankingLoading, setRankingLoading] = useState(false);
 
-    const fetchCastProfile = async () => {
-        try {
-            if (!castId) return;
-            const data = await getCastProfileById(castId as number);
-            setCast(data.cast);
-            // Reset avatar index when cast data changes
-            setCurrentAvatarIndex(0);
-        } catch (error) {
-            console.error('Failed to fetch cast profile:', error);
-        }
-    };
+    // Use React Query hooks for data fetching
+    const {
+        profile: cast,
+        pointsData,
+        passportData,
+        gradeInfo,
+        isLoading: castDataLoading,
+        error: castDataError
+    } = useCastData(castId || 0);
 
-    const fetchPointsData = async () => {
-        try {
-            if (!castId) return;
-            const data = await getCastPointsData(castId as number);
-            setPointsData(data);
-        } catch (error) {
-            console.error('Failed to fetch points data:', error);
-        }
-    };
+    // Use individual hook for monthly ranking with month selection
+    const {
+        data: ranking,
+        isLoading: rankingLoading,
+        error: rankingError
+    } = useCastMonthlyRanking(castId || 0, selectedMonth);
 
-    const fetchPassportData = async () => {
-        try {
-            if (!castId) return;
-            const data = await getCastPassportData(castId as number);
-            setPassportData(data.passport_data);
-        } catch (error) {
-            console.error('Failed to fetch passport data:', error);
-        }
-    };
+    // Get notification count using the existing API function
+    const [notificationCount, setNotificationCount] = useState(0);
 
     const fetchNotificationCount = async () => {
         try {
@@ -147,60 +128,28 @@ const CastProfilePage: React.FC = () => {
         }
     };
 
-    const fetchGradeInfo = async () => {
-        try {
-            setGradeLoading(true);
-            if (!castId) return;
-            const data = await getCastGrade(castId as number);
-            setGradeInfo(data);
-        } catch (error) {
-            console.error('Error fetching grade info:', error);
-        } finally {
-            setGradeLoading(false);
-        }
-    };
-
-    const fetchMonthlyRanking = async (month: 'current' | 'last' = 'current') => {
-        try {
-            setRankingLoading(true);
-            if (!castId) return;
-            const data = await getMonthlyEarnedRanking({ castId: castId as number, limit: 10, month });
-            setRanking(data);
-        } catch (error) {
-            console.error('Error fetching monthly ranking:', error);
-        } finally {
-            setRankingLoading(false);
-        }
-    };
-
     useEffect(() => {
-        const fetchAllData = async () => {
-            setLoading(true);
-            await Promise.all([
-                fetchCastProfile(),
-                fetchPointsData(),
-                fetchPassportData(),
-                fetchNotificationCount(),
-                fetchGradeInfo(),
-                fetchMonthlyRanking(selectedMonth)
-            ]);
-            setLoading(false);
-        };
-        
         if (castId) {
-            fetchAllData();
+            fetchNotificationCount();
         }
     }, [castId]);
 
+    // Update ranking when month changes
+    useEffect(() => {
+        if (castId) {
+            // React Query will automatically refetch when the month changes
+            // due to the query key dependency
+        }
+    }, [castId, selectedMonth]);
+
     const handleProfileUpdate = () => {
-        // Refresh the profile data after successful update
-        fetchCastProfile();
+        // React Query will handle the update automatically
+        // No need to manually refetch
     };
 
     const handleNotificationClose = () => {
         setShowNotification(false);
-        // Refresh notification count when returning from notification page
-        fetchNotificationCount();
+        fetchNotificationCount(); // Refresh notification count
     };
 
     // Real-time notification updates
@@ -253,7 +202,7 @@ const CastProfilePage: React.FC = () => {
     // Handle month selection for ranking
     const handleMonthChange = (month: 'current' | 'last') => {
         setSelectedMonth(month);
-        fetchMonthlyRanking(month);
+        // React Query will automatically refetch when the month changes
     };
 
     // Handle logout with confirmation
@@ -280,7 +229,7 @@ const CastProfilePage: React.FC = () => {
     if (showNotification) return <CastNotificationPage onBack={handleNotificationClose} />;
     if (showQRCode) return <QRCodeModal onClose={() => setShowQRCode(false)} />;
 
-    if (loading) {
+    if (castDataLoading) {
         return (
             <div className="max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24 flex items-center justify-center">
                 <Spinner />
@@ -370,7 +319,7 @@ const CastProfilePage: React.FC = () => {
                 </div>
                 <div className="flex flex-col">
                     <span className="text-2xl font-bold text-white">
-                        {gradeLoading ? '読み込み中...' : gradeInfo?.current_grade_name || 'ビギナー'}
+                        {gradeInfo?.current_grade_name || 'ビギナー'}
                     </span>
                     {ranking && (
                         <span className="text-sm text-white/90">

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getCastList } from '../../services/api';
+import { useNewCasts } from '../../hooks/useQueries';
 import Spinner from '../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -35,23 +35,7 @@ interface CastProfile {
 
 const NewCastSection: React.FC = () => {
   const navigate = useNavigate();
-  const [castProfiles, setCastProfiles] = useState<CastProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    getCastList({}).then((data: any) => {
-      // Get the 5 most recently created casts
-      const recentCasts = data.casts
-        ?.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 5) || [];
-      setCastProfiles(recentCasts);
-      setLoading(false);
-    }).catch((error) => {
-      console.error('Failed to fetch new cast profiles:', error);
-      setLoading(false);
-    });
-  }, []);
+  const { data: castProfiles = [], isLoading: loading } = useNewCasts();
 
   const handleCastClick = (castId: number) => {
     navigate(`/cast/${castId}`);
@@ -68,7 +52,7 @@ const NewCastSection: React.FC = () => {
           <div className="text-white">本日登録されたキャストはいません</div>
         ) : (
           <div className="flex gap-3 overflow-x-auto">
-            {castProfiles.map((profile) => (
+            {castProfiles.map((profile: CastProfile) => (
               <div
                 key={profile.id}
                 className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:opacity-75 border border-secondary min-w-[120px] max-w-[120px] flex-shrink-0"

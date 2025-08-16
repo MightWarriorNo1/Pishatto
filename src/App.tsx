@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import RoleSelectPage from './pages/RoleSelectPage';
 import RegisterSteps from './components/auth/RegisterSteps';
 import CastLoginOptions from './components/cast/auth/CastLoginOptions';
@@ -14,12 +16,14 @@ import PublicReceiptView from './components/dashboard/PublicReceiptView';
 import LineLogin from './pages/LineLogin';
 import CastLineLogin from './pages/cast/CastLineLogin';
 import LineRegister from './pages/LineRegister';
+import LineRegisterSteps from './components/auth/LineRegisterSteps';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AuthDebugger from './components/debug/AuthDebugger';
 import { UserProvider } from './contexts/UserContext';
 import { CastProvider } from './contexts/CastContext';
 import { ConciergeProvider } from './contexts/ConciergeContext';
 import { NotificationSettingsProvider } from './contexts/NotificationSettingsContext';
+import { queryClient } from './lib/react-query';
 
 const CastLoginWrapper: React.FC = () => {
   return <CastLoginOptions onNext={() => {}} />;
@@ -27,53 +31,57 @@ const CastLoginWrapper: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <UserProvider>
-      <CastProvider>
-        <NotificationSettingsProvider>
-          <ConciergeProvider>
-            <Router>
-              <Routes>
-                <Route path="/" element={<RoleSelectPage />} />
-                <Route path="/register" element={<RegisterSteps />} />
-                <Route path="/cast/login" element={<CastLoginWrapper />} />
-                <Route path="/line-login" element={<LineLogin />} />
-                <Route path="/cast/line-login" element={<CastLineLogin />} />
-                <Route path="/line-register" element={<LineRegister />} />
-                <Route path="/receipt/:receiptNumber" element={<PublicReceiptView />} />
-                <Route path="/dashboard" element={
-                  <ProtectedRoute userType="guest">
-                    <Dashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/cast/:id" element={<CastDetail />} />
-                <Route path="/guest/:id" element={<GuestDetail />} />
-                <Route path="/cast/dashboard" element={
-                  <ProtectedRoute userType="cast">
-                    <CastDashboard />
-                  </ProtectedRoute>
-                } />
-                <Route path="/cast/grade-detail" element={
-                  <ProtectedRoute userType="cast">
-                    <CastGradeDetailPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/cast/profile" element={
-                  <ProtectedRoute userType="cast">
-                    <CastProfilePage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/cast/:id/message" element={
-                  <ProtectedRoute userType="cast">
-                    <CastMessageDetailPage />
-                  </ProtectedRoute>
-                } />
-              </Routes>
-              <AuthDebugger />
-            </Router>
-          </ConciergeProvider>
-        </NotificationSettingsProvider>
-      </CastProvider>
-    </UserProvider>
+    <QueryClientProvider client={queryClient}>
+      <UserProvider>
+        <CastProvider>
+          <NotificationSettingsProvider>
+            <ConciergeProvider>
+              <Router>
+                <Routes>
+                  <Route path="/" element={<RoleSelectPage />} />
+                  <Route path="/register" element={<RegisterSteps />} />
+                  <Route path="/cast/login" element={<CastLoginWrapper />} />
+                  <Route path="/line-login" element={<LineLogin />} />
+                  <Route path="/cast/line-login" element={<CastLineLogin />} />
+                  <Route path="/line-register" element={<LineRegister />} />
+                  <Route path="/line-register-steps" element={<LineRegisterSteps />} />
+                  <Route path="/receipt/:receiptNumber" element={<PublicReceiptView />} />
+                  <Route path="/dashboard" element={
+                    <ProtectedRoute userType="guest">
+                      <Dashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/cast/:id" element={<CastDetail />} />
+                  <Route path="/guest/:id" element={<GuestDetail />} />
+                  <Route path="/cast/dashboard" element={
+                    <ProtectedRoute userType="cast">
+                      <CastDashboard />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/cast/grade-detail" element={
+                    <ProtectedRoute userType="cast">
+                      <CastGradeDetailPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/cast/profile" element={
+                    <ProtectedRoute userType="cast">
+                      <CastProfilePage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/cast/:id/message" element={
+                    <ProtectedRoute userType="cast">
+                      <CastMessageDetailPage />
+                    </ProtectedRoute>
+                  } />
+                </Routes>
+                <AuthDebugger />
+              </Router>
+            </ConciergeProvider>
+          </NotificationSettingsProvider>
+        </CastProvider>
+      </UserProvider>
+      <ReactQueryDevtools initialIsOpen={false} />
+    </QueryClientProvider>
   );
 };
 

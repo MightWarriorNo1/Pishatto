@@ -1,6 +1,7 @@
 /* eslint-disable */
 import React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import LoginOptions from './steps/LoginOptions';
 import PhoneVerification from './steps/PhoneVerification';
 import LocationSelect from './steps/LocationSelect';
@@ -12,6 +13,13 @@ import ProfilePhoto from './steps/ProfilePhoto';
 import Completion from './steps/Completion';
 import { guestRegister, GuestInterest, getGuestProfile } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
+
+interface LineData {
+  line_id: string;
+  line_email?: string;
+  line_name?: string;
+  line_avatar?: string;
+}
 
 interface FormData {
   phoneNumber: string;
@@ -25,13 +33,20 @@ interface FormData {
 }
 
 const RegisterSteps: React.FC = () => {
+  const location = useLocation();
   const { setUser, setPhone } = useUser();
-  const [currentStep, setCurrentStep] = useState(1);
+  
+  // Check if user is coming from LINE login
+  const fromLine = location.state?.fromLine || false;
+  const lineData: LineData | null = location.state?.lineData || null;
+  
+  // If coming from LINE, start at step 2 (PhoneVerification) instead of step 1
+  const [currentStep, setCurrentStep] = useState(fromLine ? 2 : 1);
   const [formData, setFormData] = useState<FormData>({
     phoneNumber: '',
     verificationCode: '',
     favorite_area: '',
-    nickname: '',
+    nickname: lineData?.line_name || '',
     interests: [],
     profilePhoto: null,
     age: '',
@@ -39,6 +54,34 @@ const RegisterSteps: React.FC = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
+
+  // Check sessionStorage for LINE data on component mount
+  useEffect(() => {
+    const storedLineData = sessionStorage.getItem('lineData');
+    const storedLineUserType = sessionStorage.getItem('lineUserType');
+    
+    if (storedLineData && storedLineUserType === 'guest' && !fromLine) {
+      // User has LINE data in sessionStorage but not in location state
+      // This might happen if they refreshed the page
+      try {
+        const parsedLineData = JSON.parse(storedLineData);
+        // Update the component state to reflect LINE registration
+        setCurrentStep(2); // Start at PhoneVerification
+        setFormData(prev => ({
+          ...prev,
+          nickname: parsedLineData.line_name || prev.nickname
+        }));
+      } catch (error) {
+        console.error('Error parsing stored LINE data:', error);
+        // Clear invalid data
+        sessionStorage.removeItem('lineData');
+        sessionStorage.removeItem('lineUserType');
+      }
+    }
+  }, [fromLine]);
+
+  // Add a header message for LINE users
+  const isLineRegistration = fromLine || sessionStorage.getItem('lineData');
 
   const handleNextStep = async () => {
     console.log('RegisterSteps: handleNextStep called, current step:', currentStep);
@@ -52,11 +95,58 @@ const RegisterSteps: React.FC = () => {
       try {
         const { guest } = await getGuestProfile(formData.phoneNumber);
         if (guest && normalizePhone(guest.phone) === normalizedInput) {
-          console.log('RegisterSteps: Existing guest found, redirecting to dashboard');
-          setUser(guest);
-          setPhone(formData.phoneNumber);
-          window.location.href = '/dashboard';
-          return;
+          console.log('RegisterSteps: Existing guest found');
+          
+          // If coming from LINE, link the LINE account to existing guest
+          const storedLineData = sessionStorage.getItem('lineData');
+          if (fromLine || storedLineData) {
+            console.log('RegisterSteps: Linking LINE account to existing guest');
+            const finalLineData = lineData || (storedLineData ? JSON.parse(storedLineData) : null);
+            
+            if (finalLineData) {
+              try {
+                const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/link-account`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                  },
+                  credentials: 'include',
+                  body: JSON.stringify({
+                    user_type: 'guest',
+                    user_id: guest.id,
+                    line_id: finalLineData.line_id
+                  })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                  console.log('RegisterSteps: LINE account linked successfully');
+                  // Clear LINE data from sessionStorage
+                  sessionStorage.removeItem('lineData');
+                  sessionStorage.removeItem('lineUserType');
+                  // Set user and redirect to dashboard
+                  setUser(data.user || guest);
+                  setPhone(formData.phoneNumber);
+                  window.location.href = '/dashboard';
+                  return;
+                } else {
+                  throw new Error(data.message || 'Failed to link LINE account');
+                }
+              } catch (error: any) {
+                console.error('RegisterSteps: Failed to link LINE account:', error);
+                alert('LINEアカウントの連携に失敗しました: ' + error.message);
+                return;
+              }
+            }
+          } else {
+            // Regular phone login - redirect to dashboard
+            console.log('RegisterSteps: Existing guest found, redirecting to dashboard');
+            setUser(guest);
+            setPhone(formData.phoneNumber);
+            window.location.href = '/dashboard';
+            return;
+          }
         }
       } catch (e) {
         console.log('RegisterSteps: No existing guest found, continuing to registration');
@@ -71,22 +161,69 @@ const RegisterSteps: React.FC = () => {
       setIsSubmitting(true);
       setRegistrationError(null);
       try {
-        const response = await guestRegister({
-          phone: formData.phoneNumber,
-          verificationCode: formData.verificationCode,
-          nickname: formData.nickname,
-          favorite_area: formData.favorite_area,
-          location: formData.favorite_area,
-          profilePhoto: formData.profilePhoto,
-          interests: formData.interests,
-          age: formData.age,
-          shiatsu: formData.shiatsu,
-        });
-        // Store the user data in context
-        if (response.guest) {
-          console.log('RegisterSteps: Registration successful, setting user data');
-          setUser(response.guest);
-          setPhone(formData.phoneNumber); 
+        // If coming from LINE, use LINE registration endpoint
+        const storedLineData = sessionStorage.getItem('lineData');
+        const finalLineData = lineData || (storedLineData ? JSON.parse(storedLineData) : null);
+        
+        if ((fromLine || storedLineData) && finalLineData) {
+          const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/register`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              user_type: 'guest',
+              line_id: finalLineData.line_id,
+              line_email: finalLineData.line_email,
+              line_name: finalLineData.line_name,
+              line_avatar: finalLineData.line_avatar,
+              additional_data: {
+                phone: formData.phoneNumber,
+                verificationCode: formData.verificationCode,
+                nickname: formData.nickname,
+                favorite_area: formData.favorite_area,
+                location: formData.favorite_area,
+                profilePhoto: formData.profilePhoto,
+                interests: formData.interests,
+                age: formData.age,
+                shiatsu: formData.shiatsu,
+              }
+            })
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            console.log('RegisterSteps: LINE registration successful, setting user data');
+            setUser(data.user);
+            setPhone(formData.phoneNumber);
+            // Clear LINE data from sessionStorage
+            sessionStorage.removeItem('lineData');
+            sessionStorage.removeItem('lineUserType');
+          } else {
+            throw new Error(data.message || 'Registration failed');
+          }
+        } else {
+          // Regular phone registration
+          const response = await guestRegister({
+            phone: formData.phoneNumber,
+            verificationCode: formData.verificationCode,
+            nickname: formData.nickname,
+            favorite_area: formData.favorite_area,
+            location: formData.favorite_area,
+            profilePhoto: formData.profilePhoto,
+            interests: formData.interests,
+            age: formData.age,
+            shiatsu: formData.shiatsu,
+          });
+          // Store the user data in context
+          if (response.guest) {
+            console.log('RegisterSteps: Registration successful, setting user data');
+            setUser(response.guest);
+            setPhone(formData.phoneNumber); 
+          }
         }
         setCurrentStep((prev) => prev + 1);
       } catch (error: any) {
@@ -120,6 +257,10 @@ const RegisterSteps: React.FC = () => {
   const renderStep = () => {
     switch (currentStep) {
       case 1:
+        // If coming from LINE, skip LoginOptions and go to PhoneVerification
+        if (fromLine) {
+          return <PhoneVerification onNext={handleNextStep} onBack={() => window.history.back()} updateFormData={updateFormData} formData={formData} />;
+        }
         return <LoginOptions onNext={handleNextStep} />;
       case 2:
         return <PhoneVerification onNext={handleNextStep} onBack={handlePrevStep} updateFormData={updateFormData} formData={formData} />;
@@ -145,6 +286,14 @@ const RegisterSteps: React.FC = () => {
   return (
     <div className="bg-white flex items-center justify-center min-h-screen">
       <div className="max-w-md w-full mx-auto bg-primary rounded-2xl shadow-lg border border-secondary">
+        {isLineRegistration && (
+          <div className="p-4 bg-secondary/20 border-b border-secondary/30">
+            <div className="text-center text-white text-sm">
+              <div className="font-semibold mb-1">LINEログイン</div>
+              <div>電話番号認証でアカウントを完成させてください</div>
+            </div>
+          </div>
+        )}
         {renderStep()}
       </div>
     </div>

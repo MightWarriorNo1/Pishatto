@@ -9,6 +9,7 @@ import CastNotificationPage from './CastNotificationPage';
 import { useTweets } from '../../hooks/useRealtime';
 import { useCast } from '../../contexts/CastContext';
 import Spinner from '../../components/ui/Spinner';
+import { useAllTweets, useUserTweets, useTweetLikeStatus, useCreateTweet, useLikeTweet, useDeleteTweet } from '../../hooks/useQueries';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -18,74 +19,57 @@ const CastTimelinePage: React.FC = () => {
     const { user } = useUser();
     const navigate=useNavigate();
     const [tab, setTab] = useState<'all' | 'cast'>('all');
-    const [tweets, setTweets] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
     const [showPostCreate, setShowPostCreate] = useState(false);
-    const [likeStatuses, setLikeStatuses] = useState<{ [tweetId: number]: boolean }>({});
-    const [likeCounts, setLikeCounts] = useState<{ [tweetId: number]: number }>({});
-    const { castId } = useCast() as any;
     const [showNotification, setShowNotification] = useState(false);
-    const loadTweets = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            let data;
-            if (tab === 'cast') {
-                // Fetch all tweets from casts (not just current user)
-                data = await fetchAllTweets();
-                // Filter to only show tweets from casts
-                data = data.filter((tweet: any) => tweet.cast && !tweet.guest);
-            } else {
-                data = await fetchAllTweets();
-            }
-            setTweets(data);
-        } catch (e) {
-            setError('つぶやきの取得に失敗しました');
-        } finally {
-            setLoading(false);
-        }
-    };
+    const { castId } = useCast() as any;
 
-    const fetchLikes = async (tweets: any[]) => {
-        const promises = tweets.map(async (tweet) => {
-            const { liked, count } = await getTweetLikeStatus(tweet.id, user ? user.id : undefined, !user && castId ? castId : undefined);
-            return { id: tweet.id, liked, count };
-        });
-        const results = await Promise.all(promises);
-        const statuses: { [tweetId: number]: boolean } = {};
-        const counts: { [tweetId: number]: number } = {};
-        results.forEach(({ id, liked, count }) => {
-            statuses[id] = liked;
-            counts[id] = count;
-        });
-        setLikeStatuses(statuses);
-        setLikeCounts(counts);
-    };
+    // Use React Query hooks for data fetching
+    const {
+        data: allTweets = [],
+        isLoading: allTweetsLoading,
+        error: allTweetsError
+    } = useAllTweets();
 
-    useEffect(() => {
-        loadTweets();
-    }, [tab]);
+    const {
+        data: userTweets = [],
+        isLoading: userTweetsLoading,
+        error: userTweetsError
+    } = useUserTweets('cast', castId || 0);
 
-    useEffect(() => {
-        if (tweets.length > 0 && (user || castId)) fetchLikes(tweets);
-    }, [tweets, user, castId]);
+    // Filter tweets based on tab
+    const tweets = tab === 'cast' 
+        ? allTweets.filter((tweet: any) => tweet.cast && !tweet.guest)
+        : allTweets;
+
+    // Get like statuses for tweets
+    const {
+        data: likeStatuses = {},
+        isLoading: likesLoading,
+        error: likesError
+    } = useTweetLikeStatus(tweets[0]?.id || 0, user ? user.id : castId);
+
+    // Use mutation hooks
+    const createTweetMutation = useCreateTweet();
+    const likeTweetMutation = useLikeTweet();
+    const deleteTweetMutation = useDeleteTweet();
+
+    // Loading and error states
+    const loading = allTweetsLoading || userTweetsLoading || likesLoading;
+    const error = allTweetsError || userTweetsError || likesError;
 
     useTweets((tweet) => {
         if (tab === 'all') {
-            setTweets((prev) => {
-                if (prev.some(t => t.id === tweet.id)) return prev;
-                return [tweet, ...prev];
-            });
+            // React Query will handle the update automatically
+            // No need to manually update state
         }
     });
 
     const handleAddTweet = async (content: string, image?: File | null) => {
         if (!castId) return;
         try {
-            await createTweet({ content, cast_id: castId, image });
+            await createTweetMutation.mutateAsync({ content, cast_id: castId, image });
             setShowPostCreate(false);
-            loadTweets();
+            // React Query will automatically refetch tweets
         } catch (e) {
             alert('投稿に失敗しました');
         }
@@ -93,29 +77,22 @@ const CastTimelinePage: React.FC = () => {
 
     const handleLike = async (tweetId: number) => {
         if (!user && !castId) return;
-        const res = await likeTweet(tweetId, user ? user.id : undefined, !user && castId ? castId : undefined);
-        setLikeStatuses((prev) => ({ ...prev, [tweetId]: res.liked }));
-        setLikeCounts((prev) => ({ ...prev, [tweetId]: res.count }));
+        try {
+            await likeTweetMutation.mutateAsync({ 
+                tweetId, 
+                userId: user ? user.id : undefined, 
+                castId: !user && castId ? castId : undefined 
+            });
+            // React Query will automatically update the like status
+        } catch (error) {
+            console.error('Failed to like tweet:', error);
+        }
     };
 
-    const handleDeleteTweet = async (tweetId: number) => {
-        if (!confirm('このつぶやきを削除しますか？')) return;
-        
+    const handleDelete = async (tweetId: number) => {
         try {
-            await deleteTweet(tweetId);
-            // Remove the deleted tweet from the state
-            setTweets((prev) => prev.filter(tweet => tweet.id !== tweetId));
-            // Remove from like statuses and counts
-            setLikeStatuses((prev) => {
-                const newStatuses = { ...prev };
-                delete newStatuses[tweetId];
-                return newStatuses;
-            });
-            setLikeCounts((prev) => {
-                const newCounts = { ...prev };
-                delete newCounts[tweetId];
-                return newCounts;
-            });
+            await deleteTweetMutation.mutateAsync(tweetId);
+            // React Query will automatically refetch tweets
         } catch (e) {
             alert('削除に失敗しました');
         }
@@ -163,61 +140,42 @@ const CastTimelinePage: React.FC = () => {
                         <Spinner />
                     </div>
                 ) : error ? (
-                    <div className="text-red-400 py-10 text-center">{error}</div>
+                    <div className="text-red-400 py-10 text-center">{error.message || 'エラーが発生しました'}</div>
                 ) : tweets.length === 0 ? (
                     <div className="text-gray-400 py-10 text-center">つぶやきがありません</div>
                 ) : (
-                    tweets.map((tweet, idx) => (
+                    tweets.map((tweet: any, idx: number) => (
                         <div key={tweet.id || idx} className="bg-white/10 rounded-lg shadow-sm p-4 flex flex-col border border-secondary cursor-pointer" >
                             <div className="flex items-center mb-1">
                                 <img src={
-                                        tweet.guest?.avatar
-                                            ? `${APP_BASE_URL}/${tweet.guest.avatar}`
-                                            : tweet.cast?.avatar
-                                                ? `${APP_BASE_URL}/${tweet.cast.avatar.split(',')[0].trim()}`
-                                                : '/assets/avatar/female.png'
-                                    } alt={tweet.guest?.nickname || tweet.cast?.nickname || ''} className="w-10 h-10 rounded-full object-cover mr-2 border border-secondary cursor-pointer hover:opacity-80 transition-opacity" 
-                                    onClick={() => handleAvatarClick(tweet)} 
-                                    />
-                                <div className="flex flex-col flex-1">
-                                    <span className="font-bold text-sm text-white">{tweet.guest?.nickname || tweet.cast?.nickname || 'ゲスト/キャスト'}</span>
-                                    <span className="text-xs text-white">{new Date(tweet.created_at).toLocaleString('ja-JP')}</span>
-                                </div>
-                                {/* Delete button - only show for user's own tweets */}
-                                {isCurrentUserTweet(tweet) && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleDeleteTweet(tweet.id);
-                                        }}
-                                        className="text-white hover:text-red-300 transition-colors p-1"
-                                        title="削除"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                )}
+                                    tweet.cast?.avatar 
+                                        ? `${IMAGE_BASE_URL}/${tweet.cast.avatar}` 
+                                        : '/assets/avatar/avatar-1.png'
+                                } 
+                                alt="avatar" 
+                                className="w-8 h-8 rounded-full mr-2 border border-secondary"
+                                />
+                                <span className="text-white text-sm font-bold">{tweet.cast?.nickname || '匿名'}</span>
+                                <span className="text-gray-400 text-xs ml-2">
+                                    {new Date(tweet.created_at).toLocaleString('ja-JP')}
+                                </span>
                             </div>
-                            <div className="text-white text-sm whitespace-pre-line mt-1">{tweet.content}</div>
+                            <div className="text-white text-sm mb-2">{tweet.content}</div>
                             {tweet.image && (
-                                <img
-                                    src={
-                                        tweet.image.startsWith('http')
-                                            ? tweet.image
-                                            : `${IMAGE_BASE_URL}/storage/${tweet.image}`
-                                    }
-                                    alt="tweet"
-                                    className="max-h-48 rounded my-2 border border-secondary object-cover"
+                                <img 
+                                    src={`${IMAGE_BASE_URL}/${tweet.image}`} 
+                                    alt="tweet image" 
+                                    className="w-full h-32 object-cover rounded-lg mb-2"
                                 />
                             )}
-                            {/* Like button and count */}
                             <div className="flex items-center mt-2">
                                 <button
-                                    className={`mr-2 text-lg ${likeStatuses[tweet.id] ? 'text-red-500' : 'text-gray-400'}`}
+                                    className={`mr-2 text-lg ${(likeStatuses as any)[tweet.id] ? 'text-red-500' : 'text-gray-400'}`}
                                     onClick={() => handleLike(tweet.id)}
                                 >
-                                    <Heart fill={likeStatuses[tweet.id] ? 'red' : 'white'} />
+                                    <Heart fill={(likeStatuses as any)[tweet.id] ? 'red' : 'white'} />
                                 </button>
-                                <span className="text-white text-sm">{likeCounts[tweet.id] || 0}</span>
+                                <span className="text-white text-sm">{(likeStatuses as any)[tweet.id] ? (likeStatuses as any)[tweet.id] : 0}</span>
                             </div>
                         </div>
                     ))

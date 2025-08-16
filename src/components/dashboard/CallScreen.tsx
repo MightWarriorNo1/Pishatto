@@ -561,7 +561,7 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
     return (
         <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col pb-20">
             {/* Enhanced Header */}
-            <div className="bg-gradient-to-r from-primary to-blue-900 backdrop-blur-md border-b border-white/10 shadow-lg">
+            <div className="fixed max-w-md mx-auto left-0 right-0 bg-gradient-to-r from-primary to-blue-900 backdrop-blur-md border-b border-white/10 shadow-lg">
                 <div className="flex items-center px-4 pt-4 pb-2">
                     <button onClick={onBack} className="mr-3 text-2xl text-white hover:text-secondary cursor-pointer transition-colors p-2 rounded-full">
                         <ChevronLeft />
@@ -574,7 +574,7 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
             </div>
 
             {/* Enhanced Main Content */}
-            <div className="flex-1 px-4 py-3">
+            <div className="flex-1 px-4 py-3 mt-20">
                 <div className="mb-8">
                     <div className="flex items-center mb-4">
                         <div className="w-12 h-12 bg-gradient-to-br from-secondary to-red-500 rounded-full flex items-center justify-center mr-4 shadow-lg">

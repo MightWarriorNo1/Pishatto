@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Send } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -7,6 +8,7 @@ import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useChatMessages } from '../../hooks/useRealtime';
 import dayjs from 'dayjs';
+import Spinner from '../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -52,6 +54,15 @@ interface Proposal {
 
 const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const { user, refreshUser } = useUser();
+    const navigate = useNavigate();
+    
+    // Debug user state
+    useEffect(() => {
+        console.log('User state changed:', { user, userId: user?.id, chatId, userLoaded: !!user });
+    }, [user, chatId]);
+    
+    // Check if user is fully loaded
+    const isUserLoaded = user && typeof user.id === 'number';
     const { isNotificationEnabled } = useNotificationSettings();
     const [showGift, setShowGift] = useState(false);
     const [showFile, setShowFile] = useState(false);
@@ -98,31 +109,54 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         setFetching(true);
         setFetchError(null);
         const fetchMessages = async () => {
-            if (!chatId || isNaN(Number(chatId)) || !user || typeof user.id !== 'number') {
+            console.log('Fetching messages:', { chatId, userId: user?.id, user });
+            if (!chatId || isNaN(Number(chatId))) {
+                console.log('Invalid chatId, skipping fetch');
+                setMessages([]);
+                setFetching(false);
+                return;
+            }
+            
+            if (!isUserLoaded) {
+                console.log('User not fully loaded yet, skipping fetch');
                 setMessages([]);
                 setFetching(false);
                 return;
             }
             try {
+                console.log('Making API call to getChatMessages with:', { chatId, userId: user.id, userType: 'guest' });
                 const msgs = await getChatMessages(chatId, user.id, 'guest');
+                console.log('Messages fetched:', msgs);
                 setMessages(Array.isArray(msgs) ? msgs : []);
                 setFetchError(null);
-            } catch (e) {
-                setFetchError('メッセージの取得に失敗しました');
+            } catch (e: any) {
+                console.error('Error fetching messages:', e);
+                if (e.response) {
+                    console.error('API Error response:', e.response.data);
+                    setFetchError(`メッセージの取得に失敗しました: ${e.response.status} ${e.response.statusText}`);
+                } else if (e.request) {
+                    console.error('Network error:', e.request);
+                    setFetchError('ネットワークエラーが発生しました');
+                } else {
+                    console.error('Other error:', e.message);
+                    setFetchError('メッセージの取得に失敗しました');
+                }
             } finally {
                 setFetching(false);
             }
         };
         fetchMessages();
-    }, [chatId]);
+    }, [chatId, user, isUserLoaded]);
 
     useEffect(() => {
         // Fetch reservation_id and cast information for this chat
         setCastLoading(true);
         getChatById(chatId).then(chat => {
+            console.log('Chat info fetched:', chat);
             if (chat && chat.reservation_id) setReservationId(chat.reservation_id);
             if (chat && chat.cast) setCastInfo(chat.cast);
-        }).catch(() => {
+        }).catch((error: any) => {
+            console.error('Error fetching chat info:', error);
             setCastInfo(null);
         }).finally(() => {
             setCastLoading(false);
@@ -134,7 +168,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         getGuestReservations(user.id).then(setGuestReservations).catch(() => setGuestReservations([]));
     }, [user?.id]);
 
+    // Set up real-time listener for chat messages
     useChatMessages(chatId, (message) => {
+        // Only process real-time messages if initial fetch is complete and user is loaded
+        if (fetching || !isUserLoaded) return;
+        
         // Attach full gift object if missing
         if (message.gift_id && !message.gift && Array.isArray(gifts)) {
             const foundGift = gifts.find(g => g.id === message.gift_id);
@@ -300,29 +338,52 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
 
             setSending(true);
             setSendError(null);
+            
+            // Create optimistic message
+            const optimisticId = `optimistic-${Date.now()}`;
+            const optimisticMessage = {
+                id: optimisticId,
+                chat_id: chatId,
+                sender_guest_id: user.id,
+                message: input.trim(),
+                image: imagePreview,
+                created_at: new Date().toISOString(),
+                guest: user,
+                isOptimistic: true
+            };
+            
+            // Add optimistic message immediately
+            setMessages(prev => [...prev, optimisticMessage]);
+            
+            // Clear input immediately
+            const messageText = input.trim();
+            const imageFile = attachedFile;
+            setInput('');
+            setAttachedFile(null);
+            setImagePreview(null);
+            
             try {
                 const payload: any = {
                     chat_id: chatId,
                     sender_guest_id: user.id,
                 };
-                if (input.trim()) payload.message = input.trim();
-                if (attachedFile) payload.image = attachedFile;
-
-                // Optimistically add the message (text or image)
-                const optimisticId = `optimistic-${Date.now()}`;
-                // setMessages(prev => [...prev, optimisticMsg]);
+                if (messageText) payload.message = messageText;
+                if (imageFile) payload.image = imageFile;
 
                 // Send to backend
                 const realMsg = await sendMessage(payload);
 
                 // Replace optimistic message with real one
                 setMessages(prev => prev.map(m => m.id === optimisticId ? realMsg : m));
-
-                setInput('');
-                setAttachedFile(null);
-                setImagePreview(null);
-            } catch (e) {
-                setSendError('メッセージの送信に失敗しました');
+            } catch (e: any) {
+                // Remove optimistic message on error
+                setMessages(prev => prev.filter(m => m.id !== optimisticId));
+                
+                if (e.response?.data?.error === 'Insufficient points to send this gift') {
+                    setSendError(`ポイントが不足しています。必要: ${e.response.data.required_points}P、所持: ${e.response.data.available_points}P`);
+                } else {
+                    setSendError('メッセージの送信に失敗しました');
+                }
             } finally {
                 setSending(false);
             }
@@ -339,7 +400,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 <img
                     src={castInfo?.avatar ? getFirstAvatarUrl(castInfo.avatar) : '/assets/avatar/female.png'}
                     alt="avatar"
-                    className="w-8 h-8 rounded-full mr-2 border border-secondary"
+                    className="w-8 h-8 rounded-full mr-2 border border-secondary cursor-pointer"
+                    onClick={() => {
+                        navigate(`/cast/${castInfo.id}`);
+                    }}
                     onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.src = '/assets/avatar/female.png';
@@ -382,7 +446,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 }}
             >
                 {fetching ? (
-                    <div className="flex justify-center items-center h-40 text-white">ローディング...</div>
+                    <div className="flex justify-center items-center h-40">
+                        <Spinner /> 
+                    </div>
                 ) : fetchError ? (
                     <div className="text-center text-red-400 py-10">{fetchError}</div>
                 ) : !chatId || isNaN(Number(chatId)) ? (
@@ -468,7 +534,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                             <span>{senderName}</span>
                                         </div>
                                     )}
-                                    <div className={`${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''}`}>
+                                    <div className={`${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
                                         {msg.gift_id && msg.gift && (
                                             <div className="flex items-center mb-1">
                                                 <span className="text-3xl mr-2">
@@ -476,6 +542,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                 </span>
                                                 <span className="font-bold">{msg.gift.name || 'ギフト'}</span>
                                                 <span className="ml-2 text-xs text-primary font-bold">{typeof msg.gift.points === 'number' ? msg.gift.points : 0}P</span>
+                                                {msg.isOptimistic && (
+                                                    <span className="ml-2 text-xs text-yellow-300">送信中...</span>
+                                                )}
                                             </div>
                                         )}
                                         {msg.image && (
@@ -493,6 +562,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                             />
                                         )}
                                         {msg.message}
+                                        {msg.isOptimistic && !msg.gift_id && (
+                                            <div className="text-xs text-yellow-300 mt-1">送信中...</div>
+                                        )}
                                     </div>
                                     <div className="text-xs text-gray-400 mt-1 text-right">
                                         {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''} */}
@@ -679,6 +751,28 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                         setShowGift(false);
                                         setSending(true);
                                         setSendError(null);
+                                        
+                                        // Create optimistic gift message
+                                        const optimisticId = `optimistic-gift-${Date.now()}`;
+                                        const optimisticGiftMessage = {
+                                            id: optimisticId,
+                                            chat_id: chatId,
+                                            sender_guest_id: user.id,
+                                            gift_id: gift.id,
+                                            gift: {
+                                                id: gift.id,
+                                                name: gift.name || gift.label,
+                                                icon: gift.icon,
+                                                points: gift.points
+                                            },
+                                            created_at: new Date().toISOString(),
+                                            guest: user,
+                                            isOptimistic: true
+                                        };
+                                        
+                                        // Add optimistic gift message immediately
+                                        setMessages((prev) => [...prev, optimisticGiftMessage]);
+                                        
                                         try {
                                             const sent = await sendMessage({
                                                 chat_id: chatId,
@@ -694,11 +788,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                     points: gift.points
                                                 };
                                             }
-                                            // Add the sent message to the messages array immediately
-                                            setMessages((prev) => [...prev, sent]);
+                                            // Replace optimistic message with real one
+                                            setMessages((prev) => prev.map(m => m.id === optimisticId ? sent : m));
                                             // Refresh user points after sending gift
                                             refreshUser();
                                         } catch (e: any) {
+                                            // Remove optimistic message on error
+                                            setMessages((prev) => prev.filter(m => m.id !== optimisticId));
+                                            
                                             if (e.response?.data?.error === 'Insufficient points to send this gift') {
                                                 setSendError(`ポイントが不足しています。必要: ${e.response.data.required_points}P、所持: ${e.response.data.available_points}P`);
                                             } else {
@@ -844,6 +941,29 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                     if (!user || (user.points ?? 0) < selectedGift.points) return;
                                     setSending(true);
                                     setSendError(null);
+                                    
+                                    // Create optimistic gift message
+                                    const optimisticId = `optimistic-gift-detail-${Date.now()}`;
+                                    const optimisticGiftMessage = {
+                                        id: optimisticId,
+                                        chat_id: chatId,
+                                        sender_guest_id: user.id,
+                                        gift_id: selectedGift.id,
+                                        gift: {
+                                            id: selectedGift.id,
+                                            name: selectedGift.name || selectedGift.label,
+                                            icon: selectedGift.icon,
+                                            points: selectedGift.points,
+                                            description: selectedGift.description
+                                        },
+                                        created_at: new Date().toISOString(),
+                                        guest: user,
+                                        isOptimistic: true
+                                    };
+                                    
+                                    // Add optimistic gift message immediately
+                                    setMessages((prev) => [...prev, optimisticGiftMessage]);
+                                    
                                     try {
                                         const payload: any = {
                                             chat_id: chatId,
@@ -863,11 +983,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                 description: giftObj.description
                                             };
                                         }
-                                        setMessages((prev) => [...prev, sent]);
+                                        // Replace optimistic message with real one
+                                        setMessages((prev) => prev.map(m => m.id === optimisticId ? sent : m));
                                         refreshUser();
                                         setShowGiftDetailModal(false);
                                         setSelectedGift(null);
                                     } catch (e: any) {
+                                        // Remove optimistic message on error
+                                        setMessages((prev) => prev.filter(m => m.id !== optimisticId));
                                         setSendError('ギフトの送信に失敗しました');
                                     } finally {
                                         setSending(false);

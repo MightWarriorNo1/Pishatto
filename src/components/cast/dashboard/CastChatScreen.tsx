@@ -94,7 +94,7 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
         <div className="bg-white min-h-screen flex flex-col relative">
             {/* Header */}
             <div className="fixed max-w-md mx-auto left-0 right-0 items-center flex px-4 py-3 border-b border-secondary bg-primary h-16">
-                <button onClick={onBack} className="mr-2 hover:text-secondary cursor-pointer">
+                <button onClick={onBack} className="mr-2 text-white hover:text-secondary cursor-pointer">
                     <ChevronLeft size={30} />
                 </button>
                 <img

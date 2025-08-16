@@ -1,8 +1,8 @@
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiStar } from 'react-icons/fi';
-import { getTopSatisfactionCasts } from '../../services/api';
+import { useTopSatisfactionCasts } from '../../hooks/useQueries';
 import getFirstAvatarUrl from '../../utils/avatar';
 import Spinner from '../ui/Spinner';
 
@@ -18,24 +18,7 @@ interface SatisfactionCast {
 
 const BestSatisfactionSection: React.FC = () => {
   const navigate = useNavigate();
-  const [casts, setCasts] = useState<SatisfactionCast[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    setLoading(true);
-    // Get top 5 casts with highest average feedback ratings
-    getTopSatisfactionCasts().then((data: SatisfactionCast[]) => {
-      // Transform data to include mock price and duration
-      const satisfactionData = data.map((cast: SatisfactionCast) => ({
-        ...cast,
-      }));
-      setCasts(satisfactionData);
-      setLoading(false);
-    }).catch((error: any) => {
-      console.error('Failed to fetch best satisfaction data:', error);
-      setLoading(false);
-    });
-  }, []);
+  const { data: casts = [], isLoading: loading } = useTopSatisfactionCasts();
 
   const handleCastClick = (castId: number) => {
     navigate(`/cast/${castId}`);

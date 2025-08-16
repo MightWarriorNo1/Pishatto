@@ -1,8 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
-import { getFootprints } from '../../services/api';
+import { useGuestFootprints } from '../../hooks/useQueries';
 import Spinner from '../ui/Spinner';
+
+interface FootprintItem {
+  id: number;
+  avatar?: string;
+  nickname?: string;
+  cast_id: number;
+  updated_at?: string;
+  created_at?: string;
+}
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -25,27 +34,8 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
 const FootprintsSection: React.FC = () => {
   const { user } = useUser();
   const navigate = useNavigate();
-  const [footprints, setFootprints] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (user) {
-      setLoading(true);
-      setError(null);
-      getFootprints(user.id)
-        .then((data) => {
-          // The backend now returns unique casts, so we can use the data directly
-          setFootprints(data.history || []);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error('Failed to fetch footprints:', err);
-          setError('足あとの取得に失敗しました');
-          setLoading(false);
-        });
-    }
-  }, [user]);
+  const { data: footprintsData, isLoading: loading, error } = useGuestFootprints(user?.id || 0);
+  const footprints = footprintsData?.history || [];
 
   const handleAvatarClick = (castId: number) => {
     console.log('Avatar clicked for cast ID:', castId);
@@ -68,7 +58,7 @@ const FootprintsSection: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 bg-primary rounded-lg border border-secondary">
         <h2 className="text-lg font-bold text-center mb-2 text-white">エラーが発生しました</h2>
-        <p className="text-sm text-white text-center">{error}</p>
+        <p className="text-sm text-white text-center">足あとの取得に失敗しました</p>
       </div>
     );
   }
@@ -85,7 +75,7 @@ const FootprintsSection: React.FC = () => {
   return (
     <div className="bg-primary rounded-lg shadow p-4 mb-4">
       <h2 className="font-bold text-lg mb-2 text-white">足あと（あなたのプロフィールを見たキャスト）</h2>
-      {footprints.map((item) => (
+      {footprints.map((item: FootprintItem) => (
         <div key={item.id} className="bg-white/10 rounded-lg shadow p-3 border border-secondary mb-2">
           <div className="flex space-x-4 items-center">
             <div className="w-16 h-16">
@@ -101,7 +91,7 @@ const FootprintsSection: React.FC = () => {
             </div>
             <div className="flex-1">
               <span className="font-medium text-white">{item.nickname || ''}</span>
-              <div className="text-xs text-white mt-1">{new Date(item.updated_at || item.created_at).toLocaleString()}</div>
+              <div className="text-xs text-white mt-1">{new Date(item.updated_at || item.created_at || '').toLocaleString()}</div>
             </div>
           </div>
         </div>
