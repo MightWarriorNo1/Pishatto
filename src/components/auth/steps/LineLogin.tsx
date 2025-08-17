@@ -13,8 +13,8 @@ interface LineLoginProps {
 
 const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, onError }) => {
     const navigate = useNavigate();
-    const { setUser } = useUser();
-    const { setCast } = useCast();
+    const { setUser, resetLineAuthFlag } = useUser();
+    const { setCast, resetLineAuthFlag: resetCastLineAuthFlag } = useCast();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +65,8 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
             if (data.success) {
                 if (data.user_type === 'guest') {
                     console.log('LineLogin: Processing guest login...');
+                    // Reset LINE auth flag since user is explicitly logging in
+                    resetLineAuthFlag();
                     // Set user in context first
                     setUser(data.user);
                     onSuccess?.(data.user);
@@ -75,6 +77,8 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                     }, 100);
                 } else if (data.user_type === 'cast') {
                     console.log('LineLogin: Processing cast login...', data.user);
+                    // Reset LINE auth flag since cast is explicitly logging in
+                    resetCastLineAuthFlag();
                     // Set cast in context first and wait for it to be properly set
                     setCast(data.user);
                     onSuccess?.(data.user);

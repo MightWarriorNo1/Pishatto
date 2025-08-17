@@ -22,7 +22,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
   updateFormData,
   formData,
 }) => {
-  const { setUser, setPhone } = useUser();
+  const { setUser, setPhone, resetLineAuthFlag } = useUser();
   const [step, setStep] = useState<'phone' | 'code'>('phone');
   const [phoneNumber, setPhoneNumber] = useState(formData.phoneNumber || '');
   const [verificationCode, setVerificationCode] = useState<string[]>(['', '', '', '', '', '']);
@@ -163,7 +163,11 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
             // Log the guest in; backend will honor previously verified phone
             await guestLogin(phoneNumber, code);
             const { guest } = await getGuestProfile(phoneNumber);
-            if (guest) setUser(guest);
+            if (guest) {
+              // Reset LINE auth flag since user is explicitly logging in via phone
+              resetLineAuthFlag();
+              setUser(guest);
+            }
             window.location.href = '/dashboard';
           } catch (e) {
             setError('ログインに失敗しました');

@@ -19,6 +19,7 @@ interface UserContextType {
   showSessionWarning: boolean;
   remainingSessionTime: number;
   extendSession: () => void;
+  resetLineAuthFlag: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -36,6 +37,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   });
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [remainingSessionTime, setRemainingSessionTime] = useState(15);
+  const [skipLineAuth, setSkipLineAuth] = useState(() => {
+    return localStorage.getItem('skipLineAuth') === 'true';
+  });
 
   // Session timeout manager
   const sessionTimeout = createSessionTimeout({
@@ -72,9 +76,15 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     if (user?.line_id) {
       try {
         await lineLogout();
+        // Set flag to skip LINE auth checks after logout
+        setSkipLineAuth(true);
+        // Store this flag in localStorage to persist across page reloads
+        localStorage.setItem('skipLineAuth', 'true');
       } catch (error) {
         console.error('Error calling LINE logout:', error);
         // Continue with logout even if LINE logout fails
+        setSkipLineAuth(true);
+        localStorage.setItem('skipLineAuth', 'true');
       }
     }
     
@@ -94,6 +104,11 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const extendSession = () => {
     sessionTimeout.reset();
     setShowSessionWarning(false);
+  };
+
+  const resetLineAuthFlag = () => {
+    setSkipLineAuth(false);
+    localStorage.removeItem('skipLineAuth');
   };
 
   const refreshUser = async () => {
@@ -161,8 +176,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         return;
       }
       
-      // First check Line authentication
-      const lineAuthSuccess = await checkLineAuthentication();
+      // First check Line authentication (only if not skipping due to logout)
+      let lineAuthSuccess = false;
+      if (!skipLineAuth) {
+        lineAuthSuccess = await checkLineAuthentication();
+      } else {
+        console.log('Skipping LINE authentication check due to logout flag');
+      }
       
       // If Line auth didn't set a user, check regular guest auth
       if (!user && !lineAuthSuccess) { // Only check guest auth if line auth failed or user is null
@@ -232,7 +252,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       checkLineAuthentication,
       showSessionWarning,
       remainingSessionTime,
-      extendSession
+      extendSession,
+      resetLineAuthFlag
     }}>
       {children}
       

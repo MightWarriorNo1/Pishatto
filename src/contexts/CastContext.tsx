@@ -18,6 +18,7 @@ interface CastContextType {
   showSessionWarning: boolean;
   remainingSessionTime: number;
   extendSession: () => void;
+  resetLineAuthFlag: () => void;
 }
 
 const CastContext = createContext<CastContextType | undefined>(undefined);
@@ -36,6 +37,9 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   const [isSettingCastExternally, setIsSettingCastExternally] = useState(false);
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [remainingSessionTime, setRemainingSessionTime] = useState(15);
+  const [skipLineAuth, setSkipLineAuth] = useState(() => {
+    return localStorage.getItem('skipLineAuth') === 'true';
+  });
 
   // Session timeout manager
   const sessionTimeout = createSessionTimeout({
@@ -113,9 +117,15 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     if (cast?.line_id) {
       try {
         await lineLogout();
+        // Set flag to skip LINE auth checks after logout
+        setSkipLineAuth(true);
+        // Store this flag in localStorage to persist across page reloads
+        localStorage.setItem('skipLineAuth', 'true');
       } catch (error) {
         console.error('Error calling LINE logout:', error);
         // Continue with logout even if LINE logout fails
+        setSkipLineAuth(true);
+        localStorage.setItem('skipLineAuth', 'true');
       }
     }
     
@@ -135,6 +145,11 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   const extendSession = () => {
     sessionTimeout.reset();
     setShowSessionWarning(false);
+  };
+
+  const resetLineAuthFlag = () => {
+    setSkipLineAuth(false);
+    localStorage.removeItem('skipLineAuth');
   };
 
   const refreshCast = async () => {
@@ -196,9 +211,14 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
         return;
       }
       
-      // First check Line authentication
-      const lineAuthSuccess = await checkLineAuthentication();
-      console.log('CastContext: Line auth check result:', { lineAuthSuccess, currentCast: cast });
+      // First check Line authentication (only if not skipping due to logout)
+      let lineAuthSuccess = false;
+      if (!skipLineAuth) {
+        lineAuthSuccess = await checkLineAuthentication();
+        console.log('CastContext: Line auth check result:', { lineAuthSuccess, currentCast: cast });
+      } else {
+        console.log('CastContext: Skipping LINE authentication check due to logout flag');
+      }
       
       // If Line auth didn't set a cast, check regular cast auth
       if (!cast && !lineAuthSuccess) {
@@ -300,7 +320,8 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
       isSettingCastExternally,
       showSessionWarning,
       remainingSessionTime,
-      extendSession
+      extendSession,
+      resetLineAuthFlag
     }}>
       {children}
       

@@ -1,5 +1,5 @@
 import { ChevronLeft } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { guestUpdateProfile } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 
@@ -56,6 +56,33 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
 
+    // Update form values when user data changes, but only if values are different
+    useEffect(() => {
+        if (user) {
+            const newValues = {
+                '身長': user.height?.toString() || '未選択',
+                '居住地': user.residence || '未選択',
+                '出身地': user.birthplace || '未選択',
+                '学歴': user.education || '未選択',
+                '年収': user.annual_income || '未選択',
+                'お仕事': user.occupation || '未選択',
+                'お酒': user.alcohol || '未選択',
+                'タバコ': user.tobacco || '未選択',
+                '兄弟姉妹': user.siblings || '未選択',
+                '同居人': user.cohabitant || '未選択',
+            };
+            
+            // Only update if values are actually different
+            const hasChanges = Object.keys(newValues).some(key => 
+                newValues[key as keyof typeof newValues] !== values[key]
+            );
+            
+            if (hasChanges) {
+                setValues(newValues);
+            }
+        }
+    }, [user]);
+
     const openPicker = (field: string) => {
         setTempValue(values[field] !== '未選択' ? values[field] : (fieldOptions[field]?.[0] || ''));
         setPicker({ field, value: values[field] });
@@ -67,6 +94,8 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
     };
 
     const handleSave = async () => {
+        console.log('Starting profile save...', { user, phone, line_id: user?.line_id });
+        
         // Check if user has either phone or line_id
         if (!phone && !user?.line_id) {
             setMessage('電話番号またはLINE IDが必要です');
@@ -85,21 +114,78 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
                 payload.line_id = user.line_id;
             }
             
-            payload.height = Number(values['身長']);
-            payload.residence = values['居住地'];
-            payload.birthplace = values['出身地'];
-            payload.education = values['学歴'];
-            payload.annual_income = values['年収'];
-            payload.occupation = values['お仕事'];
-            payload.alcohol = values['お酒'];
-            payload.tobacco = values['タバコ'];
-            payload.siblings = values['兄弟姉妹'];
-            payload.cohabitant = values['同居人'];
+            // Map Japanese field names to English field names and only include non-default values
+            const fieldMapping: { [key: string]: string } = {
+                '身長': 'height',
+                '居住地': 'residence',
+                '出身地': 'birthplace',
+                '学歴': 'education',
+                '年収': 'annual_income',
+                'お仕事': 'occupation',
+                'お酒': 'alcohol',
+                'タバコ': 'tobacco',
+                '兄弟姉妹': 'siblings',
+                '同居人': 'cohabitant'
+            };
+            
+            // Only include fields that have been changed from default
+            Object.entries(values).forEach(([japaneseField, value]) => {
+                if (value !== '未選択') {
+                    const englishField = fieldMapping[japaneseField];
+                    if (englishField) {
+                        // Convert height to number, others to string
+                        if (englishField === 'height') {
+                            payload[englishField] = Number(value);
+                        } else {
+                            payload[englishField] = value;
+                        }
+                    }
+                }
+            });
+            
+            console.log('Profile update payload:', payload);
             const response = await guestUpdateProfile(payload);
-            if (response.guest) setUser(response.guest);
+            console.log('Profile update response:', response);
+            
+            // Refresh user data to ensure we have the latest information
+            if (user?.line_id) {
+                try {
+                    const { getGuestProfileByLineId } = await import('../../services/api');
+                    const refreshResult = await getGuestProfileByLineId(user.line_id);
+                    if (refreshResult.guest) {
+                        console.log('Refreshed user data:', refreshResult.guest);
+                        setUser(refreshResult.guest);
+                    }
+                } catch (refreshError) {
+                    console.error('Error refreshing user data:', refreshError);
+                    // Fallback to using response data if refresh fails
+                    if (response.guest) {
+                        setUser(response.guest);
+                    }
+                }
+            } else if (phone) {
+                try {
+                    const { getGuestProfile } = await import('../../services/api');
+                    const refreshResult = await getGuestProfile(phone);
+                    if (refreshResult.guest) {
+                        console.log('Refreshed user data:', refreshResult.guest);
+                        setUser(refreshResult.guest);
+                    }
+                } catch (refreshError) {
+                    console.error('Error refreshing user data:', refreshError);
+                    // Fallback to using response data if refresh fails
+                    if (response.guest) {
+                        setUser(response.guest);
+                    }
+                }
+            } else if (response.guest) {
+                setUser(response.guest);
+            }
+            
             setMessage('保存しました');
             setTimeout(() => onBack(), 1000);
         } catch (e) {
+            console.error('Profile update error:', e);
             setMessage('保存に失敗しました');
         } finally {
             setIsSaving(false);
