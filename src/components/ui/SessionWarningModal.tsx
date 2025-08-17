@@ -6,7 +6,7 @@ interface SessionWarningModalProps {
   isOpen: boolean;
   remainingMinutes: number;
   onExtend: () => void;
-  onLogout: () => void;
+  onLogout: () => Promise<void>;
   onClose: () => void;
 }
 
@@ -26,7 +26,9 @@ const SessionWarningModal: React.FC<SessionWarningModalProps> = ({
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(interval);
-          onLogout(); // Auto logout when countdown reaches 0
+          onLogout().catch(error => {
+            console.error('Error during auto logout:', error);
+          }); // Auto logout when countdown reaches 0
           return 0;
         }
         return prev - 1;
@@ -88,7 +90,9 @@ const SessionWarningModal: React.FC<SessionWarningModalProps> = ({
             セッション継続
           </button>
           <button
-            onClick={onLogout}
+            onClick={() => onLogout().catch(error => {
+              console.error('Error during manual logout:', error);
+            })}
             className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors font-medium flex items-center justify-center"
           >
             <LogOut className="w-4 h-4 mr-2" />

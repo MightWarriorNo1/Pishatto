@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { CastProfile, getCastProfileById, checkCastAuth, checkLineAuthCast } from '../services/api';
+import { CastProfile, getCastProfileById, checkCastAuth, checkLineAuthCast, lineLogout } from '../services/api';
 import { createSessionTimeout, checkSessionValidity, clearSession } from '../utils/sessionTimeout';
 import SessionWarningModal from '../components/ui/SessionWarningModal';
 
@@ -12,7 +12,7 @@ interface CastContextType {
   setCastId: (castId: number | null) => void;
   refreshCast: () => void;
   updateCast: (updates: Partial<CastProfile>) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   checkLineAuthentication: () => Promise<boolean>;
   isSettingCastExternally: boolean;
   showSessionWarning: boolean;
@@ -41,7 +41,9 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   const sessionTimeout = createSessionTimeout({
     onExpire: () => {
       console.log('Cast session expired, logging out user');
-      logout();
+      logout().catch(error => {
+        console.error('Error during cast session timeout logout:', error);
+      });
     },
     onWarning: () => {
       console.log('Cast session warning, showing modal');
@@ -106,7 +108,17 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // If cast has LINE ID, call server-side LINE logout to clear server session
+    if (cast?.line_id) {
+      try {
+        await lineLogout();
+      } catch (error) {
+        console.error('Error calling LINE logout:', error);
+        // Continue with logout even if LINE logout fails
+      }
+    }
+    
     setCast(null);
     setCastId(null);
     setShowSessionWarning(false);
@@ -172,7 +184,7 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
       // Check if session is still valid
       if (cast && !checkSessionValidity()) {
         console.log('Cast session expired, logging out user');
-        logout();
+        await logout();
         setLoading(false);
         return;
       }

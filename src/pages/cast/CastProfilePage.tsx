@@ -210,9 +210,15 @@ const CastProfilePage: React.FC = () => {
         setShowLogoutConfirm(true);
     };
 
-    const confirmLogout = () => {
-        logout();
-        setShowLogoutConfirm(false);
+    const confirmLogout = async () => {
+        try {
+            await logout();
+            setShowLogoutConfirm(false);
+        } catch (error) {
+            console.error('Error during logout:', error);
+            // Still close the modal even if logout fails
+            setShowLogoutConfirm(false);
+        }
     };
 
     const cancelLogout = () => {

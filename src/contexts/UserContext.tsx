@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { GuestProfile, getGuestProfile, getGuestProfileByLineId, GuestInterest, checkGuestAuth, checkLineAuthGuest } from '../services/api';
+import { GuestProfile, getGuestProfile, getGuestProfileByLineId, GuestInterest, checkGuestAuth, checkLineAuthGuest, lineLogout } from '../services/api';
 import { createSessionTimeout, checkSessionValidity, clearSession } from '../utils/sessionTimeout';
 import SessionWarningModal from '../components/ui/SessionWarningModal';
 
@@ -14,7 +14,7 @@ interface UserContextType {
   setPhone: (phone: string | null) => void;
   refreshUser: () => void;
   updateUser: (updates: Partial<GuestProfile>) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   checkLineAuthentication: () => Promise<boolean>;
   showSessionWarning: boolean;
   remainingSessionTime: number;
@@ -41,7 +41,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const sessionTimeout = createSessionTimeout({
     onExpire: () => {
       console.log('Session expired, logging out user');
-      logout();
+      logout().catch(error => {
+        console.error('Error during session timeout logout:', error);
+      });
     },
     onWarning: () => {
       console.log('Session warning, showing modal');
@@ -65,7 +67,17 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // If user has LINE ID, call server-side LINE logout to clear server session
+    if (user?.line_id) {
+      try {
+        await lineLogout();
+      } catch (error) {
+        console.error('Error calling LINE logout:', error);
+        // Continue with logout even if LINE logout fails
+      }
+    }
+    
     setUser(null);
     setInterests([]);
     setPhone(null);
@@ -144,7 +156,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       // Check if session is still valid
       if (user && !checkSessionValidity()) {
         console.log('Session expired, logging out user');
-        logout();
+        await logout();
         setLoading(false);
         return;
       }

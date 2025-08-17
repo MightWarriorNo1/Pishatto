@@ -139,6 +139,7 @@ export interface Reservation {
 export interface CastProfile {
   id: number;
   phone?: string;
+  line_id?: string;
   nickname: string;
   avatar?: string;
   birth_year?: number;
