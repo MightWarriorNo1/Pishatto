@@ -67,7 +67,18 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
     };
 
     const handleSave = async () => {
-        if (!phone) return;
+        // Check if user has either phone or line_id
+        if (!phone && !user?.line_id) {
+            setMessage('電話番号またはLINE IDが必要です');
+            return;
+        }
+        
+        // If user only has line_id but no phone, inform them they need to add a phone number
+        if (!phone && user?.line_id) {
+            setMessage('プロフィール更新には電話番号が必要です。電話番号を追加してください。');
+            return;
+        }
+        
         setIsSaving(true);
         setMessage(null);
         try {
@@ -101,8 +112,21 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
                     <ChevronLeft />
                 </button>
                 <span className="text-lg font-bold flex-1 text-center text-white">基本情報</span>
-                <button className="text-white font-bold" onClick={handleSave} disabled={isSaving}>{isSaving ? '保存中...' : '保存'}</button>
+                <button 
+                    className="text-white font-bold" 
+                    onClick={handleSave} 
+                    disabled={isSaving || (!phone && !!user?.line_id)}
+                    title={!phone && user?.line_id ? '電話番号が必要です' : ''}
+                >
+                    {isSaving ? '保存中...' : '保存'}
+                </button>
             </div>
+            {/* Show message when user needs phone number */}
+            {!phone && user?.line_id && (
+                <div className="px-4 py-2 bg-yellow-500 text-white text-sm text-center">
+                    プロフィール更新には電話番号が必要です。設定から電話番号を追加してください。
+                </div>
+            )}
             {/* Profile fields */}
             {fields.map((label) => (
                 <div
