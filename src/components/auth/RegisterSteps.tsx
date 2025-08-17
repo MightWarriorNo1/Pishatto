@@ -197,8 +197,7 @@ const RegisterSteps: React.FC = () => {
             formDataToSend.append('line_avatar', finalLineData.line_avatar);
           }
           
-          // Add additional data fields individually instead of as JSON object
-          // The backend expects additional_data to be an array
+          // Add form data directly to match database fields
           formDataToSend.append('phone', formData.phoneNumber || '');
           formDataToSend.append('verification_code', formData.verificationCode || '');
           formDataToSend.append('nickname', formData.nickname || '');
@@ -215,20 +214,6 @@ const RegisterSteps: React.FC = () => {
             });
           }
           
-          // Also add additional_data as an array to satisfy backend validation
-          // This maintains compatibility with existing backend expectations
-          const additionalDataArray = [
-            formData.phoneNumber || '',
-            formData.verificationCode || '',
-            formData.nickname || '',
-            formData.favorite_area || '',
-            formData.age || '',
-            formData.shiatsu || ''
-          ];
-          additionalDataArray.forEach((value, index) => {
-            formDataToSend.append(`additional_data[${index}]`, value);
-          });
-
           // Add profile photo if present
           if (formData.profilePhoto) {
             formDataToSend.append('profile_photo', formData.profilePhoto);
