@@ -232,20 +232,8 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
               </button>
             )}
           </div>
-          
-          {/* Refresh Button */}
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className={`p-2 rounded-full border border-secondary text-white hover:bg-secondary/20 transition-colors ${
-              isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            title="データを更新"
-          >
-            <RefreshCw 
-              size={20} 
-              className={isRefreshing ? 'animate-spin' : ''} 
-            />
+          <button className="hover:text-secondary" onClick={() => setShowQRCode(true)}>
+            <QrCode />
           </button>
         </div>
         
@@ -332,11 +320,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
           </div>
         )}
         
-        <div className="flex items-center justify-between mt-3">
-          <button className="hover:text-secondary" onClick={() => setShowQRCode(true)}>
-            <QrCode />
-          </button>
-        </div>
+        
         
         {/* Backdrop to prevent interaction with main content when search results are shown */}
         {showResults && (

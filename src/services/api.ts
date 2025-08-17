@@ -34,7 +34,8 @@ export interface GuestRegisterData {
 }
 
 export interface GuestProfileUpdateData {
-  phone: string;
+  phone?: string;
+  line_id?: string;
   nickname?: string;
   favorite_area?: string;
   profilePhoto?: File | null;
@@ -226,6 +227,11 @@ export const getGuestProfile = async (phone: string): Promise<{ guest: GuestProf
   return { guest: response.data.guest, interests: response.data.guest.interests || [] };
 };
 
+export const getGuestProfileByLineId = async (line_id: string): Promise<{ guest: GuestProfile, interests: GuestInterest[] }> => {
+  const response = await api.get(`/guest/profile/line/${line_id}`);
+  return { guest: response.data.guest, interests: response.data.guest.interests || [] };
+};
+
 export const getGuestProfileById = async (id: number) => {
   const response = await api.get(`/guest/profile/id/${id}`);
   return response.data.guest;
@@ -234,8 +240,13 @@ export const getGuestProfileById = async (id: number) => {
 export const guestUpdateProfile = async (data: GuestProfileUpdateData) => {
   const formData = new FormData();
   
-  // Always include phone as it's required for identification
-  formData.append('phone', data.phone);
+  // Include phone or line_id for identification
+  if (data.phone) {
+    formData.append('phone', data.phone);
+  }
+  if (data.line_id) {
+    formData.append('line_id', data.line_id);
+  }
   
   // Add other fields if they exist
   if (data.nickname) formData.append('nickname', data.nickname);
@@ -820,19 +831,35 @@ export const uploadCastAvatar = async (file: File) => {
   return response.data;
 };
 
-export const uploadGuestAvatar = async (file: File, phone: string) => {
+export const uploadGuestAvatar = async (file: File, identifier: { phone?: string; line_id?: string }) => {
   const formData = new FormData();
   formData.append('avatar', file);
-  formData.append('phone', phone);
+  
+  if (identifier.phone) {
+    formData.append('phone', identifier.phone);
+  }
+  if (identifier.line_id) {
+    formData.append('line_id', identifier.line_id);
+  }
+  
   const response = await api.post('/users/avatar', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data;
 };
 
-export const deleteGuestAvatar = async (phone: string) => {
+export const deleteGuestAvatar = async (identifier: { phone?: string; line_id?: string }) => {
+  const data: any = {};
+  
+  if (identifier.phone) {
+    data.phone = identifier.phone;
+  }
+  if (identifier.line_id) {
+    data.line_id = identifier.line_id;
+  }
+  
   const response = await api.delete('/users/avatar', {
-    data: { phone }
+    data,
   });
   return response.data;
 };

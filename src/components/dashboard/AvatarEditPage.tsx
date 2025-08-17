@@ -103,7 +103,7 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
             return;
         }
 
-        if (!user?.phone) {
+        if (!user?.phone && !user?.line_id) {
             alert('ユーザー情報が見つかりません。');
             return;
         }
@@ -127,7 +127,8 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
         }, 50); // Update every 50ms for smoother animation
 
         try {
-            const data = await uploadGuestAvatar(file, user.phone);
+            const identifier = user.phone ? { phone: user.phone } : { line_id: user.line_id! };
+            const data = await uploadGuestAvatar(file, identifier);
 
             setUploadProgress(100);
 
@@ -175,7 +176,8 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
         setUploading(true);
 
         try {
-            await deleteGuestAvatar(user.phone);
+            const identifier = user.phone ? { phone: user.phone } : { line_id: user.line_id! };
+            await deleteGuestAvatar(identifier);
 
             // Update user context to remove avatar
             if (updateUser) {

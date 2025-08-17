@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { GuestProfile, getGuestProfile, GuestInterest, checkGuestAuth, checkLineAuthGuest } from '../services/api';
+import { GuestProfile, getGuestProfile, getGuestProfileByLineId, GuestInterest, checkGuestAuth, checkLineAuthGuest } from '../services/api';
 import { createSessionTimeout, checkSessionValidity, clearSession } from '../utils/sessionTimeout';
 import SessionWarningModal from '../components/ui/SessionWarningModal';
 
@@ -85,7 +85,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   };
 
   const refreshUser = async () => {
-    if (!phone) {
+    if (!phone && !user?.line_id) {
       setUser(null);
       setInterests([]);
       setLoading(false);
@@ -93,11 +93,21 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
     try {
       setLoading(true);
-      const { guest } = await getGuestProfile(phone);
-      setUser(guest);
-      setInterests(guest.interests || []);
-      // Reset session timeout when user data is refreshed
-      sessionTimeout.reset();
+      let guest;
+      if (phone) {
+        const result = await getGuestProfile(phone);
+        guest = result.guest;
+      } else if (user?.line_id) {
+        const result = await getGuestProfileByLineId(user.line_id);
+        guest = result.guest;
+      }
+      
+      if (guest) {
+        setUser(guest);
+        setInterests(guest.interests || []);
+        // Reset session timeout when user data is refreshed
+        sessionTimeout.reset();
+      }
     } catch (error) {
       setUser(null);
       setInterests([]);
@@ -188,9 +198,9 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    if (phone && !user) {
+    if ((phone || user?.line_id) && !user) {
       refreshUser();
-    } else if (!phone) {
+    } else if (!phone && !user?.line_id) {
       setLoading(false);
     }
   }, [phone, user]);

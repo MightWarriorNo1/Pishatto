@@ -78,7 +78,7 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
         try {
             const payload: any = {};
             
-            // Include phone if available, otherwise include line_id
+            // Use phone if available, otherwise use line_id
             if (phone) {
                 payload.phone = phone;
             } else if (user?.line_id) {
