@@ -9,14 +9,14 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     if (!avatarString) {
-        return '/assets/avatar/AdobeStock_1095142160_Preview.jpeg';
+        return '/assets/avatar/1.jpg';
     }
 
     // Split by comma and get the first non-empty avatar
     const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
 
     if (avatars.length === 0) {
-        return '/assets/avatar/AdobeStock_1095142160_Preview.jpeg';
+        return '/assets/avatar/1.jpg';
     }
 
     return `${API_BASE_URL}/${avatars[0]}`;
@@ -84,7 +84,7 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
         if (user?.avatar) {
             return getFirstAvatarUrl(user.avatar);
         }
-        return '/assets/avatar/AdobeStock_1095142160_Preview.jpeg'; // Default avatar
+        return '/assets/avatar/1.jpg'; // Default avatar
     };
 
     const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -233,7 +233,7 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
                         className="w-32 h-32 rounded-full object-cover border-4 border-secondary shadow cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={handleAvatarClick}
                         onError={(e) => {
-                            e.currentTarget.src = '/assets/avatar/AdobeStock_1095142160_Preview.jpeg';
+                            e.currentTarget.src = '/assets/avatar/1.jpg';
                         }}
                     />
                     {uploading && (

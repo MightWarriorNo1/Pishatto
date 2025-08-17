@@ -467,7 +467,7 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
                     ))}
                 </div>
             </div>
-            <div className="px-4 mt-8">
+            <div className="px-4 mt-8 pb-24">
                 <div className="font-bold mb-6 text-white">オイルの香り</div>
                 <div className="flex flex-wrap gap-2">
                     {oilScentOptions.map(opt => (
