@@ -159,7 +159,7 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
     };
 
     const handleDeleteAvatar = async () => {
-        if (!user?.phone) {
+        if (!user?.phone && !user?.line_id) {
             alert('ユーザー情報が見つかりません。');
             return;
         }
