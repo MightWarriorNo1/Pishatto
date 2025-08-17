@@ -73,16 +73,18 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
             return;
         }
         
-        // If user only has line_id but no phone, inform them they need to add a phone number
-        if (!phone && user?.line_id) {
-            setMessage('プロフィール更新には電話番号が必要です。電話番号を追加してください。');
-            return;
-        }
-        
         setIsSaving(true);
         setMessage(null);
         try {
-            const payload: any = { phone };
+            const payload: any = {};
+            
+            // Include phone if available, otherwise include line_id
+            if (phone) {
+                payload.phone = phone;
+            } else if (user?.line_id) {
+                payload.line_id = user.line_id;
+            }
+            
             payload.height = Number(values['身長']);
             payload.residence = values['居住地'];
             payload.birthplace = values['出身地'];
@@ -115,18 +117,12 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
                 <button 
                     className="text-white font-bold" 
                     onClick={handleSave} 
-                    disabled={isSaving || (!phone && !!user?.line_id)}
-                    title={!phone && user?.line_id ? '電話番号が必要です' : ''}
+                    disabled={isSaving}
                 >
                     {isSaving ? '保存中...' : '保存'}
                 </button>
             </div>
-            {/* Show message when user needs phone number */}
-            {!phone && user?.line_id && (
-                <div className="px-4 py-2 bg-yellow-500 text-white text-sm text-center">
-                    プロフィール更新には電話番号が必要です。設定から電話番号を追加してください。
-                </div>
-            )}
+
             {/* Profile fields */}
             {fields.map((label) => (
                 <div
