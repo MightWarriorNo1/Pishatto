@@ -214,6 +214,20 @@ const RegisterSteps: React.FC = () => {
               formDataToSend.append(`interests[${index}][tag]`, interest.tag);
             });
           }
+          
+          // Also add additional_data as an array to satisfy backend validation
+          // This maintains compatibility with existing backend expectations
+          const additionalDataArray = [
+            formData.phoneNumber || '',
+            formData.verificationCode || '',
+            formData.nickname || '',
+            formData.favorite_area || '',
+            formData.age || '',
+            formData.shiatsu || ''
+          ];
+          additionalDataArray.forEach((value, index) => {
+            formDataToSend.append(`additional_data[${index}]`, value);
+          });
 
           // Add profile photo if present
           if (formData.profilePhoto) {
