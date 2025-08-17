@@ -54,3 +54,4 @@ export const API_ENDPOINTS = {
   PAYMENTS: `${API_CONFIG.API_BASE_URL}/payments`,
   NOTIFICATIONS: `${API_CONFIG.API_BASE_URL}/notifications`
 };
+

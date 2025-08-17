@@ -107,3 +107,4 @@ export async function testCsrfWithRegistration(): Promise<boolean> {
         return false;
     }
 }
+

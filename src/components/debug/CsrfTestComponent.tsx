@@ -104,3 +104,4 @@ const CsrfTestComponent: React.FC = () => {
 };
 
 export default CsrfTestComponent;
+

@@ -197,19 +197,24 @@ const RegisterSteps: React.FC = () => {
             formDataToSend.append('line_avatar', finalLineData.line_avatar);
           }
           
-          // Add additional data as JSON string
-          const additionalData = {
-            phone: formData.phoneNumber,
-            verificationCode: formData.verificationCode,
-            nickname: formData.nickname,
-            favorite_area: formData.favorite_area,
-            location: formData.favorite_area,
-            interests: formData.interests,
-            age: formData.age,
-            shiatsu: formData.shiatsu,
-          };
-          formDataToSend.append('additional_data', JSON.stringify(additionalData));
+          // Add additional data fields individually instead of as JSON object
+          // The backend expects additional_data to be an array
+          formDataToSend.append('phone', formData.phoneNumber || '');
+          formDataToSend.append('verification_code', formData.verificationCode || '');
+          formDataToSend.append('nickname', formData.nickname || '');
+          formDataToSend.append('favorite_area', formData.favorite_area || '');
+          formDataToSend.append('location', formData.favorite_area || '');
+          formDataToSend.append('age', formData.age || '');
+          formDataToSend.append('shiatsu', formData.shiatsu || '');
           
+          // Handle interests array properly
+          if (formData.interests && formData.interests.length > 0) {
+            formData.interests.forEach((interest, index) => {
+              formDataToSend.append(`interests[${index}][category]`, interest.category);
+              formDataToSend.append(`interests[${index}][tag]`, interest.tag);
+            });
+          }
+
           // Add profile photo if present
           if (formData.profilePhoto) {
             formDataToSend.append('profile_photo', formData.profilePhoto);
@@ -364,14 +369,6 @@ const RegisterSteps: React.FC = () => {
   return (
     <div className="bg-white flex items-center justify-center min-h-screen">
       <div className="max-w-md w-full mx-auto bg-primary rounded-2xl shadow-lg border border-secondary">
-        {isLineRegistration && (
-          <div className="p-4 bg-secondary/20 border-b border-secondary/30">
-            <div className="text-center text-white text-sm">
-              <div className="font-semibold mb-1">LINEログイン</div>
-              <div>電話番号認証でアカウントを完成させてください</div>
-            </div>
-          </div>
-        )}
         {renderStep()}
       </div>
     </div>

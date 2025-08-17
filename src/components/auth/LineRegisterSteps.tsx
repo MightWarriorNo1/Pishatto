@@ -86,17 +86,22 @@ const LineRegisterSteps: React.FC = () => {
                     formDataToSend.append('line_avatar', lineData.line_avatar);
                 }
                 
-                // Add additional data as JSON string
-                const additionalData = {
-                    nickname: formData.nickname,
-                    favorite_area: formData.favorite_area,
-                    location: formData.favorite_area,
-                    interests: formData.interests,
-                    age: formData.age,
-                    shiatsu: formData.shiatsu,
-                };
-                formDataToSend.append('additional_data', JSON.stringify(additionalData));
+                // Add additional data fields individually instead of as JSON object
+                // The backend expects additional_data to be an array
+                formDataToSend.append('nickname', formData.nickname || '');
+                formDataToSend.append('favorite_area', formData.favorite_area || '');
+                formDataToSend.append('location', formData.favorite_area || '');
+                formDataToSend.append('age', formData.age || '');
+                formDataToSend.append('shiatsu', formData.shiatsu || '');
                 
+                // Handle interests array properly
+                if (formData.interests && formData.interests.length > 0) {
+                    formData.interests.forEach((interest, index) => {
+                        formDataToSend.append(`interests[${index}][category]`, interest.category);
+                        formDataToSend.append(`interests[${index}][tag]`, interest.tag);
+                    });
+                }
+
                 // Add profile photo if present
                 if (formData.profilePhoto) {
                     formDataToSend.append('profile_photo', formData.profilePhoto);
