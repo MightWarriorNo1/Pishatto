@@ -516,8 +516,8 @@ const CastDashboardInner: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-white flex flex-col items-center">
-            <div className="w-full max-w-md mx-auto flex flex-col flex-1 min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
+        <div className="fixed inset-0 bg-white flex flex-col items-center">
+            <div className="w-full max-w-md mx-auto flex flex-col flex-1 h-full bg-gradient-to-b from-primary via-primary to-secondary">
                 {loading ? (
                     <div className="flex-1 flex items-center justify-center">
                         <Spinner />
@@ -537,7 +537,7 @@ const CastDashboardInner: React.FC = () => {
                                     onSortChange={setSelectedSort}
                                     totalCount={tabFilteredCalls.length}
                                 />
-                                <div className="flex-1 bg-gradient-to-b from-primary via-primary to-secondary border-t border-secondary pb-24">
+                                <div className="flex-1 bg-gradient-to-b from-primary via-primary to-secondary border-t border-secondary pb-24 overflow-y-auto scrollbar-hidden">
                                     <div className="grid grid-cols-2 gap-2 p-2">
                                         {tabFilteredCalls.map((call, idx) => (
                                             <div
