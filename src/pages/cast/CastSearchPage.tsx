@@ -95,7 +95,9 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
             {/* Profile details */}
             <div className="px-4 py-2">
                 {loading ? (
-                  <Spinner />
+                    <div className="flex justify-center items-center h-full">
+                        <Spinner size="lg" />
+                    </div>
                 ) : profile ? (
                 <table className="w-full text-sm text-white">
                     <tbody>
@@ -722,7 +724,7 @@ const RepeatGuestsModal: React.FC<RepeatGuestsModalProps> = ({ isOpen, onClose, 
                 </div>
                 <div className="p-4 grid grid-cols-2 gap-4">
                     {guests.length === 0 ? (
-                        <div className="col-span-2 text-center text-white">該当ゲストなし</div>
+                        <div className="col-span-2 text-center text-white py-8">該当ゲストなし</div>
                     ) : (
                         guests.map((guest) => (
                             <div
@@ -795,9 +797,11 @@ const CastSearchPage: React.FC = () => {
             </div>
             <div className="gap-3 px-4 pb-4 max-w-md mx-auto overflow-x-auto flex flex-row items-center">
                 {loading ? (
+                    <div className="flex justify-center items-center w-full">
                         <Spinner />
+                    </div>
                 ) : repeatGuests.length === 0 ? (
-                  <div className="text-white col-span-2">該当ゲストなし</div>
+                  <div className="text-white w-full text-center">該当ゲストなし</div>
                 ) : repeatGuests.map((guest) => (
                     <div
                         key={guest.id}

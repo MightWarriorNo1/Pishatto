@@ -213,11 +213,11 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
                                     >
                                         {notification.cast && (
                                             <img 
-                                                src={notification.cast.avatar ? `${API_BASE_URL}/${notification.cast.avatar}` : '/assets/avatar/avatar-1.png'} 
+                                                src={notification.cast.avatar ? `${API_BASE_URL}/${notification.cast.avatar}` : '/assets/avatar/female.png'} 
                                                 alt={notification.cast.nickname} 
                                                 className="w-14 h-14 rounded-full object-cover border-2 border-white cursor-pointer"
                                                 onError={(e) => {
-                                                    e.currentTarget.src = '/assets/avatar/avatar-1.png';
+                                                    e.currentTarget.src = '/assets/avatar/female.png';
                                                 }}
                                                 onClick={() => handleAvatarClick(notification)}
                                             />

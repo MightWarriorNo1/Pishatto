@@ -156,13 +156,13 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
     if (showCardForm) {
         return (
             <div className='bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24'>
-                <div className="flex max-w-md mx-auto top-0 left-0 right-0 items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
-                    <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" onClick={handleCardCancel}>
+                <div className="fixed max-w-md mx-auto left-0 right-0 top-0 z-50 flex items-center px-4 pt-4 pb-4 border-b border-secondary bg-primary shadow-lg">
+                    <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer transition-colors duration-200" onClick={handleCardCancel}>
                         <ChevronLeft />
                     </button>
                     <span className="flex-1 text-center text-base font-bold text-white">カード登録</span>
                 </div>
-                <div className="px-4 py-6 mt-16">
+                <div className="px-4 py-6 mt-20 animate-fade-in">
                     <CardRegistrationForm
                         onSuccess={handleCardRegistered}
                         onCancel={handleCardCancel}
@@ -176,10 +176,8 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
     if (loading) {
         return (
-            <div className='max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24'>
-                <div className="px-4 py-6">
-                    <Spinner />
-                </div>
+            <div className='max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24 flex items-center justify-center'>
+                <Spinner size='lg' />
             </div>
         );
     }
@@ -187,17 +185,19 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
     if (error) {
         return (
             <div className='max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24'>
-                <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
-                    <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" onClick={onBack}>
+                <div className="fixed max-w-md mx-auto left-0 right-0 top-0 z-50 flex items-center px-4 pt-4 pb-4 border-b border-secondary bg-primary shadow-lg">
+                    <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer transition-colors duration-200" onClick={onBack}>
                         <ChevronLeft />
                     </button>
                     <span className="flex-1 text-center text-base font-bold text-white">すぐ入金</span>
                 </div>
-                <div className="px-4 py-6">
-                    <div className="text-red-400 text-center mb-4">{error}</div>
+                <div className="px-4 py-6 mt-20 animate-fade-in">
+                    <div className="bg-red-500/20 border border-red-400/30 rounded-lg p-4 mb-6">
+                        <div className="text-red-400 text-center font-medium">{error}</div>
+                    </div>
                     <button
                         onClick={fetchAllData}
-                        className="w-full bg-secondary text-white font-bold py-3 rounded-lg text-lg hover:bg-red-700 transition"
+                        className="w-full bg-secondary text-white font-bold py-4 rounded-lg text-lg hover:bg-red-700 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg"
                     >
                         再試行
                     </button>
@@ -209,14 +209,17 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
     if (!paymentData || !castProfile) {
         return (
             <div className='max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24'>
-                <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
-                    <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" onClick={onBack}>
+                <div className="fixed max-w-md mx-auto left-0 right-0 top-0 z-50 flex items-center px-4 pt-4 pb-4 border-b border-secondary bg-primary shadow-lg">
+                    <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer transition-colors duration-200" onClick={onBack}>
                         <ChevronLeft />
                     </button>
                     <span className="flex-1 text-center text-base font-bold text-white">すぐ入金</span>
                 </div>
-                <div className="px-4 py-6">
-                    <div className="text-white text-center">データが見つかりません</div>
+                <div className="px-4 py-6 mt-20 animate-fade-in">
+                    <div className="bg-white/10 border border-secondary rounded-lg p-6 text-center">
+                        <div className="text-white text-lg font-medium">データが見つかりません</div>
+                        <div className="text-gray-300 text-sm mt-2">しばらく時間をおいてから再度お試しください</div>
+                    </div>
                 </div>
             </div>
         );
@@ -232,102 +235,133 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
     };
 
     return (
-        <div className='max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24'>
+        <div className='bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24 overflow-y-auto scrollbar-hidden'>
             {/* Top bar */}
-            <div className="fixed top-0 z-50 flex items-center px-4 pt-4 pb-2 border-b border-secondary bg-primary">
-                <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" onClick={onBack}>
+            <div className="fixed max-w-md mx-auto left-0 right-0 top-0 z-50 flex items-center justify-between px-4 pt-4 pb-4 border-b border-secondary bg-primary shadow-lg">
+                <button className="text-2xl text-white hover:text-secondary cursor-pointer transition-colors duration-200" onClick={onBack}>
                     <ChevronLeft />
                 </button>
-                <span className="flex-1 text-center text-base font-bold text-white">すぐ入金</span>
+                <span className="absolute left-1/2 transform -translate-x-1/2 text-base font-bold text-white">すぐ入金</span>
+                <div className="w-8"></div>
             </div>
 
             {/* Main section */}
-            <div className="px-4 py-6 mt-16">
+            <div className="px-4 py-6 mt-20 animate-fade-in">
                 {paymentSuccess && (
-                    <div className="bg-green-600 rounded-lg p-3 text-center mb-4">
-                        <p className="text-white text-sm">すぐ入金申請が完了しました！</p>
+                    <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-4 text-center mb-6 shadow-lg animate-fade-in">
+                        <p className="text-white font-medium">🎉 すぐ入金申請が完了しました！</p>
                     </div>
                 )}
 
                 {/* Cast Profile Section */}
-                <div className="bg-primary rounded-lg shadow-sm p-4 mb-4 border border-secondary">
-                    <div className="flex items-center mb-3">
+                <div className="bg-white/10 rounded-xl shadow-lg p-6 mb-6 border border-secondary/50 backdrop-blur-sm">
+                    <div className="flex items-center mb-4">
                         {castProfile.avatar && (
                             <img
                                 src={`${API_BASE_URL}/${castProfile.avatar.split(',')[0].trim()}`}
                                 alt={castProfile.nickname}
-                                className="w-12 h-12 rounded-full mr-3"
+                                className="w-14 h-14 rounded-full mr-4 border-2 border-secondary object-cover"
                             />
                         )}
                         <div className="flex-1">
-                            <div className="text-white font-bold text-lg">{castProfile.nickname}</div>
+                            <div className="text-white font-bold text-xl">{castProfile.nickname}</div>
                             <div className="text-gray-300 text-sm">キャストID: {castProfile.id}</div>
                         </div>
                         <div className="text-right">
                             {castProfile.payjp_customer_id ? (
-                                <div className="bg-green-600 text-white text-xs rounded px-2 py-1">
+                                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white text-xs rounded-full px-3 py-1.5 font-medium shadow-sm">
                                     カード登録済み
                                 </div>
                             ) : (
-                                <div className="bg-yellow-600 text-white text-xs rounded px-2 py-1">
+                                <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white text-xs rounded-full px-3 py-1.5 font-medium shadow-sm">
                                     カード未登録
                                 </div>
                             )}
                         </div>
                     </div>
-                    <div className="text-xs text-white mb-1">現在のポイント</div>
-                    <div className="text-3xl font-bold text-center mb-2 text-white">{castProfile.points?.toLocaleString() || 0} P</div>
+                    <div className="text-center">
+                        <div className="text-gray-300 text-sm mb-2">現在のポイント</div>
+                        <div className="text-4xl font-bold text-white mb-2">{castProfile.points?.toLocaleString() || 0} P</div>
+                    </div>
                 </div>
 
                 {/* Monthly Points Section */}
-                <div className="bg-primary rounded-lg shadow-sm p-4 mb-4 border border-secondary">
-                    <div className="text-xs text-white mb-1">今月の獲得ポイント</div>
-                    <div className="text-2xl font-bold text-center mb-2 text-white">{castPointsData?.monthly_total_points?.toLocaleString() || 0} P</div>
-                    {castPointsData && (
-                        <div className="text-xs text-gray-300 text-center">
-                            完了予約: {castPointsData.completed_reservations}/{castPointsData.total_reservations}
-                            (コパトバック率: {castPointsData.copat_back_rate}%)
+                <div className="bg-white/10 rounded-xl shadow-lg p-6 mb-6 border border-secondary/50 backdrop-blur-sm">
+                    <div className="text-center">
+                        <div className="text-gray-300 text-sm mb-2">今月の獲得ポイント</div>
+                        <div className="text-3xl font-bold text-white mb-3">{castPointsData?.monthly_total_points?.toLocaleString() || 0} P</div>
+                        {castPointsData && (
+                            <div className="bg-white/10 rounded-lg p-3">
+                                <div className="text-xs text-gray-300">
+                                    完了予約: <span className="text-white font-medium">{castPointsData.completed_reservations}</span>/{castPointsData.total_reservations}
+                                </div>
+                                <div className="text-xs text-gray-300 mt-1">
+                                    コパトバック率: <span className="text-white font-medium">{castPointsData.copat_back_rate}%</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Payment Details Section */}
+                <div className="bg-white/10 rounded-xl shadow-lg p-6 mb-6 border border-secondary/50 backdrop-blur-sm">
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center py-2 border-b border-white/10">
+                            <span className="text-white text-sm">すぐ入金対象ポイント <span className="text-gray-400">*1</span></span>
+                            <span className="text-xl font-bold text-white">{paymentData.immediate_points.toLocaleString()} P</span>
                         </div>
-                    )}
-                </div>
-
-                <div className="bg-primary rounded-lg shadow-sm p-4 mb-4 border border-secondary">
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs text-white">すぐ入金対象ポイント <span className="text-xs text-white">*1</span></span>
-                        <span className="text-lg font-bold text-white">{paymentData.immediate_points.toLocaleString()} P</span>
-                    </div>
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs text-white">振り込み手数料 <span className="text-xs text-white">*2 ({paymentData.fee_rate}%)</span></span>
-                        <span className="text-lg font-bold text-white">{paymentData.fee.toLocaleString()}円</span>
-                    </div>
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-xs text-white">振込金額</span>
-                        <span className="text-lg font-bold text-white">{paymentData.amount.toLocaleString()}円</span>
+                        <div className="flex justify-between items-center py-2 border-b border-white/10">
+                            <span className="text-white text-sm">振り込み手数料 <span className="text-gray-400">*2 ({paymentData.fee_rate}%)</span></span>
+                            <span className="text-xl font-bold text-white">{paymentData.fee.toLocaleString()}円</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2">
+                            <span className="text-white text-lg font-medium">振込金額</span>
+                            <span className="text-2xl font-bold text-white">{paymentData.amount.toLocaleString()}円</span>
+                        </div>
                     </div>
                 </div>
 
-                <div className="bg-primary rounded-lg shadow-sm p-4 mb-4 border border-secondary">
-                    <div className="text-xs text-white mb-2">*1 当月の獲得ポイントの50%分のみ、すぐ入金対象ポイントとなります。</div>
-                    <div className="text-xs text-white mb-2">*2 通常振込(未締め・翌月20日振込)の場合、手数料654円のみ。インボイス番号未登録の場合、別途手数料が発生します。</div>
-                    <div className="flex gap-2 mb-2">
-                        <span className="bg-secondary text-white text-xs rounded px-2 py-1">{getGradeText(paymentData.cast_grade)}</span>
+                {/* Info Section */}
+                <div className="bg-white/10 rounded-xl shadow-lg p-6 mb-6 border border-secondary/50 backdrop-blur-sm">
+                    <div className="space-y-3">
+                        <div className="text-xs text-gray-300 leading-relaxed">
+                            <span className="text-white font-medium">*1</span> 当月の獲得ポイントの50%分のみ、すぐ入金対象ポイントとなります。
+                        </div>
+                        <div className="text-xs text-gray-300 leading-relaxed">
+                            <span className="text-white font-medium">*2</span> 通常振込(未締め・翌月20日振込)の場合、手数料654円のみ。インボイス番号未登録の場合、別途手数料が発生します。
+                        </div>
+                        <div className="pt-2">
+                            <span className="bg-gradient-to-r from-secondary to-red-600 text-white text-xs rounded-full px-3 py-2 font-medium shadow-sm">
+                                {getGradeText(paymentData.cast_grade)}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
+                {/* Action Button */}
                 {castProfile.points && castProfile.points > 0 && (
                     <button
-                        className={`w-full bg-secondary text-white font-bold py-3 rounded-lg text-lg mb-4 hover:bg-red-700 transition ${processingPayment ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`w-full bg-gradient-to-r from-secondary to-red-600 text-white font-bold py-4 rounded-xl text-lg mb-6 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg ${processingPayment ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-xl'}`}
                         onClick={handleApplyPayment}
                         disabled={processingPayment}
                     >
-                        {processingPayment ? '処理中...' :
-                            castProfile.payjp_customer_id ? 'すぐ入金申請' : 'カード登録して申請'}
+                        {processingPayment ? (
+                            <div className="flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                                処理中...
+                            </div>
+                        ) : (
+                            castProfile.payjp_customer_id ? 'すぐ入金申請' : 'カード登録して申請'
+                        )}
                     </button>
                 )}
 
-                <div className="text-xs text-white mb-2">
-                    すぐ入金申請について (2021年3月1日より改訂)<br />
-                    すぐ入金申請をした時に所持しているポイントのうち、当月の獲得ポイントの50%分のみ【すぐ入金】対象となり、前月の獲得ポイント・残りの獲得ポイント50%は全て当月定期振込分となります。
+                {/* Terms Section */}
+                <div className="bg-white/5 rounded-xl p-4 mb-6 border border-white/10">
+                    <div className="text-xs text-gray-300 leading-relaxed">
+                        <div className="font-medium text-white mb-2">すぐ入金申請について (2021年3月1日より改訂)</div>
+                        すぐ入金申請をした時に所持しているポイントのうち、当月の獲得ポイントの50%分のみ【すぐ入金】対象となり、前月の獲得ポイント・残りの獲得ポイント50%は全て当月定期振込分となります。
+                    </div>
                 </div>
             </div>
         </div>

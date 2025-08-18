@@ -105,14 +105,12 @@ const RegisterSteps: React.FC = () => {
     
     // Special logic after PhoneVerification (step 2) - only for non-LINE users
     if (currentStep === 2 && !(fromLine || sessionStorage.getItem('lineData'))) {
-      console.log('RegisterSteps: Processing step 2 (PhoneVerification)');
       // Normalize phone number
       const normalizePhone = (phone: string) => phone.replace(/[^0-9]/g, '').trim();
       const normalizedInput = normalizePhone(formData.phoneNumber);
       try {
         const { guest } = await getGuestProfile(formData.phoneNumber);
         if (guest && normalizePhone(guest.phone) === normalizedInput) {
-          console.log('RegisterSteps: Existing guest found');
           
           // If coming from LINE, link the LINE account to existing guest
           const storedLineData = sessionStorage.getItem('lineData');

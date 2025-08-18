@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getCastProfileById, castUpdateProfile, uploadCastAvatar } from '../../services/api';
 import { ChevronLeft, X, Plus } from 'lucide-react';
+import Spinner from '../../components/ui/Spinner';
 
 const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () => void }> = ({ onBack, onProfileUpdate }) => {
     const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -112,21 +113,24 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
         }
     };
 
-    if (initialLoading) return <div className="text-center text-white">読み込み中...</div>;
+    if (initialLoading) return (<div className="flex-1 flex items-center justify-center">
+                                    <Spinner size="lg" />
+                                </div>)
     if (error && !avatarUploading && !saving) return <div className="text-center text-red-500">{error}</div>;
 
     return (
         <div className="bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24">
-            <div className="flex max-w-md mx-auto top-0 left-0 right-0 items-center p-4">
+            <div className="flex max-w-md mx-auto top-0 left-0 right-0 items-center justify-between p-4">
                 <button
                     type="button"
                     onClick={onBack}
-                    className="mr-2 text-white hover:text-secondary focus:outline-none cursor-pointer"
+                    className="text-white hover:text-secondary focus:outline-none cursor-pointer"
                     aria-label="戻る"
                 >
                     <ChevronLeft size={24} />
                 </button>
-                <span className="text-lg font-bold text-white justify-center ">プロフィール編集</span>
+                <span className="text-lg font-bold text-white">プロフィール編集</span>
+                <div className="w-6"></div>
             </div>
             <form onSubmit={handleSubmit} className="p-4">
                 <div className="mb-6">

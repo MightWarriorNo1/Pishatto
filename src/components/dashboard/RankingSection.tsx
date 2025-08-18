@@ -18,9 +18,10 @@ interface RankingProfile {
 
 interface RankingSectionProps {
   onSeeRanking?: () => void;
+  hideLoading?: boolean;
 }
 
-const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking }) => {
+const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking, hideLoading = false }) => {
   const navigate = useNavigate();
   const { data: rankingData, isLoading: loading } = useRanking({
     userType: 'cast',
@@ -40,35 +41,26 @@ const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking }) => {
         <h2 className="text-lg font-bold text-white">昨日のランキングTOP10</h2>
         <button className="text-sm text-white" onClick={onSeeRanking}>ランキングを見る＞</button>
       </div>
-      {loading ? (
+      {loading && !hideLoading ? (
         <Spinner />
       ) : rankings.length === 0 ? (
         <div className="text-white">ランキングデータがありません</div>
       ) : (
         <div className="grid grid-cols-3 gap-4">
-          {rankings.slice(0, 3).map((profile: any, index: number) => (
-            <div 
-              key={profile.id} 
-              className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer"
+          {rankings.slice(0, 6).map((profile: any, index: number) => (
+            <div
+              key={profile.id}
+              className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer relative"
               onClick={() => handleCastClick(profile.id)}
             >
-              <div className="relative">
-                <img
-                  src={profile.avatar ? getFirstAvatarUrl(profile.avatar) : '/assets/avatar/female.png'}
-                  alt={profile.name}
-                  className="w-full h-32 object-cover rounded border border-secondary"
-                />
-                <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
-                  {index + 1}
-                </div>
-              </div>
-              <div className="mt-2">
-                <div className="font-medium text-white">{profile.name}</div>
-                <div className="text-xs text-white mt-1">
-                  {profile.points}ポイント
-                  {profile.gift_count && ` (${profile.gift_count}件)`}
-                </div>
-              </div>
+              <img
+                src={profile.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar}` : '/assets/avatar/female.png'}
+                alt={profile.name}
+                className="w-full h-32 object-cover rounded-lg border border-secondary mb-2"
+              />
+              <div className="font-medium text-white text-sm truncate">{profile.name}</div>
+              <div className="text-xs text-white mt-1">{profile.points}ポイント {profile.gift_count && `(${profile.gift_count}件)`}</div>
+              <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">{index + 1}</div>
             </div>
           ))}
         </div>

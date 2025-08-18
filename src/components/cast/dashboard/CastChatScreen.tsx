@@ -98,10 +98,10 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                     <ChevronLeft size={30} />
                 </button>
                 <img
-                    src={guestInfo?.avatar ? getFirstAvatarUrl(guestInfo.avatar) : '/assets/avatar/avatar-1.png'}
+                    src={guestInfo?.avatar ? getFirstAvatarUrl(guestInfo.avatar) : '/assets/avatar/1.jpg'}
                     alt="avatar"
                     className="w-8 h-8 rounded-full mr-2 border border-secondary"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/assets/avatar/avatar-1.png'; }}
+                    onError={(e) => { (e.target as HTMLImageElement).src = '/assets/avatar/1.jpg'; }}
                 />
                 <div className="flex flex-col">
                     <span className="font-bold text-white text-base truncate">{guestInfo?.nickname || 'ゲスト'}</span>

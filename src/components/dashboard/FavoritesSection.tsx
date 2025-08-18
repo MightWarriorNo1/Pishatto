@@ -24,7 +24,7 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
   return `${API_BASE_URL}/${avatars[0]}`;
 };
 
-const FavoritesSection: React.FC = () => {
+const FavoritesSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = false }) => {
   const { user } = useUser();
   const navigate = useNavigate();
   const { data: favoritesData, isLoading: loading } = useGuestFavorites(user?.id || 0);
@@ -44,7 +44,7 @@ const FavoritesSection: React.FC = () => {
     navigate(`/cast/${castId}`);
   };
 
-  if (loading) {
+  if (loading && !hideLoading) {
     return <Spinner />
   }
 

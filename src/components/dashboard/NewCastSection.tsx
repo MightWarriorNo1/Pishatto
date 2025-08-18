@@ -33,7 +33,11 @@ interface CastProfile {
   category?: 'プレミアム' | 'VIP' | 'ロイヤルVIP';
 }
 
-const NewCastSection: React.FC = () => {
+interface NewCastSectionProps {
+  hideLoading?: boolean;
+}
+
+const NewCastSection: React.FC<NewCastSectionProps> = ({ hideLoading = false }) => {
   const navigate = useNavigate();
   const { data: castProfiles = [], isLoading: loading } = useNewCasts();
 
@@ -46,7 +50,7 @@ const NewCastSection: React.FC = () => {
       <h2 className="font-bold text-lg mb-2 text-white">新着キャスト</h2>
       <div className="bg-white/10 rounded-lg shadow p-4 mb-4 border border-secondary">
         
-        {loading ? (
+        {loading && !hideLoading ? (
           <Spinner />
         ) : castProfiles.length === 0 ? (
           <div className="text-white">本日登録されたキャストはいません</div>

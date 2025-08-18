@@ -17,9 +17,10 @@ interface SatisfactionCast {
 
 interface UserSatisfactionSectionProps {
   onSeeAll?: () => void;
+  hideLoading?: boolean;
 }
 
-const UserSatisfactionSection: React.FC<UserSatisfactionSectionProps> = ({ onSeeAll }) => {
+const UserSatisfactionSection: React.FC<UserSatisfactionSectionProps> = ({ onSeeAll, hideLoading = false }) => {
   const navigate = useNavigate();
   const { data: casts = [], isLoading: loading } = useSatisfactionCasts();
 
@@ -33,14 +34,14 @@ const UserSatisfactionSection: React.FC<UserSatisfactionSectionProps> = ({ onSee
         <h2 className="text-lg font-bold text-white">ユーザー満足度の高いキャスト</h2>
         <button className="text-sm text-white" onClick={onSeeAll}>すべて見る＞</button>
       </div>
-      {loading ? (
+      {loading && !hideLoading ? (
         <Spinner />
       ) : casts.length === 0 ? (
         <div className="text-white">データがありません</div>
       ) : (
         <div className="grid grid-cols-2 gap-4">
           {casts.map((cast: SatisfactionCast) => (
-            <div 
+            <div
               key={cast.id} 
               className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer"
               onClick={() => handleCastClick(cast.id)}

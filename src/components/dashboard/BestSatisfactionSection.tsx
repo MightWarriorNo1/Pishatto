@@ -16,7 +16,11 @@ interface SatisfactionCast {
   category?: 'プレミアム' | 'VIP' | 'ロイヤルVIP';
 }
 
-const BestSatisfactionSection: React.FC = () => {
+interface BestSatisfactionSectionProps {
+  hideLoading?: boolean;
+}
+
+const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideLoading = false }) => {
   const navigate = useNavigate();
   const { data: casts = [], isLoading: loading } = useTopSatisfactionCasts();
 
@@ -27,7 +31,7 @@ const BestSatisfactionSection: React.FC = () => {
   return (
     <div className="bg-white/10 rounded-lg shadow p-4 mb-4 border border-secondary">
       <h2 className="font-bold text-lg mb-2 text-white">最高満足度</h2>
-      {loading ? (
+      {loading && !hideLoading ? (
         <Spinner />
       ) : casts.length === 0 ? (
         <div className="text-white">データがありません</div>
@@ -50,7 +54,7 @@ const BestSatisfactionSection: React.FC = () => {
               </div>
               <div className="mt-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-sm text-white">{cast.nickname}</span>
+                  <span className="font-medium text-white text-sm">{cast.nickname}</span>
                   <div className="flex items-center text-white">
                     <FiStar className="w-3 h-3" />
                     <span className="ml-1 text-xs">{cast.average_rating.toFixed(1)}</span>
@@ -59,7 +63,7 @@ const BestSatisfactionSection: React.FC = () => {
                 <div className="text-white text-xs mt-1">
                   <div>レビュー {cast.feedback_count}件</div>
                   <div className="mt-1">
-                  {cast.grade_points}P/30分
+                    {cast.grade_points}P/30分
                   </div>
                 </div>
               </div>

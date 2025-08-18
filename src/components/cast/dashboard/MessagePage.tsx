@@ -244,8 +244,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
         <div className="min-h-screen bg-gradient-to-b from-primary via-primary to-secondary relative pb-24">
             {/* Header (fixed) */}  
             <div className="fixed max-w-md mx-auto left-0 right-0 h-16 flex items-center px-4 py-3 border-b border-secondary bg-primary">
-                <button onClick={onBack} className="mr-2 hover:text-secondary cursor-pointer">
-                    <ChevronLeft className="text-white" size={24} />
+                <button onClick={onBack} className="mr-2 text-white hover:text-secondary cursor-pointer">
+                    <ChevronLeft size={24} />
                 </button>
                 <div className="flex items-center">
                     <img 
@@ -260,11 +260,11 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
 
             {/* Messages area (scrollable between header and input) */}
             <div
-                className="overflow-y-auto px-4 py-4"
+                className="overflow-y-auto px-4 pt-4 scrollbar-hidden"
                 style={{
                     marginTop: '4rem', // header height (h-16 = 4rem)
                     marginBottom: '5.5rem', // input area height
-                    minHeight: 0,
+                    height: 'calc(100vh - 6.5rem)', // viewport height minus header and input heights
                 }}
             >
                 {(messages || []).map((msg: any, idx: number) => {
@@ -761,7 +761,9 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
             <div className="px-4 mt-32">
                 
                 {loading ? (
-                    <Spinner />
+                    <div className="flex justify-center items-center h-full">
+                        <Spinner size="lg" />
+                    </div>
                 ) : (
                     <div className="divide-y divide-secondary">
                         <ConciergeChat 

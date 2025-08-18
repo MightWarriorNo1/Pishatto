@@ -34,7 +34,7 @@ const areas = [
   '北海道'
 ];
 
-const RankingTabSection: React.FC = () => {
+const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = false }) => {
   const [userType, setUserType] = useState<UserType>('cast');
   const navigate=useNavigate();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('current');
@@ -222,8 +222,10 @@ const RankingTabSection: React.FC = () => {
 
       {/* Empty State */}
       <div className="flex-1 flex-col items-center justify-center min-w-[360px]">
-        {loading ? (
-          <Spinner />
+        {loading && !hideLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <Spinner />
+          </div>
         ) : ranking.length === 0 ? (
           <div className="text-white text-center">ランキングデータがありません</div>
         ) : (

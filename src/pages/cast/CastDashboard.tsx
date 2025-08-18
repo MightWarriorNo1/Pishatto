@@ -455,9 +455,6 @@ const CastDashboardInner: React.FC = () => {
         tomorrow.setDate(now.getDate() + 1);
         return date >= tomorrow;
     };
-
-    
-
     
     let tabFilteredCalls: CallWithActive[] = sortedCalls;
     
@@ -520,7 +517,7 @@ const CastDashboardInner: React.FC = () => {
             <div className="w-full max-w-md mx-auto flex flex-col flex-1 h-full bg-gradient-to-b from-primary via-primary to-secondary">
                 {loading ? (
                     <div className="flex-1 flex items-center justify-center">
-                        <Spinner />
+                        <Spinner size="lg" />
                     </div>
                 ) : (
                     <>
@@ -670,7 +667,7 @@ const CastDashboardInner: React.FC = () => {
                 )}
             </div>
             {/* Bottom Navigation Bar - fixed and centered */}
-            {(!isMessageDetailOpen && !showConcierge) && (  
+            {(!isMessageDetailOpen && !showConcierge && loading === false) && (  
                 <div className="w-full max-w-md fixed bottom-0 left-1/2 -translate-x-1/2 z-20">
                     <BottomNavigationBar selected={mainPage} onTabChange={setMainPage} messageBadgeCount={messageBadgeCount} tweetBadgeCount={tweetBadgeCount} />
                 </div>

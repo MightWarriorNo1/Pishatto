@@ -16,12 +16,13 @@ import FootprintsSection from './FootprintsSection';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useChatRefresh } from '../../contexts/ChatRefreshContext';
-import { useGuestChats, useSatisfactionCasts, useRanking, useMarkNotificationsRead } from '../../hooks/useQueries';
+import { useGuestChats, useSatisfactionCasts, useRanking, useMarkNotificationsRead, useNewCasts, useTopSatisfactionCasts, useGuestFavorites, useGuestFootprints } from '../../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/react-query';
 import { useChatMessages, useTweets, useNotifications, useUnreadMessageCount } from '../../hooks/useRealtime';
 import { formatPoints } from '../../utils/formatters';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import Spinner from '../ui/Spinner';
 
 // Add Modal component above Dashboard
 const Modal: React.FC<{ onClose: () => void; children: React.ReactNode }> = ({ onClose, children }) => {
@@ -63,7 +64,7 @@ const Dashboard: React.FC = () => {
   const [showChat, setShowChat] = useState<number | null>(null);
   const [showOrder, setShowOrder] = useState(false);
   const [showConcierge, setShowConcierge] = useState(false);
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -89,13 +90,47 @@ const Dashboard: React.FC = () => {
     enabled: true
   });
 
+  // React Query hooks for data fetching - these are used for global loading state
+  const { data: allSatisfactionCasts = [], isLoading: satisfactionLoading } = useSatisfactionCasts();
+  const { data: rankingData, isLoading: rankingLoading } = useRanking({
+    userType: 'cast',
+    timePeriod: 'yesterday',
+    category: 'gift',
+    area: '全国',
+  });
+  const { data: newCasts = [], isLoading: newCastsLoading } = useNewCasts();
+  const { data: topSatisfactionCasts = [], isLoading: topSatisfactionLoading } = useTopSatisfactionCasts();
+  const { data: guestChatsData = [], isLoading: guestChatsLoading } = useGuestChats(user?.id || 0);
+  const { data: favoritesData, isLoading: favoritesLoading } = useGuestFavorites(user?.id || 0);
+  const { data: footprintsData, isLoading: footprintsLoading } = useGuestFootprints(user?.id || 0);
+
+  // Calculate global loading state
+  const isGlobalLoading = useMemo(() => {
+    return userLoading || 
+           satisfactionLoading || 
+           rankingLoading || 
+           newCastsLoading || 
+           topSatisfactionLoading || 
+           guestChatsLoading || 
+           favoritesLoading || 
+           footprintsLoading;
+  }, [
+    userLoading,
+    satisfactionLoading,
+    rankingLoading,
+    newCastsLoading,
+    topSatisfactionLoading,
+    guestChatsLoading,
+    favoritesLoading,
+    footprintsLoading
+  ]);
 
   // Redirect unauthenticated guests to the first page
   useEffect(() => {
-    if (!loading && !user) {
+    if (!userLoading && !user) {
       navigate('/register');
     }
-  }, [loading, user, navigate]);
+  }, [userLoading, user, navigate]);
 
   // Open specific chat when navigated with state
   useEffect(() => {
@@ -129,13 +164,6 @@ const Dashboard: React.FC = () => {
   const queryClient = useQueryClient();
 
   // React Query hooks for data fetching
-  const { data: allSatisfactionCasts = [], isLoading: satisfactionLoading } = useSatisfactionCasts();
-  const { data: rankingData, isLoading: rankingLoading } = useRanking({
-    userType: 'cast',
-    timePeriod: rankingFilters.timePeriod,
-    category: rankingFilters.category,
-    area: '全国',
-  });
   const allRankings = rankingData?.data || [];
 
   const filteredAndSortedSatisfactionCasts = useMemo(() => {
@@ -177,11 +205,11 @@ const Dashboard: React.FC = () => {
 
   // Initialize message count from existing chats
   useEffect(() => {
-    if (guestChats.length > 0) {
-      const totalUnread = guestChats.reduce((sum: any, chat: any) => sum + (chat.unread || 0), 0);
+    if (guestChatsData.length > 0) {
+      const totalUnread = guestChatsData.reduce((sum: any, chat: any) => sum + (chat.unread || 0), 0);
       setMessageCount(totalUnread);
     }
-  }, [guestChats]);
+  }, [guestChatsData]);
 
   // Real-time unread message count updates
   useUnreadMessageCount(user?.id || 0, 'guest', (count) => {
@@ -212,7 +240,6 @@ const Dashboard: React.FC = () => {
     if (user) {
       queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('guest', user.id) });
     }
-    console.log("Tweet count", tweetCount);
   });
 
   useChatMessages(user?.id || 0, (message) => {
@@ -257,32 +284,32 @@ const Dashboard: React.FC = () => {
           <>
             {/* <PromotionalBanner /> */}
             <div className="px-4 py-4">
-              <NewCastSection />
-              <UserSatisfactionSection onSeeAll={() => setModalType('satisfaction')} />
-              <RankingSection onSeeRanking={() => setModalType('ranking')} />
-              <BestSatisfactionSection />
+              <NewCastSection hideLoading={isGlobalLoading} />
+              <UserSatisfactionSection onSeeAll={() => setModalType('satisfaction')} hideLoading={isGlobalLoading} />
+              <RankingSection onSeeRanking={() => setModalType('ranking')} hideLoading={isGlobalLoading} />
+              <BestSatisfactionSection hideLoading={isGlobalLoading} />
             </div>
           </>
         );
       case 'favorites':
-        return <FavoritesSection />;
+        return <FavoritesSection hideLoading={isGlobalLoading} />;
       case 'footprints':
         // If footprints are disabled, show home content instead
         if (!isNotificationEnabled('footprints')) {
           return (
             <>
               <div className="px-4 py-4">
-                <NewCastSection />
-                <UserSatisfactionSection />
-                <RankingSection />
-                <BestSatisfactionSection />
+                <NewCastSection hideLoading={isGlobalLoading} />
+                <UserSatisfactionSection hideLoading={isGlobalLoading} />
+                <RankingSection hideLoading={isGlobalLoading} />
+                <BestSatisfactionSection hideLoading={isGlobalLoading} />
               </div>
             </>
           );
         }
-        return <FootprintsSection />;
+        return <FootprintsSection hideLoading={isGlobalLoading} />;
       case 'ranking':
-        return <RankingTabSection />;
+        return <RankingTabSection hideLoading={isGlobalLoading} />;
       default:
         return null;
     }
@@ -324,6 +351,13 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
+      {/* Global Loading Overlay */}
+      {isGlobalLoading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+          <Spinner />
+        </div>
+      )}
+      
       {/* Show TopNavigation and search tabs only when in search mode */}
       {activeBottomTab === 'search' && (
         <>

@@ -245,7 +245,7 @@ const CastProfilePage: React.FC = () => {
     }
 
     return (
-        <div className="max-w-md mx-auto bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24">
+        <div className="max-w-md mx-auto bg-gradient-to-b from-primary via-primary to-secondary min-h-screen overflow-y-auto scrollbar-hidden">
             {/* Fixed Header */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 flex items-center justify-between px-4 pt-4 pb-4 bg-primary border-b border-secondary">
                 <button 
@@ -269,8 +269,8 @@ const CastProfilePage: React.FC = () => {
                     </button>
                 </div>
             </div>
-            {/* Spacer to prevent content from being hidden behind fixed header */}
-            <div className="h-16"></div>
+            {/* Main content container with proper spacing */}
+            <div className="pt-16 pb-24">
             {/* Campaign/Event Banners */}
             <div className="px-4 pt-2 flex flex-col items-center">
                 <div className="rounded-lg overflow-hidden mb-2 w-full border-2 border-secondary relative">
@@ -578,6 +578,7 @@ const CastProfilePage: React.FC = () => {
                     </div>
                 </div>
             )}
+            </div>
         </div>
     );
 };

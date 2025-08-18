@@ -31,7 +31,7 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
   return `${API_BASE_URL}/${avatars[0]}`;
 };
 
-const FootprintsSection: React.FC = () => {
+const FootprintsSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = false }) => {
   const { user } = useUser();
   const navigate = useNavigate();
   const { data: footprintsData, isLoading: loading, error } = useGuestFootprints(user?.id || 0);
@@ -50,7 +50,7 @@ const FootprintsSection: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !hideLoading) {
     return <Spinner />;
   }
 
