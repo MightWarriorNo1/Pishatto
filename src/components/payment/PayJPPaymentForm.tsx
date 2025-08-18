@@ -308,7 +308,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
   // Show card input form when user chooses to use new card or has no registered cards
   if (useRegisteredCard || !hasRegisteredCard) {
     return (
-      <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary p-6 rounded-lg">
+      <div className="max-w-md mx-auto bg-gradient-to-b from-primary via-primary to-secondary p-6 rounded-lg">
         <h2 className="text-xl font-bold text-white mb-6 text-center">
           {amount.toLocaleString()}ポイント購入
         </h2>
@@ -427,7 +427,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
   }
 
   return (
-    <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary p-6 rounded-lg">
+    <div className="max-w-md mx-auto bg-gradient-to-b from-primary via-primary to-secondary p-6 rounded-lg">
       <h2 className="text-xl font-bold text-white mb-6 text-center">
         {amount.toLocaleString()}ポイント購入
       </h2>

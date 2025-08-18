@@ -150,7 +150,7 @@ const Profile: React.FC = () => {
     if (showQRCode) return <QRCodeModal onClose={() => setShowQRCode(false)} />;
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-20">
             {/* Logout Confirmation Modal */}
             {showLogoutConfirm && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

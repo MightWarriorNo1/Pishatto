@@ -12,13 +12,16 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
         return '/assets/avatar/1.jpg';
     }
 
-    // Split by comma and get the first non-empty avatar
+    // Split by comma and get the first non-empty avatar (assumed latest)
     const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
 
     if (avatars.length === 0) {
         return '/assets/avatar/1.jpg';
     }
-
+    // Respect absolute URLs
+    if (avatars[0].startsWith('http')) {
+        return avatars[0];
+    }
     return `${API_BASE_URL}/${avatars[0]}`;
 };
 
@@ -26,11 +29,12 @@ interface AvatarEditPageProps {
     onBack: () => void;
 }
 
-const PreviewProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+const PreviewProfile: React.FC<{ onBack: () => void; version?: number }> = ({ onBack, version }) => {
     const { user } = useUser();
     const getAvatarUrl = () => {
         if (user?.avatar) {
-            return getFirstAvatarUrl(user.avatar);
+            const base = getFirstAvatarUrl(user.avatar);
+            return version ? `${base}?v=${version}` : base;
         }
         return '/assets/avatar/1.jpg';
     };
@@ -79,13 +83,31 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [avatarVersion, setAvatarVersion] = useState<number>(0);
+    const avatarErrorAttemptsRef = useRef<number>(0);
 
     const getAvatarUrl = () => {
-        if (user?.avatar) {
-            return getFirstAvatarUrl(user.avatar);
-        }
-        return '/assets/avatar/1.jpg'; // Default avatar
+        const baseUrl = user?.avatar ? getFirstAvatarUrl(user.avatar) : '/assets/avatar/1.jpg';
+        return avatarVersion ? `${baseUrl}?v=${avatarVersion}` : baseUrl; // cache-bust after updates
     };
+
+    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+        // Retry a few times to account for eventual consistency on storage/CDN
+        avatarErrorAttemptsRef.current += 1;
+        if (avatarErrorAttemptsRef.current <= 3) {
+            setTimeout(() => setAvatarVersion(Date.now()), 400);
+        } else {
+            e.currentTarget.src = '/assets/avatar/1.jpg';
+        }
+    };
+
+    // When the avatar string changes, force a refresh and reset error attempts
+    React.useEffect(() => {
+        if (user?.avatar) {
+            avatarErrorAttemptsRef.current = 0;
+            setAvatarVersion(Date.now());
+        }
+    }, [user?.avatar]);
 
     const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -134,7 +156,12 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
 
             // Update user context with new avatar
             if (updateUser && data.avatar) {
-                updateUser({ ...user, avatar: data.avatar });
+                updateUser({ avatar: data.avatar });
+                setAvatarVersion(Date.now());
+                avatarErrorAttemptsRef.current = 0;
+                // Extra revalidation bumps to bypass CDN/storage eventual consistency
+                setTimeout(() => setAvatarVersion(Date.now()), 500);
+                setTimeout(() => setAvatarVersion(Date.now()), 1500);
             }
 
             // alert('アバターが正常に更新されました。');
@@ -181,7 +208,12 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
 
             // Update user context to remove avatar
             if (updateUser) {
-                updateUser({ ...user, avatar: undefined });
+                updateUser({ avatar: undefined });
+                setAvatarVersion(Date.now());
+                avatarErrorAttemptsRef.current = 0;
+                // Extra revalidation bumps to bypass CDN/storage eventual consistency
+                setTimeout(() => setAvatarVersion(Date.now()), 500);
+                setTimeout(() => setAvatarVersion(Date.now()), 1500);
             }
 
             alert('アバターが削除されました。');
@@ -201,7 +233,7 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
     const ageStr = user?.age ? `${user.age}` : '未設定';
     const shiatsuStr = user?.shiatsu ? user.shiatsu : '未設定';
 
-    if (preview) return <PreviewProfile onBack={() => setPreview(false)} />; // Keep as is or implement preview as needed
+    if (preview) return <PreviewProfile onBack={() => setPreview(false)} version={avatarVersion} />; // Keep as is or implement preview as needed
     if (showProfileDetailEdit) return <ProfileDetailEditPage onBack={() => setShowProfileDetailEdit(false)} />;
 
     return (
@@ -216,25 +248,24 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
             />
 
             {/* Top bar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b bg-primary border-secondary">
-                <button onClick={onBack} className="text-2xl text-white hover:text-secondary cursor-pointer">
+            <div className="grid grid-cols-3 items-center px-4 py-3 border-b bg-primary border-secondary">
+                <button onClick={onBack} className="justify-self-start text-2xl text-white hover:text-secondary cursor-pointer">
                     <ChevronLeft />
                 </button>
-                <span className="text-lg font-bold text-white">編集する</span>
-                <span className="font-bold cursor-pointer text-white" onClick={() => setPreview(true)}>プレビュー</span>
+                <span className="justify-self-center text-lg font-bold text-white">編集する</span>
+                <span className="justify-self-end font-bold cursor-pointer text-white hover:text-secondary" onClick={() => setPreview(true)}>プレビュー</span>
             </div>
 
             {/* Avatar section */}
             <div className="flex flex-col items-center py-6">
                 <div className="relative">
                     <img
+                        key={avatarVersion}
                         src={getAvatarUrl()}
                         alt="avatar"
                         className="w-32 h-32 rounded-full object-cover border-4 border-secondary shadow cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={handleAvatarClick}
-                        onError={(e) => {
-                            e.currentTarget.src = '/assets/avatar/1.jpg';
-                        }}
+                        onError={handleImageError}
                     />
                     {uploading && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full">
@@ -254,12 +285,11 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
 
                 <div className="flex flex-row mt-4 gap-4">
                     <img
+                        key={`small-${avatarVersion}`}
                         src={getAvatarUrl()}
                         alt="avatar-small"
                         className="w-14 h-14 rounded-full object-cover border-2 border-secondary shadow"
-                        onError={(e) => {
-                            e.currentTarget.src = '/assets/avatar/1.jpg';
-                        }}
+                        onError={handleImageError}
                     />
                     <button
                         onClick={handleAvatarClick}
@@ -300,7 +330,7 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
              </div>
 
              {/* Simple profile */}
-             <div className="bg-primary px-4 py-3 border-b border-secondary mt-2" onClick={() => setShowProfileDetailEdit(true)} style={{ cursor: 'pointer' }}>
+             <div className="bg-primary px-4 py-3 border-b border-secondary hover:text-secondary mt-2" onClick={() => setShowProfileDetailEdit(true)} style={{ cursor: 'pointer' }}>
                  <div className="text-xs text-white font-bold mb-1">簡単プロフィール</div>
                  <div className="flex items-center justify-between">
                      <span className="text-base text-white">{interestTags},{ageStr},{shiatsuStr}</span>

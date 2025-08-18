@@ -391,7 +391,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     };
 
     return (
-        <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col relative">
+        <div className="bg-gradient-to-b from-primary via-primary to-secondary min-h-screen flex flex-col relative">
             {/* Top bar (fixed) */}
             <div className="fixed max-w-md mx-auto left-0 right-0 items-center flex px-4 py-3 border-b border-secondary bg-primary h-16">
                 <button onClick={onBack} className="mr-2 hover:text-secondary cursor-pointer">

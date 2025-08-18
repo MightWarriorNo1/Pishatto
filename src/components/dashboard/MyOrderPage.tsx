@@ -38,7 +38,7 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
+        <div className="min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
             {/* Enhanced Top bar */}
             <div className="fixed top-0 max-w-md mx-auto left-0 right-0 z-50 bg-primary backdrop-blur-md shadow-sm">
                 <div className="max-w-md mx-auto flex items-center px-4 py-4">

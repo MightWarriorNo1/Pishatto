@@ -1,5 +1,6 @@
 /*eslint-disable */
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, ChevronLeft, Trash2 } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import { getNotifications, deleteNotification, Notification, createChat, sendGuestMessage, getAdminNews, AdminNews, getCastProfileById, markAllNotificationsRead } from '../../services/api';
@@ -37,6 +38,7 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
     const [loading, setLoading] = useState(true);
     const [deletingId, setDeletingId] = useState<number | null>(null);
     const [sendingMessage, setSendingMessage] = useState<number | null>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (user?.id) {
@@ -131,8 +133,6 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
     };
 
     const handleSendMessage = async (notification: Notification) => {
-        console.log("NOTIFICATION", notification);
-        console.log("USER", user);
         if (!user?.id || !notification.cast) {
             alert('メッセージを送信できませんでした。');
             return;
@@ -156,8 +156,9 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
             // Update unread count
             const unreadCount = updatedNotifications.filter(n => !n.read).length;
             onNotificationCountChange?.(unreadCount);
-        
-            alert('メッセージを送信しました！');
+
+            // Navigate to dashboard message tab with the created chat opened
+            navigate('/dashboard', { state: { openChatId: chatId, openMessageTab: true } });
         } catch (error) {
             console.error('Failed to send message:', error);
             alert('メッセージの送信に失敗しました。');
@@ -178,17 +179,17 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
     };
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-24">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-24">
             {/* Top bar - Fixed */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50">
-                <div className="flex items-center px-4 py-3 border-b bg-gradient-to-br from-primary via-primary to-secondary">
+                <div className="flex items-center px-4 py-3 border-b bg-gradient-to-b from-primary via-primary to-secondary">
                     <button onClick={onBack} className="mr-2 text-2xl text-white">
                         <ChevronLeft className="w-6 h-6 text-white hover:text-secondary cursor-pointer" />
                     </button>
                     <span className="text-lg font-bold flex-1 text-center">お知らせ</span>
                 </div>
                 {/* Tabs - Fixed */}
-                <div className="flex border-b bg-gradient-to-br from-primary via-primary to-secondary">
+                <div className="flex border-b bg-gradient-to-b from-primary via-primary to-secondary">
                     <button className={`flex-1 py-3 font-bold ${tab === '通知' ? 'border-b-2 border-white text-white' : 'text-gray-400'}`} onClick={() => setTab('通知')}>通知</button>
                     <button className={`flex-1 py-3 font-bold ${tab === 'ニュース' ? 'border-b-2 border-white text-white' : 'text-gray-400'}`} onClick={() => setTab('ニュース')}>ニュース</button>
                 </div>
@@ -197,7 +198,7 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
             <div className="pt-24">
                 {/* Notification list */}
                 {tab === '通知' && (
-                    <div className="px-4 py-2 flex flex-col gap-4">
+                    <div className="px-4 py-6 flex flex-col gap-4">
                         {loading ? (
                             <Spinner />
                         ) : notifications.length === 0 ? (
@@ -211,10 +212,11 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
                                         <img 
                                             src={getFirstAvatarUrl(notification.cast.avatar)} 
                                             alt={notification.cast.nickname} 
-                                            className="w-14 h-14 rounded-full object-cover border-2 border-white"
+                                            className="w-14 h-14 rounded-full object-cover border-2 border-white cursor-pointer"
                                             onError={(e) => {
                                                 e.currentTarget.src = '/assets/avatar/female.png';
                                             }}
+                                            onClick={() => navigate(`/cast/${notification.cast!.id}`)}
                                         />
                                     )}
                                     <div className="flex-1">

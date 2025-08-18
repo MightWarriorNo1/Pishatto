@@ -1,7 +1,8 @@
 /*eslint-disable */
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, Trash2 } from 'lucide-react';
-import { getNotifications, markNotificationRead, deleteNotification, getAdminNews, AdminNews } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, Trash2, MessageCircle } from 'lucide-react';
+import { getNotifications, markNotificationRead, deleteNotification, getAdminNews, AdminNews, markAllNotificationsRead, getReservationById, createChat, fetchUserChats } from '../../services/api';
 import { useAdminNews } from '../../hooks/useRealtime';
 import { useCast } from '../../contexts/CastContext';
 import Spinner from '../../components/ui/Spinner';
@@ -17,8 +18,10 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
     const [tab, setTab] = useState<'通知' | 'Admin News'>('通知');
     const [adminNews, setAdminNews] = useState<AdminNews[]>([]);
     const [showNotification, setShowNotification] = useState(false);
+    const [messageLoading, setMessageLoading] = useState<number | null>(null);
     // Use authenticated cast context
     const { castId } = useCast() as any;
+    const navigate = useNavigate();
 
     // Use React Query hook for notifications
     const {
@@ -41,6 +44,21 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
             loadAdminNews();
         }
     }, [castId]);
+
+    // Mark all notifications as read when opening the notification page
+    useEffect(() => {
+        if (!castId) return;
+        markAllNotificationsRead('cast', castId).catch((error) => {
+            console.error('Failed to mark notifications as read:', error);
+        });
+    }, [castId]);
+
+    // Also mark as read when switching back to the 通知 tab
+    useEffect(() => {
+        if (tab === '通知' && castId) {
+            markAllNotificationsRead('cast', castId).catch(() => {});
+        }
+    }, [tab, castId]);
 
     // Real-time admin news updates
     useAdminNews('cast', (news) => {
@@ -74,6 +92,60 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
         }
     };
 
+    const handleAvatarClick = async (notification: any) => {
+        try {
+            if (notification?.reservation_id) {
+                const reservation = await getReservationById(notification.reservation_id);
+                if (reservation?.guest_id) {
+                    navigate(`/guest/${reservation.guest_id}`);
+                    return;
+                }
+            }
+            if (notification?.cast?.id) {
+                navigate(`/cast/${notification.cast.id}`);
+            }
+        } catch (e) {
+            console.error('Failed to open detail from notification:', e);
+        }
+    };
+
+    const handleOpenChat = async (notification: any) => {
+        try {
+            if (!castId) return;
+            setMessageLoading(notification.id);
+
+            // If this is a message notification, navigate to the relevant chat
+            if (notification?.type === 'message' || notification?.message === '新しいメッセージが届きました') {
+                const chats = await fetchUserChats('cast', Number(castId));
+                if (Array.isArray(chats) && chats.length > 0) {
+                    // Prefer a chat with unread messages; otherwise, take the most recent chat
+                    const unreadChats = chats.filter((c: any) => (c.unread || 0) > 0);
+                    const sortByTimestampDesc = (a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+                    const targetChat = (unreadChats.length > 0 ? unreadChats.sort(sortByTimestampDesc) : chats.sort(sortByTimestampDesc))[0];
+                    if (targetChat?.id) {
+                        navigate(`/cast/${targetChat.id}/message`);
+                        return;
+                    }
+                }
+            }
+
+            // Fallback for reservation-based notifications
+            if (notification?.reservation_id) {
+                const reservation = await getReservationById(notification.reservation_id);
+                if (!reservation?.guest_id) return;
+                const res = await createChat(Number(castId), reservation.guest_id, notification.reservation_id);
+                const chatId = res?.chat?.id;
+                if (chatId) {
+                    navigate(`/cast/${chatId}/message`);
+                }
+            }
+        } catch (e) {
+            console.error('Failed to open chat from notification:', e);
+        } finally {
+            setMessageLoading(null);
+        }
+    };
+
     const formatTimeAgo = (dateString: string) => {
         const date = new Date(dateString);
         const now = new Date();
@@ -89,10 +161,10 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
     };
 
     return (
-        <div className="max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-20">
+        <div className="max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-20">
             {/* Header - Fixed */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50">
-                <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-br from-primary via-primary to-secondary border-secondary">
+                <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-b from-primary via-primary to-secondary border-secondary">
                     <button onClick={onBack} className="text-white hover:text-secondary transition-colors">
                         <ChevronLeft className="w-6 h-6 hover:text-secondary cursor-pointer" />
                     </button>
@@ -101,15 +173,15 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
                 </div>
 
                 {/* Tab buttons - Fixed */}
-                <div className="flex border-b border-secondary bg-gradient-to-br from-primary via-primary to-secondary">
+                <div className="flex border-b border-secondary bg-gradient-to-b from-primary via-primary to-secondary">
                     <button 
-                        className={`flex-1 py-3 font-bold ${tab === '通知' ? 'border-b-2 border-white text-white' : 'text-gray-400'}`} 
+                        className={`flex-1 py-3 font-bold ${tab === '通知' ? 'border-b-2 border-white text-white' : 'text-white'}`} 
                         onClick={() => setTab('通知')}
                     >
                         通知
                     </button>
                     <button 
-                        className={`flex-1 py-3 font-bold ${tab === 'Admin News' ? 'border-b-2 border-white text-white' : 'text-gray-400'}`} 
+                        className={`flex-1 py-3 font-bold ${tab === 'Admin News' ? 'border-b-2 border-white text-white' : 'text-white'}`} 
                         onClick={() => setTab('Admin News')}
                     >
                         ニュース
@@ -137,28 +209,34 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
                                 {notifications.map((notification) => (
                                     <div 
                                         key={notification.id} 
-                                        className={`bg-orange-50 rounded-lg p-4 flex gap-3 items-start relative`}
+                                        className={`bg-white/10 rounded-lg p-4 flex gap-3 items-start relative`}
                                     >
                                         {notification.cast && (
                                             <img 
                                                 src={notification.cast.avatar ? `${API_BASE_URL}/${notification.cast.avatar}` : '/assets/avatar/avatar-1.png'} 
                                                 alt={notification.cast.nickname} 
-                                                className="w-14 h-14 rounded-full object-cover border-2 border-white"
+                                                className="w-14 h-14 rounded-full object-cover border-2 border-white cursor-pointer"
                                                 onError={(e) => {
                                                     e.currentTarget.src = '/assets/avatar/avatar-1.png';
                                                 }}
+                                                onClick={() => handleAvatarClick(notification)}
                                             />
                                         )}
                                         <div className="flex-1">
-                                            <div className="text-xs text-gray-500 mb-1">
+                                            <div className="text-xs text-white mb-1">
                                                 {formatTimeAgo(notification.created_at)}
                                             </div>
-                                            <div className="text-sm text-gray-800 mb-2">
+                                            <div className="text-sm text-white mb-2">
                                                 {notification.message}
                                             </div>
                                             <div className="flex gap-2 mt-2">
-                                                {notification.cast && (
-                                                    <button className="bg-orange-500 text-white px-3 py-1 rounded text-xs">
+                                                {(notification.reservation_id || notification.cast) && (
+                                                    <button 
+                                                        className="w-full bg-orange-500 text-white rounded font-bold py-2 flex items-center justify-center gap-2 disabled:opacity-50"
+                                                        onClick={() => handleOpenChat(notification)}
+                                                        disabled={messageLoading === notification.id}
+                                                    >
+                                                        <MessageCircle />
                                                         メッセージを送る
                                                     </button>
                                                 )}

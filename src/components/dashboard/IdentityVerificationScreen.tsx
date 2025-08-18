@@ -3,6 +3,7 @@ import { ChevronLeft, Lock } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { uploadIdentity, getGuestProfileById } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
+import Spinner from '../ui/Spinner';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 // Loading spinner component
@@ -85,11 +86,8 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
     // Show loading screen while fetching initial status
     if (isLoadingStatus) {
         return (
-            <div className="max-w-md items-center min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col justify-center">
-                <LoadingSpinner size="lg" />
-                <div className="text-center mt-4">
-                    <div className="text-white mt-4 text-sm">読み込み中...</div>
-                </div>
+            <div className="max-w-md items-center min-h-screen bg-gradient-to-b from-primary via-primary to-secondary flex flex-col justify-center">
+                <Spinner />
             </div>
         );
     }

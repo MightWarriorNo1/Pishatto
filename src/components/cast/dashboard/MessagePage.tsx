@@ -241,7 +241,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     />;
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary relative pb-24">
+        <div className="min-h-screen bg-gradient-to-b from-primary via-primary to-secondary relative pb-24">
             {/* Header (fixed) */}  
             <div className="fixed max-w-md mx-auto left-0 right-0 h-16 flex items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button onClick={onBack} className="mr-2 hover:text-secondary cursor-pointer">
@@ -687,7 +687,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
     }
     
     return (
-        <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20">
+        <div className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-20">
             {/* Fixed Header */}
             <div className="fixed top-0 left-0 right-0 max-w-md mx-auto bg-primary z-20 border-b border-secondary">
                 <h1 className="text-lg font-bold text-center py-3 text-white">メッセージ</h1>

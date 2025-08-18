@@ -109,7 +109,7 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
             </div>
 
             {/* Messages */}
-            <div className="max-w-md mx-auto w-full flex-1 bg-gradient-to-br from-primary via-primary to-secondary overflow-y-auto px-4 py-4" style={{ marginTop: '4rem',minHeight: 0 }}>
+            <div className="max-w-md mx-auto w-full flex-1 bg-gradient-to-b from-primary via-primary to-secondary overflow-y-auto px-4 py-4" style={{ marginTop: '4rem',minHeight: 0 }}>
                 {fetching ? (
                     <Spinner />
                 ) : fetchError ? (

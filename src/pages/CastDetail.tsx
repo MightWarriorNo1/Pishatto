@@ -265,7 +265,7 @@ const CastDetail: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen max-w-md mx-auto flex justify-center items-center bg-gradient-to-br from-primary via-primary to-secondary">
+            <div className="min-h-screen max-w-md mx-auto flex justify-center items-center bg-gradient-to-b from-primary via-primary to-secondary">
                 <div className="text-center">
                     <Spinner />
                 </div>
@@ -274,7 +274,7 @@ const CastDetail: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary pb-0">
+        <div className="min-h-screen max-w-md mx-auto bg-gradient-to-b from-primary via-primary to-secondary pb-0">
             <div className="w-full max-w-md mx-auto relative pb-0">
                 <Toast
                     message={toastMessage}
@@ -284,7 +284,7 @@ const CastDetail: React.FC = () => {
                 />
                 
                 {/* Enhanced Header */}
-                <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-gradient-to-br from-primary/95 via-primary/95 to-secondary/95 backdrop-blur-md z-50 shadow-lg">
+                <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-gradient-to-b from-primary/95 via-primary/95 to-secondary/95 backdrop-blur-md z-50 shadow-lg">
                     <div className="flex items-center justify-between p-4">
                         <button
                             type="button"
@@ -482,7 +482,7 @@ const CastDetail: React.FC = () => {
                                             badges.map((badge, idx) => (
                                                 <div key={badge.id || idx} className="text-center group">
                                                     <div className="relative inline-block">
-                                                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-secondary to-blue-500 flex items-center justify-center text-3xl text-white shadow-lg transition-transform duration-200 group-hover:scale-110 border-2 border-white/20">
+                                                        <div className="w-20 h-20 rounded-full bg-gradient-to-b from-secondary to-blue-500 flex items-center justify-center text-3xl text-white shadow-lg transition-transform duration-200 group-hover:scale-110 border-2 border-white/20">
                                                             {badge.icon || '🏅'}
                                                         </div>
                                                         {badge.count > 1 && (

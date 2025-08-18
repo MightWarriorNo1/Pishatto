@@ -105,7 +105,8 @@ const CastProfilePage: React.FC = () => {
         passportData,
         gradeInfo,
         isLoading: castDataLoading,
-        error: castDataError
+        error: castDataError,
+        invalidateAllCastData,
     } = useCastData(castId || 0);
 
     // Use individual hook for monthly ranking with month selection
@@ -143,8 +144,8 @@ const CastProfilePage: React.FC = () => {
     }, [castId, selectedMonth]);
 
     const handleProfileUpdate = () => {
-        // React Query will handle the update automatically
-        // No need to manually refetch
+        // Ensure fresh data is fetched immediately after profile edit
+        invalidateAllCastData?.();
     };
 
     const handleNotificationClose = () => {
@@ -237,14 +238,14 @@ const CastProfilePage: React.FC = () => {
 
     if (castDataLoading) {
         return (
-            <div className="max-w-md bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24 flex items-center justify-center">
+            <div className="max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24 flex items-center justify-center">
                 <Spinner />
             </div>
         );
     }
 
     return (
-        <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-24">
+        <div className="max-w-md mx-auto bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24">
             {/* Fixed Header */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 flex items-center justify-between px-4 pt-4 pb-4 bg-primary border-b border-secondary">
                 <button 
@@ -320,7 +321,7 @@ const CastProfilePage: React.FC = () => {
             {/* Grade section */}
             <div className="bg-secondary text-white text-center py-2 font-bold">今期のグレード</div>
             <div className="bg-primary px-4 py-4 flex items-center gap-4 border border-secondary">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-b from-yellow-400 to-yellow-600 flex items-center justify-center">
                     <span className="text-2xl">🏆</span>
                 </div>
                 <div className="flex flex-col">
@@ -338,7 +339,7 @@ const CastProfilePage: React.FC = () => {
                 </Link>
             </div>
             {/* Points Section */}
-            <div className="bg-gradient-to-br from-primary via-primary to-secondary border border-secondary rounded-lg mx-4 my-2 p-4">
+            <div className="bg-gradient-to-b from-primary via-primary to-secondary border border-secondary rounded-lg mx-4 my-2 p-4">
                 <div className="flex items-center mb-2">
                     <span className="text-xs font-medium text-white mr-2">今月の総売上ポイント</span>
                     <span className="text-xs text-white">
@@ -409,7 +410,7 @@ const CastProfilePage: React.FC = () => {
                             <div className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 border border-yellow-400/30 rounded-lg p-3 mb-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                                        <div className="w-8 h-8 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
                                             <span className="text-white font-bold text-sm">{ranking.summary.my_rank}</span>
                                         </div>
                                         <div>

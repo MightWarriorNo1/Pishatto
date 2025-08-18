@@ -46,7 +46,7 @@ const NotificationSettingsPage: React.FC<NotificationSettingsPageProps> = ({ onB
 
     if (contextLoading) {
         return (
-            <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary relative">
+            <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary relative">
                 <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
                     <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer transition-colors">
                         <ChevronLeft />
@@ -61,7 +61,7 @@ const NotificationSettingsPage: React.FC<NotificationSettingsPageProps> = ({ onB
     }
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary relative">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary relative">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
                 <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary transition-colors cursor-pointer">

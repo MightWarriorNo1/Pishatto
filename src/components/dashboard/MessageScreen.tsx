@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { FiBell, FiStar, FiSearch, FiCheckCircle, FiFilter } from 'react-icons/fi';
+import { FiBell, FiStar, FiSearch, FiFilter } from 'react-icons/fi';
 import ChatScreen from './ChatScreen';
 import GroupChatScreen from './GroupChatScreen';
 import ConciergeChat from '../ConciergeChat';
 import ConciergeDetailPage from '../../pages/ConciergeDetailPage';
-import { useChatRefresh } from '../../contexts/ChatRefreshContext';
-import { getNotifications, markNotificationRead, getCastProfileById, favoriteChat, unfavoriteChat, getFavoriteChats, isChatFavorited, markChatMessagesRead } from '../../services/api';
+import { getNotifications, markNotificationRead, getCastProfileById, markChatMessagesRead } from '../../services/api';
 import { useGuestChats, useGuestFavorites, useFavoriteChat, useUnfavoriteChat } from '../../hooks/useQueries';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
@@ -33,13 +32,12 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const [showConcierge, setShowConcierge] = useState(false);
     const [currentChat, setCurrentChat] = useState<any>(null);
     const { user } = useUser();
-    const { refreshKey } = useChatRefresh();
     const { isNotificationEnabled } = useNotificationSettings();
 
     // React Query hooks
     const { data: chats = [], isLoading } = useGuestChats(userId);
     const { data: favoritesData } = useGuestFavorites(user?.id || 0);
-    const favoritedChatIds = new Set<number>((favoritesData?.chats || []).map((chat: any) => chat.id));
+    const favoritedChatIds = useMemo(() => new Set<number>((favoritesData?.chats || []).map((chat: any) => chat.id)), [favoritesData?.chats]);
     
     // Mutation hooks
     const favoriteChatMutation = useFavoriteChat();
@@ -231,24 +229,24 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     // };
 
     // Mark all messages as read
-    const handleMarkAllAsRead = async (e: React.MouseEvent) => {
-        e.stopPropagation();
-        try {
-            // Mark all notifications as read
-            await Promise.all(
-                messageNotifications.map((n: any) => markNotificationRead(n.id))
-            );
-            // Mark chats unread to 0 on server
-            const chatsWithUnread = chats.filter((c: any) => (c.unread || 0) > 0);
-            await Promise.all(
-                chatsWithUnread.map((c: any) => markChatMessagesRead(c.id, userId, 'guest'))
-            );
-            setMessageNotifications([]);
-            onNotificationCountChange?.(0);
-        } catch (error) {
-            console.error('Error marking all as read:', error);
-        }
-    };
+    // const handleMarkAllAsRead = async (e: React.MouseEvent) => {
+    //     e.stopPropagation();
+    //     try {
+    //         // Mark all notifications as read
+    //         await Promise.all(
+    //             messageNotifications.map((n: any) => markNotificationRead(n.id))
+    //         );
+    //         // Mark chats unread to 0 on server
+    //         const chatsWithUnread = chats.filter((c: any) => (c.unread || 0) > 0);
+    //         await Promise.all(
+    //             chatsWithUnread.map((c: any) => markChatMessagesRead(c.id, userId, 'guest'))
+    //         );
+    //         setMessageNotifications([]);
+    //         onNotificationCountChange?.(0);
+    //     } catch (error) {
+    //         console.error('Error marking all as read:', error);
+    //     }
+    // };
 
     if (showChat) {
         if (currentChat && currentChat.is_group_chat) {
@@ -278,11 +276,11 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
     
     return (
-        <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col pb-24">
+        <div className="bg-gradient-to-b from-primary via-primary to-secondary min-h-screen flex flex-col pb-24">
             {/* Top bar */}
-            <div className="fixed max-w-md mx-auto top-0 left-0 right-0 flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary">
+            <div className="fixed max-w-md mx-auto top-0 left-0 right-0 grid grid-cols-3 items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button
-                    className="relative p-1"
+                    className="justify-self-start relative p-1"
                     aria-label="通知を開く"
                     onClick={() => setShowNotification(true)}
                 >
@@ -293,15 +291,8 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                         </span>
                     )}
                 </button>
-                <div className="font-bold text-lg text-white">メッセージ一覧</div>
-                <button
-                    onClick={handleMarkAllAsRead}
-                    className="flex items-center gap-1 text-xs font-bold text-white bg-secondary/80 hover:bg-secondary px-2 py-1 rounded-full border border-secondary"
-                    aria-label="すべて既読にする"
-                >
-                    <FiCheckCircle className="w-4 h-4" />
-                    <span>すべて既読</span>
-                </button>
+                <div className="justify-self-center font-bold text-lg text-white">メッセージ一覧</div>
+                <div className="justify-self-end" />
             </div>
             {/* Message notifications section */}
             {/* {messageNotifications.length > 0 && (

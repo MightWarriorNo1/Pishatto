@@ -108,7 +108,7 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
     };
 
     return (
-        <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary/80 to-secondary b   flex items-center justify-center px-4">
+        <div className="max-w-md mx-auto bg-gradient-to-b from-primary via-primary/80 to-secondary b   flex items-center justify-center px-4">
             <div className="w-full min-h-screen p-6 pb-28">
                 <div className="flex items-center justify-center relative h-14 border-b border-rose-200">
                     <button onClick={onBack} className="absolute left-2 text-white hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300 rounded-full p-2" aria-label="戻る">

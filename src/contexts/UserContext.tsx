@@ -66,9 +66,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   };
 
   const updateUser = (updates: Partial<GuestProfile>) => {
-    if (user) {
-      setUser({ ...user, ...updates });
-    }
+    setUser(prev => (prev ? { ...prev, ...updates } : prev));
   };
 
   const logout = async () => {

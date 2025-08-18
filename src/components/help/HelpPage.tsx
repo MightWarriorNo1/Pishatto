@@ -49,7 +49,7 @@ const HelpPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
+        <div className="min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
             {/* Header */}
             <div className="sticky top-0 z-10 bg-white/10 backdrop-blur-md border-b border-white/20 shadow-lg">
                 <div className="flex items-center px-4 py-4">

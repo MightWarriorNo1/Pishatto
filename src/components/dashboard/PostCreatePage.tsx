@@ -128,7 +128,7 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
     
     try {
         return (
-            <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col">
+            <div className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary flex flex-col">
             {/* Top bar */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-secondary bg-primary">
                 <button onClick={onClose} className="text-3xl text-white font-bol hover:text-tp,atp">
@@ -208,7 +208,7 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
     } catch (error) {
         console.error('PostCreatePage: Error rendering component:', error);
         return (
-            <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col">
+            <div className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary flex flex-col">
                 <div className="flex items-center justify-between px-4 py-4 border-b border-secondary bg-primary">
                     <button onClick={onClose} className="text-3xl text-white font-bold">
                         <X />

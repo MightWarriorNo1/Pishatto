@@ -159,14 +159,15 @@ const Timeline: React.FC = () => {
     if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} userType="guest" userId={user?.id} />;
     if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20 relative">
+        <div className="max-w-md mx-auto h-screen bg-gradient-to-b from-primary via-primary to-secondary bg-fixed relative overflow-hidden">
             {/* Fixed Top bar */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-10">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary">
-                    <button onClick={() => setShowNotification(true)} className="text-white cursor-pointer">
+                <div className="grid grid-cols-3 items-center px-4 py-3 border-b border-secondary bg-primary">
+                    <button onClick={() => setShowNotification(true)} className="justify-self-start text-white cursor-pointer">
                         <Bell />
                     </button>
-                    <span className="text-lg font-bold mx-auto text-white">つぶやき</span>
+                    <span className="justify-self-center text-lg font-bold text-white">つぶやき</span>
+                    <div className="justify-self-end" />
                 </div>
                 <div className="flex items-center border-b border-secondary bg-primary">
                     <button onClick={() => setTab('all')} className={`flex-1 py-3 text-center   font-bold text-base ${tab === 'all' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>みんなのつぶやき</button>
@@ -174,7 +175,7 @@ const Timeline: React.FC = () => {
                 </div>
             </div>
             {/* Posts */}
-            <div className="px-4 flex flex-col gap-4 py-6 pt-32">
+            <div className="px-4 flex flex-col gap-4 pt-32 pb-32 overflow-y-auto h-full scrollbar-hidden">
                 {loading ? (
                     <Spinner />
                 ) : error ? (

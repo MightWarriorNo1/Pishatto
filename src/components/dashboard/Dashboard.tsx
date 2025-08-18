@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import TopNavigation from './TopNavigation';
 import NewCastSection from './NewCastSection';
@@ -41,7 +41,7 @@ const Modal: React.FC<{ onClose: () => void; children: React.ReactNode }> = ({ o
       aria-modal="true"
     >
       <div
-        className="bg-gradient-to-br from-primary via-primary to-secondary rounded-2xl p-0 max-w-md w-full mx-4 relative shadow-xl border border-secondary"
+        className="bg-gradient-to-b from-primary via-primary to-secondary rounded-2xl p-0 max-w-md w-full mx-4 relative shadow-xl border border-secondary"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -323,7 +323,7 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
+    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
       {/* Show TopNavigation and search tabs only when in search mode */}
       {activeBottomTab === 'search' && (
         <>

@@ -71,7 +71,7 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
     };
 
     return (
-        <div className="max-w-md  bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-8 auto">
+        <div className="max-w-md  bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-8 auto">
             <div className="flex items-center px-2 pt-2 pb-2">
                 <button onClick={onBack} className="text-2xl text-white font-bold hover:text-secondary cursor-pointer">
                     <ChevronLeft />
@@ -522,7 +522,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     // React Query handles data fetching automatically
 
     return (
-        <div className="max-w-md pb-28 bg-gradient-to-br from-primary via-primary to-secondary min-h-screen">
+        <div className="max-w-md pb-28 bg-gradient-to-b from-primary via-primary to-secondary min-h-screen">
             {/* Header */}
             <div className="flex items-center px-4 pt-4 pb-2 border-b border-secondary">
                 <button onClick={onBack} className="text-2xl text-white font-bold hover:text-secondary cursor-pointer">
@@ -646,7 +646,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 // Add EasyMessagePage component
 const EasyMessagePage: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     return (
-        <div className="max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary min-h-screen pb-8 relative">
+        <div className="max-w-md mx-auto bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-8 relative">
             {/* Header with close button */}
             <div className="flex items-center px-4 pt-4 pb-2">
                 <button onClick={onClose} className="text-2xl text-white font-bold">×</button>
@@ -776,7 +776,7 @@ const CastSearchPage: React.FC = () => {
         return <CastNotificationPage     onBack={() => setShowNotification(false)} />;
     }
     return (
-        <div className="flex-1 max-w-md pb-20 bg-gradient-to-br from-primary via-primary to-secondary">
+        <div className="flex-1 max-w-md pb-20 bg-gradient-to-b from-primary via-primary to-secondary">
             {/* Top bar with filter and crown */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <span className="text-white hover:text-secondary transition-colors cursor-pointer" onClick={() => setShowNotification(true)}>

@@ -42,7 +42,7 @@ const RoleSelectPage: React.FC = () => {
     // Show loading while checking authentication
     if (userLoading || castLoading || !hasCheckedAuth) {
         return (
-            <div className="min-h-screen max-w-md mx-auto bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
+            <div className="min-h-screen max-w-md mx-auto bg-gradient-to-b from-primary to-secondary flex items-center justify-center">
                 <Spinner />
             </div>
         );

@@ -1,6 +1,7 @@
 import { ChevronLeft } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { guestUpdateProfile } from '../../services/api';
+import { locationService } from '../../services/locationService';
 import { useUser } from '../../contexts/UserContext';
 
 interface ProfileDetailEditPageProps {
@@ -56,6 +57,34 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<string | null>(null);
 
+    // Dynamic location options from DB (Location.name)
+    const [locationOptions, setLocationOptions] = useState<string[]>([]);
+
+    useEffect(() => {
+        const loadLocations = async () => {
+            try {
+                const activeLocations = await locationService.getActiveLocations();
+                // Defensive: ensure uniqueness
+                const unique = Array.from(new Set(activeLocations));
+                setLocationOptions(unique);
+            } catch (e) {
+                console.error('Failed to load locations:', e);
+                setLocationOptions([]);
+            }
+        };
+        loadLocations();
+    }, []);
+
+    // Merge static options with DB-driven locations for residence/birthplace
+    const mergedFieldOptions: { [key: string]: string[] } = React.useMemo(() => {
+        const unique = Array.from(new Set(locationOptions));
+        return {
+            ...fieldOptions,
+            '居住地': ['未選択', ...unique],
+            '出身地': ['未選択', ...unique],
+        };
+    }, [locationOptions]);
+
     // Update form values when user data changes, but only if values are different
     useEffect(() => {
         if (user) {
@@ -81,10 +110,10 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
                 setValues(newValues);
             }
         }
-    }, [user]);
+    }, [user, values]);
 
     const openPicker = (field: string) => {
-        setTempValue(values[field] !== '未選択' ? values[field] : (fieldOptions[field]?.[0] || ''));
+        setTempValue(values[field] !== '未選択' ? values[field] : (mergedFieldOptions[field]?.[0] || ''));
         setPicker({ field, value: values[field] });
     };
     const closePicker = () => setPicker(null);
@@ -193,7 +222,7 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
     };
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-gradient-br-to from-primary via-primary to-secondary relative">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary relative">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
                 <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer transition-colors">
@@ -229,7 +258,7 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
                     <div className="bg-primary rounded-xl w-80 max-w-full shadow-lg flex flex-col overflow-hidden border border-secondary">
                         <div className="text-center font-bold py-3 border-b text-lg text-white border-secondary">{picker.field}</div>
                         <div className="flex-1 overflow-y-auto max-h-72">
-                            {fieldOptions[picker.field]?.map(option => (
+                            {mergedFieldOptions[picker.field]?.map(option => (
                                 <div
                                     key={option}
                                     className={`px-6 py-2 text-center cursor-pointer ${tempValue === option ? 'text-white font-bold' : 'text-white'}`}

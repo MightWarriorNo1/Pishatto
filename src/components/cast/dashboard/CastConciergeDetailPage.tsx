@@ -140,7 +140,7 @@ const CastConciergeDetailPage: React.FC<CastConciergeDetailPageProps> = ({ onBac
     ];
 
     return (
-        <div className="bg-gradient-to-br from-primary via-primary to-secondary min-h-screen flex flex-col relative">
+        <div className="bg-gradient-to-b from-primary via-primary to-secondary min-h-screen flex flex-col relative">
             {/* Header */}
             <div className="fixed top-0 max-w-md mx-auto left-0 right-0 z-20 flex items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button onClick={onBack} className="mr-3 cursor-pointer hover:text-secondary">

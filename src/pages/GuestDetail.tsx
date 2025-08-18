@@ -148,39 +148,63 @@ const GuestDetail: React.FC = () => {
 
     return (
         <div className="max-w-md mx-auto min-h-screen bg-primary pb-8">
-            {/* Large avatar image with back button */}
-            <div className="relative">
+            {/* Large avatar image with enhanced overlay and back button */}
+            <div className="relative group overflow-hidden rounded-b-3xl shadow-xl">
                 <img 
                     src={getFirstAvatarUrl(guest.avatar)} 
-                    alt="guest avatar" 
-                    className="w-full h-64 object-cover rounded-b-3xl shadow-lg transition-all duration-300" 
+                    alt="ゲストのアバター" 
+                    className="w-full h-64 object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
                     onError={e => (e.currentTarget.src = '/assets/avatar/1.jpg')}
                 />
+                {/* gradient overlay for readability */}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/10 via-black/10 to-primary/90" />
+
+                {/* back button */}
                 <button 
                     onClick={() => navigate(-1)}
-                    className="absolute top-4 left-4 bg-primary bg-opacity-80 rounded-full p-2 text-2xl shadow-lg text-white border border-secondary hover:bg-secondary cursor-pointer transition-colors duration-200 z-10"
+                    className="absolute top-4 left-4 bg-primary/70 backdrop-blur rounded-full p-2 text-2xl shadow-lg text-white border border-secondary/70 hover:bg-secondary cursor-pointer transition-colors duration-200 z-10"
                     title="戻る"
+                    aria-label="戻る"
                 >
                     <ChevronLeft />
                 </button>
+
+                {/* quick info overlay */}
+                <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3 z-10">
+                    <div className="min-w-0">
+                        <div className="font-extrabold text-lg text-white drop-shadow-sm truncate">{guest.nickname || ''}</div>
+                        <div className="text-xs text-white/90 font-bold truncate">{guest.occupation || ''}</div>
+                    </div>
+                    <div className="flex gap-2">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-white/10 text-white border border-white/10">
+                            <Star size={14} />{guest.age || ''}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold bg-white/10 text-white border border-white/10">
+                            <MapPin size={14} />{guest.residence || ''}
+                        </span>
+                    </div>
+                </div>
             </div>
 
             {/* Badge */}
             <div className="px-4 mt-2">
-                <span className="bg-secondary text-white text-xs rounded px-2 py-1 font-bold shadow">ゲスト</span>
+                <span className="inline-flex items-center gap-2 bg-secondary text-white text-xs rounded px-2 py-1 font-bold shadow">
+                    <Users size={14} /> ゲスト
+                </span>
             </div>
 
             {/* Profile card */}
-            <div className="flex items-center gap-3 px-4 mt-4 bg-primary rounded-xl shadow-lg py-4">
+            <div className="flex items-center gap-3 px-4 mt-4 bg-primary/80 backdrop-blur rounded-xl shadow-lg py-4 border border-white/5">
                 <img 
                     src={getFirstAvatarUrl(guest.avatar)} 
-                    alt="guest avatar" 
+                    alt="ゲストのアバター（小）" 
                     className="w-14 h-14 rounded-full object-cover border-2 border-secondary shadow" 
                     onError={e => (e.currentTarget.src = '/assets/avatar/1.jpg')}
+                    loading="lazy"
                 />
-                <div className="flex-1">
-                    <div className="font-bold text-base text-white">{guest.nickname || ''}</div>
-                    <div className="text-xs text-white font-bold">{guest.occupation || ''}</div>
+                <div className="flex-1 min-w-0">
+                    <div className="font-bold text-base text-white truncate">{guest.nickname || ''}</div>
+                    <div className="text-xs text-white/90 font-bold truncate">{guest.occupation || ''}</div>
                 </div>
             </div>
 
@@ -190,12 +214,13 @@ const GuestDetail: React.FC = () => {
                     <button
                         onClick={handleAction}
                         disabled={messageLoading}
-                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-bold shadow transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-secondary/50 ${
+                        className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-bold shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-secondary/50 active:scale-[0.98] ${
                             liked
-                                ? 'bg-secondary text-white hover:bg-secondary/80 disabled:opacity-60'
+                                ? 'bg-secondary text-white hover:bg-secondary/85 disabled:opacity-60'
                                 : 'bg-primary border border-secondary text-white hover:bg-secondary hover:text-primary disabled:opacity-60'
                         }`}
                         title={liked ? 'メッセージページへ' : 'いいねする'}
+                        aria-label={liked ? 'メッセージページへ' : 'いいねする'}
                     >
                         {liked ? <MessageSquare size={20} /> : <Heart size={20} fill={'none'} />}
                         {messageLoading ? (liked ? '移動中...' : '処理中...') : liked ? 'メッセージ' : 'いいね'}
@@ -206,31 +231,31 @@ const GuestDetail: React.FC = () => {
             {/* Profile details */}
             <div className="px-4 mt-8">
                 <div className="text-lg text-white font-bold mb-4 flex items-center gap-2"><User size={18}/>プロフィール詳細</div>
-                <div className="grid grid-cols-2 gap-y-3 text-sm bg-primary rounded-xl shadow p-4">
-                    <div className="flex items-center gap-2 text-white"><Star size={16}/>年齢：</div>
-                    <div className="font-bold text-white">{guest.age || ''}</div>
-                    <div className="flex items-center gap-2 text-white"><MapPin size={16}/>身長：</div>
-                    <div className="font-bold text-white">{guest.height ? `${guest.height}cm` : ''}</div>
-                    <div className="flex items-center gap-2 text-white"><Home size={16}/>居住地：</div>
-                    <div className="font-bold text-white">{guest.residence || ''}</div>
-                    <div className="flex items-center gap-2 text-white"><MapPin size={16}/>出身地：</div>
-                    <div className="font-bold text-white">{guest.birthplace || ''}</div>
-                    <div className="flex items-center gap-2 text-white"><GraduationCap size={16}/>学歴：</div>
-                    <div className="font-bold text-white">{guest.education || ''}</div>
-                    <div className="flex items-center gap-2 text-white"><DollarSign size={16}/>年収：</div>
-                    <div className="font-bold text-white">{guest.annual_income || ''}</div>
-                    <div className="flex items-center gap-2 text-white"><Briefcase size={16}/>お仕事：</div>
-                    <div className="font-bold text-white">{guest.occupation || ''}</div>
-                    <div className="flex items-center gap-2 text-white"><GlassWater size={16}/>お酒：</div>
-                    <div className="font-bold text-white">{guest.alcohol || ''}</div>
-                    <div className="flex items-center gap-2 text-white"><Cigarette size={16}/>タバコ：</div>
-                    <div className="font-bold text-white">{guest.tobacco || ''}</div>
-                    <div className="flex items-center gap-2 text-white"><Users size={16}/>兄弟姉妹：</div>
-                    <div className="font-bold text-white">{guest.siblings || ''}</div>
-                    <div className="flex items-center gap-2 text-white"><Home size={16}/>同居人：</div>
-                    <div className="font-bold text-white">{guest.cohabitant || ''}</div>
-                    <div className="flex items-center gap-2 text-white"><MapPin size={16}/>好みのエリア：</div>
-                    <div className="font-bold text-white">{guest.favorite_area || ''}</div>
+                <div className="grid grid-cols-2 gap-y-3 text-sm bg-primary/80 backdrop-blur rounded-xl shadow p-4 border border-white/5">
+                    <div className="flex items-center gap-2 text-white/85"><Star size={16}/>年齢：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.age || ''}</span></div>
+                    <div className="flex items-center gap-2 text-white/85"><MapPin size={16}/>身長：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.height ? `${guest.height}cm` : ''}</span></div>
+                    <div className="flex items-center gap-2 text-white/85"><Home size={16}/>居住地：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.residence || ''}</span></div>
+                    <div className="flex items-center gap-2 text-white/85"><MapPin size={16}/>出身地：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.birthplace || ''}</span></div>
+                    <div className="flex items-center gap-2 text-white/85"><GraduationCap size={16}/>学歴：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.education || ''}</span></div>
+                    <div className="flex items-center gap-2 text-white/85"><DollarSign size={16}/>年収：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.annual_income || ''}</span></div>
+                    <div className="flex items-center gap-2 text-white/85"><Briefcase size={16}/>お仕事：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.occupation || ''}</span></div>
+                    <div className="flex items-center gap-2 text-white/85"><GlassWater size={16}/>お酒：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.alcohol || ''}</span></div>
+                    <div className="flex items-center gap-2 text-white/85"><Cigarette size={16}/>タバコ：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.tobacco || ''}</span></div>
+                    <div className="flex items-center gap-2 text-white/85"><Users size={16}/>兄弟姉妹：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.siblings || ''}</span></div>
+                    <div className="flex items-center gap-2 text-white/85"><Home size={16}/>同居人：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.cohabitant || ''}</span></div>
+                    <div className="flex items-center gap-2 text-white/85"><MapPin size={16}/>好みのエリア：</div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.favorite_area || ''}</span></div>
                 </div>
             </div>
 
@@ -242,7 +267,7 @@ const GuestDetail: React.FC = () => {
                         {guest.interests.map((interest, index) => (
                             <span 
                                 key={index} 
-                                className="bg-secondary text-white text-xs rounded px-2 py-1 shadow"
+                                className="bg-secondary text-white text-xs rounded px-2 py-1 shadow transition-transform duration-200 hover:-translate-y-0.5"
                             >
                                 {typeof interest === 'string' 
                                     ? interest 

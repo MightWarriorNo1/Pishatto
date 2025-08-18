@@ -59,7 +59,7 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
     const isActive = isValidPhoneNumber(phone);
 
     return (
-        <div className="min-h-screen max-w-md mx-auto bg-gradient-to-br from-primary via-primary/80 to-secondary flex items-center justify-center px-4">
+        <div className="min-h-screen max-w-md mx-auto bg-gradient-to-b from-primary via-primary/80 to-secondary flex items-center justify-center px-4">
             <div className="w-full min-h-screen p-6 pb-28">
                 <div className="flex items-center justify-center relative h-14 border-b border-rose-200">
                     <button

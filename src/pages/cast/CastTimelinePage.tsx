@@ -155,7 +155,7 @@ const CastTimelinePage: React.FC = () => {
     if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} userType="cast" userId={castId || undefined} />;
     if (showNotification) return <CastNotificationPage onBack={() => setShowNotification(false)} />;
     return (
-        <div className="max-w-md pb-28 min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
+        <div className="max-w-md h-screen bg-gradient-to-b from-primary via-primary to-secondary bg-fixed relative overflow-hidden">
             {/* Fixed Header */}
             <div className="fixed top-0 left-0 right-0 max-w-md mx-auto bg-primary z-20">
                 {/* Header */}
@@ -174,8 +174,8 @@ const CastTimelinePage: React.FC = () => {
                     <button onClick={() => handleTabChange('cast')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'cast' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>キャスト専用</button>
                 </div>
             </div>
-            {/* Posts - with top margin to account for fixed header */}
-            <div className="px-4 flex flex-col gap-4 pt-28">
+            {/* Posts - scrollable area, hidden scrollbar */}
+            <div className="px-4 flex flex-col gap-4 pt-28 pb-32 overflow-y-auto h-full scrollbar-hidden">
                 {loading ? (
                     <div className="flex items-center justify-center">
                         <Spinner />
@@ -226,7 +226,8 @@ const CastTimelinePage: React.FC = () => {
                                         <img 
                                             src={avatarSrc}
                                             alt="avatar" 
-                                            className="w-8 h-8 rounded-full mr-2 border border-secondary"
+                                            className="w-8 h-8 rounded-full mr-2 border border-secondary cursor-pointer hover:opacity-80 transition-opacity"
+                                            onClick={() => handleAvatarClick(tweet)}
                                             onError={(e) => {
                                                 console.log('Avatar load error for:', avatarSrc);
                                                 const target = e.target as HTMLImageElement;

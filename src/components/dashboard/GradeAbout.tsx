@@ -323,7 +323,7 @@ const GradeAbout: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     {/* Grade progression visualization */}
                     <div className="relative mb-8 animate-fade-in">
                         {/* Background gradient for visual appeal */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl animate-gradient-shift"></div>
+                        <div className="absolute inset-0 bg-gradient-to-b from-orange-500/5 via-purple-500/5 to-blue-500/5 rounded-2xl animate-gradient-shift"></div>
                         
                         {/* Progress line with enhanced styling */}
                         <div className="absolute top-6 left-4 right-4 h-2 bg-gradient-to-r from-green-500 via-orange-500 to-purple-600 rounded-full opacity-40 shadow-lg overflow-hidden">
@@ -452,7 +452,7 @@ const GradeAbout: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             {/* Grade Details Section */}
             {selectedGrade && (
                 <div className="mx-4 mb-6">
-                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-4 shadow-lg border border-gray-600">
+                    <div className="bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl p-4 shadow-lg border border-gray-600">
                         {(() => {
                             const grade = gradeData.find(g => g.key === selectedGrade);
                             if (!grade) return null;

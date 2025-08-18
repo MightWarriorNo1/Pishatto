@@ -125,9 +125,9 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <div className="max-w-md min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
+    <div className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
       {/* Top bar */}
-      <div className="flex items-center px-4 py-3 border-b border-secondary bg-gradient-to-br from-primary via-primary to-secondary">
+      <div className="flex items-center px-4 py-3 border-b border-secondary bg-gradient-to-b from-primary via-primary to-secondary">
         <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" onClick={onBack}>
           <ChevronLeft />
         </button>
@@ -185,11 +185,11 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       )}
       
       {/* Summary section */}
-      {!loading && !error && transactions.length > 0 && (
+      {/* {!loading && !error && transactions.length > 0 && (
         <div className="bg-primary px-4 py-3 text-center text-sm text-white border-b border-secondary">
           ポイント明細書を確認する
         </div>
-      )}
+      )} */}
     </div>
   );
 };

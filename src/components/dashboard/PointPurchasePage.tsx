@@ -74,7 +74,7 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   if (showPaymentForm) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/40 animate-fade-in">
-        <div className="max-w-md w-full min-h-screen  bg-gradient-to-br from-primary via-primary to-secondary rounded-2xl shadow-2xl animate-slide-up">
+        <div className="max-w-md w-full min-h-screen  bg-gradient-to-b from-primary via-primary to-secondary rounded-2xl shadow-2xl animate-slide-up">
           <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary rounded-t-2xl">
             <button onClick={handlePaymentCancel} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" aria-label="戻る">
               <ChevronLeft />
@@ -97,7 +97,7 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   }
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
+    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
       {/* Header */}
       <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary rounded-b-2xl shadow-md">
         {onBack && (

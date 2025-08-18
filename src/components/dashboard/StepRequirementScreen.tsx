@@ -88,7 +88,7 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
             {/* Top bar */}
             <div className="flex flex-row justify-between items-center px-4 pt-4 pb-4 border-b border-secondary">
                 <button onClick={onBack} className="mr-2 text-2xl text-white cursor-pointer hover:text-secondary" aria-label="戻る">
@@ -207,7 +207,7 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                 <div className="relative bg-white/10 h-32 flex items-center justify-center">
                     {/* ID icon */}
                     <IdCard size={40} className="text-white" />
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary to-secondary bg-opacity-40 flex flex-col items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-b from-primary via-primary to-secondary bg-opacity-40 flex flex-col items-center justify-center">
                         <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/90 text-primary text-xs font-bold inline-flex items-center gap-1">
                             {loading ? (
                                 <>

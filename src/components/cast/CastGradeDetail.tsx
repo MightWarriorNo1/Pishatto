@@ -86,7 +86,7 @@ const CastGradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     if (loading) {
         return (
-            <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex items-center justify-center">
+            <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary flex items-center justify-center">
                 <Spinner />
             </div>
         );
@@ -94,7 +94,7 @@ const CastGradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     if (!gradeInfo) {
         return (
-            <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex items-center justify-center">
+            <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary flex items-center justify-center">
                 <div className="text-white text-lg">グレード情報を取得できませんでした</div>
             </div>
         );
@@ -112,7 +112,7 @@ const CastGradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const currentGradeIndex = getCurrentGradeIndex();
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-20">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-20">
             {/* Top bar */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50 flex items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer transition-colors">

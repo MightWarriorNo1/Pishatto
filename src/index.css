@@ -56,3 +56,12 @@ code {
 .animate-slide-up {
   animation: slideUp 0.3s ease-out;
 }
+
+/* Utility: hide scrollbar while keeping scroll */
+.scrollbar-hidden {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}

@@ -51,10 +51,10 @@ function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime, currentDu
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-gradient-to-br from-primary to-blue-900 border border-white/20 rounded-3xl p-8 w-96 max-w-[90%] shadow-2xl">
+      <div className="bg-gradient-to-b from-primary to-blue-900 border border-white/20 rounded-3xl p-8 w-96 max-w-[90%] shadow-2xl">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-secondary to-red-500 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-b from-secondary to-red-500 rounded-full flex items-center justify-center">
               <Clock className="text-white w-5 h-5" />
             </div>
             <div>
@@ -301,7 +301,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
+    <div className="min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
       {/* Fixed Header */}
       <div className="fixed top-0 max-w-md mx-auto w-full z-50 bg-primary px-4 py-3 border-b border-white/10 shadow-lg shadow-primary/30 bg-gradient-to-r from-primary via-blue-900 to-secondary">
         <div className="flex items-center justify-between">

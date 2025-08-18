@@ -50,7 +50,7 @@ const PaymentInfoRegisterPage: React.FC<PaymentInfoRegisterPageProps> = ({ onBac
 
   if (loading) {
     return (
-      <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
+      <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
         <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
           {onBack && (
             <button onClick={onBack} className="mr-2 text-2xl text-white">&#60;</button>
@@ -99,7 +99,7 @@ const PaymentInfoRegisterPage: React.FC<PaymentInfoRegisterPageProps> = ({ onBac
 
   // If no payment info, show card registration form
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-br from-primary via-primary to-secondary pb-8">
+    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
       <div className="flex items-center px-4 py-3 border-b bg-primary border-secondary">
         {onBack && (
           <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer">

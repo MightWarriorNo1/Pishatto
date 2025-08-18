@@ -97,7 +97,7 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary to-secondary flex flex-col pt-16">
+    <div className="min-h-screen bg-gradient-to-b from-primary via-primary to-secondary flex flex-col pt-16">
       {/* Header */}
       <div className="fixed top-0 max-w-md mx-auto w-full z-50 bg-primary px-4 py-3 border-b border-white/10 shadow-md">
         <div className="flex items-center justify-between">
