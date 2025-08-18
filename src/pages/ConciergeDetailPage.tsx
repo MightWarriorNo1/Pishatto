@@ -5,20 +5,21 @@ import { useConcierge } from '../contexts/ConciergeContext';
 import { useUser } from '../contexts/UserContext';
 import { getConciergeInfo, ConciergeInfo } from '../services/api';
 import { Bird, ChevronLeft, Send } from 'lucide-react';
+import Spinner from '../components/ui/Spinner';
 
 interface ConciergeDetailPageProps {
     onBack: () => void;
 }
 
 const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => {
-    const [selectedTab, setSelectedTab] = useState<'chat' | 'help' | 'services'>('chat');
+    const [selectedTab] = useState<'chat' | 'help' | 'services'>('chat');
     const [message, setMessage] = useState('');
-    const { messages, addMessage, markAsRead, loadMessages, sendMessage } = useConcierge();
+    const { messages, markAsRead, loadMessages, sendMessage } = useConcierge();
     const { user } = useUser();
     const [conciergeInfo, setConciergeInfo] = useState<ConciergeInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [sending, setSending] = useState(false);
-    const [attachedFile, setAttachedFile] = useState<File | null>(null);
+    const [sending] = useState(false);
+    const [attachedFile] = useState<File | null>(null);
 
     // Load concierge info and messages on component mount
     useEffect(() => {
@@ -150,8 +151,7 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
                         {isLoading ? (
                             <div className="flex items-center justify-center py-8">
                                 <div className="text-white text-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-                                    <div className="text-sm">読み込み中...</div>
+                                    <Spinner />
                                 </div>
                             </div>
                         ) : (

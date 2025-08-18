@@ -278,24 +278,24 @@ const CastDashboardInner: React.FC = () => {
     }, [chats]);
 
     React.useEffect(() => {
-  const channels = reservations
-    .filter((r: any) => r.id)
-    .map((r: any) => {
-      const channel = echo.channel(`reservation.${r.id}`);
-      const handler = (e: any) => {
-        // React Query will handle the update automatically
-        // No need to manually update state
-      };
-      channel.listen("ReservationUpdated", handler);
-      return { channel, handler };
-    });
+        const channels = reservations
+            .filter((r: any) => r.id)
+            .map((r: any) => {
+            const channel = echo.channel(`reservation.${r.id}`);
+            const handler = (e: any) => {
+                // React Query will handle the update automatically
+                // No need to manually update state
+            };
+            channel.listen("ReservationUpdated", handler);
+            return { channel, handler };
+            });
 
-  return () => {
-    channels.forEach(({ channel, handler }: { channel: any; handler: any }) => {
-      channel.stopListening("ReservationUpdated", handler);
-    });
-  };
-}, [reservations.map((r: any) => r.id).join(",")]);
+        return () => {
+            channels.forEach(({ channel, handler }: { channel: any; handler: any }) => {
+            channel.stopListening("ReservationUpdated", handler);
+            });
+        };
+    }, [reservations.map((r: any) => r.id).join(",")]);
 
     const isReservationInChat = (reservationId: number | undefined) => {
         if (typeof reservationId !== 'number' || !castId) return false;
@@ -519,7 +519,9 @@ const CastDashboardInner: React.FC = () => {
         <div className="min-h-screen bg-white flex flex-col items-center">
             <div className="w-full max-w-md mx-auto flex flex-col flex-1 min-h-screen bg-gradient-to-br from-primary via-primary to-secondary">
                 {loading ? (
-                    <Spinner />
+                    <div className="flex-1 flex items-center justify-center">
+                        <Spinner />
+                    </div>
                 ) : (
                     <>
                         {/* Top Navigation Bar: Only show on Home */}

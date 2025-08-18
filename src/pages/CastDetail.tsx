@@ -1,12 +1,11 @@
 /*eslint-disable */
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Share, Heart, MessageSquare } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Share, Heart, MessageSquare, Star, Trophy, Award, User } from 'lucide-react';
 import { likeCast, getCastProfileById, createChat, sendGuestMessage, getLikeStatus, favoriteCast, unfavoriteCast, getFavorites, getCastList, getCastBadges } from '../services/api';
 import { useUser } from '../contexts/UserContext';
 import { useNotificationSettings } from '../contexts/NotificationSettingsContext';
 import Toast from '../components/ui/Toast';
-import { shareContent } from '../utils/clipboard';
 import Spinner from '../components/ui/Spinner';
 import { formatPoints } from '../utils/formatters';
 
@@ -208,26 +207,32 @@ const CastDetail: React.FC = () => {
     const handleShare = async () => {
         try {
             const profileUrl = window.location.href;
-            const success = await shareContent({
-                title: `${cast?.nickname || 'Cast'}のプロフィール`,
-                text: `${cast?.nickname || 'Cast'}のプロフィールをチェックしてみてください！`,
-                url: profileUrl,
-            });
             
-            if (success) {
-                setToastMessage('プロフィールをシェアしました。');
+            // Direct clipboard copy instead of share dialog
+            await navigator.clipboard.writeText(profileUrl);
+            
+            setToastMessage('URLをクリップボードにコピーしました。');
+            setToastType('success');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 5000);
+        } catch (err) {
+            console.error('Failed to copy URL:', err);
+            // Fallback for older browsers
+            try {
+                const textArea = document.createElement('textarea');
+                textArea.value = window.location.href;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                setToastMessage('URLをクリップボードにコピーしました。');
                 setToastType('success');
-            } else {
+            } catch (fallbackErr) {
+                console.error('Fallback copy failed:', fallbackErr);
                 setToastMessage('URLのコピーに失敗しました。手動でコピーしてください。');
                 setToastType('error');
             }
-            
-            setShowToast(true);
-            setTimeout(() => setShowToast(false), 5000);
-        } catch (error) {
-            console.error('Share error:', error);
-            setToastMessage('URLのコピーに失敗しました。手動でコピーしてください。');
-            setToastType('error');
             setShowToast(true);
             setTimeout(() => setShowToast(false), 5000);
         }
@@ -260,43 +265,48 @@ const CastDetail: React.FC = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex justify-center bg-gradient-to-br from-primary via-primary to-secondary max-w-md mx-auto">
-                <Spinner />
+            <div className="min-h-screen max-w-md mx-auto flex justify-center items-center bg-gradient-to-br from-primary via-primary to-secondary">
+                <div className="text-center">
+                    <Spinner />
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex justify-center bg-gray-400">
-            <div className="w-full max-w-md items-center  mx-auto relative bg-gradient-to-br from-primary via-primary to-secondary">
+        <div className="min-h-screen max-w-md mx-auto bg-gradient-to-br from-primary via-primary to-secondary pb-0">
+            <div className="w-full max-w-md mx-auto relative pb-0">
                 <Toast
                     message={toastMessage}
                     type={toastType}
                     isVisible={showToast}
                     onClose={() => setShowToast(false)}
                 />
-                {/* Header */}
-                <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-gradient-to-br from-primary via-primary to-secondary z-50">
+                
+                {/* Enhanced Header */}
+                <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-gradient-to-br from-primary/95 via-primary/95 to-secondary/95 backdrop-blur-md z-50 shadow-lg">
                     <div className="flex items-center justify-between p-4">
                         <button
                             type="button"
                             onClick={() => navigate(-1)}
-                            className="text-2xl text-white hover:text-secondary transition-colors cursor-pointer"
+                            className="text-2xl text-white hover:text-secondary transition-all duration-200 cursor-pointer p-2 rounded-full hover:bg-white/10"
                         >
                             <ChevronLeft />
                         </button>
-                        <div className="text-lg font-medium text-white">{cast?.nickname || 'なの💫'}</div>
-                        <div className="flex items-center space-x-2">
+                        <div className="text-lg font-bold text-white text-center flex-1 mx-4">
+                            {cast?.nickname || 'なの💫'}
+                        </div>
+                        <div className="flex items-center space-x-3">
                             <button 
                                 type="button" 
-                                className="text-2xl text-white hover:text-yellow-400 transition-colors"
+                                className="text-2xl text-white hover:text-yellow-400 transition-all duration-200 p-2 rounded-full hover:bg-white/10"
                                 onClick={handleFavorite}
                             >
-                                <Heart className={`w-6 h-6 ${isFavorited ? 'fill-secondary text-secondary' : 'text-white'}`} />
+                                <Heart className={`w-6 h-6 ${isFavorited ? 'fill-secondary text-secondary animate-pulse' : 'text-white'}`} />
                             </button>
                             <button 
                                 type="button" 
-                                className="text-2xl text-white hover:text-secondary transition-colors"
+                                className="text-2xl text-white hover:text-secondary transition-all duration-200 p-2 rounded-full hover:bg-white/10"
                                 onClick={handleShare}
                             >
                                 <Share />
@@ -304,166 +314,215 @@ const CastDetail: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                {/* Main Image View */}
-                <div className="pt-16 bg-gradient-to-br from-primary via-primary to-secondary">
-                    <div className="rounded-lg overflow-hidden mb-2 w-full border-2 border-secondary relative">
+
+                {/* Enhanced Main Image View */}
+                <div className="pt-20 pb-6">
+                    <div className="mx-4 rounded-2xl overflow-hidden shadow-2xl border-4 border-secondary/30 relative group">
                         <img
                             src={images[currentImageIndex]}
                             alt="Cast"
-                            className="w-full h-64 object-cover"
+                            className="w-full h-80 object-cover transition-all duration-300 group-hover:scale-105"
                             onError={(e) => {
                                 e.currentTarget.src = '/assets/avatar/female.png';
                             }}
                         />
                     
-                        {/* Category Badge - Left Bottom */}
+                        {/* Enhanced Category Badge */}
                         {cast?.category && (
                             <div className="absolute bottom-4 left-4">
-                                <div className={`px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg ${
+                                <div className={`px-4 py-2 rounded-full text-sm font-bold text-white shadow-2xl backdrop-blur-sm ${
                                     cast.category === 'ロイヤルVIP' 
-                                        ? 'bg-gradient-to-r from-purple-500 to-pink-500' 
+                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 border-2 border-purple-300' 
                                         : cast.category === 'VIP' 
-                                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500' 
-                                        : 'bg-gradient-to-r from-blue-500 to-green-500'
+                                        ? 'bg-gradient-to-r from-yellow-600 to-orange-600 border-2 border-yellow-300' 
+                                        : 'bg-gradient-to-r from-blue-600 to-green-600 border-2 border-blue-300'
                                 }`}>
                                     {cast.category}
                                 </div>
                             </div>
                         )}
                         
-                        {/* Image Navigation Buttons */}
+                        {/* Enhanced Image Navigation */}
                         {images.length > 1 && (
                             <>
                                 <button
                                     type="button"
-                                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-primary/50 hover:bg-secondary cursor-pointer rounded-full p-2 text-white transition-colors"
+                                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 cursor-pointer rounded-full p-3 text-white transition-all duration-200 hover:scale-110 backdrop-blur-sm"
                                     onClick={() => setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
                                 >
-                                    <ChevronLeft className="w-5 h-5" />
+                                    <ChevronLeft className="w-6 h-6" />
                                 </button>
                                 <button
                                     type="button"
-                                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-primary/50 hover:bg-primary/70 rounded-full p-2 text-white transition-colors"
+                                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/40 hover:bg-black/60 rounded-full p-3 text-white transition-all duration-200 hover:scale-110 backdrop-blur-sm"
                                     onClick={() => setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
                                 >
-                                    <ChevronRight className="w-5 h-5" />
+                                    <ChevronRight className="w-6 h-6" />
                                 </button>
                             </>
                         )}
-                    </div>
-                </div>
-                {/* Thumbnails and Info */}
-                <div className="w-full max-w-md bg-gradient-to-br from-primary via-primary to-secondary border-t border-secondary">
-                    <div className="p-4">
-                        {/* Thumbnails */}
+
+                        {/* Image Counter */}
                         {images.length > 1 && (
-                            <div className="flex gap-2 mb-4 overflow-x-auto">
-                                {images.map((img: string, index: number) => (
-                                    <button
-                                        type="button"
-                                        key={index}
-                                        onClick={() => setCurrentImageIndex(index)}
-                                        className={`w-16 h-16 flex-shrink-0 rounded-lg ${currentImageIndex === index ? 'border-2 border-secondary' : 'border border-gray-600'}`}
-                                    >
-                                        <img 
-                                            src={img} 
-                                            alt={`Thumbnail ${index + 1}`} 
-                                            className="w-full h-full object-cover rounded-lg" 
-                                            onError={e => (e.currentTarget.src = '/assets/avatar/female.png')}
-                                        />
-                                    </button>
-                                ))}
+                            <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm">
+                                {currentImageIndex + 1} / {images.length}
                             </div>
                         )}
-                        {/* Time Posted */}
-                        <div className="text-sm text-white mb-2">
-                            {timePosted}
+                    </div>
+                </div>
+
+                {/* Enhanced Thumbnails and Info */}
+                <div className="mx-4 mb-6">
+                    {/* Enhanced Thumbnails */}
+                    {images.length > 1 && (
+                        <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
+                            {images.map((img: string, index: number) => (
+                                <button
+                                    type="button"
+                                    key={index}
+                                    onClick={() => setCurrentImageIndex(index)}
+                                    className={`w-20 h-20 flex-shrink-0 rounded-xl transition-all duration-200 hover:scale-105 ${
+                                        currentImageIndex === index 
+                                            ? 'border-4 border-secondary shadow-lg scale-110' 
+                                            : 'border-2 border-white/30 hover:border-white/50'
+                                    }`}
+                                >
+                                    <img 
+                                        src={img} 
+                                        alt={`Thumbnail ${index + 1}`} 
+                                        className="w-full h-full object-cover rounded-lg" 
+                                        onError={e => (e.currentTarget.src = '/assets/avatar/female.png')}
+                                    />
+                                </button>
+                            ))}
                         </div>
+                    )}
+
+                    {/* Enhanced Info Cards */}
+                    <div className="space-y-4">
+                        {/* Time Posted */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                            <div className="flex items-center text-white">
+                                <div className="w-2 h-2 bg-green-400 rounded-full mr-3 animate-pulse"></div>
+                                <span className="text-sm font-medium">{timePosted}</span>
+                            </div>
+                        </div>
+
                         {/* Points Info */}
-                        <div className="flex justify-between items-center">
-                            <div className="text-sm text-white">30分あたりのポイント</div>
-                            <div className="text-xl font-bold text-white">{formatPoints(cast.grade_points)}</div>
+                        <div className="bg-gradient-to-r from-secondary/20 to-secondary/10 backdrop-blur-sm rounded-xl p-4 border border-secondary/30">
+                            <div className="flex justify-between items-center">
+                                <div className="text-sm text-white font-medium">30分あたりのポイント</div>
+                                <div className="text-2xl font-bold text-secondary flex items-center">
+                                    <Star className="w-6 h-6 mr-2 fill-current" />
+                                    {formatPoints(cast.grade_points)}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                {/* Achievements Section */}
-                <div className="bg-gradient-to-br from-primary via-primary to-secondary mt-2 p-4 border-t-4 border-secondary">
-                    {/* Trophy Section */}
-                    <div className="mb-6">
-                        <h3 className="text-lg font-bold mb-4 text-white">獲得した称号</h3>
-                        <div className="flex items-center justify-center">
-                            {titles.length === 0 ? (
-                                <div className="text-white text-sm">称号はありません</div>
-                            ) : (
-                                titles.map((title, idx) => (
-                                    <div key={idx} className="text-center mx-2">
-                                        <img
-                                            src="/assets/icons/gold-cup.png"
-                                            alt="Trophy"
-                                            className="w-20 h-20 mx-auto mb-2"
-                                        />
-                                        <div className="text-sm text-white">{title.period || ''}</div>
-                                        <div className="text-sm font-medium text-white">{title.name || title.title || ''}</div>
+
+                {/* Enhanced Achievements Section */}
+                <div className="mx-4 mb-6">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-xl">
+                        {/* Enhanced Trophy Section */}
+                        <div className="mb-8">
+                            <h3 className="text-xl font-bold mb-6 text-white flex items-center">
+                                <Trophy className="w-6 h-6 mr-3 text-yellow-400" />
+                                獲得した称号
+                            </h3>
+                            <div className="flex items-center justify-center">
+                                {titles.length === 0 ? (
+                                    <div className="text-white/70 text-center py-8">
+                                        <Trophy className="w-16 h-16 mx-auto mb-3 text-white/30" />
+                                        <div className="text-lg">称号はありません</div>
+                                        <div className="text-sm text-white/50">まだ称号を獲得していません</div>
                                     </div>
-                                ))
+                                ) : (
+                                    titles.map((title, idx) => (
+                                        <div key={idx} className="text-center mx-3 group">
+                                            <div className="relative">
+                                                <img
+                                                    src="/assets/icons/gold-cup.png"
+                                                    alt="Trophy"
+                                                    className="w-24 h-24 mx-auto mb-3 transition-transform duration-200 group-hover:scale-110"
+                                                />
+                                                <div className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                                                    {idx + 1}
+                                                </div>
+                                            </div>
+                                            <div className="text-sm text-white/80 mb-1">{title.period || ''}</div>
+                                            <div className="text-sm font-bold text-white">{title.name || title.title || ''}</div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Enhanced Badges Section */}
+                        <div className="border-t border-white/20 pt-6">
+                            <h3 className="text-xl font-bold mb-6 text-white flex items-center">
+                                <Award className="w-6 h-6 mr-3 text-blue-400" />
+                                ゲストから受け取ったバッジ
+                            </h3>
+                            {badgesLoading ? (
+                                <div className="text-center py-12">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                                    <div className="text-white text-lg">バッジを読み込み中...</div>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="grid grid-cols-4 gap-4">
+                                        {badges.length === 0 ? (
+                                            <div className="col-span-4 text-center py-12">
+                                                <Award className="w-16 h-16 mx-auto mb-3 text-white/30" />
+                                                <div className="text-lg text-white/70">バッジはありません</div>
+                                                <div className="text-sm text-white/50">まだバッジを受け取っていません</div>
+                                            </div>
+                                        ) : (
+                                            badges.map((badge, idx) => (
+                                                <div key={badge.id || idx} className="text-center group">
+                                                    <div className="relative inline-block">
+                                                        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-secondary to-blue-500 flex items-center justify-center text-3xl text-white shadow-lg transition-transform duration-200 group-hover:scale-110 border-2 border-white/20">
+                                                            {badge.icon || '🏅'}
+                                                        </div>
+                                                        {badge.count > 1 && (
+                                                            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 font-bold min-w-[24px] text-center shadow-lg border-2 border-white">
+                                                                {badge.count}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-sm mt-3 text-white font-medium px-2">{badge.name || ''}</div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
-                    {/* Badges Section */}
-                    <div className="border-t border-secondary pt-4">
-                        <h3 className="text-lg font-bold mb-4 text-white">ゲストから受け取ったバッジ</h3>
-                        {badgesLoading ? (
-                            <div className="text-center py-8">
-                                <div className="text-white text-sm">バッジを読み込み中...</div>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="flex flex-row gap-4 overflow-x-auto">
-                                    {badges.length === 0 ? (
-                                        <div className="text-white text-sm col-span-4 text-center py-4">バッジはありません</div>
-                                    ) : (
-                                        badges.map((badge, idx) => (
-                                            <div key={badge.id || idx} className="text-center">
-                                                <div className="relative inline-block">
-                                                    <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center text-2xl text-white shadow-lg">
-                                                        {badge.icon || '🏅'}
-                                                    </div>
-                                                    {badge.count > 1 && (
-                                                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-2 py-1 font-bold min-w-[20px] text-center">
-                                                            {badge.count}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="text-sm mt-2 text-white font-medium">{badge.name || ''}</div>
-                                                {/* {badge.description && (
-                                                    <div className="text-xs text-gray-300 mt-1 px-1">{badge.description}</div>
-                                                )} */}
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                                {/* {badges.length > 0 && (
-                                    <div className="mt-4 text-center">
-                                        <div className="text-sm text-gray-300">
-                                            合計 {badges.reduce((total, badge) => total + (badge.count || 1), 0)} 個のバッジを獲得
-                                        </div>
-                                    </div>
-                                )} */}
-                            </>
-                        )}
+                </div>
+
+                {/* Enhanced Self Introduction Section */}
+                <div className="mx-4 mb-6">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-xl">
+                        <h3 className="text-xl font-bold mb-4 text-white flex items-center">
+                            <User className="w-6 h-6 mr-3 text-green-400" />
+                            自己紹介
+                        </h3>
+                        <div className="text-white leading-relaxed">
+                            <p className="text-base">{cast?.profile_text || '自己紹介はありません'}</p>
+                        </div>
                     </div>
                 </div>
-                {/* Self Introduction Section */}
-                <div className="bg-gradient-to-br from-primary via-primary to-secondary mt-2 p-4">
-                    <h3 className="text-lg font-bold mb-4 text-white">自己紹介</h3>
-                    <div className="space-y-4 text-sm text-white">
-                        <p>{cast?.profile_text || '自己紹介はありません'}</p>
-                    </div>
-                    <div className="mb-8 mt-4">
-                        <div className='flex items-center text-white font-bold rounded-lg h-12 text-lg'>
+
+                {/* Enhanced Recommended Casts Section */}
+                <div className="mx-4 mb-6">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-xl">
+                        <h3 className="text-xl font-bold mb-6 text-white flex items-center">
+                            <Star className="w-6 h-6 mr-3 text-yellow-400" />
                             おすすめキャスト
-                        </div>
-                        <div className='flex flex-row gap-4 justify-center overflow-x-auto'>
+                        </h3>
+                        <div className="flex flex-row gap-4 justify-center overflow-x-auto pb-2">
                             {randomCasts.length === 0 ? (
                                 <div className="text-white text-sm">おすすめキャストはありません</div>
                             ) : (
@@ -500,36 +559,37 @@ const CastDetail: React.FC = () => {
                             )}
                         </div>
                     </div>
-                    {/* Like Button */}
-                    <div className="px-4 py-2">
-                        {!liked ? (
-                            <button 
-                                className={`w-full rounded-lg py-4 flex items-center justify-center font-bold text-lg transition ${
-                                    isNotificationEnabled('likes') 
-                                        ? 'bg-secondary text-white hover:bg-red-700' 
-                                        : 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                                }`} 
-                                onClick={handleLike}
-                                disabled={!isNotificationEnabled('likes')}
-                            >
-                                <span className="mr-2">
-                                    <Heart />
-                                </span>
-                                <span className="text-base">
-                                    {isNotificationEnabled('likes') ? 'いいね' : 'いいね (無効)'}
-                                </span>
-                            </button>
-                        ) : (
-                            <button className="w-full border bg-secondary border-secondary text-white rounded-lg py-4 flex items-center justify-center font-bold text-lg hover:bg-red-700 transition" onClick={handleMessage} disabled={messageLoading}>
-                                <span className="mr-2">
-                                    <MessageSquare />
-                                </span>
-                                <span className="text-base">
-                                    メッセージ
-                                </span>
-                            </button>
-                        )}
-                    </div>
+                </div>
+
+                {/* Enhanced Action Buttons */}
+                <div className="mx-4 pb-4">
+                    {!liked ? (
+                        <button 
+                            className={`w-full rounded-2xl py-5 flex items-center justify-center font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] ${
+                                isNotificationEnabled('likes') 
+                                    ? 'bg-gradient-to-r from-secondary to-red-600 text-white hover:from-red-600 hover:to-secondary' 
+                                    : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                            }`} 
+                            onClick={handleLike}
+                            disabled={!isNotificationEnabled('likes')}
+                        >
+                            <Heart className={`w-6 h-6 mr-3 ${isNotificationEnabled('likes') ? 'animate-pulse' : ''}`} />
+                            <span className="text-base">
+                                {isNotificationEnabled('likes') ? 'いいね' : 'いいね (無効)'}
+                            </span>
+                        </button>
+                    ) : (
+                        <button 
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl py-5 flex items-center justify-center font-bold text-lg hover:from-purple-600 hover:to-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02]" 
+                            onClick={handleMessage} 
+                            disabled={messageLoading}
+                        >
+                            <MessageSquare className="w-6 h-6 mr-3" />
+                            <span className="text-base">
+                                {messageLoading ? '処理中...' : 'メッセージ'}
+                            </span>
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

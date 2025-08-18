@@ -487,16 +487,17 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
     );
 }
 
-function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
+function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall, defaultSelectedArea }: {
     onBack: () => void,
     onNext: (selectedLoc?: string, selectedPrefecture?: string) => void,
     isProcessingFreeCall: boolean,
+    defaultSelectedArea: string,
 }) {
     const [locations, setLocations] = useState<string[]>([]);
     const [locationCastCounts, setLocationCastCounts] = useState<{ [key: string]: number }>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+    const [selectedLocation, setSelectedLocation] = useState<string | null>(defaultSelectedArea);
     const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
 
 
@@ -541,6 +542,13 @@ function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall }: {
         };
         fetchLocationsAndCounts();
     }, []);
+
+    // Set default selected area when component mounts
+    useEffect(() => {
+        if (defaultSelectedArea && locations.includes(defaultSelectedArea)) {
+            setSelectedLocation(defaultSelectedArea);
+        }
+    }, [defaultSelectedArea, locations]);
 
     // State for prefectures data from database
     const [locationToPrefectures, setLocationToPrefectures] = useState<Record<string, string[]>>({});
@@ -1479,6 +1487,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     const [selectedArea, setSelectedArea] = useState('東京都');
     const [counts, setCounts] = useState([1, 1, 0]);
     const navigate = useNavigate()
+    const [locations, setLocations] = useState<string[]>([]);
     const [selectedDuration, setSelectedDuration] = useState('1時間');
     const [selectedSituations, setSelectedSituations] = useState<string[]>([]);
     const [selectedCastTypes, setSelectedCastTypes] = useState<string[]>([]);
@@ -1507,6 +1516,30 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
 
     const { user, refreshUser } = useUser();
     const [showAvailableCastsModal, setShowAvailableCastsModal] = useState(false);
+
+    useEffect(() => {
+        const fetchLocationsAndCounts = async () => {
+            try {
+                const activeLocations = await locationService.getActiveLocations();
+                
+                // Remove duplicates from locations to prevent React key warnings
+                const uniqueLocations = Array.from(new Set(activeLocations));
+                setLocations(uniqueLocations);
+                
+                // Additional safety check - ensure no duplicates remain
+                if (uniqueLocations.length !== activeLocations.length) {
+                    console.warn('Duplicate locations detected and removed:', {
+                        original: activeLocations,
+                        unique: uniqueLocations
+                    });
+                }
+
+            } catch (error) {
+                console.error('Error fetching locations and counts:', error);
+            }
+        };
+        fetchLocationsAndCounts();
+    }, []);
 
     const handleCastClick = (castId: number) => {
         navigate(`/cast/${castId}`)
@@ -1658,6 +1691,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                 }
             }}
             isProcessingFreeCall={isProcessingFreeCall}
+            defaultSelectedArea={selectedArea}
         />
     );
     if (page === 'castSelection') return (
@@ -1758,7 +1792,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                     isOpen={showAreaModal}
                     onClose={() => setShowAreaModal(false)}
                     onSelect={setSelectedArea}
-                    selectedArea={selectedArea}
+                    locations={locations}
                 />
             </div>
 
@@ -1921,19 +1955,17 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
 };
 
 // Enhanced Area selection modal
-function AreaSelectModal({ isOpen, onClose, onSelect, selectedArea }: {
+function AreaSelectModal({ isOpen, onClose, onSelect, locations }: {
     isOpen: boolean;
     onClose: () => void;
     onSelect: (area: string) => void;
-    selectedArea: string;
+    locations: string[];
 }) {
-    const areaOptions = [
-        '東京都', '大阪府', '愛知県', '福岡県', '北海道'
-    ];
-    const [area, setArea] = useState(selectedArea);
+    const areaOptions = locations;
+    const [area, setArea] = useState<string>('');
 
     // Keep modal in sync with prop
-    React.useEffect(() => { setArea(selectedArea); }, [selectedArea, isOpen]);
+    React.useEffect(() => { setArea(''); }, [isOpen]);
 
     if (!isOpen) return null;
     return (

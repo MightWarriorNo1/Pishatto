@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Share2, Download, Copy } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useUser } from '../../contexts/UserContext';
+import { useCast } from '../../contexts/CastContext';
 import QRCodeScanner from './QRCodeScanner';
-import { shareContent } from '../../utils/clipboard';
 
 interface QRCodeModalProps {
   onClose: () => void;
@@ -11,38 +11,55 @@ interface QRCodeModalProps {
 
 const QRCodeModal: React.FC<QRCodeModalProps> = ({ onClose }) => {
   const { user } = useUser();
+  const { cast, castId } = useCast();
   const [copied, setCopied] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
 
-  // Generate QR code data - you can customize this based on your needs
-  const qrData = JSON.stringify({
-    type: 'user_profile',
-    userId: user?.id,
-    nickname: user?.nickname,
-    timestamp: new Date().toISOString(),
-    // Add any other user data you want to include
-  });
+  // Determine if this is a cast or guest user
+  const isCast = cast && castId;
+  const currentUser = isCast ? cast : user;
+  const userType = isCast ? 'cast' : 'guest';
 
-  // Generate share URL
-  const shareUrl = `${window.location.origin}/profile/${user?.id}`;
+  // Generate QR code data - using useMemo to prevent unnecessary re-renders
+  const qrData = useMemo(() => JSON.stringify({
+    type: `${userType}_profile`,
+    userId: currentUser?.id,
+    nickname: currentUser?.nickname,
+    userType: userType,
+    // Removed timestamp to prevent QR code from changing
+  }), [currentUser?.id, currentUser?.nickname, userType]);
+
+  // Generate share URL based on user type
+  const shareUrl = useMemo(() => {
+    if (isCast) {
+      return `${window.location.origin}/cast/${currentUser?.id}`;
+    } else {
+      return `${window.location.origin}/guest/${currentUser?.id}`;
+    }
+  }, [isCast, currentUser?.id]);
 
   const handleCopyLink = async () => {
     try {
-      const success = await shareContent({
-        title: `${user?.nickname || 'User'}'s Profile`,
-        text: `Check out ${user?.nickname || 'this user'}'s profile!`,
-        url: shareUrl,
-      });
-      
-      if (success) {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } else {
-        alert('URLのコピーに失敗しました。手動でコピーしてください。');
-      }
+      // Direct clipboard copy instead of share dialog
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy link:', err);
-      alert('URLのコピーに失敗しました。手動でコピーしてください。');
+      // Fallback for older browsers
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (fallbackErr) {
+        console.error('Fallback copy failed:', fallbackErr);
+        alert('URLのコピーに失敗しました。手動でコピーしてください。');
+      }
     }
   };
 
@@ -60,7 +77,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ onClose }) => {
         ctx?.drawImage(img, 0, 0);
         
         const link = document.createElement('a');
-        link.download = `qr-code-${user?.nickname || 'user'}.png`;
+        link.download = `qr-code-${currentUser?.nickname || 'user'}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
       };
@@ -69,22 +86,22 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ onClose }) => {
     }
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${user?.nickname || 'User'}'s Profile`,
-          text: `Check out ${user?.nickname || 'this user'}'s profile!`,
-          url: shareUrl,
-        });
-      } catch (err) {
-        console.error('Error sharing:', err);
-      }
-    } else {
-      // Fallback to copy link
-      handleCopyLink();
-    }
-  };
+  // const handleShare = async () => {
+  //   if (navigator.share) {
+  //     try {
+  //       await navigator.share({
+  //         title: `${user?.nickname || 'User'}'s Profile`,
+  //         text: `Check out ${user?.nickname || 'this user'}'s profile!`,
+  //         url: shareUrl,
+  //       });
+  //     } catch (err) {
+  //       console.error('Error sharing:', err);
+  //     }
+  //   } else {
+  //     // Fallback to copy link
+  //     handleCopyLink();
+  //   }
+  // };
 
   const handleScanResult = (data: string) => {
     console.log('Scanned QR code data:', data);
@@ -92,9 +109,12 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ onClose }) => {
     // You can parse the JSON data and take appropriate action
     try {
       const parsedData = JSON.parse(data);
-      if (parsedData.type === 'user_profile') {
-        // Navigate to user profile or show user info
-        alert(`ユーザープロフィール: ${parsedData.nickname}`);
+      if (parsedData.type === 'guest_profile') {
+        // Navigate to guest profile or show guest info
+        alert(`ゲストプロフィール: ${parsedData.nickname}`);
+      } else if (parsedData.type === 'cast_profile') {
+        // Navigate to cast profile or show cast info
+        alert(`キャストプロフィール: ${parsedData.nickname}`);
       }
     } catch (err) {
       // Handle non-JSON QR codes
@@ -132,7 +152,7 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ onClose }) => {
           {/* User Info */}
           <div className="mt-4 text-center">
             <h3 className="text-lg font-bold text-gray-800 mb-1">
-              {user?.nickname || 'ユーザー'}
+              {currentUser?.nickname || 'ユーザー'}
             </h3>
             <p className="text-sm text-gray-600">
               QRコードをスキャンしてプロフィールを共有
@@ -142,13 +162,13 @@ const QRCodeModal: React.FC<QRCodeModalProps> = ({ onClose }) => {
 
         {/* Action Buttons */}
         <div className="flex gap-3 mb-3">
-          <button
+          {/* <button
             onClick={handleShare}
             className="flex-1 bg-primary text-white py-3 px-4 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors"
           >
             <Share2 className="w-5 h-5" />
             共有
-          </button>
+          </button> */}
           
           <button
             onClick={handleCopyLink}
