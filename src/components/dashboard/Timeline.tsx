@@ -60,7 +60,7 @@ const Timeline: React.FC = () => {
     const [showPostCreate, setShowPostCreate] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
     const { castId } = useCast() as any;
-    const [tab, setTab] = useState<'all' | 'cast'>('all');
+    const [tab, setTab] = useState<'all' | 'guest'>('all');
     const queryClient = useQueryClient();
 
     // React Query hooks
@@ -71,9 +71,11 @@ const Timeline: React.FC = () => {
     );
 
     // Determine which data to use based on tab
-    const tweets = tab === 'cast' && (user?.id || castId) ? userTweets : allTweets;
-    const loading = tab === 'cast' && (user?.id || castId) ? userTweetsLoading : allTweetsLoading;
-    const error = tab === 'cast' && (user?.id || castId) ? userTweetsError : allTweetsError;
+    const tweets = tab === 'guest'      
+        ? allTweets.filter((tweet: any) => tweet.guest && !tweet.cast) // Show only guest tweets
+        : allTweets; // Show all tweets
+    const loading = allTweetsLoading;
+    const error = allTweetsError;
 
     // React Query mutations
     const createTweetMutation = useCreateTweet();
@@ -110,9 +112,8 @@ const Timeline: React.FC = () => {
     };
 
     const handleLike = async (tweetId: number) => {
-        // Check if like notifications are enabled
         if (!isNotificationEnabled('likes')) {
-            return; // Silently ignore if likes are disabled
+            return; 
         }
         
         try {
@@ -138,8 +139,21 @@ const Timeline: React.FC = () => {
 
     // Check if the current user is the author of the tweet
     const isCurrentUserTweet = (tweet: any) => {
-        if (user && tweet.guest?.id === user.id) return true;
-        return false;
+        const isGuestTweet = user && tweet.guest?.id === user.id;
+        const isCastTweet = castId && tweet.cast?.id === castId;
+        
+        console.log('Tweet ownership check:', {
+            tweetId: tweet.id,
+            userId: user?.id,
+            castId: castId,
+            tweetGuestId: tweet.guest?.id,
+            tweetCastId: tweet.cast?.id,
+            isGuestTweet,
+            isCastTweet,
+            result: isGuestTweet || isCastTweet
+        });
+        
+        return isGuestTweet || isCastTweet;
     };
 
     if (showPostCreate) return <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} userType="guest" userId={user?.id} />;
@@ -153,13 +167,10 @@ const Timeline: React.FC = () => {
                         <Bell />
                     </button>
                     <span className="text-lg font-bold mx-auto text-white">つぶやき</span>
-                    {/* <button className="absolute right-4 top-3 text-white">
-                        <SlidersHorizontal />
-                    </button> */}
                 </div>
                 <div className="flex items-center border-b border-secondary bg-primary">
                     <button onClick={() => setTab('all')} className={`flex-1 py-3 text-center   font-bold text-base ${tab === 'all' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>みんなのつぶやき</button>
-                    <button onClick={() => setTab('cast')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'cast' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>ゲスト専用</button>
+                    <button onClick={() => setTab('guest')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'guest' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>ゲストの投稿</button>
                 </div>
             </div>
             {/* Posts */}
@@ -180,11 +191,21 @@ const Timeline: React.FC = () => {
                                             ? `${APP_BASE_URL}/${tweet.guest.avatar}`
                                             : tweet.cast?.avatar
                                                 ? `${APP_BASE_URL}/${tweet.cast.avatar.split(',')[0].trim()}`
-                                                : '/assets/avatar/female.png'
+                                                : tweet.cast?.id 
+                                                ? '/assets/avatar/female.png'
+                                                : '/assets/avatar/1.jpg'
                                     }
                                     alt={tweet.guest?.nickname || tweet.cast?.nickname || ''}
                                     className="w-10 h-10 rounded-full object-cover mr-2 border border-secondary cursor-pointer hover:opacity-80 transition-opacity"
                                     onClick={() => handleAvatarClick(tweet)}
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        if (tweet.cast?.id) {
+                                            target.src = '/assets/avatar/female.png';
+                                        } else {
+                                            target.src = '/assets/avatar/1.jpg';
+                                        }
+                                    }}
                                 />
                                 <div className="flex flex-col flex-1">
                                     <span className="font-bold text-sm text-white">{tweet.guest?.nickname || tweet.cast?.nickname || 'ゲスト/キャスト'}</span>
@@ -197,10 +218,10 @@ const Timeline: React.FC = () => {
                                             e.stopPropagation();
                                             handleDeleteTweet(tweet.id);
                                         }}
-                                        className="text-white hover:text-red-300 transition-colors p-1"
+                                        className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-full hover:bg-red-400/20"
                                         title="削除"
                                     >
-                                        <Trash2 size={16} />
+                                        <Trash2 size={18} />
                                     </button>
                                 )}
                             </div>

@@ -22,8 +22,12 @@ const CastTimelinePage: React.FC = () => {
     const [showPostCreate, setShowPostCreate] = useState(false);
     const [showNotification, setShowNotification] = useState(false);
     const { castId } = useCast() as any;
+    
+    // Local state for tweets to prevent reloads
+    const [localTweets, setLocalTweets] = useState<any[]>([]);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-    // Use React Query hooks for data fetching
+    // Use React Query hooks for initial data fetching only
     const {
         data: allTweets = [],
         isLoading: allTweetsLoading,
@@ -36,10 +40,21 @@ const CastTimelinePage: React.FC = () => {
         error: userTweetsError
     } = useUserTweets('cast', castId || 0);
 
-    // Filter tweets based on tab
+    // Initialize local tweets when data is first loaded
+    useEffect(() => {
+        if (isInitialLoad && (allTweets.length > 0 || userTweets.length > 0)) {
+            const initialTweets = tab === 'cast' 
+                ? allTweets.filter((tweet: any) => tweet.cast && !tweet.guest)
+                : allTweets;
+            setLocalTweets(initialTweets);
+            setIsInitialLoad(false);
+        }
+    }, [allTweets, userTweets, tab, isInitialLoad]);
+
+    // Filter tweets based on tab using local state
     const tweets = tab === 'cast' 
-        ? allTweets.filter((tweet: any) => tweet.cast && !tweet.guest)
-        : allTweets;
+        ? localTweets.filter((tweet: any) => tweet.cast && !tweet.guest)
+        : localTweets;
 
     // Get like statuses for tweets
     const {
@@ -54,22 +69,30 @@ const CastTimelinePage: React.FC = () => {
     const deleteTweetMutation = useDeleteTweet();
 
     // Loading and error states
-    const loading = allTweetsLoading || userTweetsLoading || likesLoading;
+    const loading = (allTweetsLoading || userTweetsLoading || likesLoading) && isInitialLoad;
     const error = allTweetsError || userTweetsError || likesError;
 
+    // Real-time updates without reloading
     useTweets((tweet) => {
-        if (tab === 'all') {
-            // React Query will handle the update automatically
-            // No need to manually update state
-        }
+        setLocalTweets(prevTweets => {
+            // Check if tweet already exists
+            const exists = prevTweets.some(t => t.id === tweet.id);
+            if (!exists) {
+                // Add new tweet to the beginning
+                return [tweet, ...prevTweets];
+            }
+            return prevTweets;
+        });
     });
 
     const handleAddTweet = async (content: string, image?: File | null) => {
         if (!castId) return;
         try {
-            await createTweetMutation.mutateAsync({ content, cast_id: castId, image });
+            const newTweet = await createTweetMutation.mutateAsync({ content, cast_id: castId, image });
             setShowPostCreate(false);
-            // React Query will automatically refetch tweets
+            
+            // Add the new tweet to local state immediately for seamless UX
+            setLocalTweets(prevTweets => [newTweet, ...prevTweets]);
         } catch (e) {
             alert('投稿に失敗しました');
         }
@@ -83,19 +106,37 @@ const CastTimelinePage: React.FC = () => {
                 userId: user ? user.id : undefined, 
                 castId: !user && castId ? castId : undefined 
             });
-            // React Query will automatically update the like status
+            
+            // Update local state immediately for seamless UX
+            setLocalTweets(prevTweets => 
+                prevTweets.map(tweet => 
+                    tweet.id === tweetId 
+                        ? { ...tweet, isLiked: !tweet.isLiked }
+                        : tweet
+                )
+            );
         } catch (error) {
             console.error('Failed to like tweet:', error);
         }
     };
 
     const handleDelete = async (tweetId: number) => {
+        if (!confirm('このつぶやきを削除しますか？')) return;
+        
         try {
             await deleteTweetMutation.mutateAsync(tweetId);
-            // React Query will automatically refetch tweets
+            
+            // Remove tweet from local state immediately for seamless UX
+            setLocalTweets(prevTweets => prevTweets.filter(tweet => tweet.id !== tweetId));
         } catch (e) {
             alert('削除に失敗しました');
         }
+    };
+
+    // Handle tab changes smoothly
+    const handleTabChange = (newTab: 'all' | 'cast') => {
+        setTab(newTab);
+        // No need to reload data - just filter existing local tweets
     };
 
     // Check if the current user is the author of the tweet
@@ -129,8 +170,8 @@ const CastTimelinePage: React.FC = () => {
                 </div>
                 {/* Tabs */}
                 <div className="flex items-center border-b border-secondary">
-                    <button onClick={() => setTab('all')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'all' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>みんなのつぶやき</button>
-                    <button onClick={() => setTab('cast')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'cast' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>キャスト専用</button>
+                    <button onClick={() => handleTabChange('all')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'all' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>みんなのつぶやき</button>
+                    <button onClick={() => handleTabChange('cast')} className={`flex-1 py-3 text-center font-bold text-base ${tab === 'cast' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>キャスト専用</button>
                 </div>
             </div>
             {/* Posts - with top margin to account for fixed header */}
@@ -147,18 +188,78 @@ const CastTimelinePage: React.FC = () => {
                     tweets.map((tweet: any, idx: number) => (
                         <div key={tweet.id || idx} className="bg-white/10 rounded-lg shadow-sm p-4 flex flex-col border border-secondary cursor-pointer" >
                             <div className="flex items-center mb-1">
-                                <img src={
-                                    tweet.cast?.avatar 
-                                        ? `${IMAGE_BASE_URL}/${tweet.cast.avatar}` 
-                                        : '/assets/avatar/avatar-1.png'
-                                } 
-                                alt="avatar" 
-                                className="w-8 h-8 rounded-full mr-2 border border-secondary"
-                                />
-                                <span className="text-white text-sm font-bold">{tweet.cast?.nickname || '匿名'}</span>
-                                <span className="text-gray-400 text-xs ml-2">
-                                    {new Date(tweet.created_at).toLocaleString('ja-JP')}
-                                </span>
+                                {(() => {
+                                    // Debug avatar data
+                                    console.log('Avatar debug:', {
+                                        tweetId: tweet.id,
+                                        castAvatar: tweet.cast?.avatar,
+                                        guestAvatar: tweet.guest?.avatar,
+                                        castId: tweet.cast?.id,
+                                        guestId: tweet.guest?.id
+                                    });
+                                    
+                                    let avatarSrc = '';
+                                    if (tweet.cast?.avatar) {
+                                        if (Array.isArray(tweet.cast.avatar)) {
+                                            avatarSrc = `${APP_BASE_URL}/${tweet.cast.avatar[0]}`;
+                                        } else if (typeof tweet.cast.avatar === 'string') {
+                                            // Handle comma-separated avatars like in Timeline component
+                                            avatarSrc = `${APP_BASE_URL}/${tweet.cast.avatar.split(',')[0].trim()}`;
+                                        } else {
+                                            avatarSrc = `${APP_BASE_URL}/${tweet.cast.avatar}`;
+                                        }
+                                    } else if (tweet.guest?.avatar) {
+                                        if (Array.isArray(tweet.guest.avatar)) {
+                                            avatarSrc = `${APP_BASE_URL}/${tweet.guest.avatar[0]}`;
+                                        } else if (typeof tweet.guest.avatar === 'string') {
+                                            avatarSrc = `${APP_BASE_URL}/${tweet.guest.avatar}`;
+                                        } else {
+                                            avatarSrc = `${APP_BASE_URL}/${tweet.guest.avatar}`;
+                                        }
+                                    } else {
+                                        avatarSrc = tweet.cast?.id 
+                                            ? '/assets/avatar/female.png'
+                                            : '/assets/avatar/1.jpg';
+                                    }
+                                    
+                                    return (
+                                        <img 
+                                            src={avatarSrc}
+                                            alt="avatar" 
+                                            className="w-8 h-8 rounded-full mr-2 border border-secondary"
+                                            onError={(e) => {
+                                                console.log('Avatar load error for:', avatarSrc);
+                                                const target = e.target as HTMLImageElement;
+                                                if (tweet.cast?.id) {
+                                                    target.src = '/assets/avatar/female.png';
+                                                } else {
+                                                    target.src = '/assets/avatar/1.jpg';
+                                                }
+                                            }}
+                                        />
+                                    );
+                                })()}
+                                <div className="flex flex-col flex-1">
+                                    <span className="text-white text-sm font-bold">
+                                        {tweet.cast?.nickname || tweet.guest?.nickname || '匿名'}
+                                    </span>
+                                    <span className="text-gray-400 text-xs">
+                                        {new Date(tweet.created_at).toLocaleString('ja-JP')}
+                                    </span>
+                                </div>
+                                {/* Delete button - only show for current cast's own tweets */}
+                                {isCurrentUserTweet(tweet) && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDelete(tweet.id);
+                                        }}
+                                        className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-full hover:bg-red-400/20"
+                                        title="削除"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
                             </div>
                             <div className="text-white text-sm mb-2">{tweet.content}</div>
                             {tweet.image && (

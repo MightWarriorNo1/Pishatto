@@ -32,7 +32,7 @@ const PreviewProfile: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         if (user?.avatar) {
             return getFirstAvatarUrl(user.avatar);
         }
-        return '/assets/avatar/2.jpg';
+        return '/assets/avatar/1.jpg';
     };
     return (
         <div className="max-w-md mx-auto min-h-screen bg-gradient-br-to from-primary via-primary to-secondary pb-8">
@@ -258,7 +258,7 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
                         alt="avatar-small"
                         className="w-14 h-14 rounded-full object-cover border-2 border-secondary shadow"
                         onError={(e) => {
-                            e.currentTarget.src = '/assets/avatar/AdobeStock_1067731649_Preview.jpeg';
+                            e.currentTarget.src = '/assets/avatar/1.jpg';
                         }}
                     />
                     <button

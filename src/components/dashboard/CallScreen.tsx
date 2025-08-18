@@ -1228,7 +1228,7 @@ function OrderFinalConfirmationScreen({
             <Stepper step={2} />
             {/* Back and Title */}
             <div className="flex items-center px-4 pt-2 pb-2">
-                <button onClick={onBack} className="mr-2 text-2xl text-white cursor-pointer hover:text-secondary transition-colors p-2 rounded-full cursor-pointer">
+                <button onClick={onBack} className="mr-2 text-2xl cursor-pointer text-white hover:text-secondary transition-colors p-2 rounded-full">
                     <ChevronLeft />
                 </button>
                 <span className="text-2xl font-bold text-white">注文の最終確認</span>

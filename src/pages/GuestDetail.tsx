@@ -12,14 +12,14 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     if (!avatarString) {
-        return '/assets/avatar/avatar-1.png';
+        return '/assets/avatar/1.jpg';
     }
     
     // Split by comma and get the first non-empty avatar
     const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
     
     if (avatars.length === 0) {
-        return '/assets/avatar/avatar-1.png';
+        return '/assets/avatar/1.jpg';
     }
     
     return `${API_BASE_URL}/${avatars[0]}`;
@@ -154,7 +154,7 @@ const GuestDetail: React.FC = () => {
                     src={getFirstAvatarUrl(guest.avatar)} 
                     alt="guest avatar" 
                     className="w-full h-64 object-cover rounded-b-3xl shadow-lg transition-all duration-300" 
-                    onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
+                    onError={e => (e.currentTarget.src = '/assets/avatar/1.jpg')}
                 />
                 <button 
                     onClick={() => navigate(-1)}
@@ -176,7 +176,7 @@ const GuestDetail: React.FC = () => {
                     src={getFirstAvatarUrl(guest.avatar)} 
                     alt="guest avatar" 
                     className="w-14 h-14 rounded-full object-cover border-2 border-secondary shadow" 
-                    onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}
+                    onError={e => (e.currentTarget.src = '/assets/avatar/1.jpg')}
                 />
                 <div className="flex-1">
                     <div className="font-bold text-base text-white">{guest.nickname || ''}</div>
