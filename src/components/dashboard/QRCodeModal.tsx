@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Share2, Download, Copy } from 'lucide-react';
+import { X, Download, Copy } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useUser } from '../../contexts/UserContext';
 import { useCast } from '../../contexts/CastContext';

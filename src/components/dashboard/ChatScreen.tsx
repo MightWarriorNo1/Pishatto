@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Send } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
@@ -211,6 +211,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, fetching]);
+
+    // Ensure messages are displayed from old to new
+    const sortedMessages = useMemo(() => {
+        return [...(messages || [])].sort((a, b) => {
+            const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
+            const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+            return aTime - bTime;
+        });
+    }, [messages]);
 
     // New: ref for input bar and popover for click outside
     const inputBarRef = useRef<HTMLDivElement>(null);
@@ -456,10 +465,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 ) : messages.length === 0 ? (
                     <div className="text-center text-white py-10">メッセージがありません</div>
                 ) : (
-                    (messages || []).map((msg, idx) => {
+                    (sortedMessages || []).map((msg, idx) => {
                         // Date separator
                         const currentDate = msg.created_at ? dayjs(msg.created_at).format('YYYY-MM-DD') : '';
-                        const prev = (messages || [])[idx - 1];
+                        const prev = (sortedMessages || [])[idx - 1];
                         const prevDate = prev && prev.created_at ? dayjs(prev.created_at).format('YYYY-MM-DD') : '';
                         const isSentByGuest = user && String(msg.sender_guest_id) === String(user.id);
                         const isFromCast = msg.sender_cast_id && !msg.sender_guest_id;

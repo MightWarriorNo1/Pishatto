@@ -1,4 +1,5 @@
- import React, { useState, useEffect, useMemo } from 'react';
+/* eslint-disable */
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import TopNavigation from './TopNavigation';
 import NewCastSection from './NewCastSection';
@@ -19,9 +20,8 @@ import { useChatRefresh } from '../../contexts/ChatRefreshContext';
 import { useGuestChats, useSatisfactionCasts, useRanking, useMarkNotificationsRead, useNewCasts, useTopSatisfactionCasts, useGuestFavorites, useGuestFootprints } from '../../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/react-query';
-import { useChatMessages, useTweets, useNotifications, useUnreadMessageCount } from '../../hooks/useRealtime';
+import { useChatMessages, useTweets, useNotifications, useUnreadMessageCount, useTweetNotifications, useGuestChatsRealtime } from '../../hooks/useRealtime';
 import { formatPoints } from '../../utils/formatters';
-import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import Spinner from '../ui/Spinner';
 
 // Add Modal component above Dashboard
@@ -68,28 +68,8 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Set up auto-refresh for dashboard data every 30 seconds
-  useAutoRefresh({
-    interval: 30 * 1000, // 30 seconds
-    enabled: true,
-    queryKeys: [
-      queryKeys.guest.profile(user?.id || 0),
-      queryKeys.guest.chats(user?.id || 0),
-      queryKeys.guest.notifications(user?.id || 0),
-      queryKeys.guest.favorites(user?.id || 0),
-      queryKeys.guest.footprints(user?.id || 0),
-      queryKeys.cast.all(),
-      queryKeys.cast.new(),
-      queryKeys.tweets.all()
-    ]
-  });
-
-  // Set up global auto-refresh for all queries every 50 seconds
-  useAutoRefresh({
-    interval: 50 * 1000, // 50 seconds
-    enabled: true
-  });
-
+  // Auto-refresh removed - replaced with real-time updates via WebSocket
+  
   // React Query hooks for data fetching - these are used for global loading state
   const { data: allSatisfactionCasts = [], isLoading: satisfactionLoading } = useSatisfactionCasts();
   const { data: rankingData, isLoading: rankingLoading } = useRanking({
@@ -203,6 +183,12 @@ const Dashboard: React.FC = () => {
   // React Query hook for guest chats
   const { data: guestChats = [] } = useGuestChats(user?.id || 0);
 
+  // Real-time guest chat updates
+  useGuestChatsRealtime(user?.id || 0, (chat: any) => {
+    console.log('Dashboard: Guest chat updated via real-time:', chat);
+    // Cache updates are handled automatically by the hook
+  });
+
   // Initialize message count from existing chats
   useEffect(() => {
     if (guestChatsData.length > 0) {
@@ -231,15 +217,16 @@ const Dashboard: React.FC = () => {
     setShowNotificationPopup(true);
   });
 
-  useTweets((tweet) => {
+  // Real-time tweet notifications with badge management
+  useTweetNotifications(user?.id || 0, 'guest', (tweet) => {
+    console.log('Dashboard: Tweet notification received:', tweet, 'activeTab:', activeBottomTab);
     if (activeBottomTab !== 'tweet') {
+      console.log('Dashboard: Incrementing tweet count from', tweetCount, 'to', tweetCount + 1);
       setTweetCount((c) => c + 1);
+    } else {
+      console.log('Dashboard: On tweet tab, not incrementing count');
     }
-    // Invalidate tweet caches when new tweets arrive
-    queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() });
-    if (user) {
-      queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('guest', user.id) });
-    }
+    // Cache updates are handled automatically by the hook
   });
 
   useChatMessages(user?.id || 0, (message) => {
@@ -317,36 +304,47 @@ const Dashboard: React.FC = () => {
 
   // Render content for other bottom navigation tabs
   const renderOtherTabContent = () => {
-    switch (activeBottomTab) {
-      case 'message':
-        return <MessageScreen
-          showChat={showChat}
-          setShowChat={setShowChat}
-          userId={user?.id || 0}
-          activeBottomTab={activeBottomTab}
-          // Only update messageCount if new notifications arrive (not on initial fetch)
-          onNotificationCountChange={count => {
-            if (activeBottomTab !== 'message') {
-              setMessageCount(count);
-            }
-          }}
-          onConciergeStateChange={setShowConcierge}
-        />;
-      case 'call':
-        return <CallScreen 
-          onStartOrder={() => setShowOrder(true)} 
-          onNavigateToMessage={() => {
-            setActiveBottomTab('message');
-            refreshChats(); // Refresh chat list to show new chat
-          }}
-        />;
-      case 'tweet':
-        return <Timeline />;
-      case 'mypage':
-        return <Profile />;
-      default:
-        return null;
-    }
+    return (
+      <div className="relative">
+        {/* Message Screen - always mounted but conditionally shown */}
+        <div className={activeBottomTab === 'message' ? 'block' : 'hidden'}>
+          <MessageScreen
+            showChat={showChat}
+            setShowChat={setShowChat}
+            userId={user?.id || 0}
+            activeBottomTab={activeBottomTab}
+            // Only update messageCount if new notifications arrive (not on initial fetch)
+            onNotificationCountChange={count => {
+              if (activeBottomTab !== 'message') {
+                setMessageCount(count);
+              }
+            }}
+            onConciergeStateChange={setShowConcierge}
+          />
+        </div>
+        
+        {/* Call Screen - always mounted but conditionally shown */}
+        <div className={activeBottomTab === 'call' ? 'block' : 'hidden'}>
+          <CallScreen 
+            onStartOrder={() => setShowOrder(true)} 
+            onNavigateToMessage={() => {
+              setActiveBottomTab('message');
+              refreshChats(); // Refresh chat list to show new chat
+            }}
+          />
+        </div>
+        
+        {/* Timeline - always mounted but conditionally shown */}
+        <div className={activeBottomTab === 'tweet' ? 'block' : 'hidden'}>
+          <Timeline />
+        </div>
+        
+        {/* Profile - always mounted but conditionally shown */}
+        <div className={activeBottomTab === 'mypage' ? 'block' : 'hidden'}>
+          <Profile />
+        </div>
+      </div>
+    );
   };
 
   return (

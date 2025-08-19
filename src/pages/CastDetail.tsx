@@ -285,7 +285,7 @@ const CastDetail: React.FC = () => {
                 
                 {/* Enhanced Header */}
                 <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-gradient-to-b from-primary/95 via-primary/95 to-secondary/95 backdrop-blur-md z-50 shadow-lg">
-                    <div className="flex items-center justify-between p-4">
+                    <div className="relative flex items-center justify-between p-4">
                         <button
                             type="button"
                             onClick={() => navigate(-1)}
@@ -293,8 +293,10 @@ const CastDetail: React.FC = () => {
                         >
                             <ChevronLeft />
                         </button>
-                        <div className="text-lg font-bold text-white text-center flex-1 mx-4">
-                            {cast?.nickname || 'なの💫'}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="text-lg font-bold text-white text-center">
+                                {cast?.nickname || 'なの💫'}
+                            </div>
                         </div>
                         <div className="flex items-center space-x-3">
                             <button 

@@ -62,35 +62,83 @@ const Timeline: React.FC = () => {
     const { castId } = useCast() as any;
     const [tab, setTab] = useState<'all' | 'guest'>('all');
     const queryClient = useQueryClient();
+    
+    // Local state for tweets to prevent reloads
+    const [localTweets, setLocalTweets] = useState<any[]>([]);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [hasData, setHasData] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
 
-    // React Query hooks
-    const { data: allTweets = [], isLoading: allTweetsLoading, error: allTweetsError } = useAllTweets();
+    // React Query hooks - only fetch on initial load and when visible
+    const { data: allTweets = [], isLoading: allTweetsLoading, error: allTweetsError } = useAllTweets({ 
+        refetchOnMount: false 
+    });
     const { data: userTweets = [], isLoading: userTweetsLoading, error: userTweetsError } = useUserTweets(
         user ? 'guest' : 'cast',
-        user ? user.id : (castId || 0)
+        user ? user.id : (castId || 0),
+        { refetchOnMount: false }
     );
 
-    // Determine which data to use based on tab
+    // Set visibility when component mounts/unmounts
+    useEffect(() => {
+        setIsVisible(true);
+        return () => setIsVisible(false);
+    }, []);
+
+    // Initialize local tweets when data is first loaded
+    useEffect(() => {
+        if (isInitialLoad && (allTweets.length > 0 || userTweets.length > 0)) {
+            const initialTweets = tab === 'guest'      
+                ? allTweets.filter((tweet: any) => tweet.guest && !tweet.cast) // Show only guest tweets
+                : allTweets; // Show all tweets
+            setLocalTweets(initialTweets);
+            setIsInitialLoad(false);
+            setHasData(true);
+        }
+    }, [allTweets, userTweets, tab, isInitialLoad]);
+
+    // Update local tweets when tab changes
+    useEffect(() => {
+        if (!isInitialLoad && hasData && (allTweets.length > 0 || userTweets.length > 0)) {
+            const filteredTweets = tab === 'guest'      
+                ? allTweets.filter((tweet: any) => tweet.guest && !tweet.cast) // Show only guest tweets
+                : allTweets; // Show all tweets
+            setLocalTweets(filteredTweets);
+        }
+    }, [tab, allTweets, userTweets, isInitialLoad, hasData]);
+
+    // Determine which data to use based on tab using local state
     const tweets = tab === 'guest'      
-        ? allTweets.filter((tweet: any) => tweet.guest && !tweet.cast) // Show only guest tweets
-        : allTweets; // Show all tweets
-    const loading = allTweetsLoading;
-    const error = allTweetsError;
+        ? localTweets.filter((tweet: any) => tweet.guest && !tweet.cast) // Show only guest tweets
+        : localTweets; // Show all tweets
+    const loading = (allTweetsLoading || userTweetsLoading) && isInitialLoad && isVisible;
+    const error = allTweetsError || userTweetsError;
 
     // React Query mutations
     const createTweetMutation = useCreateTweet();
     const likeTweetMutation = useLikeTweet();
     const deleteTweetMutation = useDeleteTweet();
 
-    useTweets((tweet) => {
-        // Invalidate tweet caches when new tweets arrive
+    // Manual refresh function
+    const handleRefresh = () => {
+        setIsInitialLoad(true);
         queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() });
-        if (user) {
-            queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('guest', user.id) });
-        }
-        if (castId) {
-            queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('cast', castId) });
-        }
+        queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user(user ? 'guest' : 'cast', user ? user.id : (castId || 0)) });
+    };
+
+    // Real-time tweet updates - update local state to prevent refetching
+    useTweets((tweet) => {
+        // Update local state with new tweets to prevent unnecessary refetching
+        setLocalTweets(prevTweets => {
+            // Check if tweet already exists
+            const exists = prevTweets.some(t => t.id === tweet.id);
+            if (!exists) {
+                // Add new tweet to the beginning
+                return [tweet, ...prevTweets];
+            }
+            return prevTweets;
+        });
+        console.log('Timeline: New tweet received via real-time:', tweet);
     });
 
     const handleAvatarClick = (tweet: any) => {
@@ -104,8 +152,11 @@ const Timeline: React.FC = () => {
     const handleAddTweet = async (content: string, image?: File | null) => {
         if (!user) return;
         try {
-            await createTweetMutation.mutateAsync({ content, guest_id: user.id, image });
+            const newTweet = await createTweetMutation.mutateAsync({ content, guest_id: user.id, image });
             setShowPostCreate(false);
+            
+            // Add the new tweet to local state immediately for seamless UX
+            setLocalTweets(prevTweets => [newTweet, ...prevTweets]);
         } catch (e) {
             alert('投稿に失敗しました');
         }
@@ -167,7 +218,11 @@ const Timeline: React.FC = () => {
                         <Bell />
                     </button>
                     <span className="justify-self-center text-lg font-bold text-white">つぶやき</span>
-                    <div className="justify-self-end" />
+                    <button onClick={handleRefresh} className="justify-self-end text-white cursor-pointer hover:text-secondary transition-colors" title="更新">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
                 </div>
                 <div className="flex items-center border-b border-secondary bg-primary">
                     <button onClick={() => setTab('all')} className={`flex-1 py-3 text-center   font-bold text-base ${tab === 'all' ? 'text-white border-b-2 border-secondary' : 'text-white'}`}>みんなのつぶやき</button>

@@ -1,5 +1,5 @@
 /* eslint-disable */
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ChevronLeft, Calendar, Image, Search, Filter, Camera, FolderClosed, Send } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -88,7 +88,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     const queryClient = useQueryClient();
 
     // React Query hooks
-    const { data: messages = [], isLoading: messagesLoading } = useChatMessages(Number(message.id), castId);
+    const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useChatMessages(Number(message.id), castId);
     const { data: chatInfo } = useChatById(Number(message.id));
     const { data: guestReservations = [] } = useGuestReservations(chatInfo?.guest_id || 0);
     const sendMessageMutation = useSendMessage();
@@ -123,9 +123,24 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
         };
     }, [showFile]);
 
+    // Ensure freshest data when opening a chat
+    useEffect(() => {
+        // Force a refetch on mount or when switching chats
+        refetchMessages?.();
+    }, [refetchMessages, message.id]);
+
     // Auto scroll to bottom on new messages
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    // Ensure messages are displayed from old to new
+    const sortedMessages = useMemo(() => {
+        return [...(messages || [])].sort((a: any, b: any) => {
+            const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
+            const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+            return aTime - bTime;
+        });
     }, [messages]);
 
     // Close popovers/modals with Escape
@@ -267,10 +282,10 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     height: 'calc(100vh - 6.5rem)', // viewport height minus header and input heights
                 }}
             >
-                {(messages || []).map((msg: any, idx: number) => {
+                {(sortedMessages || []).map((msg: any, idx: number) => {
                     // Date separator
                     const currentDate = msg.created_at ? dayjs(msg.created_at).format('YYYY-MM-DD') : '';
-                    const prev = (messages || [])[idx - 1];
+                    const prev = (sortedMessages || [])[idx - 1];
                     const prevDate = prev && prev.created_at ? dayjs(prev.created_at).format('YYYY-MM-DD') : '';
                     let proposal: Proposal | null = null;
                     try {
@@ -311,6 +326,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     const isSentByCast = castId && String(msg.sender_cast_id) === String(castId);
                     const isFromGuest = msg.sender_guest_id && !msg.sender_cast_id;
                     const isSent = isSentByCast && !isFromGuest;
+                    const senderAvatar = msg?.guest?.avatar || msg?.cast?.avatar;
+                    const senderName = msg?.guest?.nickname || msg?.cast?.nickname || 'ゲスト/キャスト';
                     
                     
                     return (
@@ -318,13 +335,28 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                             {(idx === 0 || currentDate !== prevDate) && (
                                 <div className="flex justify-center my-2">
                                     <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
-                                        {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY年M月D日 ddd') : ''} */}
                                         {formatTime(msg.created_at)}
                                     </span>
                                 </div>
                             )}
                         <div className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
+                            {!isSent && (
+                                <img
+                                    src={buildAvatarUrl(senderAvatar)}
+                                    alt="avatar"
+                                    className="w-8 h-8 rounded-full mr-2 border border-secondary mt-1"
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.src = '/assets/avatar/1.jpg';
+                                    }}
+                                />
+                            )}
                             <div className="flex flex-col">
+                                {!isSent && (
+                                    <div className="text-xs text-gray-400 mb-1 flex items-center">
+                                        <span>{senderName}</span>
+                                    </div>
+                                )}
                                 <div className={`${isSent ? 'w-full bg-secondary text-white rounded-lg px-4 py-2' : 'w-full bg-white text-black rounded-lg px-4 py-2'} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
                                     {/* Gift display */}
                                     {msg.gift_id && msg.gift && (

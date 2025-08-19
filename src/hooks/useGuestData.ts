@@ -20,22 +20,22 @@ export const useGuestData = (guestId: number) => {
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
 
-  // Chats data - cached for 2 minutes, refetched every 30 seconds
+  // Chats data - cached for 2 minutes, real-time updates handle changes
   const chatsQuery = useQuery({
     queryKey: queryKeys.guest.chats(guestId),
     queryFn: () => getGuestChats(guestId, 'guest'),
     enabled: !!guestId,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchInterval: 30 * 1000, // 30 seconds
+    // Removed refetchInterval - real-time updates will handle this
   });
 
-  // Notifications data - cached for 1 minute, refetched every 15 seconds
+  // Notifications data - cached for 1 minute, real-time updates handle changes
   const notificationsQuery = useQuery({
     queryKey: queryKeys.guest.notifications(guestId),
     queryFn: () => getNotifications('guest', guestId),
     enabled: !!guestId,
     staleTime: 1 * 60 * 1000, // 1 minute
-    refetchInterval: 15 * 1000, // 15 seconds
+    // Removed refetchInterval - real-time updates will handle this
   });
 
   // Favorites data - cached for 5 minutes
@@ -135,7 +135,7 @@ export const useGuestChats = (guestId: number) => {
     queryFn: () => getGuestChats(guestId, 'guest'),
     enabled: !!guestId,
     staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchInterval: 30 * 1000, // 30 seconds
+    // Removed refetchInterval - real-time updates will handle this
   });
 };
 
@@ -146,6 +146,6 @@ export const useGuestNotifications = (guestId: number) => {
     queryFn: () => getNotifications('guest', guestId),
     enabled: !!guestId,
     staleTime: 1 * 60 * 1000, // 1 minute
-    refetchInterval: 15 * 1000, // 15 seconds
+    // Removed refetchInterval - real-time updates will handle this
   });
 };

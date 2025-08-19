@@ -1,21 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRanking } from '../../hooks/useQueries';
-import getFirstAvatarUrl from '../../utils/avatar';
 import Spinner from '../ui/Spinner';
-
-// use shared utility getFirstAvatarUrl
-
-interface RankingProfile {
-  id: number;
-  name: string;
-  avatar?: string;
-  points: number;
-  gift_count?: number;
-  reservation_count?: number;
-  category?: 'プレミアム' | 'VIP' | 'ロイヤルVIP';
-}
-
 interface RankingSectionProps {
   onSeeRanking?: () => void;
   hideLoading?: boolean;

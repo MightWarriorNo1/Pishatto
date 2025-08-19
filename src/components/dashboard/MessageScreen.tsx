@@ -8,9 +8,36 @@ import { getNotifications, markNotificationRead, getCastProfileById, markChatMes
 import { useGuestChats, useGuestFavorites, useFavoriteChat, useUnfavoriteChat } from '../../hooks/useQueries';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
-import { useNotifications } from '../../hooks/useRealtime';
+import { useNotifications, useGuestChatsRealtime, useUnreadMessageCount } from '../../hooks/useRealtime';
+import { queryClient } from '../../lib/react-query';
+import { queryKeys } from '../../lib/react-query';
+import echo from '../../services/echo';
 import NotificationScreen from './NotificationScreen';
 import Spinner from '../ui/Spinner';
+
+/**
+ * MessageScreen Component with Real-Time Updates
+ * 
+ * This component implements a three-step approach for real-time data management:
+ * 
+ * 1. **Initial Data Fetching**: Uses React Query hooks to fetch data once and store in cache
+ * 2. **Persistent Reverb Connection**: Maintains WebSocket connections for real-time updates
+ * 3. **Real-Time Cache Updates**: Updates React Query cache immediately when new data arrives via Reverb
+ * 
+ * Real-Time Events Handled:
+ * - New messages (MessageSent, GroupMessageSent) → Updates unread counts and chat data
+ * - Chat creation (ChatCreated) → Adds new chats to the list
+ * - Chat updates (ChatUpdated) → Updates chat metadata and cast profiles
+ * - Message read status (MessagesRead) → Resets unread counts
+ * - Favorite toggles (FavoriteToggled) → Updates favorites list
+ * - Notifications (NotificationSent) → Updates notification list and badges
+ * 
+ * Benefits:
+ * - Instant UI updates without page refresh
+ * - Reduced server load (no constant polling)
+ * - Better user experience with real-time feedback
+ * - Automatic cache synchronization across components
+ */
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 interface MessageScreenProps {
@@ -31,6 +58,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const [showNotification, setShowNotification] = useState(false);
     const [showConcierge, setShowConcierge] = useState(false);
     const [currentChat, setCurrentChat] = useState<any>(null);
+    const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
     const { user } = useUser();
     const { isNotificationEnabled } = useNotificationSettings();
 
@@ -42,6 +70,321 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     // Mutation hooks
     const favoriteChatMutation = useFavoriteChat();
     const unfavoriteChatMutation = useUnfavoriteChat();
+
+    // Real-time connection status monitoring
+    useEffect(() => {
+        if (!echo.connector) return;
+
+        const checkConnection = () => {
+            if (echo.connector && 'pusher' in echo.connector) {
+                const pusherConnector = echo.connector as any;
+                const isConnected = pusherConnector.pusher?.connection?.state === 'connected';
+                setIsRealtimeConnected(isConnected);
+            }
+        };
+
+        // Check initial connection status
+        checkConnection();
+
+        // Monitor connection status changes
+        if (echo.connector && 'pusher' in echo.connector) {
+            const pusherConnector = echo.connector as any;
+            if (pusherConnector.pusher?.connection) {
+                pusherConnector.pusher.connection.bind('connected', () => {
+                    console.log('MessageScreen: Reverb connected');
+                    setIsRealtimeConnected(true);
+                });
+
+                pusherConnector.pusher.connection.bind('disconnected', () => {
+                    console.log('MessageScreen: Reverb disconnected');
+                    setIsRealtimeConnected(false);
+                });
+
+                pusherConnector.pusher.connection.bind('error', (error: any) => {
+                    console.error('MessageScreen: Reverb connection error:', error);
+                    setIsRealtimeConnected(false);
+                });
+            }
+        }
+
+        return () => {
+            if (echo.connector && 'pusher' in echo.connector) {
+                const pusherConnector = echo.connector as any;
+                if (pusherConnector.pusher?.connection) {
+                    pusherConnector.pusher.connection.unbind('connected');
+                    pusherConnector.pusher.connection.unbind('disconnected');
+                    pusherConnector.pusher.connection.unbind('error');
+                }
+            }
+        };
+    }, []);
+
+    // Real-time hooks for immediate updates
+    useGuestChatsRealtime(userId, (updatedChat) => {
+        console.log('MessageScreen: Chat updated via real-time:', updatedChat);
+        // Cache is automatically updated by the hook
+        // Update notification count if needed
+        if (activeBottomTab !== 'message' && updatedChat.unread > 0) {
+            onNotificationCountChange?.(updatedChat.unread);
+        }
+    });
+
+    // Real-time unread message count updates
+    useUnreadMessageCount(userId, 'guest', (totalUnread) => {
+        console.log('MessageScreen: Total unread count updated:', totalUnread);
+        // Update notification count for parent component
+        if (activeBottomTab !== 'message') {
+            onNotificationCountChange?.(totalUnread);
+        }
+    });
+
+    // Enhanced real-time notifications with cache updates
+    useNotifications(user?.id ?? '', (notification) => {
+        console.log("MessageScreen: Notification received via real-time:", notification);
+        
+        if (notification.type === 'message') {
+            // Update local state for immediate UI update
+            setMessageNotifications((prev) => {
+                const newNotifications = [notification, ...prev];
+                if (activeBottomTab !== 'message') {
+                    onNotificationCountChange?.(newNotifications.length);
+                }
+                return newNotifications;
+            });
+
+            // Update React Query cache for notifications
+            queryClient.setQueryData(
+                queryKeys.guest.notifications(Number(user?.id || 0)),
+                (oldData: any) => {
+                    if (!oldData) return [notification];
+                    return [notification, ...oldData];
+                }
+            );
+
+            // If this is a chat notification, update the chat's unread count in cache
+            if (notification.chat_id) {
+                queryClient.setQueryData(
+                    queryKeys.guest.chats(userId),
+                    (oldData: any) => {
+                        if (!oldData) return oldData;
+                        return oldData.map((chat: any) => 
+                            chat.id === notification.chat_id 
+                                ? { ...chat, unread: (chat.unread || 0) + 1 }
+                                : chat
+                        );
+                    }
+                );
+            }
+        }
+    });
+
+    // Real-time chat message updates for immediate unread count updates
+    useEffect(() => {
+        if (!userId) return;
+
+        // Listen to all chat channels for this user
+        const channels = chats.map((chat: any) => {
+            if (chat.is_group_chat && chat.group_id) {
+                return { type: 'group' as const, id: chat.group_id, chatId: chat.id };
+            } else {
+                return { type: 'individual' as const, id: chat.id, chatId: chat.id };
+            }
+        });
+
+        const cleanupFunctions: (() => void)[] = [];
+        
+        channels.forEach(({ type, id, chatId }: { type: 'group' | 'individual', id: number, chatId: number }) => {
+            const channelName = type === 'group' ? `group.${id}` : `chat.${id}`;
+            const eventName = type === 'group' ? 'GroupMessageSent' : 'MessageSent';
+            
+            const channel = echo.channel(channelName);
+            
+            const handleNewMessage = (e: { message: any }) => {
+                console.log(`MessageScreen: New message in ${type} chat ${id}:`, e.message);
+                
+                // Update React Query cache for chats to increment unread count
+                queryClient.setQueryData(
+                    queryKeys.guest.chats(userId),
+                    (oldData: any) => {
+                        if (!oldData) return oldData;
+                        return oldData.map((chat: any) => 
+                            chat.id === chatId 
+                                ? { ...chat, unread: (chat.unread || 0) + 1 }
+                                : chat
+                        );
+                    }
+                );
+
+                // Update notification count if not on message tab
+                if (activeBottomTab !== 'message') {
+                    const currentCount = messageNotifications.length;
+                    onNotificationCountChange?.(currentCount + 1);
+                }
+            };
+
+            channel.listen(eventName, handleNewMessage);
+
+            // Store cleanup function
+            cleanupFunctions.push(() => {
+                try {
+                    channel.stopListening(eventName);
+                } catch (error) {
+                    console.warn(`Error cleaning up channel ${channelName}:`, error);
+                }
+            });
+        });
+
+        // Return cleanup function
+        return () => {
+            cleanupFunctions.forEach(cleanup => cleanup());
+        };
+    }, [chats, userId, activeBottomTab, onNotificationCountChange, messageNotifications.length]);
+
+    // Real-time updates for when messages are marked as read
+    useEffect(() => {
+        if (!userId) return;
+
+        const channel = echo.channel(`guest.${userId}`);
+        
+        const handleMessagesRead = (e: { chat_id: number, unread_count: number }) => {
+            console.log('MessageScreen: Messages marked as read for chat:', e.chat_id, 'New unread count:', e.unread_count);
+            
+            // Update React Query cache for chats to reset unread count
+            queryClient.setQueryData(
+                queryKeys.guest.chats(userId),
+                (oldData: any) => {
+                    if (!oldData) return oldData;
+                    return oldData.map((chat: any) => 
+                        chat.id === e.chat_id 
+                            ? { ...chat, unread: e.unread_count }
+                            : chat
+                    );
+                }
+            );
+
+            // Update notification count if needed
+            if (activeBottomTab !== 'message') {
+                const totalUnread = chats.reduce((sum: number, chat: any) => sum + (chat.unread || 0), 0);
+                onNotificationCountChange?.(totalUnread);
+            }
+        };
+
+        const handleNewChat = (e: { chat: any }) => {
+            console.log('MessageScreen: New chat created:', e.chat);
+            
+            // Update React Query cache for chats to add new chat
+            queryClient.setQueryData(
+                queryKeys.guest.chats(userId),
+                (oldData: any) => {
+                    if (!oldData) return [e.chat];
+                    return [e.chat, ...oldData];
+                }
+            );
+
+            // Update notification count if new chat has unread messages
+            if (activeBottomTab !== 'message' && (e.chat.unread || 0) > 0) {
+                const currentCount = messageNotifications.length;
+                onNotificationCountChange?.(currentCount + e.chat.unread);
+            }
+        };
+
+        const handleChatUpdated = (e: { chat: any }) => {
+            console.log('MessageScreen: Chat updated:', e.chat);
+            
+            // Update React Query cache for chats to update existing chat
+            queryClient.setQueryData(
+                queryKeys.guest.chats(userId),
+                (oldData: any) => {
+                    if (!oldData) return oldData;
+                    return oldData.map((chat: any) => 
+                        chat.id === e.chat.id 
+                            ? { ...chat, ...e.chat }
+                            : chat
+                    );
+                }
+            );
+
+            // Update cast profiles if this chat has new cast information
+            if (e.chat.cast_id && e.chat.cast_nickname) {
+                setCastProfiles(prev => ({
+                    ...prev,
+                    [e.chat.cast_id]: {
+                        cast: {
+                            ...prev[e.chat.cast_id]?.cast,
+                            nickname: e.chat.cast_nickname
+                        }
+                    }
+                }));
+            }
+        };
+
+        const handleFavoriteToggled = (e: { chat_id: number, is_favorited: boolean, user_id: number }) => {
+            // Only handle favorites for the current user
+            if (e.user_id !== userId) return;
+            
+            console.log('MessageScreen: Favorite toggled for chat:', e.chat_id, 'Favorited:', e.is_favorited);
+            
+            // Update React Query cache for favorites
+            queryClient.setQueryData(
+                queryKeys.guest.favorites(userId),
+                (oldData: any) => {
+                    if (!oldData) return oldData;
+                    
+                    if (e.is_favorited) {
+                        // Add to favorites if not already there
+                        const chat = chats.find((c: any) => c.id === e.chat_id);
+                        if (chat && !oldData.chats.some((f: any) => f.id === e.chat_id)) {
+                            return {
+                                ...oldData,
+                                chats: [chat, ...oldData.chats]
+                            };
+                        }
+                    } else {
+                        // Remove from favorites
+                        return {
+                            ...oldData,
+                            chats: oldData.chats.filter((f: any) => f.id !== e.chat_id)
+                        };
+                    }
+                    
+                    return oldData;
+                }
+            );
+        };
+
+        channel.listen("MessagesRead", handleMessagesRead);
+        channel.listen("ChatCreated", handleNewChat);
+        channel.listen("ChatUpdated", handleChatUpdated);
+        channel.listen("FavoriteToggled", handleFavoriteToggled);
+
+        return () => {
+            try {
+                channel.stopListening("MessagesRead");
+                channel.stopListening("ChatCreated");
+                channel.stopListening("ChatUpdated");
+                channel.stopListening("FavoriteToggled");
+            } catch (error) {
+                console.warn('Error cleaning up channel listeners:', error);
+            }
+        };
+    }, [userId, chats, activeBottomTab, onNotificationCountChange, messageNotifications.length]);
+
+    /**
+     * Real-Time Implementation Summary:
+     * 
+     * ✅ useGuestChatsRealtime - Handles chat updates and new chats
+     * ✅ useUnreadMessageCount - Tracks total unread message count
+     * ✅ useNotifications - Handles new notifications with cache updates
+     * ✅ Chat message listeners - Updates unread counts for individual chats
+     * ✅ MessagesRead listener - Resets unread counts when messages are read
+     * ✅ ChatCreated listener - Adds new chats to the list
+     * ✅ ChatUpdated listener - Updates chat metadata and cast profiles
+     * ✅ FavoriteToggled listener - Updates favorites list in real-time
+     * ✅ Connection monitoring - Tracks WebSocket connection status
+     * 
+     * All React Query caches are updated immediately when real-time events arrive,
+     * ensuring instant UI updates without manual refetching.
+     */
 
     // Notify parent when concierge state changes
     useEffect(() => {
@@ -209,20 +552,6 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         return first ? `${API_BASE_URL}/${first}` : '/assets/avatar/female.png';
     };
 
-    // Listen for real-time notifications
-    useNotifications(user?.id ?? '', (notification) => {
-        console.log("Notification", notification);
-        if (notification.type === 'message') {
-            setMessageNotifications((prev) => {
-                const newNotifications = [notification, ...prev];
-                if (activeBottomTab !== 'message') {
-                    onNotificationCountChange?.(newNotifications.length);
-                }
-                return newNotifications;
-            });
-        }
-    });
-
     // const handleNotificationClick = async (id: number) => {
     //     await markNotificationRead(id);
     //     setMessageNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -292,7 +621,12 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                     )}
                 </button>
                 <div className="justify-self-center font-bold text-lg text-white">メッセージ一覧</div>
-                <div className="justify-self-end" />
+                <div className="justify-self-end flex items-center gap-2">
+                    {/* Real-time connection status indicator */}
+                    <div className={`w-2 h-2 rounded-full ${isRealtimeConnected ? 'bg-green-400' : 'bg-red-400'}`} 
+                         title={isRealtimeConnected ? 'リアルタイム更新中' : 'リアルタイム更新停止'}>
+                    </div>
+                </div>
             </div>
             {/* Message notifications section */}
             {/* {messageNotifications.length > 0 && (

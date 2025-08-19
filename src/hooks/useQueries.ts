@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../lib/react-query';
 import {
@@ -63,7 +64,7 @@ export const useGuestChats = (guestId: number) => {
     queryFn: () => getGuestChats(guestId, 'guest'),
     enabled: !!guestId,
     staleTime: 30 * 1000, // 30 seconds - chats update very frequently
-    refetchInterval: 10 * 1000, // Refetch every 10 seconds for real-time updates
+    // Removed refetchInterval - real-time updates will handle this
   });
 };
 
@@ -74,7 +75,7 @@ export const useGuestNotifications = (guestId: number) => {
     queryFn: () => getNotifications('guest', guestId),
     enabled: !!guestId,
     staleTime: 1 * 60 * 1000, // 1 minute - notifications are time-sensitive
-    refetchInterval: 15 * 1000, // Refetch every 15 seconds
+    // Removed refetchInterval - real-time updates will handle this
   });
 };
 
@@ -152,23 +153,31 @@ export const useRanking = (filters: any) => {
 };
 
 // All Tweets Query
-export const useAllTweets = () => {
+export const useAllTweets = (options: { refetchOnMount?: boolean } = {}) => {
+  const { refetchOnMount = false } = options;
   return useQuery({
     queryKey: queryKeys.tweets.all(),
     queryFn: fetchAllTweets,
-    staleTime: 30 * 1000, // 30 seconds - tweets are very dynamic
-    refetchInterval: 15 * 1000, // Refetch every 15 seconds for real-time updates
+    staleTime: 10 * 60 * 1000, // 10 minutes - prevent refetching on navigation
+    gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache longer
+    refetchOnMount: refetchOnMount, // Don't refetch when component remounts by default
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    // Removed refetchInterval - real-time updates will handle this
   });
 };
 
 // User Tweets Query
-export const useUserTweets = (userType: 'guest' | 'cast', userId: number) => {
+export const useUserTweets = (userType: 'guest' | 'cast', userId: number, options: { refetchOnMount?: boolean } = {}) => {
+  const { refetchOnMount = false } = options;
   return useQuery({
     queryKey: queryKeys.tweets.user(userType, userId),
     queryFn: () => fetchUserTweets(userType, userId),
     enabled: !!userId,
-    staleTime: 30 * 1000, // 30 seconds - user tweets are dynamic
-    refetchInterval: 15 * 1000, // Refetch every 15 seconds for real-time updates
+    staleTime: 10 * 60 * 1000, // 10 minutes - prevent refetching on navigation
+    gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache longer
+    refetchOnMount: refetchOnMount, // Don't refetch when component remounts by default
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    // Removed refetchInterval - real-time updates will handle this
   });
 };
 
@@ -189,9 +198,10 @@ export const useCreateTweet = () => {
   return useMutation({
     mutationFn: createTweet,
     onSuccess: () => {
-      // Invalidate and refetch tweets
-      queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('guest', 0) });
+      // Don't invalidate queries - let local state handle immediate updates
+      // Only invalidate if we need to sync with server data
+      // queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() });
+      // queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('guest', 0) });
     },
   });
 };
@@ -203,7 +213,7 @@ export const useLikeTweet = () => {
     mutationFn: ({ tweetId, userId, castId }: { tweetId: number; userId?: number; castId?: number }) => 
       likeTweet(tweetId, userId, castId),
     onSuccess: (_, variables) => {
-      // Invalidate specific tweet like status
+      // Only invalidate specific tweet like status
       queryClient.invalidateQueries({ 
         queryKey: queryKeys.tweets.likes(variables.tweetId, variables.userId) 
       });
@@ -217,9 +227,10 @@ export const useDeleteTweet = () => {
   return useMutation({
     mutationFn: deleteTweet,
     onSuccess: () => {
-      // Invalidate all tweet queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('guest', 0) });
+      // Don't invalidate queries - let local state handle immediate updates
+      // Only invalidate if we need to sync with server data
+      // queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() });
+      // queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('guest', 0) });
     },
   });
 };
@@ -306,7 +317,7 @@ export const useCastChats = (castId: number) => {
     queryFn: () => getCastChats(castId),
     enabled: !!castId,
     staleTime: 2 * 60 * 1000, // 2 minutes - chats update frequently
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds for real-time updates
+    // Removed refetchInterval - real-time updates will handle this
   });
 };
 
@@ -317,7 +328,7 @@ export const useCastNotifications = (castId: number) => {
     queryFn: () => getNotifications('cast', castId),
     enabled: !!castId,
     staleTime: 1 * 60 * 1000, // 1 minute - notifications are time-sensitive
-    refetchInterval: 15 * 1000, // Refetch every 15 seconds
+    // Removed refetchInterval - real-time updates will handle this
   });
 };
 
@@ -368,7 +379,7 @@ export const useCastReservations = (castId: number) => {
     queryFn: () => getAllReservations(),
     enabled: !!castId,
     staleTime: 30 * 1000, // 30 seconds - reservations update frequently
-    refetchInterval: 5 * 1000, // Refetch every 5 seconds for real-time updates
+    // Removed refetchInterval - real-time updates will handle this
   });
 };
 
@@ -379,7 +390,7 @@ export const useCastApplications = (castId: number) => {
     queryFn: () => getAllCastApplications(castId),
     enabled: !!castId,
     staleTime: 30 * 1000, // 30 seconds - applications update frequently
-    refetchInterval: 5 * 1000, // Refetch every 5 seconds for real-time updates
+    // Removed refetchInterval - real-time updates will handle this
   });
 };
 
@@ -480,7 +491,7 @@ export const useChatMessages = (chatId: number, castId: number) => {
     queryFn: () => getChatMessages(chatId, castId, 'cast'),
     enabled: !!chatId && !!castId,
     staleTime: 30 * 1000, // 30 seconds - messages update frequently
-    refetchInterval: 10 * 1000, // Refetch every 10 seconds for real-time updates
+    // Removed refetchInterval - real-time updates will handle this
   });
 };
 

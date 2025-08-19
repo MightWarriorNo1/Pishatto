@@ -1,6 +1,7 @@
+/* eslint-disable */
 import React, { useState, useEffect, useRef } from 'react';
 import {useNavigate} from 'react-router-dom'
-import { Search, QrCode, X, RefreshCw } from 'lucide-react';
+import { Search, QrCode, X } from 'lucide-react';
 import { getCastList } from '../../services/api';
 import { CastProfile } from '../../services/api';
 import QRCodeModal from './QRCodeModal';
@@ -95,12 +96,13 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      // Invalidate and refetch all relevant queries
+      // Invalidate and refetch only cast-related queries, not timeline data
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.cast.all() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.cast.new() }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() }),
-        queryClient.refetchQueries()
+        // Removed tweet queries invalidation to prevent timeline refetching
+        // queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() }),
+        // queryClient.refetchQueries() // This was too aggressive
       ]);
       
       // Also refresh the local cast list

@@ -4,11 +4,11 @@ import { QueryClient } from '@tanstack/react-query';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30 * 1000, // 30 seconds - data becomes stale quickly
-      gcTime: 50 * 1000, // 50 seconds - cache is garbage collected after 50 seconds
+      staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer to prevent unnecessary refetches
+      gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer
       retry: 1,
-      refetchOnWindowFocus: true, // Refetch when window regains focus
-      refetchOnReconnect: true, // Refetch when reconnecting to network
+      refetchOnWindowFocus: false, // Disable refetch on window focus to prevent navigation refetches
+      refetchOnReconnect: true, // Keep refetch on reconnect for network issues
     },
   },
 });

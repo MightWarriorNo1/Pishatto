@@ -16,7 +16,7 @@ import FeedbackForm from '../../components/feedback/FeedbackForm';
 import { Reservation, getAllReservations, getAllChats, fetchRanking } from '../../services/api';
 import { applyReservation, startReservation, stopReservation, getAllCastApplications } from '../../services/api';
 import { ChatRefreshProvider, useChatRefresh } from '../../contexts/ChatRefreshContext';
-import { useTweets, useUnreadMessageCount, useNotifications } from '../../hooks/useRealtime';
+import { useTweets, useUnreadMessageCount, useNotifications, useTweetNotifications } from '../../hooks/useRealtime';
 import echo from '../../services/echo';
 import { getCastProfileById } from '../../services/api';
 import { useCast } from '../../contexts/CastContext';
@@ -253,10 +253,16 @@ const CastDashboardInner: React.FC = () => {
         setShowNotificationPopup(true);
     });
 
-    useTweets((tweet) => {
-      if (mainPage !== 3) {
-        setTweetBadgeCount((c) => c + 1);
-      }
+    // Real-time tweet notifications with badge management
+    useTweetNotifications(castId || 0, 'cast', (tweet) => {
+        console.log('CastDashboard: Tweet notification received:', tweet, 'mainPage:', mainPage);
+        if (mainPage !== 3) {
+            console.log('CastDashboard: Incrementing tweet count from', tweetBadgeCount, 'to', tweetBadgeCount + 1);
+            setTweetBadgeCount((c) => c + 1);
+        } else {
+            console.log('CastDashboard: On tweet page, not incrementing count');
+        }
+        // Cache updates are handled automatically by the hook
     });
 
     useEffect(() => {

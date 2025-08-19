@@ -10,6 +10,8 @@ import { useTweets } from '../../hooks/useRealtime';
 import { useCast } from '../../contexts/CastContext';
 import Spinner from '../../components/ui/Spinner';
 import { useAllTweets, useUserTweets, useTweetLikeStatus, useCreateTweet, useLikeTweet, useDeleteTweet } from '../../hooks/useQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../lib/react-query';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -26,19 +28,27 @@ const CastTimelinePage: React.FC = () => {
     // Local state for tweets to prevent reloads
     const [localTweets, setLocalTweets] = useState<any[]>([]);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [hasData, setHasData] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
 
     // Use React Query hooks for initial data fetching only
     const {
         data: allTweets = [],
         isLoading: allTweetsLoading,
         error: allTweetsError
-    } = useAllTweets();
+    } = useAllTweets({ refetchOnMount: false });
 
     const {
         data: userTweets = [],
         isLoading: userTweetsLoading,
         error: userTweetsError
-    } = useUserTweets('cast', castId || 0);
+    } = useUserTweets('cast', castId || 0, { refetchOnMount: false });
+
+    // Set visibility when component mounts/unmounts
+    useEffect(() => {
+        setIsVisible(true);
+        return () => setIsVisible(false);
+    }, []);
 
     // Initialize local tweets when data is first loaded
     useEffect(() => {
@@ -48,8 +58,19 @@ const CastTimelinePage: React.FC = () => {
                 : allTweets;
             setLocalTweets(initialTweets);
             setIsInitialLoad(false);
+            setHasData(true);
         }
     }, [allTweets, userTweets, tab, isInitialLoad]);
+
+    // Update local tweets when tab changes
+    useEffect(() => {
+        if (!isInitialLoad && hasData && (allTweets.length > 0 || userTweets.length > 0)) {
+            const filteredTweets = tab === 'cast' 
+                ? allTweets.filter((tweet: any) => tweet.cast && !tweet.guest)
+                : allTweets;
+            setLocalTweets(filteredTweets);
+        }
+    }, [tab, allTweets, userTweets, isInitialLoad, hasData]);
 
     // Filter tweets based on tab using local state
     const tweets = tab === 'cast' 
@@ -68,8 +89,16 @@ const CastTimelinePage: React.FC = () => {
     const likeTweetMutation = useLikeTweet();
     const deleteTweetMutation = useDeleteTweet();
 
+    // Manual refresh function
+    const queryClient = useQueryClient();
+    const handleRefresh = () => {
+        setIsInitialLoad(true);
+        queryClient.invalidateQueries({ queryKey: queryKeys.tweets.all() });
+        queryClient.invalidateQueries({ queryKey: queryKeys.tweets.user('cast', castId || 0) });
+    };
+
     // Loading and error states
-    const loading = (allTweetsLoading || userTweetsLoading || likesLoading) && isInitialLoad;
+    const loading = (allTweetsLoading || userTweetsLoading || likesLoading) && isInitialLoad && isVisible;
     const error = allTweetsError || userTweetsError || likesError;
 
     // Real-time updates without reloading
@@ -164,9 +193,11 @@ const CastTimelinePage: React.FC = () => {
                         <Bell />
                     </span>
                     <span className="text-xl font-bold mx-auto text-white">つぶやき</span>
-                    {/* <span className="text-2xl text-white">
-                        <SlidersHorizontal />
-                    </span> */}
+                    <button onClick={handleRefresh} className="text-2xl text-white hover:text-secondary transition-colors cursor-pointer" title="更新">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                    </button>
                 </div>
                 {/* Tabs */}
                 <div className="flex items-center border-b border-secondary">

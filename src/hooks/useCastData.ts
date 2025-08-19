@@ -41,7 +41,7 @@ export const useCastData = (castId: number) => {
     queryFn: () => getCastChats(castId),
     enabled: !!castId,
     staleTime: 2 * 60 * 1000, // 2 minutes - chats update frequently
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds for real-time updates
+    // Removed refetchInterval - real-time updates will handle this
   });
 
   // Cast Notifications Query
@@ -54,7 +54,7 @@ export const useCastData = (castId: number) => {
     queryFn: () => getNotifications('cast', castId),
     enabled: !!castId,
     staleTime: 1 * 60 * 1000, // 1 minute - notifications are time-sensitive
-    refetchInterval: 15 * 1000, // Refetch every 15 seconds
+    // Removed refetchInterval - real-time updates will handle this
   });
 
   // Cast Points Data Query
@@ -115,7 +115,7 @@ export const useCastData = (castId: number) => {
     queryFn: () => getAllReservations(),
     enabled: !!castId,
     staleTime: 30 * 1000, // 30 seconds - reservations update frequently
-    refetchInterval: 5 * 1000, // Refetch every 5 seconds for real-time updates
+    // Removed refetchInterval - real-time updates will handle this
   });
 
   // Cast Applications Query
@@ -128,7 +128,7 @@ export const useCastData = (castId: number) => {
     queryFn: () => getAllCastApplications(castId),
     enabled: !!castId,
     staleTime: 30 * 1000, // 30 seconds - applications update frequently
-    refetchInterval: 5 * 1000, // Refetch every 5 seconds for real-time updates
+    // Removed refetchInterval - real-time updates will handle this
   });
 
   // Combined loading state
