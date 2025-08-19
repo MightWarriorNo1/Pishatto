@@ -7,6 +7,7 @@ import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useGroupMessages } from '../../hooks/useRealtime';
 import dayjs from 'dayjs';
+import Spinner from '../ui/Spinner';    
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IMAGE_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
@@ -332,17 +333,13 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
     if (fetching) {
         return (
             <div className="bg-primary min-h-screen flex items-center justify-center">
-                <div className="text-white">読み込み中...</div>
+                <Spinner />
             </div>
         );
     }
 
     return (
         <div className="min-h-screen flex flex-col bg-primary overflow-hidden bg-fixed">
-            <style>{`
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-            `}</style>
             {/* Fixed Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
                 <div className="relative w-full flex items-center">
@@ -364,7 +361,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
             </div>
 
             {/* Messages - Scrollable Area */}
-            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 no-scrollbar" style={{ height: 'calc(100vh - 140px)' }}>
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 scrollbar-hidden" style={{ height: 'calc(100vh - 140px)' }}>
                 {fetchError && (
                     <div className="text-red-500 text-center py-4">{fetchError}</div>
                 )}
