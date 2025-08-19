@@ -371,20 +371,20 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                             )}
                                         </div>
                                     )}
-                                    {msg.image && (
-                                        <img
-                                            src={
-                                                msg.image.startsWith('http')
-                                                    ? msg.image
-                                                    : `${IMAGE_BASE_URL}/storage/${msg.image}`
-                                            }
-                                            alt="sent"
-                                            className="max-w-full max-h-40 rounded mb-2 cursor-zoom-in"
-                                            onClick={() => setLightboxUrl(
-                                                msg.image.startsWith('http') ? msg.image : `${IMAGE_BASE_URL}/storage/${msg.image}`
-                                            )}
-                                        />
-                                    )}
+                                    {(() => {
+                                        if (!msg.image) return null;
+                                        if (typeof msg.image !== 'string') return null;
+                                        const isAbsolute = msg.image.startsWith('http') || msg.image.startsWith('data:') || msg.image.startsWith('blob:');
+                                        const src = isAbsolute ? msg.image : `${IMAGE_BASE_URL}/storage/${msg.image}`;
+                                        return (
+                                            <img
+                                                src={src}
+                                                alt="sent"
+                                                className="max-w-full max-h-40 rounded mb-2 cursor-zoom-in"
+                                                onClick={() => setLightboxUrl(src)}
+                                            />
+                                        );
+                                    })()}
                                     {msg.message}
                                     {msg.isOptimistic && !msg.gift_id && (
                                         <div className="text-xs text-yellow-300 mt-1">送信中...</div>

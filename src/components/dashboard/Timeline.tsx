@@ -282,17 +282,19 @@ const Timeline: React.FC = () => {
                                 )}
                             </div>
                             <div className="text-white text-sm whitespace-pre-line mt-1">{tweet.content}</div>
-                            {tweet.image && (
-                                <img
-                                    src={
-                                        tweet.image.startsWith('http')
-                                            ? tweet.image
-                                            : `${IMAGE_BASE_URL}/storage/${tweet.image}`
-                                    }
-                                    alt="tweet"
-                                    className="max-h-48 rounded my-2 border border-secondary object-cover"
-                                />
-                            )}
+                            {(() => {
+                                if (!tweet.image) return null;
+                                if (typeof tweet.image !== 'string') return null;
+                                const isAbsolute = tweet.image.startsWith('http') || tweet.image.startsWith('data:') || tweet.image.startsWith('blob:');
+                                const src = isAbsolute ? tweet.image : `${IMAGE_BASE_URL}/storage/${tweet.image}`;
+                                return (
+                                    <img
+                                        src={src}
+                                        alt="tweet"
+                                        className="max-h-48 rounded my-2 border border-secondary object-cover"
+                                    />
+                                );
+                            })()}
                             {/* Like button and count */}
                             <TweetLikeButton 
                                 tweetId={tweet.id} 

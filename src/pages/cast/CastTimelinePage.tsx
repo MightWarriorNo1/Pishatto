@@ -296,7 +296,11 @@ const CastTimelinePage: React.FC = () => {
                             <div className="text-white text-sm mb-2">{tweet.content}</div>
                             {tweet.image && (
                                 <img 
-                                    src={`${IMAGE_BASE_URL}/${tweet.image}`} 
+                                    src={
+                                        typeof tweet.image === 'string' && tweet.image.startsWith('http')
+                                            ? tweet.image
+                                            : `${IMAGE_BASE_URL}/storage/${tweet.image}`
+                                    } 
                                     alt="tweet image" 
                                     className="w-full h-32 object-cover rounded-lg mb-2"
                                 />

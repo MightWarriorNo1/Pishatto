@@ -460,17 +460,19 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                             ? 'bg-secondary text-white' 
                                             : 'bg-white text-primary'
                                     }`}>
-                                        {message.image && (
-                                            <img
-                                            src={
-                                                message.image.startsWith('http')
-                                                    ? message.image
-                                                    : `${IMAGE_BASE_URL}/storage/${message.image}`
-                                            }
-                                                alt="attached"
-                                                className="w-64 h-32 rounded mb-2"
-                                            />
-                                        )}
+                                        {(() => {
+                                            if (!message.image) return null;
+                                            if (typeof message.image !== 'string') return null;
+                                            const isAbsolute = message.image.startsWith('http') || message.image.startsWith('data:') || message.image.startsWith('blob:');
+                                            const src = isAbsolute ? message.image : `${IMAGE_BASE_URL}/storage/${message.image}`;
+                                            return (
+                                                <img
+                                                    src={src}
+                                                    alt="attached"
+                                                    className="w-64 h-32 rounded mb-2"
+                                                />
+                                            );
+                                        })()}
                                         
                                         {message.gift && (
                                             <div className="bg-yellow-500 text-black rounded p-2 mb-2">
