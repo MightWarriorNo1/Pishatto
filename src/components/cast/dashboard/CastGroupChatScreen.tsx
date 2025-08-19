@@ -418,7 +418,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     return (
         <div className=" min-h-screen flex flex-col">
             {/* Fixed Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary fixed top-0 left-0 right-0 z-20">
                 <button onClick={onBack} className="text-white hover:text-secondary cursor-pointer">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
@@ -448,7 +448,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             </div>
 
             {/* Messages - Scrollable Area */}
-            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 scrollbar-hidden" style={{ height: 'calc(100vh - 140px)' }}>
+            <div className="h-screen overflow-y-auto px-4 py-2 space-y-4 pt-16 pb-28 relative" style={{ scrollbarWidth: 'auto', msOverflowStyle: 'auto' }}>
                 {fetchError && (
                     <div className="text-red-500 text-center py-4">
                         <div>{fetchError}</div>
@@ -596,10 +596,31 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                     );
                 })}
                 <div ref={messagesEndRef} />
+
+                {previewImageUrl && (
+                    <div
+                        className="absolute inset-0 z-30 bg-black bg-opacity-40 flex items-center justify-center"
+                        onClick={() => setPreviewImageUrl(null)}
+                    >
+                        <div className="relative bg-primary rounded-lg shadow-2xl p-2" onClick={(e) => e.stopPropagation()}>
+                            <img
+                                src={previewImageUrl}
+                                alt="preview"
+                                className="w-[420px] h-[420px] object-contain rounded"
+                            />
+                            <button
+                                className="absolute -top-3 -right-3 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center"
+                                onClick={() => setPreviewImageUrl(null)}
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Fixed Input Area */}
-            <div className="border-t border-secondary p-4 bg-primary sticky bottom-0 z-10">
+            <div className="border-t border-secondary p-4 bg-primary fixed bottom-0 left-0 right-0 z-20">
                 {sendError && (
                     <div className="text-red-500 text-sm mb-2">{sendError}</div>
                 )}
@@ -745,11 +766,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                     </div>
                 </div>
             )}
-            {previewImageUrl && (
-                <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center" onClick={() => setPreviewImageUrl(null)}>
-                    <img src={previewImageUrl} alt="preview" className="max-w-[90vw] max-h-[90vh] object-contain" />
-                </div>
-            )}
+            {/* Image preview overlay moved inside messages container */}
         </div>
     );
 };

@@ -339,29 +339,27 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-primary overflow-hidden bg-fixed">
+        <div className="min-h-screen flex flex-col bg-gradient-to-b from-primary via-primary to-secondary overflow-hidden bg-fixed">
             {/* Fixed Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
                 <div className="relative w-full flex items-center">
                     <button onClick={onBack} className="text-white">
                         <ChevronLeft className="w-6 h-6 hover:text-secondary cursor-pointer" />
                     </button>
-                    <div className="absolute left-1/2 -translate-x-1/2 transform pointer-events-none">
-                        <div className="flex items-center">
-                            <Users className="w-5 h-5 text-white mr-2" />
-                            <span className="text-white font-bold">
-                                {groupInfo?.name || `グループ ${groupId}`}
-                            </span>
-                            <span className="text-gray-400 text-sm ml-2">
-                                ({participants.length}人)
-                            </span>
-                        </div>
+                    <div className="absolute left-1/2 -translate-x-1/2 transform pointer-events-none flex items-center">
+                        <Users className="w-5 h-5 text-white mr-2" />
+                        <span className="text-white font-bold">
+                            {groupInfo?.name || `グループ ${groupId}`}
+                        </span>
+                        <span className="text-gray-400 text-sm ml-2">
+                            ({participants.length}人)
+                        </span>
                     </div>
                 </div>
             </div>
 
             {/* Messages - Scrollable Area */}
-            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 scrollbar-hidden" style={{ height: 'calc(100vh - 140px)' }}>
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 scrollbar-hidden relative" style={{ height: 'calc(100vh - 140px)' }}>
                 {fetchError && (
                     <div className="text-red-500 text-center py-4">{fetchError}</div>
                 )}
@@ -506,6 +504,27 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                     );
                 })}
                 <div ref={messagesEndRef} />
+
+                {previewImageUrl && (
+                    <div
+                        className="absolute inset-0 z-30 bg-black bg-opacity-40 flex items-center justify-center"
+                        onClick={() => setPreviewImageUrl(null)}
+                    >
+                        <div className="relative bg-primary rounded-lg shadow-2xl p-2" onClick={(e) => e.stopPropagation()}>
+                            <img
+                                src={previewImageUrl}
+                                alt="preview"
+                                className="w-[420px] h-[420px] object-contain rounded"
+                            />
+                            <button
+                                className="absolute -top-3 -right-3 bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center"
+                                onClick={() => setPreviewImageUrl(null)}
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Fixed Input Area */}
@@ -997,11 +1016,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                     </div>
                 </div>
             )}
-            {previewImageUrl && (
-                <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center" onClick={() => setPreviewImageUrl(null)}>
-                    <img src={previewImageUrl} alt="preview" className="max-w-[90vw] max-h-[90vh] object-contain" />
-                </div>
-            )}
+            {/* Image preview overlay moved inside messages container */}
         </div>
     );
 };
