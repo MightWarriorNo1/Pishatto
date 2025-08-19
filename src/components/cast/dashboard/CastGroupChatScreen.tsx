@@ -7,6 +7,7 @@ import { useCast } from '../../../contexts/CastContext';
 import { useUser } from '../../../contexts/UserContext';
 import { useGroupMessages } from '../../../hooks/useRealtime';
 import dayjs from 'dayjs';
+import Spinner from '../../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -384,7 +385,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     if (fetching) {
         return (
             <div className="bg-primary min-h-screen flex items-center justify-center">
-                <div className="text-white">読み込み中...</div>
+                <Spinner />
             </div>
         );
     }
@@ -446,7 +447,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             </div>
 
             {/* Messages - Scrollable Area */}
-            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4" style={{ height: 'calc(100vh - 140px)' }}>
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 scrollbar-hide" style={{ height: 'calc(100vh - 140px)' }}>
                 {fetchError && (
                     <div className="text-red-500 text-center py-4">
                         <div>{fetchError}</div>
