@@ -72,6 +72,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     const [groupInfo, setGroupInfo] = useState<any>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const attachBtnRef = useRef<HTMLButtonElement>(null);
+    const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     
     // Camera functionality
     const [showCamera, setShowCamera] = useState(false);
@@ -430,7 +431,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         ({participants.length}人)
                     </span>
                 </div>
-                <div className="flex space-x-2">
+                {/* <div className="flex space-x-2">
                     <button 
                         onClick={() => {
                             setFetching(true);
@@ -443,7 +444,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                     >
                         {fetching ? '更新中...' : '更新'}
                     </button>
-                </div>
+                </div> */}
             </div>
 
             {/* Messages - Scrollable Area */}
@@ -567,7 +568,8 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                                             <img
                                                 src={`${IMAGE_BASE_URL}/storage/${message.image}`}
                                                 alt="attached"
-                                                className="w-64 h-32 object-cover rounded mb-2"
+                                                className="w-64 h-32 object-cover rounded mb-2 cursor-pointer"
+                                                onClick={() => setPreviewImageUrl(`${IMAGE_BASE_URL}/storage/${message.image}`)}
                                             />
                                         )}
                                         
@@ -741,6 +743,11 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+            {previewImageUrl && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-80 flex items-center justify-center" onClick={() => setPreviewImageUrl(null)}>
+                    <img src={previewImageUrl} alt="preview" className="max-w-[90vw] max-h-[90vh] object-contain" />
                 </div>
             )}
         </div>
