@@ -138,7 +138,6 @@ const Timeline: React.FC = () => {
             }
             return prevTweets;
         });
-        console.log('Timeline: New tweet received via real-time:', tweet);
     });
 
     const handleAvatarClick = (tweet: any) => {
@@ -192,17 +191,6 @@ const Timeline: React.FC = () => {
     const isCurrentUserTweet = (tweet: any) => {
         const isGuestTweet = user && tweet.guest?.id === user.id;
         const isCastTweet = castId && tweet.cast?.id === castId;
-        
-        console.log('Tweet ownership check:', {
-            tweetId: tweet.id,
-            userId: user?.id,
-            castId: castId,
-            tweetGuestId: tweet.guest?.id,
-            tweetCastId: tweet.cast?.id,
-            isGuestTweet,
-            isCastTweet,
-            result: isGuestTweet || isCastTweet
-        });
         
         return isGuestTweet || isCastTweet;
     };

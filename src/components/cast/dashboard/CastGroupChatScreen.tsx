@@ -370,7 +370,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
         if (message.cast) {
             return message.cast.nickname || 'キャスト';
         }
-        return 'Unknown';
+        return '管理者';
     };
 
     const getSenderAvatar = (message: any) => {
@@ -385,7 +385,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
 
     if (fetching) {
         return (
-            <div className="bg-primary min-h-screen flex items-center justify-center">
+            <div className="bg-gradient-to-b from-primary via-primaru to-secondary min-h-screen flex items-center justify-center">
                 <Spinner />
             </div>
         );
@@ -418,7 +418,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     return (
         <div className=" min-h-screen flex flex-col">
             {/* Fixed Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary fixed top-0 left-0 right-0 z-20">
+            <div className="flex max-w-md mx-auto w-full items-center justify-between px-4 py-3 border-b border-secondary bg-primary fixed top-0 left-0 right-0 z-20">
                 <button onClick={onBack} className="text-white hover:text-secondary cursor-pointer">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
@@ -448,7 +448,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             </div>
 
             {/* Messages - Scrollable Area */}
-            <div className="h-screen overflow-y-auto px-4 py-2 space-y-4 pt-16 pb-28 relative" style={{ scrollbarWidth: 'auto', msOverflowStyle: 'auto' }}>
+            <div className="h-screen overflow-y-auto px-4 py-2 space-y-4 pt-16 pb-28 relative scrollbar-hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {fetchError && (
                     <div className="text-red-500 text-center py-4">
                         <div>{fetchError}</div>
@@ -620,7 +620,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             </div>
 
             {/* Fixed Input Area */}
-            <div className="border-t border-secondary p-4 bg-primary fixed bottom-0 left-0 right-0 z-20">
+            <div className="border-t border-secondary p-4 max-w-md mx-auto w-full bg-primary fixed bottom-0 left-0 right-0 z-20">
                 {sendError && (
                     <div className="text-red-500 text-sm mb-2">{sendError}</div>
                 )}

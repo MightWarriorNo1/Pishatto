@@ -143,6 +143,28 @@ const PublicReceiptView: React.FC = () => {
               flex: 1; 
               text-align: right; 
             }
+            .seal-box { 
+              display: inline-flex; 
+              align-items: center; 
+              justify-content: center; 
+              border: 3px solid #e53e3e; 
+              border-radius: 50%; 
+              color: #e53e3e; 
+              width: 90px; 
+              height: 90px; 
+              text-align: center; 
+              font-size: 12px; 
+              font-weight: bold; 
+              letter-spacing: 1px; 
+            }
+            .seal-small { 
+              font-size: 10px; 
+              line-height: 1.1; 
+            }
+            .seal-main { 
+              font-size: 14px; 
+              line-height: 1.1; 
+            }
             .stamp { 
               border: 1px dashed #666; 
               padding: 8px; 
@@ -214,10 +236,18 @@ const PublicReceiptView: React.FC = () => {
               </div>
               
               <div class="company-info">
+                <div class="seal-box">
+                  <div>
+                    <div class="seal-small">株式会社</div>
+                    <div class="seal-main">Pishatto</div>
+                    <div class="seal-small">印</div>
+                  </div>
+                </div>
                 <div class="company-name">株式会社Pishatto</div>
                 <div class="company-detail">〒106-0032</div>
                 <div class="company-detail">東京都港区六本木4丁目8-7</div>
                 <div class="company-detail">六本木三河台ビル</div>
+                
               </div>
             </div>
           </div>
@@ -318,12 +348,22 @@ const PublicReceiptView: React.FC = () => {
 
            {/* Right Section - Company Info */}
            <div className="text-right space-y-2">
+            <div className="mt-2 flex justify-end">
+              <div className="inline-flex items-center justify-center border-2 border-red-600 rounded-full text-red-600 w-24 h-24 text-center font-bold leading-tight">
+                <div>
+                  <div className="text-[10px] leading-3">株式会社</div>
+                  <div className="text-sm leading-3">Pishatto</div>
+                  <div className="text-[10px] leading-3">印</div>
+                </div>
+              </div>
+            </div>
              <div className="text-sm text-gray-700">
                <div className="font-bold">株式会社Pishatto</div>
                <div>〒106-0032</div>
                <div>東京都港区六本木4丁目8-7</div>
                <div>六本木三河台ビル</div>
              </div>
+             
            </div>
          </div>
 

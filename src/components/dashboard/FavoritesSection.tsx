@@ -79,11 +79,12 @@ const FavoritesSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = f
               <span className="font-medium text-white">{profile.nickname}</span>
             </div>
             <button
-              className="ml-2 text-yellow-400 hover:text-yellow-600"
+              className="ml-2 text-secondary hover:text-white"
               onClick={() => handleUnfavorite(profile.id)}
               title="お気に入り解除"
+              style={{ backgroundColor: 'transparent'}}
             >
-              <FiStar className="w-6 h-6" />
+              <FiStar className="w-6 h-6 fill-secondary"/>
             </button>
           </div>
         </div>

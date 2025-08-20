@@ -182,10 +182,10 @@ export const useUserTweets = (userType: 'guest' | 'cast', userId: number, option
 };
 
 // Tweet Like Status Query
-export const useTweetLikeStatus = (tweetId: number, userId?: number) => {
+export const useTweetLikeStatus = (tweetId: number, userId?: number, castId?: number) => {
   return useQuery({
-    queryKey: queryKeys.tweets.likes(tweetId, userId),
-    queryFn: () => getTweetLikeStatus(tweetId, userId),
+    queryKey: queryKeys.tweets.likes(tweetId, userId, castId),
+    queryFn: () => getTweetLikeStatus(tweetId, userId, castId),
     enabled: !!tweetId,
     staleTime: 1 * 60 * 1000, // 1 minute
   });
@@ -212,10 +212,36 @@ export const useLikeTweet = () => {
   return useMutation({
     mutationFn: ({ tweetId, userId, castId }: { tweetId: number; userId?: number; castId?: number }) => 
       likeTweet(tweetId, userId, castId),
+    onMutate: async (variables) => {
+      const { tweetId, userId, castId } = variables;
+      const queryKey = queryKeys.tweets.likes(tweetId, userId, castId);
+
+      await queryClient.cancelQueries({ queryKey });
+
+      const previousLikeData = queryClient.getQueryData(queryKey) as { liked: boolean; count: number } | undefined;
+
+      const nextLiked = previousLikeData ? !previousLikeData.liked : true;
+      const nextCount = previousLikeData
+        ? Math.max(0, previousLikeData.count + (nextLiked ? 1 : -1))
+        : 1;
+
+      queryClient.setQueryData(queryKey, { liked: nextLiked, count: nextCount });
+
+      return { queryKey, previousLikeData } as { queryKey: readonly unknown[]; previousLikeData?: { liked: boolean; count: number } };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.queryKey) {
+        if (context.previousLikeData) {
+          queryClient.setQueryData(context.queryKey, context.previousLikeData);
+        } else {
+          queryClient.removeQueries({ queryKey: context.queryKey });
+        }
+      }
+    },
     onSuccess: (_, variables) => {
       // Only invalidate specific tweet like status
       queryClient.invalidateQueries({ 
-        queryKey: queryKeys.tweets.likes(variables.tweetId, variables.userId) 
+        queryKey: queryKeys.tweets.likes(variables.tweetId, variables.userId, variables.castId) 
       });
     },
   });

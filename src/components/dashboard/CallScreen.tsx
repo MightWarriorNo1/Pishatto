@@ -1,7 +1,7 @@
 /*eslint-disable */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Clock, Flag, UserRound, HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus, X } from 'lucide-react';
+import { ChevronLeft, Clock, Flag, UserRound, HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus, X, Calendar } from 'lucide-react';
 import StepRequirementScreen from './StepRequirementScreen';
 import { createFreeCall, createFreeCallReservation, fetchRanking, getGuestChats, getCastCountsByLocation, getCastList } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
@@ -30,6 +30,13 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     }
 
     return `${APP_BASE_URL}/${avatars[0]}`;
+};
+
+// Helper to work with combined area values like "name/prefecture"
+const getAreaNamePart = (area: string | undefined | null): string => {
+    if (!area) return '';
+    const parts = String(area).split('/');
+    return parts[0] || '';
 };
 
 // Add interface for applied cast data
@@ -215,6 +222,53 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
     const total = counts.reduce((a, b) => a + b, 0);
     const [showCustomTimeModal, setShowCustomTimeModal] = useState(false);
     const [showCustomDurationModal, setShowCustomDurationModal] = useState(false);
+    const [areaOptions, setAreaOptions] = useState<{ name: string; prefecture: string }[]>([]);
+    const [areasLoading, setAreasLoading] = useState<boolean>(false);
+    const [areasError, setAreasError] = useState<string | null>(null);
+    const [showAreaModal, setShowAreaModal] = useState<boolean>(false);
+
+    // Fetch active locations and format as `prefecture/name`
+    useEffect(() => {
+        const loadAreas = async () => {
+            try {
+                setAreasLoading(true);
+                setAreasError(null);
+                // Use public API: name -> [prefecture]
+                const mapping = await locationService.getPrefecturesByLocation();
+                const pairs: { name: string; prefecture: string }[] = [];
+                Object.entries(mapping || {}).forEach(([name, prefs]) => {
+                    (prefs as string[]).forEach((pref) => {
+                        if (pref && name) {
+                            pairs.push({ name, prefecture: pref });
+                        }
+                    });
+                });
+                // Deduplicate by key `${prefecture}/${name}`
+                const seen = new Set<string>();
+                const unique = pairs.filter(p => {
+                    const key = `${p.name}/${p.prefecture}`;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+                setAreaOptions(unique);
+                // Initialize selection if current value is not present
+                const combinedSet = new Set(unique.map(p => `${p.name}/${p.prefecture}`));
+                const hasCombined = selectedArea && combinedSet.has(selectedArea);
+                const hasNameOnly = unique.some(p => p.name === selectedArea);
+                if ((!hasCombined && !hasNameOnly) && unique.length > 0) {
+                    setSelectedArea(`${unique[0].name}/${unique[0].prefecture}`);
+                }
+            } catch (e) {
+                console.error('Failed to load areas:', e);
+                setAreasError('エリアの取得に失敗しました');
+                setAreaOptions([]);
+            } finally {
+                setAreasLoading(false);
+            }
+        };
+        loadAreas();
+    }, []);
 
     const handleTimeSelection = (time: string) => {
         if (time === 'それ以外') {
@@ -254,7 +308,7 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
             <div className="px-4 mt-4">
                 <div className="flex items-center mb-2">
                     <span className="font-bold mr-2 flex items-center text-white">
-                        <Flag />
+                        <Clock />
                         何分後に合流しますか？
                     </span>
                     <span className="text-white text-sm ml-auto">*必須</span>
@@ -281,18 +335,30 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
                     </span>
                 </div>
                 <div className="bg-white/10 rounded-lg p-3 border border-white/20 shadow-sm">
-                    <select
-                        className="w-full border rounded px-4 py-2 text-left border-secondary bg-primary text-white appearance-none focus:outline-none focus:ring-2 focus:ring-secondary"
-                        value={selectedArea}
-                        onChange={e => setSelectedArea(e.target.value)}
+                    <button
+                        type="button"
+                        className="w-full border rounded px-4 py-2 text-left border-secondary bg-primary text-white focus:outline-none focus:ring-2 focus:ring-secondary"
+                        onClick={() => setShowAreaModal(true)}
                     >
-                        <option value="東京都">東京都</option>
-                        <option value="大阪府">大阪府</option>
-                        <option value="愛知県">愛知県</option>
-                        <option value="福岡県">福岡県</option>
-                        <option value="北海道">北海道</option>
-                    </select>
+                        {(() => {
+                            if (areasLoading) return '読み込み中...';
+                            if (areasError) return 'エリア取得エラー';
+                            if (selectedArea && selectedArea.includes('/')) return selectedArea;
+                            const match = areaOptions.find(o => o.name === selectedArea || `${o.name}/${o.prefecture}` === selectedArea);
+                            return match ? `${match.name}/${match.prefecture}` : (selectedArea || 'エリアを選択');
+                        })()}
+                    </button>
                 </div>
+                <AreaSelectModal
+                    isOpen={showAreaModal}
+                    onClose={() => setShowAreaModal(false)}
+                    onSelect={(area: string) => {
+                        // area format: name/prefecture (store combined)
+                        setSelectedArea(area);
+                    }}
+                    locations={areaOptions.map(o => `${o.name}/${o.prefecture}`)}
+                    loading={areasLoading}
+                />
             </div>
             {/* People selection */}
             <div className="px-4 mt-4">
@@ -1019,7 +1085,7 @@ function CastSelectionScreen({ onBack, selectedLocation, selectedPrefecture, onN
                                                 </div>
                                                 <div className="flex items-center space-x-2">
                                                     <span className="text-lg font-bold bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
-                                                        {currentCast.grade_points ? (currentCast.grade_points).toLocaleString() : '15,000'}P
+                                                        {currentCast.grade_points ? Number(currentCast.grade_points).toLocaleString() : '15,000'}P
                                                     </span>
                                                     <div className="text-xs opacity-80">/30分</div>
                                                 </div>
@@ -1189,6 +1255,7 @@ function OrderFinalConfirmationScreen({
             const response = await createFreeCallReservation({
                 guest_id: user.id,
                 scheduled_at: scheduledTime.toISOString(),
+                // Store combined as shown in frontend
                 location: selectedArea,
                 duration: hours, // always a number, 4 if '4時間以上'
                 details: `フリーコール: VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, プレミアム:${counts[2]}人, 合計ポイント: ${totalCost.toLocaleString()}P, シチュ: ${selectedSituations.join(',')}, タイプ: ${selectedCastTypes.join(',')}, スキル: ${selectedCastSkills.join(',')}`,
@@ -1301,15 +1368,15 @@ function OrderFinalConfirmationScreen({
                 <div className="bg-white/10 rounded-lg p-4 border border-secondary shadow-sm">
                     <div className="flex justify-between text-sm mb-1 text-white">
                         <span>ロイヤルVIP {counts[0]}人</span>
-                        <span>{15000 * counts[0] * durationHours * 60 / 30}P</span>
+                        <span>{(15000 * counts[0] * durationHours * 60 / 30).toLocaleString()}P</span>
                     </div>
                     <div className="flex justify-between text-sm mb-1 text-white">
                         <span>VIP {counts[1]}人</span>
-                        <span>{12000 * counts[1] * durationHours * 60 / 30}P</span>
+                        <span>{(12000 * counts[1] * durationHours * 60 / 30).toLocaleString()}P</span>
                     </div>
                     <div className="flex justify-between text-sm mb-1 text-white">
                         <span>プレミアム {counts[2]}人</span>
-                        <span>{9000 * counts[2] * durationHours * 60 / 30}P</span>
+                        <span>{(9000 * counts[2] * durationHours * 60 / 30).toLocaleString()}P</span>
                     </div>
                     <div className="flex justify-between text-sm mt-2 text-white">
                         <span>小計</span>
@@ -1517,6 +1584,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
 
     const { user, refreshUser } = useUser();
     const [showAvailableCastsModal, setShowAvailableCastsModal] = useState(false);
+    const [showCalendar, setShowCalendar] = useState(false);
 
     useEffect(() => {
         const fetchLocationsAndCounts = async () => {
@@ -1571,6 +1639,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             const requestData = {
                 guest_id: user.id,
                 scheduled_at: scheduledTime.toISOString(),
+                // Store combined as shown in frontend
                 location: selectedArea,
                 duration: hours,
                 custom_duration_hours: customDurationHours || undefined,
@@ -1696,7 +1765,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                 }
             }}
             isProcessingFreeCall={isProcessingFreeCall}
-            defaultSelectedArea={selectedArea}
+            defaultSelectedArea={getAreaNamePart(selectedArea)}
         />
     );
     if (page === 'castSelection') return (
@@ -1791,7 +1860,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                 </div>
                 <div className="bg-white/10 rounded-lg p-3 border border-white/20">
                     <span className="text-white font-bold text-lg">{selectedArea}</span>
-                    <div className="text-white/70 text-xs mt-1">現在のキャスト数: {locationCastCounts[selectedArea] ?? 0}人</div>
+                    <div className="text-white/70 text-xs mt-1">現在のキャスト数: {locationCastCounts[getAreaNamePart(selectedArea)] ?? 0}人</div>
                 </div>
                 <AreaSelectModal
                     isOpen={showAreaModal}
@@ -1842,7 +1911,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                                 <span className="text-white font-bold text-lg">選</span>
                             </div>
                             <div>
-                                <h3 className="text-xl font-bold text-white">ピシャット</h3>
+                                <h3 className="text-xl font-bold text-white">ピシャット（指名で）呼ぶ</h3>
                                 <p className="text-white/70 text-sm">キャスト選択</p>
                             </div>
                         </div>
@@ -1875,6 +1944,20 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                     <ChevronRight size={20} />
                 </button>
             </div>
+
+            {/* Calendar Button */}
+            {/* <div className="px-4 mb-6">
+                <button
+                    className="w-full flex items-center justify-between bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 rounded-2xl shadow-xl hover:shadow-2xl font-bold text-lg focus:outline-none transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                    onClick={() => setShowCalendar(true)}
+                >
+                    <span className="flex items-center gap-3">
+                        <Calendar size={24} />
+                        カレンダー
+                    </span>
+                    <ChevronRight size={20} />
+                </button>
+            </div> */}
 
             {/* Enhanced Available Casts Section */}
             <div className="px-4 mb-6">
@@ -1960,11 +2043,12 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
 };
 
 // Enhanced Area selection modal
-function AreaSelectModal({ isOpen, onClose, onSelect, locations }: {
+function AreaSelectModal({ isOpen, onClose, onSelect, locations, loading }: {
     isOpen: boolean;
     onClose: () => void;
     onSelect: (area: string) => void;
     locations: string[];
+    loading?: boolean;
 }) {
     const areaOptions = locations;
     const [area, setArea] = useState<string>('');
@@ -1975,7 +2059,7 @@ function AreaSelectModal({ isOpen, onClose, onSelect, locations }: {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-gradient-to-b from-primary to-blue-900 border border-white/20 rounded-3xl p-8 w-96 max-w-[90%] shadow-2xl">
+            <div className="bg-gradient-to-b from-primary to-blue-900 border border-white/20 rounded-3xl p-8 w-96 max-w-[90%] h-96 overflow-y-auto scrollbar-hidden shadow-2xl">
                 <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-b from-secondary to-red-500 rounded-full flex items-center justify-center">
@@ -1996,27 +2080,37 @@ function AreaSelectModal({ isOpen, onClose, onSelect, locations }: {
 
                 <div className="mb-8">
                     <label className="block text-white mb-4 font-semibold">エリア</label>
-                    <div className="space-y-3">
-                        {areaOptions.map(opt => (
-                            <button
-                                key={opt}
-                                onClick={() => setArea(opt)}
-                                className={`w-full p-4 rounded-2xl border-2 transition-all duration-200 text-left ${area === opt
-                                    ? 'bg-gradient-to-r from-secondary to-red-500 text-white border-secondary shadow-lg'
-                                    : 'bg-white/10 text-white border-white/20 hover:border-white/40 hover:bg-white/20'
-                                    }`}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <span className="font-semibold">{opt}</span>
-                                    {area === opt && (
-                                        <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                                            <span className="text-secondary text-xs font-bold">✓</span>
+                    {loading ? (
+                        <div className="flex items-center justify-center py-10">
+                            <Spinner />
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {areaOptions.length === 0 ? (
+                                <div className="text-white/70 text-sm text-center py-8">エリアがありません</div>
+                            ) : (
+                                areaOptions.map(opt => (
+                                    <button
+                                        key={opt}
+                                        onClick={() => setArea(opt)}
+                                        className={`w-full p-4 rounded-2xl border-2 transition-all duration-200 text-left ${area === opt
+                                            ? 'bg-gradient-to-r from-secondary to-red-500 text-white border-secondary shadow-lg'
+                                            : 'bg-white/10 text-white border-white/20 hover:border-white/40 hover:bg-white/20'
+                                            }`}
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-semibold">{opt}</span>
+                                            {area === opt && (
+                                                <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                                                    <span className="text-secondary text-xs font-bold">✓</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            </button>
-                        ))}
-                    </div>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex gap-3">
@@ -2028,10 +2122,149 @@ function AreaSelectModal({ isOpen, onClose, onSelect, locations }: {
                     </button>
                     <button
                         onClick={() => { onSelect(area); onClose(); }}
-                        className="flex-1 bg-gradient-to-r from-secondary to-red-500 text-white py-4 rounded-2xl hover:from-red-500 hover:to-red-600 transition-all duration-200 font-semibold shadow-lg"
+                        disabled={loading || !area}
+                        className={`flex-1 py-4 rounded-2xl transition-all duration-200 font-semibold shadow-lg ${loading || !area
+                            ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-secondary to-red-500 text-white hover:from-red-500 hover:to-red-600'
+                        }`}
                     >
                         決定
                     </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// Add Calendar Popup Window Component
+function CalendarPopupWindow({ isOpen, onClose }: {
+    isOpen: boolean;
+    onClose: () => void;
+}) {
+    if (!isOpen) return null;
+
+    // Get current date and time for display
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long'
+    });
+    const currentTime = now.toLocaleTimeString('ja-JP', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    // Mock data for demonstration - in real implementation, this would come from props or API
+    const occurrencePoints = 15000; // Example points
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-b from-primary to-blue-900 border border-white/20 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-secondary to-red-600 px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                            <Calendar className="text-white w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-white">予約カレンダー</h3>
+                            <p className="text-white/80 text-sm">予約詳細情報</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="text-white hover:text-gray-300 p-2 rounded-full hover:bg-white/10 transition-all duration-200"
+                    >
+                        <X size={24} />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                    {/* Date Section */}
+                    <div className="bg-white/10 rounded-2xl p-4 mb-4 border border-white/20">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-gradient-to-b from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+                                <Calendar className="text-white w-5 h-5" />
+                            </div>
+                            <div>
+                                <h4 className="text-white font-semibold text-lg">予約日時</h4>
+                                <p className="text-white/70 text-sm">Reservation Date & Time</p>
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-white text-2xl font-bold mb-2">{currentDate}</div>
+                            <div className="text-white/80 text-lg">{currentTime}</div>
+                        </div>
+                    </div>
+
+                    {/* Cast Members Section */}
+                    <div className="bg-white/10 rounded-2xl p-4 mb-4 border border-white/20">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-gradient-to-b from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
+                                <Users className="text-white w-5 h-5" />
+                            </div>
+                            <div>
+                                <h4 className="text-white font-semibold text-lg">キャスト人数</h4>
+                                <p className="text-white/70 text-sm">Number of Cast Members</p>
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-white text-3xl font-bold mb-2">1</div>
+                            <div className="text-white/80 text-sm">固定 (Fixed for Chat Screen)</div>
+                        </div>
+                    </div>
+
+                    {/* Time Section */}
+                    <div className="bg-white/10 rounded-2xl p-4 mb-4 border border-white/20">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-gradient-to-b from-green-400 to-green-600 rounded-full flex items-center justify-center">
+                                <Clock className="text-white w-5 h-5" />
+                            </div>
+                            <div>
+                                <h4 className="text-white font-semibold text-lg">利用時間</h4>
+                                <p className="text-white/70 text-sm">Duration</p>
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-white text-2xl font-bold mb-2">1時間</div>
+                            <div className="text-white/80 text-sm">1 Hour (Variable)</div>
+                        </div>
+                    </div>
+
+                    {/* Occurrence Points Section */}
+                    <div className="bg-white/10 rounded-2xl p-4 mb-6 border border-white/20">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 bg-gradient-to-b from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center">
+                                <span className="text-white font-bold text-lg">P</span>
+                            </div>
+                            <div>
+                                <h4 className="text-white font-semibold text-lg">発生ポイント</h4>
+                                <p className="text-white/70 text-sm">Occurrence Points</p>
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <div className="text-white text-3xl font-bold mb-2">{occurrencePoints.toLocaleString()}P</div>
+                            <div className="text-white/80 text-sm">30分あたり</div>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
+                        >
+                            閉じる
+                        </button>
+                        <button
+                            className="flex-1 bg-gradient-to-r from-secondary to-red-500 text-white py-3 rounded-xl hover:from-red-500 hover:to-red-600 transition-all duration-200 font-semibold shadow-lg"
+                        >
+                            予約する
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

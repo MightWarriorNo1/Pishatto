@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 
 const navItems = [
     { icon: <Bell size={28} />, label: 'お知らせ' },
-    { icon: <UserPlus size={28} />, label: '今すぐコバト' },
+    { icon: <UserPlus size={28} />, label: '今すぐピシャット' },
     { icon: <House size={28} />, label: '待機所' },
     { icon: <Mail size={28} />, label: 'コンシェルジュ' },
     { icon: <Calendar size={28} />, label: '活動予定' },

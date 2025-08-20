@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useUser } from './UserContext';
+import { useCast } from './CastContext';
 import { getNotificationSettings, NotificationSettings } from '../services/api';
 
 interface NotificationSettingsContextType {
@@ -17,6 +18,7 @@ interface NotificationSettingsProviderProps {
 
 export const NotificationSettingsProvider: React.FC<NotificationSettingsProviderProps> = ({ children }) => {
   const { user } = useUser();
+  const { castId } = useCast();
   const [settings, setSettings] = useState<NotificationSettings>({
     footprints: true,
     likes: true,
@@ -31,14 +33,20 @@ export const NotificationSettingsProvider: React.FC<NotificationSettingsProvider
 
   useEffect(() => {
     const loadSettings = async () => {
-      if (!user?.id) {
+      // Determine which user type is active for notification settings
+      const isGuest = Boolean(user?.id);
+      const isCast = !isGuest && Boolean(castId);
+
+      if (!isGuest && !isCast) {
         setLoading(false);
         return;
       }
-      
+
       try {
         setLoading(true);
-        const userSettings = await getNotificationSettings('guest', user.id);
+        const userType = isGuest ? 'guest' : 'cast';
+        const targetId = isGuest ? (user as any).id : (castId as number);
+        const userSettings = await getNotificationSettings(userType as 'guest' | 'cast', targetId);
         setSettings(userSettings);
       } catch (error) {
         console.error('Error loading notification settings:', error);
@@ -49,7 +57,7 @@ export const NotificationSettingsProvider: React.FC<NotificationSettingsProvider
     };
 
     loadSettings();
-  }, [user?.id]);
+  }, [user?.id, castId]);
 
   const updateSettings = (newSettings: Partial<NotificationSettings>) => {
     setSettings(prev => ({ ...prev, ...newSettings }));

@@ -1,15 +1,18 @@
 /*eslint-disable */
 import React, { useState } from 'react';
-import { ChevronLeft, Share2, Eye, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ExternalLink } from 'lucide-react';
 import { createReceipt,  Receipt } from '../../services/api';
 
 interface ReceiptConfirmationPageProps {
   onBack: () => void;
+  onIssued: (issuedAt: string) => void;
   receiptData: {
     recipientName: string;
     memo: string;
     emailAddress: string;
   };
+  userType: 'guest' | 'cast';
+  userId: number;
   transactionData?: {
     amount: number;
     type: string;
@@ -20,7 +23,10 @@ interface ReceiptConfirmationPageProps {
 
 const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({ 
   onBack, 
+  onIssued,
   receiptData,
+  userType,
+  userId,
   transactionData 
 }) => {
   const [receipt, setReceipt] = useState<Receipt | null>(null);
@@ -39,14 +45,18 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
 
     try {
       const newReceipt = await createReceipt({
-        user_type: 'guest', // This should be dynamic based on user type
-        user_id: 1, // This should be the actual user ID
+        user_type: userType,
+        user_id: userId,
         recipient_name: receiptData.recipientName,
         amount: transactionData.amount,
         purpose: receiptData.memo || 'pishatto利用料',
+        transaction_created_at: transactionData.created_at,
       });
 
       setReceipt(newReceipt);
+      if (newReceipt.issued_at) {
+        onIssued(newReceipt.issued_at);
+      }
       
       // Generate shareable URL for the receipt
       const baseUrl = window.location.origin;
@@ -118,26 +128,6 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
                 領収書のURLを共有するか、直接アクセスできます
               </div>
               
-              {/* Share Button */}
-              {/* <button
-                onClick={() => {
-                  if (navigator.share) {
-                    navigator.share({
-                      title: '領収書',
-                      text: 'pishattoの領収書です',
-                      url: shareableUrl
-                    });
-                  } else {
-                    // Fallback: copy to clipboard
-                    navigator.clipboard.writeText(shareableUrl);
-                    alert('URLをクリップボードにコピーしました');
-                  }
-                }}
-                className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
-              >
-                <Share2 size={16} />
-                URLを共有
-              </button> */}
 
               {/* Open Receipt Button */}
               <a

@@ -1,6 +1,6 @@
 /*eslint-disable */
 import React, { useEffect, useState } from 'react';
-import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight, ChevronLeft, Medal, Calendar, LogOut } from 'lucide-react';
+import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight, ChevronLeft, Medal, Calendar, LogOut, RefreshCcw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CastGiftBoxPage from './CastGiftBoxPage';
 import CastActivityRecordPage from './CastActivityRecordPage';
@@ -97,6 +97,7 @@ const CastProfilePage: React.FC = () => {
     const [showQRCode, setShowQRCode] = useState(false);
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [selectedMonth, setSelectedMonth] = useState<'current' | 'last'>('current');
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     // Use React Query hooks for data fetching
     const {
@@ -113,7 +114,8 @@ const CastProfilePage: React.FC = () => {
     const {
         data: ranking,
         isLoading: rankingLoading,
-        error: rankingError
+        error: rankingError,
+        refetch: refetchRanking
     } = useCastMonthlyRanking(castId || 0, selectedMonth);
 
     // Get notification count using the existing API function
@@ -206,6 +208,17 @@ const CastProfilePage: React.FC = () => {
         // React Query will automatically refetch when the month changes
     };
 
+    const handleRefresh = async () => {
+        try {
+            setIsRefreshing(true);
+            // Invalidate cached cast data and explicitly refetch ranking
+            invalidateAllCastData?.();
+            await refetchRanking();
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
     // Handle logout with confirmation
     const handleLogout = () => {
         setShowLogoutConfirm(true);
@@ -270,7 +283,7 @@ const CastProfilePage: React.FC = () => {
                 </div>
             </div>
             {/* Main content container with proper spacing */}
-            <div className="pt-16 pb-24">
+            <div className="pt-16">
             {/* Campaign/Event Banners */}
             <div className="px-4 pt-2 flex flex-col items-center">
                 <div className="rounded-lg overflow-hidden mb-2 w-full border-2 border-secondary relative">
@@ -396,6 +409,20 @@ const CastProfilePage: React.FC = () => {
                             <option value="current">今月</option>
                             <option value="last">先月</option>
                         </select>
+                        <button
+                            onClick={handleRefresh}
+                            disabled={isRefreshing || rankingLoading}
+                            className="ml-1 text-xs bg-white/10 hover:bg-white/20 text-white px-2 py-1 rounded border border-white/20 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1"
+                        >
+                            {isRefreshing || rankingLoading ? (
+                                <>
+                                    <RefreshCcw size={12} className="animate-spin" />
+                                    <span>更新中...</span>
+                                </>
+                            ) : (
+                                <span>更新</span>
+                            )}
+                        </button>
                     </div>
                 </div>
                 
@@ -527,7 +554,7 @@ const CastProfilePage: React.FC = () => {
             </div>
             {/* Info/Warning Box */}
             <div className="bg-white/10 border border-secondary rounded-lg mx-4 my-2 p-4 text-xs text-white">
-                <div className="mb-2">通報・クレーム・低評価など以外にも、以下の事例等が確認された場合、アカウントが凍結となりサービスの利用ができなくなります。</div>
+                <div>通報・クレーム・低評価など以外にも、以下の事例等が確認された場合、アカウントが凍結となりサービスの利用ができなくなります。</div>
                 <ul className="list-disc pl-5 mb-2">
                     <li>中抜き、現金の授受行為</li>
                     <li>タイマーの虚偽報告</li>
@@ -539,9 +566,10 @@ const CastProfilePage: React.FC = () => {
                 </ul>
                 <div>残念ながら毎月一定のキャストが該当してしまっています。日本一笑顔を作り、日本一稼げるサービスを一緒につくっていきましょう。</div>
             </div>
+            </div>
 
             {/* Logout Section */}
-            <div className="px-4 pb-4">
+            <div className="px-4 pb-32">
                 <div className="bg-white/10 rounded-lg border border-red-400/30 overflow-hidden">
                     <button 
                         onClick={handleLogout}
@@ -578,9 +606,8 @@ const CastProfilePage: React.FC = () => {
                     </div>
                 </div>
             )}
-            </div>
         </div>
     );
 };
 
-export default CastProfilePage; 
+export default CastProfilePage;

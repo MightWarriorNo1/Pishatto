@@ -47,7 +47,7 @@ export const queryKeys = {
   tweets: {
     all: () => ['tweets', 'all'] as const,
     user: (userType: string, userId: number) => ['tweets', 'user', userType, userId] as const,
-    likes: (tweetId: number, userId?: number) => ['tweets', 'likes', tweetId, userId] as const,
+    likes: (tweetId: number, guestId?: number, castId?: number) => ['tweets', 'likes', tweetId, guestId, castId] as const,
   },
 };
 

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Heart, MessageSquare, User, MapPin, Briefcase, GraduationCap, DollarSign, GlassWater, Cigarette, Users, Home, Star } from 'lucide-react';
-import { getGuestProfileById, GuestProfile, likeGuest, createChat, getLikeStatus, recordGuestVisit } from '../services/api';
+import { getGuestProfileById, GuestProfile, likeGuest, createChat, getLikeStatus, recordGuestVisit, checkNotificationEnabled } from '../services/api';
 import { useNotificationSettings } from '../contexts/NotificationSettingsContext';
 import { useCast } from '../contexts/CastContext';
 import Spinner from '../components/ui/Spinner';
@@ -29,15 +29,12 @@ const GuestDetail: React.FC = () => {
     const { id } = useParams();
     const { castId } = useCast() as any;
     const navigate = useNavigate();
-    const { isNotificationEnabled } = useNotificationSettings();
+    const { isNotificationEnabled, loading: notificationLoading } = useNotificationSettings();
     const [guest, setGuest] = useState<GuestProfile | null>(null);
     const [loading, setLoading] = useState(true);
     const [liked, setLiked] = useState(false);
     const [messageLoading, setMessageLoading] = useState(false);
 
-
-    console.log('castId', castId);
-    console.log('id', id);
     useEffect(() => {
         if (id) {
             setLoading(true);
@@ -53,16 +50,30 @@ const GuestDetail: React.FC = () => {
         }
     }, [id]);
 
+    const hasRecordedVisitRef = React.useRef<string | null>(null);
     useEffect(() => {
-        if (castId && guest?.id) {
-            // Check if footprint notifications are enabled before recording visit
-            const isFootprintNotificationEnabled = isNotificationEnabled('footprints');
-            
-            if (isFootprintNotificationEnabled) {
-                recordGuestVisit(Number(castId), guest.id);
+        if (!castId || !guest?.id) return;
+
+        const key = `${castId}-${guest.id}`;
+        if (hasRecordedVisitRef.current === key) return; // prevent duplicate within this view
+
+        let isMounted = true;
+        (async () => {
+            try {
+                // Check the GUEST's setting, not the cast's
+                const { enabled } = await checkNotificationEnabled('guest', guest.id, 'footprints');
+                if (!isMounted) return;
+                if (enabled) {
+                    hasRecordedVisitRef.current = key;
+                    await recordGuestVisit(Number(castId), guest.id);
+                }
+            } catch (err) {
+                console.error('Error recording guest visit:', err);
             }
-        }
-    }, [castId, guest?.id, isNotificationEnabled]);
+        })();
+
+        return () => { isMounted = false; };
+    }, [castId, guest?.id]);
     
     // Initialize liked state from localStorage to avoid reset on refresh
     useEffect(() => {
@@ -100,7 +111,10 @@ const GuestDetail: React.FC = () => {
     };
 
     const handleAction = async () => {
+        console.log('guest', guest);
+        console.log('castId', castId);
         if (!guest || !castId) return;
+        console.log('liked', liked);
         if (!liked) {
             // First click: like the guest and persist locally
             setMessageLoading(true);
@@ -120,8 +134,12 @@ const GuestDetail: React.FC = () => {
             setMessageLoading(true);
             try {
                 const chatRes = await createChat(Number(castId), guest.id);
-                const chatId = chatRes.chat.id;
-                navigate(`/cast/${chatId}/message`);
+                const chatId = (chatRes && (chatRes.chat?.id ?? chatRes.id ?? chatRes.chat_id)) as number | undefined;
+                if (chatId) {
+                    navigate(`/cast/${chatId}/message`);
+                } else {
+                    console.error('Chat ID not found in createChat response:', chatRes);
+                }
             } catch (error) {
                 console.error('Error opening message:', error);
             } finally {

@@ -66,12 +66,14 @@ const MessageProposalPage: React.FC<{
     onProposalSend?: (proposal: any) => void;
     chatId: number;
     groupInfo?: GroupInfo;
-}> = ({ onBack, onProposalSend, chatId, groupInfo }) => {
+    openedByGuest?: boolean; // New prop to determine who opened the page
+}> = ({ onBack, onProposalSend, chatId, groupInfo, openedByGuest = false }) => {
     const navigate = useNavigate();
     const [date, setDate] = useState('');
     const [people, setPeople] = useState('1名');
     const [duration, setDuration] = useState('2時間');
     const [guestData, setGuestData] = useState<GuestData | null>(null);
+    const [castData, setCastData] = useState<any>(null);
     const [castCategory, setCastCategory] = useState<string | undefined>(undefined);
     const [loading, setLoading] = useState(true);
     const now = new Date();
@@ -135,10 +137,27 @@ const MessageProposalPage: React.FC<{
                 // Get cast profile to determine category for points calculation
                 if (castId) {
                     try {
-                        const castData = await getCastProfileById(castId);
-                        setCastCategory(castData.cast?.category);
+                        const castProfile = await getCastProfileById(castId);
+                        setCastCategory(castProfile.cast?.category);
+                        
+                        // If opened by guest, store cast data for display
+                        if (openedByGuest) {
+                            setCastData(castProfile.cast);
+                        }
                     } catch (error) {
                         console.error('Failed to fetch cast profile:', error);
+                    }
+                }
+
+                // If opened by guest and we don't have cast data yet, try to get it from chat info
+                if (openedByGuest && !castData && chat.cast_id) {
+                    try {
+                        const castProfile = await getCastProfileById(chat.cast_id);
+                        if (castProfile?.cast) {
+                            setCastData(castProfile.cast);
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch cast profile for guest view:', error);
                     }
                 }
             } catch (error) {
@@ -167,14 +186,14 @@ const MessageProposalPage: React.FC<{
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-primary flex flex-col items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-b from-primary via-primary/50 to-secondary flex flex-col items-center justify-center">
                 <Spinner />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-primary flex flex-col items-center pb-24">
+        <div className="min-h-screen bg-gradient-to-b from-primary via-primary/50 to-secondary flex flex-col items-center pb-24">
             {/* Top Bar */}
             <div className="w-full max-w-md flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
                 
@@ -185,7 +204,7 @@ const MessageProposalPage: React.FC<{
                     {groupInfo?.isGroupChat ? (
                         // Group chat display
                         <>
-                            <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center mr-2">
+                            <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center mr-2">
                                 <span className="text-white text-sm font-bold">
                                     {groupInfo.participants.length}
                                 </span>
@@ -197,8 +216,32 @@ const MessageProposalPage: React.FC<{
                                 </span>
                             </span>
                         </>
+                    ) : openedByGuest ? (
+                        // When opened by guest, show cast information
+                        <>
+                            <img 
+                                src={castData?.avatar ? `${API_BASE_URL}/${castData.avatar}` : "/assets/avatar/1.jpg"} 
+                                alt="avatar" 
+                                className="w-9 h-9 rounded-full mr-2 border border-secondary cursor-pointer" 
+                                onClick={() => {
+                                    if (castData?.id) {
+                                        try {
+                                            navigate(`/cast/${castData.id}`);
+                                        } catch (error) {
+                                            console.error('Failed to navigate to cast profile:', error);
+                                        }
+                                    }
+                                }}
+                            />
+                            <span className="font-semibold text-lg flex flex-row text-white">
+                                {castData?.nickname || 'キャスト'} 
+                                <span className="text-white">
+                                    <Heart />
+                                </span>
+                            </span>
+                        </>
                     ) : (
-                        // Individual chat display
+                        // When opened by cast, show guest information
                         <>
                             <img 
                                 src={guestData?.avatar ? `${API_BASE_URL}/${guestData.avatar}` : "/assets/avatar/1.jpg"} 
@@ -206,7 +249,11 @@ const MessageProposalPage: React.FC<{
                                 className="w-9 h-9 rounded-full mr-2 border border-secondary cursor-pointer" 
                                 onClick={() => {
                                     if (guestData?.id) {
-                                        navigate(`/guest/${guestData.id}`);
+                                        try {
+                                            navigate(`/guest/${guestData.id}`);
+                                        } catch (error) {
+                                            console.error('Failed to navigate to guest profile:', error);
+                                        }
                                     }
                                 }}
                             />
@@ -231,14 +278,31 @@ const MessageProposalPage: React.FC<{
                                 {groupInfo.participants.length}
                             </span>
                         </span>
-                    ) : (
-                        // Individual chat avatar
+                    ) : openedByGuest ? (
+                        // When opened by guest, show cast avatar
                         <span className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
-                            <img 
-                                src={guestData?.avatar ? `${API_BASE_URL}/${guestData.avatar}` : '/assets/avatar/avatar-2.png'} 
-                                className="w-12 h-12 rounded-full object-cover" 
-                                alt="avatar" 
-                            />
+                            {castData?.avatar ? (
+                                <img 
+                                    src={`${API_BASE_URL}/${castData.avatar}`}
+                                    className="w-12 h-12 rounded-full object-cover" 
+                                    alt="avatar" 
+                                />
+                            ) : (
+                                <span className="text-white text-lg font-bold">C</span>
+                            )}
+                        </span>
+                    ) : (
+                        // When opened by cast, show guest avatar
+                        <span className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
+                            {guestData?.avatar ? (
+                                <img 
+                                    src={`${API_BASE_URL}/${guestData.avatar}`}
+                                    className="w-12 h-12 rounded-full object-cover" 
+                                    alt="avatar" 
+                                />
+                            ) : (
+                                <span className="text-white text-lg font-bold">G</span>
+                            )}
                         </span>
                     )}
                 </div>

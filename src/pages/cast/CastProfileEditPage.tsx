@@ -12,6 +12,7 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
         height: '',
         residence: '',
         profile_text: '',
+        grade_points: '',
     });
     const [initialLoading, setInitialLoading] = useState(true);
     const [avatarUploading, setAvatarUploading] = useState(false);
@@ -29,6 +30,7 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
                 height: data.cast.height ? data.cast.height.toString() : '',
                 residence: data.cast.residence || '',
                 profile_text: data.cast.profile_text || '',
+                grade_points: (data.cast.grade_points ?? '').toString(),
             });
             
             // Parse multiple avatars from comma-separated string
@@ -82,6 +84,9 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
         const errors: { [key: string]: string } = {};
         if (!form.nickname.trim()) errors.nickname = 'ニックネームは必須です';
         if (!form.height || isNaN(Number(form.height))) errors.height = '身長は必須です';
+        if (form.grade_points !== '' && (isNaN(Number(form.grade_points)) || Number(form.grade_points) < 0)) {
+            errors.grade_points = '利用料金は0以上の数値で入力してください';
+        }
         return errors;
     };
 
@@ -99,6 +104,7 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
                 id: castId,
                 ...form,
                 height: form.height ? Number(form.height) : undefined,
+                grade_points: form.grade_points !== '' ? Number(form.grade_points) : undefined,
             });
             setSuccess(true);
             // Call the onProfileUpdate callback if provided
@@ -211,6 +217,17 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
                     className="w-full mb-4 p-2 rounded text-primary"
                     disabled={avatarUploading || saving}
                 />
+                <label className="block text-white mb-2">利用料金（30分あたりのポイント）</label>
+                <input
+                    type="number"
+                    name="grade_points"
+                    value={form.grade_points}
+                    onChange={handleChange}
+                    className="w-full mb-1 p-2 rounded text-primary"
+                    disabled={avatarUploading || saving}
+                    min={0}
+                />
+                {validationErrors.grade_points && <div className="text-red-400 text-xs mb-2">{validationErrors.grade_points}</div>}
                 {error && <div className="text-red-500 text-center mb-2">{error}</div>}
                 {success && <div className="text-green-500 text-center mb-2">プロフィールを更新しました！</div>}
                 <button 

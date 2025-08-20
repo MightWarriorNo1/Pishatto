@@ -214,7 +214,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
 
     // Check if user has sufficient points
     if (!user.points || user.points < computedPoints) {
-      setErrorMessage(`ポイントが不足しています。必要ポイント: ${computedPoints.toLocaleString()}P、現在のポイント: ${(user.points || 0).toLocaleString()}P`);
+      setErrorMessage(`ポイントが不足しています。必要ポイント: ${computedPoints.toLocaleString()}P、現在のポイント: ${Number(user.points || 0).toLocaleString()}P`);
       return;
     }
 
@@ -245,7 +245,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
         reservation_name: reservationName,
         duration: hours,
         points: finalComputedPoints,
-        details: `予約名: ${reservationName}, キャスト: ${selectedCast.nickname}, 合流エリア: ${meetingArea}, 設定時間: ${updatedDuration}, 使用ポイント: ${finalComputedPoints}P, 合流時間: ${scheduledDate.toLocaleString()}`,
+        details: `予約名: ${reservationName}, キャスト: ${selectedCast.nickname}, 合流エリア: ${meetingArea}, 設定時間: ${updatedDuration}, 使用ポイント: ${finalComputedPoints.toLocaleString()}P, 合流時間: ${scheduledDate.toLocaleString()}`,
       };
 
       const reservation = await createReservation(reservationData);
@@ -389,7 +389,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
           </span>
         </div>
         <p className="text-xs text-white mt-2 leading-relaxed">
-          ※鍵付きの個室やレンタルスペース・マンションやホテル等の個室利用、または「合流場所」が「合流エリア」と異なる場合、キャストと合流できず100%有償でのキャンセルとなります。
+          ※「合流場所」が「合流エリア」と異なる場合、キャストと合流できず100%有償でのキャンセルとなります。。
         </p>
       </div>
 

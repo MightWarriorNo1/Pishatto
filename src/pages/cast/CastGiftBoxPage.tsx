@@ -53,7 +53,7 @@ const CastGiftBoxPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     {gift.gift_icon} {gift.gift_name}
                                 </div>
                             </div>
-                            <div className="text-white font-bold text-lg ml-2">+{gift.points}P</div>
+                            <div className="text-white font-bold text-lg ml-2">+{Number(gift.points).toLocaleString()}P</div>
                         </div>
                     ))
                 )}

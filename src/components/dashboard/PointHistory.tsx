@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getPointTransactions } from '../../services/api';
+import { getPointTransactions, getReceipts } from '../../services/api';
 import { ChevronLeft } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import ReceiptIssuancePage from './ReceiptIssuancePage';
@@ -27,6 +27,7 @@ interface PointTransactionData {
     nickname: string;
     avatar?: string;
   };
+  receipt_issued_at?: string; // frontend-added field from receipts lookup
 }
 
 interface PointHistoryProps {
@@ -48,17 +49,38 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
   const [error, setError] = useState<string | null>(null);
   const [showReceiptPage, setShowReceiptPage] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<PointTransactionData | null>(null);
+  const [issuedByTransactionKey, setIssuedByTransactionKey] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
     setError(null);
-    getPointTransactions(userType, userId)
-      .then((response) => {
-        if (response.success) {
-          setTransactions(response.transactions || []);
+    Promise.all([
+      getPointTransactions(userType, userId),
+      getReceipts(userType, userId)
+    ])
+      .then(([txResponse, receipts]) => {
+        if (txResponse.success) {
+          const txs: PointTransactionData[] = txResponse.transactions || [];
+          // Build per-transaction key map (date + abs(amount)) => issued_at
+          // date is derived from receipt.transaction_created_at (fallback: created_at)
+          const map: Record<string, string> = {};
+          (receipts || []).forEach((r: any) => {
+            const txDateSrc: string | undefined = r.transaction_created_at || r.created_at;
+            const issuedAt: string | undefined = r.issued_at;
+            if (!txDateSrc || !issuedAt) return;
+            const d = new Date(txDateSrc);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const da = String(d.getDate()).padStart(2, '0');
+            const dateKey = `${y}-${m}-${da}`;
+            const amountKey = String(Math.abs(Number(r.amount)));
+            map[`${dateKey}-${amountKey}`] = issuedAt;
+          });
+          setIssuedByTransactionKey(map);
+          setTransactions(txs);
         } else {
-          setError(response.error || 'ポイント履歴の取得に失敗しました');
+          setError(txResponse.error || 'ポイント履歴の取得に失敗しました');
         }
       })
       .catch(() => setError('ポイント履歴の取得に失敗しました'))
@@ -141,9 +163,7 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
   };
 
   const handleReceiptIssue = (receiptData: ReceiptData) => {
-    
-    // For now, just show an alert and go back
-    alert('領収書が発行されました。メールをご確認ください。');
+    // no-op here; issuance is handled in confirmation page
     handleReceiptBack();
   };
 
@@ -153,6 +173,19 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
       <ReceiptIssuancePage
         onBack={handleReceiptBack}
         onIssue={handleReceiptIssue}
+        onIssued={(issuedAt) => {
+          // Update issued map for this specific transaction (by date + abs(amount))
+          const d = new Date(selectedTransaction.created_at);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const da = String(d.getDate()).padStart(2, '0');
+          const dateKey = `${y}-${m}-${da}`;
+          const amountKey = String(Math.abs(Number(selectedTransaction.amount)));
+          const key = `${dateKey}-${amountKey}`;
+          setIssuedByTransactionKey(prev => ({ ...prev, [key]: issuedAt }));
+        }}
+        userType={userType}
+        userId={userId as number}
         transactionData={{
           amount: selectedTransaction.amount,
           type: getTransactionType(selectedTransaction),
@@ -239,12 +272,31 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
                 
                 {(transaction.type==='pending' || transaction.type==='gift') && (
                   <div className="py-3 text-center border-b border-white">
-                    <button 
-                      className="text-white text-sm hover:text-secondary"
-                      onClick={() => handleReceiptClick(transaction)}
-                    >
-                      領収書を発行する
-                    </button>
+                    {(() => {
+                      // Compute tx key for this row
+                      const d = new Date(transaction.created_at);
+                      const y = d.getFullYear();
+                      const m = String(d.getMonth() + 1).padStart(2, '0');
+                      const da = String(d.getDate()).padStart(2, '0');
+                      const dateKey = `${y}-${m}-${da}`;
+                      const amountKey = String(Math.abs(Number(transaction.amount)));
+                      const key = `${dateKey}-${amountKey}`;
+                      const issuedAt = issuedByTransactionKey[key];
+                      if (userType === 'guest' && issuedAt) {
+                        const idate = new Date(issuedAt);
+                        const issuedText = `${idate.getFullYear()}年${String(idate.getMonth()+1).padStart(2,'0')}月${String(idate.getDate()).padStart(2,'0')}日発行済`;
+                        return <span className="text-white text-sm">日付{issuedText}</span>;
+                      }
+                      return (
+                        <button 
+                          className="text-white text-sm hover:text-secondary disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={() => handleReceiptClick(transaction)}
+                          disabled={userType === 'guest' && Boolean(issuedByTransactionKey[key])}
+                        >
+                          領収書を発行する
+                        </button>
+                      );
+                    })()}
                   </div>
                 )}
               </div>

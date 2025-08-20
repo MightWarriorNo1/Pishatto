@@ -12,7 +12,7 @@ import {
   useLikeStatus, 
   useRecordGuestVisit
 } from '../../hooks/useQueries';
-import { fetchRanking } from '../../services/api';
+import { fetchRanking, checkNotificationEnabled } from '../../services/api';
 import CastNotificationPage from './CastNotificationPage';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
@@ -27,7 +27,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 type GuestDetailPageProps = { onBack: () => void; guest: RepeatGuest };
 
 const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
-    const { isNotificationEnabled } = useNotificationSettings();
+    const { isNotificationEnabled, loading: notificationLoading } = useNotificationSettings();
     const [showEasyMessage, setShowEasyMessage] = useState(false);
     const { castId } = useCast();
 
@@ -40,16 +40,29 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
     const recordGuestVisitMutation = useRecordGuestVisit();
 
     // Record visit when cast views guest profile
+    const hasRecordedVisitRef = React.useRef<string | null>(null);
     useEffect(() => {
-        if (castId && guest.id) {
-            // Check if footprint notifications are enabled before recording visit
-            const isFootprintNotificationEnabled = isNotificationEnabled('footprints');
-            
-            if (isFootprintNotificationEnabled) {
-                recordGuestVisitMutation.mutate({ castId, guestId: guest.id });
+        if (!castId || !guest.id) return;
+
+        const key = `${castId}-${guest.id}`;
+        if (hasRecordedVisitRef.current === key) return; // prevent duplicate within this view
+
+        let isMounted = true;
+        (async () => {
+            try {
+                const { enabled } = await checkNotificationEnabled('guest', guest.id, 'footprints');
+                if (!isMounted) return;
+                if (enabled) {
+                    hasRecordedVisitRef.current = key;
+                    recordGuestVisitMutation.mutate({ castId, guestId: guest.id });
+                }
+            } catch (error) {
+                console.error('Failed to check footprint setting or record visit:', error);
             }
-        }
-    }, [castId, guest.id, isNotificationEnabled, recordGuestVisitMutation]);
+        })();
+
+        return () => { isMounted = false; };
+    }, [castId, guest.id, recordGuestVisitMutation]);
     
     if (showEasyMessage) {
         return <EasyMessagePage onClose={() => setShowEasyMessage(false)} />
@@ -65,6 +78,7 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
             const chatRes = await createChatMutation.mutateAsync({ castId: castId as number, guestId: guest.id });
             const chatId = chatRes.chat.id;
             await sendCastMessageMutation.mutateAsync({ chatId, castId: castId as number, message: '👍' });
+            window.location.href = `/cast/${chatId}/message`;
         } catch (error) {
             console.error('Failed to send message:', error);
         }
@@ -577,7 +591,7 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         フィルター適用中: 
                         {filters.region !== '全国' && ` 地域: ${filters.region}`}
                         {(filters.ageRange.min !== 18 || filters.ageRange.max !== 80) && ` 年齢: ${filters.ageRange.min}-${filters.ageRange.max}歳`}
-                        {(filters.minPoints > 0 || filters.maxPoints < 10000) && ` ポイント: ${filters.minPoints}-${filters.maxPoints}P`}
+                        {(filters.minPoints > 0 || filters.maxPoints < 10000) && ` ポイント: ${filters.minPoints.toLocaleString()}-${filters.maxPoints.toLocaleString()}P`}
                     </div>
                 </div>
             )}
@@ -806,10 +820,7 @@ const CastSearchPage: React.FC = () => {
                     <div
                         key={guest.id}
                         className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary flex flex-col items-center p-3"
-                        onClick={() => {
-                            setSelectedGuest(guest);
-                            setShowGuestDetail(true);
-                        }}
+                        onClick={() => navigate(`/guest/${guest.id}`)}
                     >
                         <div className="w-20 h-20 mb-2 relative">
                             <img
@@ -830,10 +841,7 @@ const CastSearchPage: React.FC = () => {
                     <div
                         key={guest.id}
                         className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary flex flex-col items-center p-3"
-                        onClick={() => {
-                            setSelectedGuest(guest);
-                            setShowGuestDetail(true);
-                        }}
+                        onClick={() => navigate(`/guest/${guest.id}`)}
                     >
                         <div className="w-32 h-32 mb-2 relative">
                             <img
@@ -860,8 +868,7 @@ const CastSearchPage: React.FC = () => {
                 onClose={() => setShowAllRepeatGuests(false)}
                 guests={repeatGuests}
                 onSelectGuest={(guest) => {
-                    setSelectedGuest(guest);
-                    setShowGuestDetail(true);
+                    navigate(`/guest/${guest.id}`);
                     setShowAllRepeatGuests(false);
                 }}
             />

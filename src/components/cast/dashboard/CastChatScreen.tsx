@@ -5,9 +5,11 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { useNotificationSettings } from '../../../contexts/NotificationSettingsContext';
 import { useCast } from '../../../contexts/CastContext';
-import { getChatById, getChatMessages, sendMessage } from '../../../services/api';
+import { getChatById, getChatMessages, sendMessage, getReservationById } from '../../../services/api';
 import { useChatMessages } from '../../../hooks/useRealtime';
 import Spinner from '../../ui/Spinner';
+import SessionTimer from '../../ui/SessionTimer';
+import { useSessionManagement } from '../../../hooks/useSessionManagement';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -35,10 +37,42 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
     const [fetching, setFetching] = useState(true);
     const [fetchError, setFetchError] = useState<string | null>(null);
     const [guestInfo, setGuestInfo] = useState<any>(null);
+    const [reservationId, setReservationId] = useState<number | null>(null);
+    const [reservationData, setReservationData] = useState<any>(null);
+    const [showProposalModal, setShowProposalModal] = useState(false);
+    const [selectedProposal, setSelectedProposal] = useState<any>(null);
+    const [proposalMsgId, setProposalMsgId] = useState<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const userTz = dayjs.tz.guess();
     const formatTime = (timestamp: string) => dayjs.utc(timestamp).tz(userTz).format('YYYY-MM-DD HH:mm');
+
+    // Session management
+    const {
+        sessionState,
+        isLoading: sessionLoading,
+        error: sessionError,
+        formatElapsedTime,
+        handleMeet,
+        handleDissolve,
+        acceptProposal: sessionAcceptProposal,
+        resetSession
+    } = useSessionManagement({
+        reservationId,
+        chatId,
+        onSessionStart: () => {
+            console.log('Cast session started');
+        },
+        onSessionEnd: () => {
+            console.log('Cast session ended');
+        },
+        onReservationUpdate: (reservation) => {
+            if (reservation) {
+                setReservationId(reservation.id);
+                setReservationData(reservation);
+            }
+        }
+    });
 
     useEffect(() => {
         setFetching(true);
@@ -60,6 +94,13 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
     useEffect(() => {
         getChatById(chatId).then(chat => {
             if (chat && chat.guest) setGuestInfo(chat.guest);
+            if (chat && chat.reservation_id) {
+                setReservationId(chat.reservation_id);
+                // Fetch reservation details
+                getReservationById(chat.reservation_id).then(reservation => {
+                    setReservationData(reservation);
+                }).catch(() => setReservationData(null));
+            }
         }).catch(() => setGuestInfo(null));
     }, [chatId]);
 
@@ -70,9 +111,18 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
         });
     });
 
+    // Ensure messages are displayed from old to new
+    const sortedMessages = React.useMemo(() => {
+        return [...(messages || [])].sort((a, b) => {
+            const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
+            const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
+            return aTime - bTime;
+        });
+    }, [messages]);
+
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages, fetching]);
+    }, [sortedMessages, fetching]);
 
     const handleSend = async () => {
         if (!input.trim() || sending || !castId) return;
@@ -108,18 +158,84 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                 </div>
             </div>
 
+            {/* Session Timer - Only show if there's an active reservation */}
+            {reservationId && (
+                <div className="fixed max-w-md mx-auto left-0 right-0 top-16 z-20 px-4 py-2 bg-primary border-b border-secondary">
+                    <SessionTimer
+                        isActive={sessionState.isActive}
+                        elapsedTime={sessionState.elapsedTime}
+                        onMeet={handleMeet}
+                        onDissolve={handleDissolve}
+                        isLoading={sessionLoading}
+                        className="w-full"
+                    />
+                </div>
+            )}
+            
             {/* Messages */}
-            <div className="max-w-md mx-auto w-full flex-1 bg-gradient-to-b from-primary via-primary to-secondary overflow-y-auto px-4 py-4" style={{ marginTop: '4rem',minHeight: 0 }}>
+            <div className="max-w-md mx-auto w-full flex-1 bg-gradient-to-b from-primary via-primary to-secondary overflow-y-auto px-4 py-4" style={{ marginTop: reservationId ? '8rem' : '4rem', minHeight: 0 }}>
                 {fetching ? (
                     <Spinner />
                 ) : fetchError ? (
                     <div className="text-center text-red-400 py-10">{fetchError}</div>
-                ) : messages.length === 0 ? (
+                ) : sortedMessages.length === 0 ? (
                     <div className="text-center text-white py-10">メッセージがありません</div>
                 ) : (
-                    messages.map((msg, idx) => {
+                    sortedMessages.map((msg, idx) => {
                         const isFromCast = msg.sender_cast_id && !msg.sender_guest_id;
                         const isSent = isFromCast && castId && String(msg.sender_cast_id) === String(castId);
+                        
+                        // Check if message is a proposal
+                        let proposal: any = null;
+                        let isProposalMessage = false;
+                        try {
+                            if (typeof msg.message === 'string') {
+                                const parsed = JSON.parse(msg.message);
+                                if (parsed && parsed.type === 'proposal') {
+                                    proposal = parsed;
+                                    isProposalMessage = true;
+                                }
+                            }
+                        } catch (e) { 
+                            // Not a JSON message or parsing failed
+                        }
+                        
+                        if (isProposalMessage && proposal) {
+                            // This is a proposal - always display on left side for cast
+                            const isAccepted = reservationData && reservationData.scheduled_at === proposal.date;
+                            
+                            return (
+                                <React.Fragment key={msg.id || idx}>
+                                    {msg.created_at && (
+                                        <div className="flex justify-center my-2">
+                                            <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
+                                                {formatTime(msg.created_at)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-start mb-4">{/* Force proposals to left side for cast */}
+                                        <div 
+                                            className={`bg-orange-600 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative ${isAccepted ? 'opacity-60' : 'cursor-pointer hover:bg-orange-700'}`}
+                                            onClick={!isAccepted ? () => {
+                                                setSelectedProposal(proposal);
+                                                setProposalMsgId(msg.id);
+                                                setShowProposalModal(true);
+                                            } : undefined}
+                                        >
+                                            <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
+                                            <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
+                                            <div>時間：{proposal.duration}</div>
+                                            <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
+                                            <div>（延長：{proposal.extensionPoints?.toLocaleString()}P / 15分）</div>
+                                            {isAccepted && (
+                                                <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">承認済み</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </React.Fragment>
+                            );
+                        }
+                        
                         return (
                             <React.Fragment key={msg.id || idx}>
                                 {msg.created_at && (
@@ -140,6 +256,54 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                 )}
                 <div ref={messagesEndRef} />
             </div>
+
+            {/* Proposal Modal */}
+            {showProposalModal && selectedProposal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
+                        <h2 className="font-bold text-lg mb-4 text-black">予約提案の確認</h2>
+                        <div className="mb-4 text-black">
+                            <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
+                            <div>人数：{selectedProposal.people?.replace(/名$/, '')}人</div>
+                            <div>時間：{selectedProposal.duration}</div>
+                            <div>消費ポイント：{selectedProposal.totalPoints?.toLocaleString()}P</div>
+                            <div>（延長：{selectedProposal.extensionPoints?.toLocaleString()}P / 15分）</div>
+                        </div>
+                        {sessionError && <div className="text-red-500 mb-2">{sessionError}</div>}
+                        <div className="flex gap-4">
+                            <button
+                                className="px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
+                                disabled={sessionLoading}
+                                onClick={async () => {
+                                    try {
+                                        const proposalData = {
+                                            date: selectedProposal.date,
+                                            duration: selectedProposal.duration ? parseInt(selectedProposal.duration as string, 10) : 120,
+                                            totalPoints: selectedProposal.totalPoints,
+                                            guestId: selectedProposal.guestId,
+                                            castId: castId
+                                        };
+                                        await sessionAcceptProposal(proposalData);
+                                        setShowProposalModal(false);
+                                        setSelectedProposal(null);
+                                        setProposalMsgId(null);
+                                    } catch (error) {
+                                        console.error('Failed to accept proposal:', error);
+                                    }
+                                }}
+                            >承認</button>
+                            <button
+                                className="px-4 py-2 bg-gray-400 text-white rounded font-bold"
+                                onClick={() => { 
+                                    setShowProposalModal(false); 
+                                    setSelectedProposal(null); 
+                                    setProposalMsgId(null); 
+                                }}
+                            >キャンセル</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Input */}
             <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t border-secondary flex items-center px-4 py-2 z-20">

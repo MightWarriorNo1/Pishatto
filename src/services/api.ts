@@ -573,6 +573,7 @@ export interface Receipt {
   tax_rate: number;
   total_amount: number;
   purpose: string;
+  transaction_created_at?: string;
   issued_at: string;
   company_name: string;
   company_address: string;
@@ -597,6 +598,7 @@ export const createReceipt = async (data: {
   recipient_name: string;
   amount: number;
   purpose: string;
+  transaction_created_at?: string;
 }): Promise<Receipt> => {
   const response = await api.post('/receipts', data);
   return response.data.receipt;

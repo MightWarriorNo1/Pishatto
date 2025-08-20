@@ -21,6 +21,9 @@ import dayjs from 'dayjs';
 import CastConciergeDetailPage from './CastConciergeDetailPage';
 import CastGroupChatScreen from './CastGroupChatScreen';
 import Spinner from '../../ui/Spinner';
+import { useSessionManagement } from '../../../hooks/useSessionManagement';
+import { startReservation, stopReservation, updateReservation } from '../../../services/api';
+import { useStartReservation } from '../../../hooks/useQueries';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -75,6 +78,21 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     
+    // Proposal modal state
+    const [showProposalModal, setShowProposalModal] = useState(false);
+    const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+    
+    // Local state to track accepted proposals for immediate UI feedback
+    const [acceptedProposals, setAcceptedProposals] = useState<Set<string>>(new Set());
+    
+    // Session management state for proposals
+    const [proposalSessions, setProposalSessions] = useState<Map<string, {
+        isActive: boolean;
+        startTime: Date | null;
+        elapsedTime: number;
+        reservationId: number | null;
+    }>>(new Map());
+    
     // Camera functionality
     const [showCamera, setShowCamera] = useState(false);
     const [cameraError, setCameraError] = useState('');
@@ -90,8 +108,49 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     // React Query hooks
     const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useChatMessages(Number(message.id), castId);
     const { data: chatInfo } = useChatById(Number(message.id));
-    const { data: guestReservations = [] } = useGuestReservations(chatInfo?.guest_id || 0);
+    const { data: guestReservations = [] } = useGuestReservations(chatInfo?.guest?.id || 0);
     const sendMessageMutation = useSendMessage();
+    
+    // Reservation management hooks
+    const startReservationMutation = useStartReservation();
+    
+    // Debug: Log chatInfo structure
+    useEffect(() => {
+        if (chatInfo) {
+            console.log('chatInfo structure:', chatInfo);
+            console.log('chatInfo.guest:', chatInfo.guest);
+            console.log('chatInfo.guest?.id:', chatInfo.guest?.id);
+        }
+    }, [chatInfo]);
+    
+    // Debug: Log guestReservations data
+    useEffect(() => {
+        if (guestReservations.length > 0) {
+            console.log('guestReservations data:', guestReservations);
+        }
+    }, [guestReservations]);
+    
+    // Session management for proposals
+    const {
+        acceptProposal,
+        isLoading: sessionLoading,
+        error: sessionError
+    } = useSessionManagement({
+        chatId: Number(message.id),
+        onReservationUpdate: async (reservation) => {
+            console.log('Reservation updated, invalidating queries:', reservation);
+            // Refetch guest reservations to update the accepted status
+            if (chatInfo?.guest?.id) {
+                await queryClient.invalidateQueries({ 
+                    queryKey: queryKeys.cast.guestReservations(chatInfo.guest.id) 
+                });
+                // Also refetch the chat info to ensure we have the latest data
+                await queryClient.invalidateQueries({ 
+                    queryKey: queryKeys.cast.chatById(Number(message.id)) 
+                });
+            }
+        }
+    });
     
     // Real-time updates using the existing hook
     useRealtimeChatMessages(Number(message.id), (msg: any) => {
@@ -127,6 +186,10 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     useEffect(() => {
         // Force a refetch on mount or when switching chats
         refetchMessages?.();
+        // Clear local accepted proposals when switching chats
+        setAcceptedProposals(new Set());
+        // Don't clear proposal sessions here - they will be restored from localStorage
+        // setProposalSessions(new Map());
     }, [refetchMessages, message.id]);
 
     // Auto scroll to bottom on new messages
@@ -175,6 +238,191 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
             reader.onload = (ev) => setImagePreview(ev.target?.result as string);
             reader.readAsDataURL(file);
         }
+    };
+
+    // Helper function to get localStorage key for sessions
+    const getSessionStorageKey = (chatId: number) => `proposal_sessions_${chatId}`;
+
+    // Load sessions from localStorage on mount and when switching chats
+    useEffect(() => {
+        if (message.id) {
+            const storageKey = getSessionStorageKey(Number(message.id));
+            const savedSessions = localStorage.getItem(storageKey);
+            if (savedSessions) {
+                try {
+                    const parsed = JSON.parse(savedSessions);
+                    const restoredSessions = new Map();
+                    
+                    parsed.forEach(([key, sessionData]: [string, any]) => {
+                        // Restore startTime as Date object
+                        if (sessionData.startTime) {
+                            sessionData.startTime = new Date(sessionData.startTime);
+                        }
+                        restoredSessions.set(key, sessionData);
+                    });
+                    
+                    setProposalSessions(restoredSessions);
+                    console.log('Restored sessions from localStorage for chat', message.id, ':', restoredSessions);
+                } catch (error) {
+                    console.error('Failed to restore sessions from localStorage:', error);
+                }
+            } else {
+                // If no saved sessions, clear the current sessions
+                setProposalSessions(new Map());
+                console.log('No saved sessions found for chat', message.id, '- clearing sessions');
+            }
+        }
+    }, [message.id]);
+
+    // Save sessions to localStorage whenever they change
+    useEffect(() => {
+        if (message.id && proposalSessions.size > 0) {
+            const storageKey = getSessionStorageKey(Number(message.id));
+            const sessionsArray = Array.from(proposalSessions.entries());
+            localStorage.setItem(storageKey, JSON.stringify(sessionsArray));
+            console.log('Saved sessions to localStorage for chat', message.id, ':', sessionsArray);
+        }
+    }, [proposalSessions, message.id]);
+
+    // Cleanup: Save sessions before unmounting or switching chats
+    useEffect(() => {
+        return () => {
+            if (message.id && proposalSessions.size > 0) {
+                const storageKey = getSessionStorageKey(Number(message.id));
+                const sessionsArray = Array.from(proposalSessions.entries());
+                localStorage.setItem(storageKey, JSON.stringify(sessionsArray));
+            }
+        };
+    }, [message.id, proposalSessions]);
+
+    // Session management functions for proposals
+    const startProposalSession = async (proposal: Proposal) => {
+        const proposalKey = `${proposal.date}-${proposal.duration}`;
+        
+        try {
+            // Find the matching reservation
+            const matchingReservation = guestReservations.find((res: any) => {
+                const proposalDate = dayjs(proposal.date);
+                const reservationDate = dayjs(res.scheduled_at);
+                return res.guest_id === chatInfo?.guest?.id &&
+                    reservationDate.isSame(proposalDate, 'day');
+            });
+
+            if (!matchingReservation) {
+                console.error('No matching reservation found for proposal');
+                return;
+            }
+
+            // Start the reservation in the database
+            if (castId) {
+                await startReservationMutation.mutateAsync({
+                    reservationId: matchingReservation.id,
+                    castId: castId
+                });
+            }
+
+            // Update local session state to start the session
+            setProposalSessions(prev => {
+                const newMap = new Map(prev);
+                newMap.set(proposalKey, {
+                    isActive: true,
+                    startTime: new Date(),
+                    elapsedTime: 0,
+                    reservationId: matchingReservation.id
+                });
+                return newMap;
+            });
+
+            console.log('Proposal session started:', proposalKey);
+        } catch (error) {
+            console.error('Failed to start proposal session:', error);
+        }
+    };
+
+
+
+    const exitProposalSession = async (proposal: Proposal) => {
+        const proposalKey = `${proposal.date}-${proposal.duration}`;
+        const session = proposalSessions.get(proposalKey);
+        
+        if (!session) {
+            console.error('No session found for proposal');
+            return;
+        }
+
+        try {
+            // If session is active, stop it first
+            if (session.isActive && castId && session.reservationId) {
+                await stopReservation(session.reservationId, castId);
+            }
+
+            // Update the reservation status to cancelled/exited
+            if (session.reservationId) {
+                await updateReservation(session.reservationId, {
+                    ended_at: new Date().toISOString(),
+                    // Add a status field if your API supports it
+                });
+            }
+
+            // Update local session to inactive instead of removing it
+            setProposalSessions(prev => {
+                const newMap = new Map(prev);
+                newMap.set(proposalKey, {
+                    ...session,
+                    isActive: false,
+                    startTime: null,
+                    elapsedTime: 0
+                });
+                return newMap;
+            });
+
+            // Remove from accepted proposals
+            setAcceptedProposals(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(proposalKey);
+                return newSet;
+            });
+
+            console.log('Proposal session exited:', proposalKey);
+        } catch (error) {
+            console.error('Failed to exit proposal session:', error);
+        }
+    };
+
+    // Timer effect for proposal sessions
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setProposalSessions(prev => {
+                const newMap = new Map(prev);
+                let hasChanges = false;
+
+                newMap.forEach((session, key) => {
+                    if (session.isActive && session.startTime) {
+                        const elapsed = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
+                        if (elapsed !== session.elapsedTime) {
+                            newMap.set(key, { ...session, elapsedTime: elapsed });
+                            hasChanges = true;
+                        }
+                    }
+                });
+
+                return hasChanges ? newMap : prev;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // Format elapsed time for display
+    const formatElapsedTime = (seconds: number): string => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+        
+        if (hours > 0) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+        return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
 
     // Camera functionality
@@ -231,8 +479,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     };
 
     const handleAvatarClick = () => {
-        if (chatInfo?.guest_id) {
-            navigate(`/guest/${chatInfo.guest_id}`);
+        if (chatInfo?.guest?.id) {
+            navigate(`/guest/${chatInfo.guest.id}`);
         }
     };
 
@@ -273,7 +521,6 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                 </div>
             </div>
 
-            {/* Messages area (scrollable between header and input) */}
             <div
                 className="overflow-y-auto px-4 pt-4 scrollbar-hidden"
                 style={{
@@ -293,11 +540,41 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                         if (parsed && parsed.type === 'proposal') proposal = parsed;
                     } catch (e) {}
                     if (proposal) {
+                        // Create a non-null proposal reference for use in the JSX
+                        const currentProposal = proposal;
+                        
                         // Check if proposal is accepted by matching guest_id and scheduled_at
-                        const isAccepted = guestReservations.some((res: any) =>
-                            res.guest_id === chatInfo?.guest_id &&
-                            dayjs(res.scheduled_at).isSame(proposal?.date)
-                        );
+                        // Also check local state for immediate UI feedback
+                        const proposalKey = `${currentProposal.date}-${currentProposal.duration}`;
+                        const isAcceptedFromServer = guestReservations.some((res: any) => {
+                            const proposalDate = dayjs(currentProposal.date);
+                            const reservationDate = dayjs(res.scheduled_at);
+                            const matches = res.guest_id === chatInfo?.guest?.id &&
+                                reservationDate.isSame(proposalDate, 'day'); // Compare only the day, not exact time
+                            
+                            if (matches) {
+                                console.log('Proposal accepted - matching reservation:', res);
+                                console.log('Date comparison:', {
+                                    proposalDate: proposalDate.format('YYYY-MM-DD HH:mm:ss'),
+                                    reservationDate: reservationDate.format('YYYY-MM-DD HH:mm:ss'),
+                                    isSame: reservationDate.isSame(proposalDate, 'day')
+                                });
+                            }
+                            return matches;
+                        });
+                        const isAcceptedLocally = acceptedProposals.has(proposalKey);
+                        const isAccepted = isAcceptedFromServer || isAcceptedLocally;
+                        
+                        console.log('Proposal acceptance check:', {
+                            proposal: currentProposal,
+                            proposalKey,
+                            guestReservations,
+                            chatInfoGuestId: chatInfo?.guest?.id,
+                            isAcceptedFromServer,
+                            isAcceptedLocally,
+                            isAccepted
+                        });
+                        
                         return (
                             <React.Fragment key={msg.id || `p-${idx}`}>
                                 {(idx === 0 || currentDate !== prevDate) && (
@@ -308,17 +585,184 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                         </span>
                                     </div>
                                 )}
-                                <div className="flex justify-end mb-4">
-                                    <div className={`bg-orange-500 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative ${isAccepted ? 'opacity-50' : ''}`}>
-                                        <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
-                                        <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
-                                        <div>時間：{proposal.duration}</div>
-                                        <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
-                                        <div>（延長：{proposal.extensionPoints?.toLocaleString()}P / 15分）</div>
+                                <div className="flex justify-start mb-4">
+                                    <div 
+                                        className={`bg-orange-500 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative ${isAccepted ? 'opacity-50 cursor-default' : 'cursor-pointer hover:bg-orange-600'}`}
+                                        onClick={!isAccepted ? () => {
+                                            setSelectedProposal(currentProposal);
+                                            setShowProposalModal(true);
+                                        } : undefined}
+                                    >
+                                        <div>日程：{currentProposal.date ? new Date(currentProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
+                                        <div>人数：{currentProposal.people?.replace(/名$/, '')}人</div>
+                                        <div>時間：{currentProposal.duration}</div>
+                                        <div>消費ポイント：{currentProposal.totalPoints?.toLocaleString()}P</div>
+                                        <div>（延長：{currentProposal.extensionPoints?.toLocaleString()}P / 15分）</div>
                                         {isAccepted && (
                                             <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">承認済み</span>
                                         )}
                                     </div>
+                                    
+
+                                    
+                                    {/* Enhanced Timer and Controls for Accepted Proposals */}
+                                    {isAccepted && (
+                                        <div className="mt-3 w-full">
+                                            {/* Timer Display */}
+                                            <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-4 border border-blue-400 mb-3">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className="text-white text-sm font-medium">セッションタイマー</span>
+                                                    <div className={`text-2xl font-mono font-bold ${
+                                                        (() => {
+                                                            const proposalKey = `${currentProposal.date}-${currentProposal.duration}`;
+                                                            const session = proposalSessions.get(proposalKey);
+                                                            if (session && session.isActive) {
+                                                                return 'text-green-400';
+                                                            } else if (session && !session.isActive) {
+                                                                return 'text-gray-400';
+                                                            }
+                                                            return 'text-green-400';
+                                                        })()
+                                                    }`}>
+                                                        {(() => {
+                                                            const proposalKey = `${currentProposal.date}-${currentProposal.duration}`;
+                                                            const session = proposalSessions.get(proposalKey);
+                                                            if (session && session.isActive) {
+                                                                return formatElapsedTime(session.elapsedTime);
+                                                            } else if (session && !session.isActive) {
+                                                                // Show final elapsed time for completed sessions
+                                                                return formatElapsedTime(session.elapsedTime);
+                                                            }
+                                                            return '00:00';
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Session Status */}
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <div className="flex items-center space-x-2">
+                                                        {(() => {
+                                                            const proposalKey = `${currentProposal.date}-${currentProposal.duration}`;
+                                                            const session = proposalSessions.get(proposalKey);
+                                                            if (session && session.isActive) {
+                                                                return (
+                                                                    <>
+                                                                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                                                        <span className="text-green-300 text-sm">セッション進行中</span>
+                                                                    </>
+                                                                );
+                                                            } else if (session && !session.isActive) {
+                                                                return (
+                                                                    <>
+                                                                        <div className="w-2 h-2 bg-red-400 rounded-full"></div>
+                                                                        <span className="text-red-300 text-sm">セッション終了</span>
+                                                                    </>
+                                                                );
+                                                            }
+                                                            return (
+                                                                <>
+                                                                    <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                                                    <span className="text-gray-300 text-sm">待機中</span>
+                                                                </>
+                                                            );
+                                                        })()}
+                                                    </div>
+                                                </div>
+                                                
+                                                {/* Single Control Button */}
+                                                <div className="flex space-x-2">
+                                                    <button
+                                                        onClick={async () => {
+                                                            const proposalKey = `${currentProposal.date}-${currentProposal.duration}`;
+                                                            const session = proposalSessions.get(proposalKey);
+                                                            
+                                                            if (!session) {
+                                                                // No session exists, start new session
+                                                                await startProposalSession(currentProposal);
+                                                            } else if (session.isActive) {
+                                                                // Session is active, exit the session
+                                                                if (window.confirm('この予約を終了しますか？この操作は取り消せません。')) {
+                                                                    await exitProposalSession(currentProposal);
+                                                                }
+                                                            }
+                                                            // If session exists but is not active (exited), button is disabled
+                                                        }}
+                                                        disabled={(() => {
+                                                            const proposalKey = `${currentProposal.date}-${currentProposal.duration}`;
+                                                            const session = proposalSessions.get(proposalKey);
+                                                            return session && !session.isActive; // Disabled if session exists but is not active
+                                                        })()}
+                                                        className={`flex-1 px-4 py-2 rounded-lg font-bold text-sm transition-all duration-200 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${
+                                                            (() => {
+                                                                const proposalKey = `${currentProposal.date}-${currentProposal.duration}`;
+                                                                const session = proposalSessions.get(proposalKey);
+                                                                if (!session) {
+                                                                    return 'bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-500/30 hover:shadow-green-500/50';
+                                                                } else if (session.isActive) {
+                                                                    return 'bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30 hover:shadow-red-500/50';
+                                                                } else {
+                                                                    return 'bg-gray-400 text-white cursor-not-allowed';
+                                                                }
+                                                            })()
+                                                        }`}
+                                                    >
+                                                        {(() => {
+                                                            const proposalKey = `${currentProposal.date}-${currentProposal.duration}`;
+                                                            const session = proposalSessions.get(proposalKey);
+                                                            if (!session) {
+                                                                return '▶️ 開始';
+                                                            } else if (session.isActive) {
+                                                                return '🚪 終了';
+                                                            } else {
+                                                                return '終了済み';
+                                                            }
+                                                        })()}
+                                                    </button>
+                                                </div>
+                                                
+                                                {/* Progress Bar for Active Sessions */}
+                                                {(() => {
+                                                    const proposalKey = `${currentProposal.date}-${currentProposal.duration}`;
+                                                    const session = proposalSessions.get(proposalKey);
+                                                    if (session && session.isActive) {
+                                                        const progress = Math.min(Math.round((session.elapsedTime / (Number(currentProposal.duration) * 60)) * 100), 100);
+                                                        return (
+                                                            <div className="mt-3">
+                                                                <div className="flex items-center justify-between text-xs text-gray-300 mb-1">
+                                                                    <span>進捗</span>
+                                                                    <span>{progress}%</span>
+                                                                </div>
+                                                                <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden border border-gray-600/30">
+                                                                    <div 
+                                                                        className="bg-gradient-to-r from-green-400 via-blue-400 to-purple-400 h-2 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                                                                        style={{ width: `${progress}%` }}
+                                                                    ></div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    } else if (session && !session.isActive) {
+                                                        // Show final progress for completed sessions
+                                                        const finalProgress = 100;
+                                                        return (
+                                                            <div className="mt-3">
+                                                                <div className="flex items-center justify-between text-xs text-gray-300 mb-1">
+                                                                    <span>進捗</span>
+                                                                    <span>{finalProgress}%</span>
+                                                                </div>
+                                                                <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden border border-gray-600/30">
+                                                                    <div 
+                                                                        className="bg-gradient-to-r from-gray-400 to-gray-500 h-2 rounded-full"
+                                                                        style={{ width: `${finalProgress}%` }}
+                                                                    ></div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return null;
+                                                })()}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </React.Fragment>
                         );
@@ -401,6 +845,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                 })}
                 <div ref={messagesEndRef} />
             </div>
+
+
 
             {/* Input bar (always fixed at bottom) */}
             <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t border-secondary flex flex-col px-4 py-2 z-20">
@@ -612,6 +1058,81 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                     onClick={() => setLightboxUrl(null)}
                 >
                     <img src={lightboxUrl} alt="preview" className="max-w-[90vw] max-h-[90vh] rounded shadow-lg" />
+                </div>
+            )}
+
+            {/* Proposal Modal */}
+            {showProposalModal && selectedProposal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
+                        <h2 className="font-bold text-lg mb-4 text-black">予約提案の確認</h2>
+                        <div className="mb-4 text-black">
+                            <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '未設定'}～</div>
+                            <div>人数：{selectedProposal.people?.replace(/名$/, '') || '未設定'}人</div>
+                            <div>時間：{selectedProposal.duration || '未設定'}</div>
+                            <div>消費ポイント：{selectedProposal.totalPoints?.toLocaleString() || '0'}P</div>
+                            <div>（延長：{selectedProposal.extensionPoints?.toLocaleString() || '0'}P / 15分）</div>
+                        </div>
+                        {sessionError && <div className="text-red-500 mb-2">{sessionError}</div>}
+                        <div className="flex gap-4">
+                            <button
+                                className="px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
+                                disabled={sessionLoading}
+                                onClick={async () => {
+                                    if (!selectedProposal || !chatInfo?.guest?.id || !selectedProposal.date) {
+                                        console.error('Missing required data for proposal acceptance');
+                                        console.log('Debug info:', { selectedProposal, chatInfo, castId });
+                                        return;
+                                    }
+                                    
+                                    try {
+                                        // Prepare proposal data for acceptance
+                                        const duration = parseInt(selectedProposal.duration?.toString() || '0', 10);
+                                        if (isNaN(duration) || duration <= 0) {
+                                            console.error('Invalid duration for proposal acceptance');
+                                            return;
+                                        }
+                                        
+                                        const proposalData = {
+                                            guest_id: chatInfo.guest.id,
+                                            cast_id: castId,
+                                            date: selectedProposal.date,
+                                            duration: duration,
+                                            reservation_id: selectedProposal.reservationId
+                                        };
+                                        
+                                        console.log('Sending proposal data:', proposalData);
+                                        console.log('chatInfo:', chatInfo);
+                                        console.log('selectedProposal:', selectedProposal);
+                                        
+                                        // Accept the proposal
+                                        await acceptProposal(proposalData);
+                                        
+                                        // Add to local accepted state for immediate UI feedback
+                                        const proposalKey = `${selectedProposal.date}-${duration}`;
+                                        setAcceptedProposals(prev => {
+                                            const newSet = new Set(Array.from(prev));
+                                            newSet.add(proposalKey);
+                                            return newSet;
+                                        });
+                                        
+                                        // Close modal and reset state
+                                        setShowProposalModal(false);
+                                        setSelectedProposal(null);
+                                    } catch (e: any) {
+                                        console.error('Error accepting proposal:', e);
+                                    }
+                                }}
+                            >承認</button>
+                            <button
+                                className="px-4 py-2 bg-gray-400 text-white rounded font-bold"
+                                onClick={() => { 
+                                    setShowProposalModal(false); 
+                                    setSelectedProposal(null); 
+                                }}
+                            >キャンセル</button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div >

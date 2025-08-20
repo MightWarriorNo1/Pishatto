@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronDown, Mail, User, FileText, Send } from 'lucide-react';
 import ReceiptConfirmationPage from './ReceiptConfirmationPage';
 
 interface ReceiptIssuancePageProps {
   onBack: () => void;
   onIssue: (receiptData: ReceiptData) => void;
+  onIssued: (issuedAt: string) => void;
+  userType: 'guest' | 'cast';
+  userId: number;
   transactionData?: {
     amount: number;
     type: string;
@@ -22,13 +25,31 @@ interface ReceiptData {
 const ReceiptIssuancePage: React.FC<ReceiptIssuancePageProps> = ({ 
   onBack, 
   onIssue, 
+  onIssued,
+  userType,
+  userId,
   transactionData 
 }) => {
   const [recipientName, setRecipientName] = useState('株式会社テストて');
-  const [memo, setMemo] = useState('pishatto利用料');
+  const [memo, setMemo] = useState('サービス利用料');
   const [emailAddress, setEmailAddress] = useState('test.jp');
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isMemoDropdownOpen, setIsMemoDropdownOpen] = useState(false);
+  const memoOptions = ['サービス利用料', '施術代', '接待・交際料'];
+  const memoDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (memoDropdownRef.current && !memoDropdownRef.current.contains(event.target as Node)) {
+        setIsMemoDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleIssue = async () => {
     if (!recipientName.trim() || !memo.trim() || !emailAddress.trim()) {
@@ -54,6 +75,9 @@ const ReceiptIssuancePage: React.FC<ReceiptIssuancePageProps> = ({
     return (
       <ReceiptConfirmationPage
         onBack={handleBackFromConfirmation}
+        onIssued={onIssued}
+        userType={userType}
+        userId={userId}
         receiptData={{
           recipientName,
           memo,
@@ -128,17 +152,45 @@ const ReceiptIssuancePage: React.FC<ReceiptIssuancePageProps> = ({
                 <FileText size={16} className="text-indigo-600" />
                 但し書き
               </label>
-              <div className="relative">
+              <div className="relative" ref={memoDropdownRef}>
                 <input
                   type="text"
                   value={memo}
                   onChange={(e) => setMemo(e.target.value)}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white transition-all duration-200 pr-12"
-                  placeholder="pishatto利用料"
+                  placeholder="サービス利用料"
                 />
-                <button className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
+                <button
+                  type="button"
+                  onClick={() => setIsMemoDropdownOpen((prev) => !prev)}
+                  aria-haspopup="listbox"
+                  aria-expanded={isMemoDropdownOpen}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                >
                   <ChevronDown size={16} />
                 </button>
+                {isMemoDropdownOpen && (
+                  <div className="absolute w-full z-20 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg">
+                    <ul className="py-1" role="listbox" aria-label="但し書きを選択">
+                      {memoOptions.map((option) => (
+                        <li key={option}>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={memo === option}
+                            onClick={() => {
+                              setMemo(option);
+                              setIsMemoDropdownOpen(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100"
+                          >
+                            {option}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 {memo.trim() && (
                   <div className="absolute right-12 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full" />
                 )}

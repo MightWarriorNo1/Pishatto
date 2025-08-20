@@ -17,6 +17,30 @@ const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api
 
 const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
 
+// Per-tweet like button component for cast side
+const TweetLikeButton: React.FC<{
+    tweetId: number;
+    userId?: number;
+    castId?: number;
+    onLike: (tweetId: number) => void;
+}> = ({ tweetId, userId, castId, onLike }) => {
+    const { data: likeData } = useTweetLikeStatus(tweetId, userId, castId);
+    const liked = likeData?.liked || false;
+    const count = likeData?.count || 0;
+
+    return (
+        <div className="flex items-center mt-2">
+            <button
+                className={`mr-2 text-lg ${liked ? 'text-red-500' : 'text-gray-400'}`}
+                onClick={() => onLike(tweetId)}
+            >
+                <Heart fill={liked ? 'red' : 'white'} />
+            </button>
+            <span className="text-white text-sm">{count}</span>
+        </div>
+    );
+};
+
 const CastTimelinePage: React.FC = () => {
     const { user } = useUser();
     const navigate=useNavigate();
@@ -77,12 +101,9 @@ const CastTimelinePage: React.FC = () => {
         ? localTweets.filter((tweet: any) => tweet.cast && !tweet.guest)
         : localTweets;
 
-    // Get like statuses for tweets
-    const {
-        data: likeStatuses = {},
-        isLoading: likesLoading,
-        error: likesError
-    } = useTweetLikeStatus(tweets[0]?.id || 0, user ? user.id : castId);
+    // Like status is handled per-tweet via TweetLikeButton below
+    const likesLoading = false;
+    const likesError = null as any;
 
     // Use mutation hooks
     const createTweetMutation = useCreateTweet();
@@ -135,15 +156,6 @@ const CastTimelinePage: React.FC = () => {
                 userId: user ? user.id : undefined, 
                 castId: !user && castId ? castId : undefined 
             });
-            
-            // Update local state immediately for seamless UX
-            setLocalTweets(prevTweets => 
-                prevTweets.map(tweet => 
-                    tweet.id === tweetId 
-                        ? { ...tweet, isLiked: !tweet.isLiked }
-                        : tweet
-                )
-            );
         } catch (error) {
             console.error('Failed to like tweet:', error);
         }
@@ -220,14 +232,6 @@ const CastTimelinePage: React.FC = () => {
                         <div key={tweet.id || idx} className="bg-white/10 rounded-lg shadow-sm p-4 flex flex-col border border-secondary cursor-pointer" >
                             <div className="flex items-center mb-1">
                                 {(() => {
-                                    // Debug avatar data
-                                    console.log('Avatar debug:', {
-                                        tweetId: tweet.id,
-                                        castAvatar: tweet.cast?.avatar,
-                                        guestAvatar: tweet.guest?.avatar,
-                                        castId: tweet.cast?.id,
-                                        guestId: tweet.guest?.id
-                                    });
                                     
                                     let avatarSrc = '';
                                     if (tweet.cast?.avatar) {
@@ -305,15 +309,12 @@ const CastTimelinePage: React.FC = () => {
                                     className="w-full h-32 object-cover rounded-lg mb-2"
                                 />
                             )}
-                            <div className="flex items-center mt-2">
-                                <button
-                                    className={`mr-2 text-lg ${(likeStatuses as any)[tweet.id] ? 'text-red-500' : 'text-gray-400'}`}
-                                    onClick={() => handleLike(tweet.id)}
-                                >
-                                    <Heart fill={(likeStatuses as any)[tweet.id] ? 'red' : 'white'} />
-                                </button>
-                                <span className="text-white text-sm">{(likeStatuses as any)[tweet.id] ? (likeStatuses as any)[tweet.id] : 0}</span>
-                            </div>
+                            <TweetLikeButton 
+                                tweetId={tweet.id}
+                                userId={user?.id}
+                                castId={!user && castId ? castId : undefined}
+                                onLike={handleLike}
+                            />
                         </div>
                     ))
                 )}

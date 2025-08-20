@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Send } from 'lucide-react';
+import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Send, Calendar } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { sendMessage, getChatMessages, fetchAllGifts, updateReservation, getChatById, getGuestReservations } from '../../services/api';
@@ -9,6 +9,9 @@ import { useNotificationSettings } from '../../contexts/NotificationSettingsCont
 import { useChatMessages } from '../../hooks/useRealtime';
 import dayjs from 'dayjs';
 import Spinner from '../ui/Spinner';
+import GuestCalendarPage from './GuestCalendarPage';
+import SessionTimer from '../ui/SessionTimer';
+import { useSessionManagement } from '../../hooks/useSessionManagement';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -95,7 +98,46 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const [castLoading, setCastLoading] = useState(true);
     const [selectedGift, setSelectedGift] = useState<any>(null);
     const [showGiftDetailModal, setShowGiftDetailModal] = useState(false);
+
+    const [showCalendarPage, setShowCalendarPage] = useState(false);
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+    
+    // Session management
+    const {
+        sessionState,
+        isLoading: sessionLoading,
+        error: sessionError,
+        formatElapsedTime,
+        handleMeet,
+        handleDissolve,
+        acceptProposal: sessionAcceptProposal,
+        resetSession
+    } = useSessionManagement({
+        reservationId,
+        chatId,
+        onSessionStart: () => {
+            console.log('Session started');
+        },
+        onSessionEnd: () => {
+            console.log('Session ended');
+        },
+        onReservationUpdate: (reservation) => {
+            if (reservation) {
+                setReservationId(reservation.id);
+                // Update guest reservations if needed
+                if (reservation.guest_id === user?.id) {
+                    setGuestReservations(prev => {
+                        const existing = prev.find(r => r.id === reservation.id);
+                        if (existing) {
+                            return prev.map(r => r.id === reservation.id ? reservation : r);
+                        } else {
+                            return [...prev, reservation];
+                        }
+                    });
+                }
+            }
+        }
+    });
     const messagesEndRef = useRef<HTMLDivElement>(null);
     
     // Camera functionality
@@ -389,7 +431,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 setMessages(prev => prev.filter(m => m.id !== optimisticId));
                 
                 if (e.response?.data?.error === 'Insufficient points to send this gift') {
-                    setSendError(`ポイントが不足しています。必要: ${e.response.data.required_points}P、所持: ${e.response.data.available_points}P`);
+                    setSendError(`ポイントが不足しています。必要: ${Number(e.response.data.required_points).toLocaleString()}P、所持: ${Number(e.response.data.available_points).toLocaleString()}P`);
                 } else {
                     setSendError('メッセージの送信に失敗しました');
                 }
@@ -398,6 +440,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             }
         }
     };
+
+    // Show calendar page if requested
+    if (showCalendarPage) {
+        return <GuestCalendarPage chatId={chatId} onBack={() => setShowCalendarPage(false)} />;
+    }
 
     return (
         <div className="bg-gradient-to-b from-primary via-primary to-secondary min-h-screen flex flex-col relative">
@@ -445,11 +492,25 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     )}
                 </div>
             </div>
+            {/* Session Timer - Only show if there's an active reservation */}
+            {reservationId && (
+                <div className="fixed max-w-md mx-auto left-0 right-0 top-16 z-20 px-4 py-2 bg-primary border-b border-secondary">
+                    <SessionTimer
+                        isActive={sessionState.isActive}
+                        elapsedTime={sessionState.elapsedTime}
+                        onMeet={handleMeet}
+                        onDissolve={handleDissolve}
+                        isLoading={sessionLoading}
+                        className="w-full"
+                    />
+                </div>
+            )}
+            
             {/* Chat history (scrollable, between header and input) */}
             <div
                 className="flex-1 overflow-y-auto px-4 py-4"
                 style={{
-                    marginTop: '4rem', // header height (h-16 = 4rem)
+                    marginTop: reservationId ? '8rem' : '4rem', // Adjust margin based on whether timer is shown
                     marginBottom: '5.5rem', // input bar height (py-2 + px-4 + border + input height)
                     minHeight: 0,
                 }}
@@ -488,6 +549,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                 res.guest_id === user?.id &&
                                 dayjs(res.scheduled_at).isSame(proposal?.date)
                             ) || acceptedProposals.includes(msg.id);
+                            
+                            // Determine proposal position based on sender
+                            const isProposalFromGuest = msg.sender_guest_id && !msg.sender_cast_id;
+                            const proposalPosition = isProposalFromGuest ? 'justify-end' : 'justify-start';
+                            
                             return (
                                 <React.Fragment key={msg.id || `p-${idx}`}>
                                     {(idx === 0 || currentDate !== prevDate) && (
@@ -498,9 +564,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                         </div>
                                     )}
                                     <div
-                                        className={`flex justify-start mb-4${isAccepted ? '' : ' cursor-pointer'}`}
-                                        onClick={isAccepted ? undefined : () => { setShowProposalModal(true); setSelectedProposal(proposal); setProposalMsgId(msg.id); }}
-                                        style={isAccepted ? { opacity: 0.6, pointerEvents: 'none' } : {}}
+                                        className={`flex ${proposalPosition} mb-4`}
                                     >
                                         <div className="bg-orange-600 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative">
                                             <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
@@ -550,7 +614,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                     {msg.gift.icon || '🎁'}
                                                 </span>
                                                 <span className="font-bold">{msg.gift.name || 'ギフト'}</span>
-                                                <span className="ml-2 text-xs text-primary font-bold">{typeof msg.gift.points === 'number' ? msg.gift.points : 0}P</span>
+                                                <span className="ml-2 text-xs text-primary font-bold">{typeof msg.gift.points === 'number' ? msg.gift.points.toLocaleString() : Number(msg.gift.points || 0).toLocaleString()}P</span>
                                                 {msg.isOptimistic && (
                                                     <span className="ml-2 text-xs text-yellow-300">送信中...</span>
                                                 )}
@@ -620,6 +684,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     </div>
                 )}
                 <div className="flex items-center w-full relative" ref={inputBarRef}>
+                    <button 
+                        className={`mr-2 ${
+                            isNotificationEnabled('messages') ? 'text-white' : 'text-gray-500'
+                        }`} 
+                        onClick={() => setShowCalendarPage(true)}
+                        disabled={!isNotificationEnabled('messages')}
+                    >
+                        <Calendar size={30} />
+                    </button>
                     <input
                         type="text"
                         className={`flex-1 px-4 py-2 rounded-full border border-secondary text-sm mr-2 ${
@@ -806,7 +879,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                             setMessages((prev) => prev.filter(m => m.id !== optimisticId));
                                             
                                             if (e.response?.data?.error === 'Insufficient points to send this gift') {
-                                                setSendError(`ポイントが不足しています。必要: ${e.response.data.required_points}P、所持: ${e.response.data.available_points}P`);
+                                                setSendError(`ポイントが不足しています。必要: ${Number(e.response.data.required_points).toLocaleString()}P、所持: ${Number(e.response.data.available_points).toLocaleString()}P`);
                                             } else {
                                                 setSendError('ギフトの送信に失敗しました');
                                             }
@@ -866,7 +939,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                         {gift.icon}
                                     </span>
                                     <span className="text-xs">{gift.name}</span>
-                                    <span className="text-xs text-yellow-300 font-bold">{gift.points}P</span>
+                                    <span className="text-xs text-yellow-300 font-bold">{Number(gift.points).toLocaleString()}P</span>
                                 </button>
                                 );
                             })}
@@ -878,7 +951,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             {showProposalModal && selectedProposal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
                     <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
-                        <h2 className="font-bold text-lg mb-4 text-black">予約変更の提案</h2>
+                        <h2 className="font-bold text-lg mb-4 text-black">予約提案の確認</h2>
                         <div className="mb-4 text-black">
                             <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
                             <div>人数：{selectedProposal.people?.replace(/名$/, '')}人</div>
@@ -887,33 +960,31 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             <div>（延長：{selectedProposal.extensionPoints?.toLocaleString()}P / 15分）</div>
                         </div>
                         {proposalActionError && <div className="text-red-500 mb-2">{proposalActionError}</div>}
+                        {sessionError && <div className="text-red-500 mb-2">{sessionError}</div>}
                         <div className="flex gap-4">
                             <button
                                 className="px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
-                                disabled={proposalActionLoading}
+                                disabled={proposalActionLoading || sessionLoading}
                                 onClick={async () => {
                                     setProposalActionLoading(true);
                                     setProposalActionError(null);
                                     try {
-                                        if (!reservationId) throw new Error('予約IDが見つかりません');
-                                        await updateReservation(reservationId, {
-                                            scheduled_at: selectedProposal.date,
-                                            duration: selectedProposal.duration ? parseInt(selectedProposal.duration as string, 10) : undefined,
-                                        });
+                                        // Use session management hook to accept proposal
+                                        const proposalData = {
+                                            date: selectedProposal.date,
+                                            duration: selectedProposal.duration ? parseInt(selectedProposal.duration as string, 10) : 120, // Default to 2 hours
+                                            totalPoints: selectedProposal.totalPoints,
+                                            guestId: user?.id,
+                                            castId: castInfo?.id
+                                        };
                                         
-                                        if (user?.id && selectedProposal.date) {
-                                            setGuestReservations(prev => [
-                                                ...prev,
-                                                {
-                                                    guest_id: user.id,
-                                                    scheduled_at: selectedProposal.date,
-                                                    // Add other required fields if needed
-                                                }
-                                            ]);
-                                        }
+                                        await sessionAcceptProposal(proposalData);
+                                        
+                                        // Mark proposal as accepted
                                         if (proposalMsgId !== null && typeof proposalMsgId === 'number') {
                                             setAcceptedProposals(prev => prev.includes(proposalMsgId) ? prev : [...prev, proposalMsgId]);
                                         }
+                                        
                                         setShowProposalModal(false);
                                         setSelectedProposal(null);
                                         setProposalMsgId(null);
@@ -927,7 +998,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             <button
                                 className="px-4 py-2 bg-gray-400 text-white rounded font-bold"
                                 onClick={() => { setShowProposalModal(false); setSelectedProposal(null); setProposalMsgId(null); }}
-                            >拒否</button>
+                            >キャンセル</button>
                         </div>
                     </div>
                 </div>
@@ -939,7 +1010,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         <div className="flex flex-col items-center mb-4">
                             <span className="text-5xl mb-2">{selectedGift.icon}</span>
                             <span className="text-lg font-bold text-white mb-1">{selectedGift.name}</span>
-                            <span className="text-yellow-300 font-bold mb-2">{selectedGift.points}P</span>
+                            <span className="text-yellow-300 font-bold mb-2">{Number(selectedGift.points).toLocaleString()}P</span>
                             <span className="text-white text-sm whitespace-pre-line mb-2" style={{maxWidth: 320, textAlign: 'center'}}>{selectedGift.description || '説明はありません'}</span>
                         </div>
                         <div className="flex gap-4">
@@ -1072,6 +1143,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     <img src={lightboxUrl} alt="preview" className="max-w-[90vw] max-h-[90vh] rounded shadow-lg" />
                 </div>
             )}
+
+
+
         </div>
     );
 };

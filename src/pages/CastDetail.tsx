@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Share, Heart, MessageSquare, Star, Trophy, Award, User } from 'lucide-react';
 import { likeCast, getCastProfileById, createChat, sendGuestMessage, getLikeStatus, favoriteCast, unfavoriteCast, getFavorites, getCastList, getCastBadges } from '../services/api';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../lib/react-query';
 import { useUser } from '../contexts/UserContext';
 import { useNotificationSettings } from '../contexts/NotificationSettingsContext';
 import Toast from '../components/ui/Toast';
@@ -28,6 +30,7 @@ const CastDetail: React.FC = () => {
     const { isNotificationEnabled } = useNotificationSettings();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [liked, setLiked] = useState(false);
+    const [isLiking, setIsLiking] = useState(false);
     const [cast, setCast] = useState<any>(null);
     const [badges, setBadges] = useState<Badge[]>([]);
     const [badgesLoading, setBadgesLoading] = useState(false);
@@ -41,6 +44,7 @@ const CastDetail: React.FC = () => {
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [isFavorited, setIsFavorited] = useState(false);
+    const queryClient = useQueryClient();
 
     // Function to fetch all casts and get 3 random ones (excluding current cast)
     const fetchAllCastsAndGetRandom = async () => {
@@ -111,7 +115,7 @@ const CastDetail: React.FC = () => {
     }, [id]);
 
     const handleLike = async () => {
-        if (!user || !id) return;
+        if (!user || !id || isLiking) return;
         
         // Check if like notifications are enabled
         const isLikeNotificationEnabled = isNotificationEnabled('likes');
@@ -123,10 +127,24 @@ const CastDetail: React.FC = () => {
             setTimeout(() => setShowToast(false), 5000);
             return;
         }
-        
-        const res = await likeCast(user.id, Number(id));
-        if (res.liked) setLiked(true);
-        else setLiked(false);
+
+        // Optimistic UI update
+        const previousLiked = liked;
+        setLiked(true);
+        setIsLiking(true);
+
+        try {
+            const res = await likeCast(user.id, Number(id));
+            setLiked(!!res.liked);
+        } catch (error) {
+            setLiked(previousLiked);
+            setToastMessage('いいねに失敗しました。再度お試しください。');
+            setToastType('error');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 5000);
+        } finally {
+            setIsLiking(false);
+        }
     };
 
     const likeStatus = async () => {
@@ -160,6 +178,8 @@ const CastDetail: React.FC = () => {
             }
             setToastType('success');
             setShowToast(true);
+            // Immediately refresh guest favorites so Dashboard Favorites tab updates without manual refresh
+            queryClient.invalidateQueries({ queryKey: queryKeys.guest.favorites(user.id) });
             // Auto-hide toast after 10 seconds
             setTimeout(() => setShowToast(false), 10000);
         } catch (error) {
@@ -304,7 +324,7 @@ const CastDetail: React.FC = () => {
                                 className="text-2xl text-white hover:text-yellow-400 transition-all duration-200 p-2 rounded-full hover:bg-white/10"
                                 onClick={handleFavorite}
                             >
-                                <Heart className={`w-6 h-6 ${isFavorited ? 'fill-secondary text-secondary animate-pulse' : 'text-white'}`} />
+                                <Star className={`w-6 h-6 ${isFavorited ? 'fill-secondary text-secondary animate-pulse' : 'text-white'}`} />
                             </button>
                             <button 
                                 type="button" 
@@ -573,11 +593,11 @@ const CastDetail: React.FC = () => {
                                     : 'bg-gray-500 text-gray-300 cursor-not-allowed'
                             }`} 
                             onClick={handleLike}
-                            disabled={!isNotificationEnabled('likes')}
+                            disabled={!isNotificationEnabled('likes') || isLiking}
                         >
                             <Heart className={`w-6 h-6 mr-3 ${isNotificationEnabled('likes') ? 'animate-pulse' : ''}`} />
                             <span className="text-base">
-                                {isNotificationEnabled('likes') ? 'いいね' : 'いいね (無効)'}
+                                {isNotificationEnabled('likes') ? (isLiking ? '処理中...' : 'いいね') : 'いいね (無効)'}
                             </span>
                         </button>
                     ) : (

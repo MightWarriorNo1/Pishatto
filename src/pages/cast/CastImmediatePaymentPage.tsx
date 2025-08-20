@@ -351,7 +351,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
                                 処理中...
                             </div>
                         ) : (
-                            castProfile.payjp_customer_id ? 'すぐ入金申請' : 'カード登録して申請'
+                            castProfile.payjp_customer_id ? 'すぐ入金申請' : '銀行口座登録'
                         )}
                     </button>
                 )}

@@ -66,7 +66,7 @@ const UserSatisfactionSection: React.FC<UserSatisfactionSectionProps> = ({ onSee
                 <div className="text-white text-xs mt-1">
                   <div>レビュー {cast.feedback_count}件</div>
                   <div className="mt-1">
-                    {cast.grade_points}P/30分
+                    {Number(cast.grade_points).toLocaleString()}P/30分
                   </div>
                 </div>
               </div>

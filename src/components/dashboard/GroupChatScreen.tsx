@@ -7,7 +7,8 @@ import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useGroupMessages } from '../../hooks/useRealtime';
 import dayjs from 'dayjs';
-import Spinner from '../ui/Spinner';    
+import Spinner from '../ui/Spinner';
+import ScheduleRequest from '../chat/ScheduleRequest';    
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IMAGE_BASE_URL = API_BASE_URL.replace(/\/api$/, '');
@@ -59,6 +60,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
     const attachBtnRef = useRef<HTMLButtonElement>(null);
     const [selectedGift, setSelectedGift] = useState<any>(null);
     const [showGiftDetailModal, setShowGiftDetailModal] = useState(false);
+    const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -317,7 +319,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
         if (message.cast) {
             return message.cast.nickname || 'キャスト';
         }
-        return 'Unknown';
+        return '管理者';
     };
 
     const getSenderAvatar = (message: any) => {
@@ -332,21 +334,22 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
 
     if (fetching) {
         return (
-            <div className="bg-primary min-h-screen flex items-center justify-center">
+            <div className="bg-gradient-to-b from-primary via-primary to-secondary min-h-screen flex items-center justify-center">
                 <Spinner />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-b from-primary via-primary to-secondary overflow-hidden bg-fixed">
+        <div className="min-h-screen flex flex-col relative pt-14 pb-28">
+            <div className="fixed inset-0 -z-10 bg-gradient-to-b from-primary via-primary to-secondary" />
             {/* Fixed Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
+            <div className="fixed max-w-md mx-auto w-full top-0 inset-x-0 z-20 flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary">
                 <div className="relative w-full flex items-center">
                     <button onClick={onBack} className="text-white">
                         <ChevronLeft className="w-6 h-6 hover:text-secondary cursor-pointer" />
                     </button>
-                    <div className="absolute left-1/2 -translate-x-1/2 transform pointer-events-none flex items-center">
+                    <div className="flex items-center">
                         <Users className="w-5 h-5 text-white mr-2" />
                         <span className="text-white font-bold">
                             {groupInfo?.name || `グループ ${groupId}`}
@@ -359,7 +362,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
             </div>
 
             {/* Messages - Scrollable Area */}
-            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 scrollbar-hidden relative" style={{ height: 'calc(100vh - 140px)' }}>
+            <div className="flex-1 overflow-y-auto px-4 py-2 space-y-4 scrollbar-hidden relative" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                 {fetchError && (
                     <div className="text-red-500 text-center py-4">{fetchError}</div>
                 )}
@@ -483,7 +486,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                             <div className="bg-yellow-500 text-black rounded p-2 mb-2">
                                                 🎁 {message.gift.name}
                                                 <div className="text-xs mt-1 text-center">
-                                                    {message.gift.points}P
+                                                    {Number(message.gift.points).toLocaleString()}P
                                                 </div>
                                             </div>
                                             
@@ -528,12 +531,19 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
             </div>
 
             {/* Fixed Input Area */}
-            <div className="border-t border-secondary p-4 bg-primary sticky bottom-0 z-10">
+            <div className="border-t max-w-md mx-auto left-0 right-0 border-secondary p-4 bg-primary fixed bottom-0 inset-x-0 z-20">
                 {sendError && (
                     <div className="text-red-500 text-sm mb-2">{sendError}</div>
                 )}
                 
                 <div className="flex items-center space-x-2">
+                    <button
+                        onClick={() => setShowScheduleModal(true)}
+                        className="text-white p-2"
+                    >
+                        <Calendar className="w-5 h-5" />
+                    </button>
+                    
                     <button
                         ref={attachBtnRef}
                         onClick={() => setShowFile(!showFile)}
@@ -775,7 +785,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                             {gift.icon}
                                         </span>
                                         <span className="text-xs">{gift.name}</span>
-                                        <span className="text-xs text-yellow-300 font-bold">{gift.points}P</span>
+                                        <span className="text-xs text-yellow-300 font-bold">{Number(gift.points).toLocaleString()}P</span>
                                     </button>
                                     );
                                 })}
@@ -929,7 +939,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                         <div className="flex flex-col items-center mb-4">
                             <span className="text-5xl mb-2">{selectedGift.icon}</span>
                             <span className="text-lg font-bold text-white mb-1">{selectedGift.name}</span>
-                            <span className="text-yellow-300 font-bold mb-2">{selectedGift.points}P</span>
+                            <span className="text-yellow-300 font-bold mb-2">{Number(selectedGift.points).toLocaleString()}P</span>
                             <span className="text-white text-sm whitespace-pre-line mb-2" style={{maxWidth: 320, textAlign: 'center'}}>{selectedGift.description || '説明はありません'}</span>
                         </div>
                         <div className="flex gap-4">
@@ -1017,6 +1027,28 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                 </div>
             )}
             {/* Image preview overlay moved inside messages container */}
+
+            {/* Schedule Modal */}
+            {showScheduleModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
+                    <div className="bg-primary rounded-2xl shadow-lg p-8 flex flex-col items-center border border-secondary max-w-sm w-full mx-4">
+                        <h2 className="font-bold text-lg mb-4 text-white">カレンダーから日程を選択</h2>
+                        <div className="w-64 h-64 bg-primary flex items-center justify-center text-white border border-secondary rounded-lg mb-4">
+                            <div className="text-center">
+                                <Calendar size={48} className="mx-auto mb-2 text-gray-400" />
+                                <p className="text-gray-400">カレンダー（仮）</p>
+                            </div>
+                        </div>
+                        <button 
+                            className="text-white mt-4 hover:text-red-700 transition-all duration-200 font-medium px-4 py-2 bg-secondary rounded-lg hover:bg-red-600"
+                            onClick={() => setShowScheduleModal(false)}
+                        >
+                            閉じる
+                        </button>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 };
