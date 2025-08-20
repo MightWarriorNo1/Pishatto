@@ -40,7 +40,13 @@ const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking, hideLoadi
               onClick={() => handleCastClick(profile.id)}
             >
               <img
-                src={profile.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar}` : '/assets/avatar/female.png'}
+                src={profile.avatar ? 
+                  (Array.isArray(profile.avatar) && profile.avatar.length > 0 ? 
+                    `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar[0]}` : 
+                    `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar}`
+                  ) : 
+                  '/assets/avatar/female.png'
+                }
                 alt={profile.name}
                 className="w-full h-32 object-cover rounded-lg border border-secondary mb-2"
               />
