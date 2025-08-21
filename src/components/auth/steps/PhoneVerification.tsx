@@ -244,7 +244,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
             </div>
             <div className="text-xs text-white mt-2">※ハイフンなし</div>
             <div className="text-xs text-white mt-4 leading-relaxed">
-              pishattoは、携帯電話番号の認証のため、SMS(テキスト)が送信されます。これには、SMS料金及びデータ料金がかかる場合があります。
+              Pishattoは、携帯電話番号の認証のため、SMS(テキスト)が送信されます。これには、SMS料金及びデータ料金がかかる場合があります。
             </div>
             {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
           </div>

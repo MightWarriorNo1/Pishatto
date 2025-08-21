@@ -36,9 +36,9 @@ const ConciergeChat: React.FC<ConciergeChatProps> = ({ onClick }) => {
                     <div className="flex-1">
                         <div className="flex items-center">
                             <span className="font-bold text-white text-base mr-2">
-                                pishattoコンシェルジュ
+                                Pishattoコンシェルジュ
                             </span>
-                            {/* pishatto status icon */}
+                            {/* Pishatto status icon */}
                             <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center mr-1">
                                 <span className="text-white text-xs font-bold">P</span>
                             </div>

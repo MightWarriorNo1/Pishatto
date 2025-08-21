@@ -16,6 +16,7 @@ import QRCodeModal from '../../components/dashboard/QRCodeModal';
 import Spinner from '../../components/ui/Spinner';
 import { useCastData } from '../../hooks/useCastData';
 import { useCastMonthlyRanking } from '../../hooks/useQueries';
+import { formatNumber, formatPoints } from '../../utils/formatters';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -356,23 +357,23 @@ const CastProfilePage: React.FC = () => {
                 <div className="flex items-center mb-2">
                     <span className="text-xs font-medium text-white mr-2">今月の総売上ポイント</span>
                     <span className="text-xs text-white">
-                        <CircleQuestionMark />
+                        <CircleQuestionMark />i
                     </span>
                 </div>
                 <div className="text-3xl font-bold text-white mb-2">
-                    {pointsData ? `${pointsData.monthly_total_points.toLocaleString()}P` : '0P'}
+                    {pointsData ? formatPoints(pointsData.monthly_total_points) : '0P'}
                 </div>
                 <div className="flex space-x-2 mb-2">
                     <div className="flex-1 bg-gray-900 rounded-lg p-2 text-center border border-secondary">
                         <div className="text-xs text-gray-400">ギフト獲得ポイント</div>
                         <div className="font-bold text-lg text-white">
-                            {pointsData ? `${pointsData.gift_points.toLocaleString()}p` : '0p'}
+                            {pointsData ? `${formatNumber(pointsData.gift_points)}p` : '0p'}
                         </div>
                     </div>
                     <div className="flex-1 bg-gray-900 rounded-lg p-2 text-center border border-secondary">
                         <div className="text-xs text-gray-400">予約獲得ポイント</div>
                         <div className="font-bold text-lg text-white">
-                            {pointsData ? `${pointsData.transfer_points.toLocaleString()}p` : '0p'}
+                            {pointsData ? `${formatNumber(pointsData.transfer_points)}p` : '0p'}
                         </div>
                     </div>
                 </div>

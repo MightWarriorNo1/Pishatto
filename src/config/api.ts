@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
   GUEST_LOGIN: `${API_CONFIG.API_BASE_URL}/guest/login`,
   CAST_REGISTER: `${API_CONFIG.API_BASE_URL}/cast/register`,
   CAST_LOGIN: `${API_CONFIG.API_BASE_URL}/cast/login`,
+  CAST_APPLICATION_SUBMIT: `${API_CONFIG.API_BASE_URL}/cast-applications/submit`,
   SMS_SEND_CODE: `${API_CONFIG.API_BASE_URL}/sms/send-code`,
   SMS_VERIFY_CODE: `${API_CONFIG.API_BASE_URL}/sms/verify-code`,
   CHATS: `${API_CONFIG.API_BASE_URL}/chats`,

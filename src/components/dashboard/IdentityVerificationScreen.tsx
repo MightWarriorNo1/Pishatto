@@ -105,7 +105,7 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
             {/* Red instruction section */}
             <div className="bg-primary text-white text-center py-6 px-4">
                 <div className="text-xl font-bold mb-2">本人確認書類を撮影してください</div>
-                <div className="text-sm">安心してpishattoをご利用いただくために、<br />ご協力をお願いいたします。</div>
+                <div className="text-sm">安心してPishattoをご利用いただくために、<br />ご協力をお願いいたします。</div>
             </div>
             {/* Phone + ID illustration */}
             <div className="flex justify-center -mt-10 mb-8">

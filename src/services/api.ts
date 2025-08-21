@@ -108,7 +108,7 @@ export interface Reservation {
   id?: number;
   guest_id: number;
   time?:string;
-  type?: 'free' | 'pishatto';
+  type?: 'free' | 'Pishatto';
   scheduled_at: string;
   location?: string;
   meeting_location?: string;
@@ -157,6 +157,8 @@ export interface RepeatGuest {
   id: number;
   nickname: string;
   avatar?: string;
+  birth_year?: number;
+  residence?: string;
   reservations_count: number;
 }
 

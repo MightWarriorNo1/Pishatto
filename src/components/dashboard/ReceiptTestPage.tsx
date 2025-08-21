@@ -19,7 +19,7 @@ const ReceiptTestPage: React.FC = () => {
         user_id: 1,
         recipient_name: '株式会社じーん',
         amount: 108000,
-        purpose: 'pishatto利用料',
+        purpose: 'Pishatto利用料',
       });
 
       setReceipt(newReceipt);
@@ -62,7 +62,7 @@ const ReceiptTestPage: React.FC = () => {
             <ul className="text-sm space-y-1">
               <li>受取人: 株式会社じーん</li>
               <li>金額: ¥108,000</li>
-              <li>目的: pishatto利用料</li>
+              <li>目的: Pishatto利用料</li>
             </ul>
           </div>
 

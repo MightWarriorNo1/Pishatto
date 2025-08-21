@@ -107,7 +107,7 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
                 <Bird className="w-10 h-10 text-yellow-500 cursor-pointer mr-3" />
                     {/* <ConciergeAvatar size="sm" className="mr-3" /> */}
                     <div>
-                        <div className="font-bold text-white text-lg">pishattoコンシェルジュ</div>
+                        <div className="font-bold text-white text-lg">Pishattoコンシェルジュ</div>
                     </div>
                 </div>
             </div>

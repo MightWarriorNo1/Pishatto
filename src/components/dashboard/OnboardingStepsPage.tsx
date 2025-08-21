@@ -39,7 +39,7 @@ const OnboardingStepsPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             {/* Heading */}
             <div className="px-4 pt-6">
                 <div className="text-2xl font-bold mb-2 text-white">3つのステップを完了してください</div>
-                <div className="text-white text-sm mb-4">すべてのステップが完了すると、pishattoをご利用いただけます。</div>
+                <div className="text-white text-sm mb-4">すべてのステップが完了すると、Pishattoをご利用いただけます。</div>
             </div>
             {/* Step 1: Phone verification (completed) */}
             <div className="relative bg-gray-400 bg-opacity-60 rounded-xl mx-4 mb-4 overflow-hidden">

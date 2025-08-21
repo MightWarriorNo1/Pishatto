@@ -315,7 +315,7 @@ const GradeAbout: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <div className="text-center mb-6">
                         <h1 className="text-2xl font-bold text-white mb-2">ゲストグレードシステム</h1>
                         <p className="text-gray-300 text-sm leading-relaxed">
-                            pishattoでは皆様の日頃のご愛顧に感謝し、<br />
+                            Pishattoでは皆様の日頃のご愛顧に感謝し、<br />
                             グレード制をご用意させていただいております。
                         </p>
                     </div>

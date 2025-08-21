@@ -177,7 +177,7 @@ const CastConciergeDetailPage: React.FC<CastConciergeDetailPageProps> = ({ onBac
                                                 </div>
                                             </div>
                                             <div>
-                                                <div className="text-lg font-bold">pishattoコンシェルジュ</div>
+                                                <div className="text-lg font-bold">Pishattoコンシェルジュ</div>
                                                 <div className="text-sm">ようこそ</div>
                                             </div>
                                         </div>
@@ -185,7 +185,7 @@ const CastConciergeDetailPage: React.FC<CastConciergeDetailPageProps> = ({ onBac
                                     
                                     <div className="text-sm space-y-1">
                                         <div>はじめまして。</div>
-                                        <div>pishattoコンシェルジュの</div>
+                                        <div>Pishattoコンシェルジュの</div>
                                         <div>パッとくんと申します。</div>
                                         <div>「お問い合わせ窓口」として</div>
                                         <div>24時間体制でサポートさせていただきます。</div>

@@ -1,7 +1,7 @@
 /*eslint-disable */
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Clock, Flag, UserRound, HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus, X, Calendar } from 'lucide-react';
+import { ChevronLeft, Clock, Flag, UserRound, HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus, X, Calendar, CheckCircle } from 'lucide-react';
 import StepRequirementScreen from './StepRequirementScreen';
 import { createFreeCall, createFreeCallReservation, fetchRanking, getGuestChats, getCastCountsByLocation, getCastList } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
@@ -343,9 +343,16 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
                         {(() => {
                             if (areasLoading) return '読み込み中...';
                             if (areasError) return 'エリア取得エラー';
-                            if (selectedArea && selectedArea.includes('/')) return selectedArea;
+                            if (selectedArea && selectedArea.includes('/')) {
+                                const parts = selectedArea.split('/');
+                                if (parts.length === 2) {
+                                    const [name, prefecture] = parts;
+                                    return `${prefecture}/${name}`;
+                                }
+                                return selectedArea;
+                            }
                             const match = areaOptions.find(o => o.name === selectedArea || `${o.name}/${o.prefecture}` === selectedArea);
-                            return match ? `${match.name}/${match.prefecture}` : (selectedArea || 'エリアを選択');
+                            return match ? `${match.prefecture}/${match.name}` : (selectedArea || 'エリアを選択');
                         })()}
                     </button>
                 </div>
@@ -355,6 +362,8 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
                     onSelect={(area: string) => {
                         // area format: name/prefecture (store combined)
                         setSelectedArea(area);
+                        // Redirect back to main call screen after selecting area
+                        onBack();
                     }}
                     locations={areaOptions.map(o => `${o.name}/${o.prefecture}`)}
                     loading={areasLoading}
@@ -1170,6 +1179,77 @@ function CastSelectionScreen({ onBack, selectedLocation, selectedPrefecture, onN
 }
 
 
+// Add Reservation Completion Modal Component for Free Call
+function FreeCallReservationCompletionModal({ isOpen, onClose, onNavigateToMessage }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onNavigateToMessage: () => void;
+}) {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-b from-primary to-blue-900 border border-white/20 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-secondary to-red-600 px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                            <CheckCircle className="text-white w-5 h-5" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-white">予約完了</h3>
+                            <p className="text-white/80 text-sm">Reservation Complete</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="text-white hover:text-gray-300 p-2 rounded-full hover:bg-white/10 transition-all duration-200"
+                    >
+                        <X size={24} />
+                    </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                    {/* Success Icon */}
+                    <div className="flex justify-center mb-6">
+                        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center">
+                            <CheckCircle className="w-12 h-12 text-green-400 animate-bounce" />
+                        </div>
+                    </div>
+
+                    {/* Message */}
+                    <div className="text-center mb-6">
+                        <h4 className="text-white font-bold text-lg mb-3">予約完了しました</h4>
+                        <p className="text-white/80 text-base leading-relaxed">
+                            メッセージ画面に移動してマッチングまで少々お待ちください。
+                        </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    {/* <div className="flex gap-3">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
+                        >
+                            閉じる
+                        </button>
+                        <button
+                            onClick={() => {
+                                onNavigateToMessage();
+                                onClose();
+                            }}
+                            className="flex-1 bg-gradient-to-r from-secondary to-red-500 text-white py-3 rounded-xl hover:from-red-500 hover:to-red-600 transition-all duration-200 font-semibold shadow-lg"
+                        >
+                            メッセージ画面へ
+                        </button>
+                    </div> */}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function OrderFinalConfirmationScreen({
     onBack,
     onConfirmed,
@@ -1196,7 +1276,15 @@ function OrderFinalConfirmationScreen({
     customDurationHours: number | null;
 }) {
     const { user, refreshUser } = useUser();
+    const navigate = useNavigate();
     const [reservationMessage, setReservationMessage] = useState<string | null>(null);
+    const [showReservationModal, setShowReservationModal] = useState(false);
+
+    const handleNavigateToMessage = () => {
+        // Navigate to message screen and close modal
+        navigate('/messages');
+        setShowReservationModal(false);
+    };
 
     // Calculate scheduled time based on selectedTime format
     const now = new Date();
@@ -1230,7 +1318,7 @@ function OrderFinalConfirmationScreen({
 
         // Check if user has enough points
         if (!hasEnoughPoints) {
-            setReservationMessage('ポイントが不足しているため、予約を作成できません。');
+            setReservationMessage('ポイントが不足しているため、予約ができません。');
             return;
         }
 
@@ -1287,7 +1375,13 @@ function OrderFinalConfirmationScreen({
             } catch (error) {
                 console.log('Ranking refresh failed:', error);
             }
-            onConfirmed();
+            
+            // Show reservation completion modal
+            setShowReservationModal(true);
+            // Navigate back to call screen shortly after displaying modal
+            setTimeout(() => {
+                onConfirmed();
+            }, 1200);
         } catch (error: any) {
             if (error.response?.data?.message === 'Insufficient points') {
                 setReservationMessage(`ポイントが不足しています。必要: ${error.response.data.required_points?.toLocaleString()}P, 所持: ${error.response.data.available_points?.toLocaleString()}P`);
@@ -1413,7 +1507,7 @@ function OrderFinalConfirmationScreen({
                 </button>
                 {!hasEnoughPoints && (
                     <div className="text-red-400 text-center mt-2 text-sm">
-                        ポイントが不足しているため、予約を作成できません。
+                        ポイントが不足しているため、予約ができません。
                     </div>
                 )}
                 {reservationMessage && (
@@ -1423,6 +1517,13 @@ function OrderFinalConfirmationScreen({
                     </div>
                 )}
             </div>
+
+            {/* Free Call Reservation Completion Modal */}
+            <FreeCallReservationCompletionModal
+                isOpen={showReservationModal}
+                onClose={() => setShowReservationModal(false)}
+                onNavigateToMessage={handleNavigateToMessage}
+            />
         </div>
     );
 }
@@ -1551,7 +1652,7 @@ type CallScreenProps = {
 const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessage }) => {
     // Add state to pass order data between steps
     const [selectedTime, setSelectedTime] = useState('30分後');
-    const [selectedArea, setSelectedArea] = useState('東京都');
+    const [selectedArea, setSelectedArea] = useState('六本木/東京都');
     const [counts, setCounts] = useState([1, 1, 0]);
     const navigate = useNavigate()
     const [locations, setLocations] = useState<string[]>([]);

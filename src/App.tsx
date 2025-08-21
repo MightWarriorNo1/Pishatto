@@ -24,6 +24,7 @@ import { CastProvider } from './contexts/CastContext';
 import { ConciergeProvider } from './contexts/ConciergeContext';
 import { NotificationSettingsProvider } from './contexts/NotificationSettingsContext';
 import { queryClient } from './lib/react-query';
+import CastRegisterPage from './pages/cast/CastRegisterPage';
 
 const CastLoginWrapper: React.FC = () => {
   return <CastLoginOptions onNext={() => {}} />;
@@ -46,6 +47,7 @@ const App: React.FC = () => {
                     <Route path="/cast/line-login" element={<CastLineLogin />} />
                     <Route path="/line-register" element={<LineRegister />} />
                     <Route path="/receipt/:receiptNumber" element={<PublicReceiptView />} />
+                    <Route path="/cast/register" element={<CastRegisterPage />} />  
                     <Route path="/dashboard" element={
                       <ProtectedRoute userType="guest">
                         <Dashboard />

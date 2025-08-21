@@ -498,8 +498,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     <SessionTimer
                         isActive={sessionState.isActive}
                         elapsedTime={sessionState.elapsedTime}
-                        onMeet={handleMeet}
-                        onDissolve={handleDissolve}
                         isLoading={sessionLoading}
                         className="w-full"
                     />

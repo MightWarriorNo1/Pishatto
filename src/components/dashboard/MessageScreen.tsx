@@ -605,7 +605,10 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     if (showNotification) return <NotificationScreen onBack={() => setShowNotification(false)} />;
     
     return (
-        <div className="bg-gradient-to-b from-primary via-primary to-secondary min-h-screen flex flex-col pb-24">
+        <div
+            className="bg-gradient-to-b from-primary via-primary to-secondary min-h-screen flex flex-col pb-24"
+            style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+        >
             {/* Top bar */}
             <div className="fixed max-w-md mx-auto top-0 left-0 right-0 grid grid-cols-3 items-center px-4 py-3 border-b border-secondary bg-primary">
                 <button

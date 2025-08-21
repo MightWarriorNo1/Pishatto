@@ -49,7 +49,7 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
         user_id: userId,
         recipient_name: receiptData.recipientName,
         amount: transactionData.amount,
-        purpose: receiptData.memo || 'pishatto利用料',
+        purpose: receiptData.memo || 'Pishatto利用料',
         transaction_created_at: transactionData.created_at,
       });
 
@@ -82,14 +82,14 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
 
       {/* Reply-to Address */}
       <div className="px-4 py-2 bg-primary">
-        <div className="text-sm text-white text-center">返信先: no-reply@pishatto.today</div>
+        <div className="text-sm text-white text-center">返信先: no-reply@Pishatto.today</div>
       </div>
 
       {/* Email Content */}
       <div className="px-4 py-6 space-y-4">
         {/* Subject */}
         <div className="font-bold text-lg text-white">
-          【pishatto】領収書を発行しました
+          【Pishatto】領収書を発行しました
         </div>
 
         {/* Recipient */}
@@ -99,7 +99,7 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
 
         {/* Greeting */}
         <div className="text-white leading-relaxed">
-          先日はpishattoをご利用いただきありがとうござい<br />
+          先日はPishattoをご利用いただきありがとうござい<br />
           ました。
         </div>
 
@@ -158,7 +158,7 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
       {/* Promotional Section */}
       <div className="px-4 py-6 border-t border-gray-200">
         <div className="text-center text-sm text-white mb-3">
-          \\\ pishattoの楽しみ方 ///
+          \\\ Pishattoの楽しみ方 ///
         </div>
         <div className="space-y-1 text-sm text-white">
           <div>面談済みキャストと確実に会える!</div>

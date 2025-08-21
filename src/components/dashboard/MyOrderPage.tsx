@@ -4,8 +4,11 @@ import { useUser } from '../../contexts/UserContext';
 import { ChevronLeft, Clock, MapPin, Users, Calendar, Award, MessageCircle } from 'lucide-react';
 import { useReservationUpdates } from '../../hooks/useRealtime';
 import dayjs from 'dayjs';
+import 'dayjs/locale/ja';
 import FeedbackModal from '../feedback/FeedbackModal';
 import Spinner from '../ui/Spinner';
+
+dayjs.locale('ja');
 
 const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     const { user } = useUser();
@@ -34,7 +37,7 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     });
 
     const formatDate = (dateString: string) => {
-        return dayjs(dateString).format('MM/DD (ddd) HH:mm');
+        return dayjs(dateString).locale('ja').format('MM/DD (ddd) HH:mm');
     };
 
     return (
@@ -122,7 +125,7 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                                 <div className="space-y-1">
                                                     <p className="text-sm text-gray-500">予約時間</p>
                                                     <p className="text-gray-900 font-medium">
-                                                        {startedAt.format('MM/DD (ddd) HH:mm')} - {endedAt?.format('HH:mm')}
+                                                        {startedAt.locale('ja').format('MM/DD (ddd) HH:mm')} - {endedAt?.format('HH:mm')}
                                                     </p>
                                                 </div>
                                             </div>

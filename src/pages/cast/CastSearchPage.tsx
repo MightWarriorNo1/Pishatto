@@ -753,8 +753,14 @@ const RepeatGuestsModal: React.FC<RepeatGuestsModalProps> = ({ isOpen, onClose, 
                                         className="w-full h-full object-cover rounded-lg border-2 border-secondary"
                                     />
                                 </div>
-                                <div className="text-xs text-white font-bold truncate w-full text-center">{guest.nickname}</div>
-                                <div className="text-xs text-white">{guest.reservations_count}回利用</div>
+                                <div className="text-xs text-white font-bold truncate w-full text-center">
+                                    {guest.nickname}
+                                    {guest.birth_year ? `（${new Date().getFullYear() - guest.birth_year}歳）` : ''}
+                                </div>
+                                {guest.residence && (
+                                    <div className="text-[10px] text-white opacity-80 truncate w-full text-center">{guest.residence}</div>
+                                )}
+                                <div className="text-xs text-white mt-1">{guest.reservations_count}回利用</div>
                             </div>
                         ))
                     )}
@@ -829,8 +835,14 @@ const CastSearchPage: React.FC = () => {
                                 className="w-full h-full object-cover rounded-lg border-2 border-secondary"
                             />
                         </div>
-                        <div className="text-xs text-white font-bold truncate w-full text-center">{guest.nickname}</div>
-                        <div className="text-xs text-white">{guest.reservations_count}回利用</div>
+                        <div className="text-xs text-white font-bold truncate w-full text-center">
+                            {guest.nickname}
+                            {guest.birth_year ? `（${new Date().getFullYear() - guest.birth_year}歳）` : ''}
+                        </div>
+                        {guest.residence && (
+                            <div className="text-[10px] text-white opacity-80 truncate w-full text-center">{guest.residence}</div>
+                        )}
+                        <div className="text-xs text-white mt-1">{guest.reservations_count}回利用</div>
                     </div>
                 ))}
             </div>
@@ -850,6 +862,13 @@ const CastSearchPage: React.FC = () => {
                                 className="w-full h-full object-cover rounded-lg border-2 border-secondary"
                             />
                         </div>
+                        <div className="text-xs text-white font-bold truncate w-full text-center">
+                            {guest.nickname}
+                            {guest.birth_year ? `（${new Date().getFullYear() - guest.birth_year}歳）` : ''}
+                        </div>
+                        {guest.residence && (
+                            <div className="text-[10px] text-white opacity-80 truncate w-full text-center">{guest.residence}</div>
+                        )}
                     </div>
                 ))}
             </div>

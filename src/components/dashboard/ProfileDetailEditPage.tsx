@@ -269,8 +269,8 @@ const ProfileDetailEditPage: React.FC<ProfileDetailEditPageProps> = ({ onBack })
                             ))}
                         </div>
                         <div className="flex border-t text-white text-lg font-bold divide-x border-secondary">
-                            <button className="flex-1 py-3 bg-secondary hover:bg-pink-500" onClick={closePicker}>キャンセル</button>
-                            <button className="flex-1 py-3 bg-secondary hover:bg-pink-500" onClick={confirmPicker}>わかりました</button>
+                            <button className="flex-1 py-3 bg-white/10 hover:bg-pink-500" onClick={closePicker}>戻る</button>
+                            <button className="flex-1 py-3 bg-secondary hover:bg-pink-500" onClick={confirmPicker}>設定する</button>
                         </div>
                     </div>
                 </div>

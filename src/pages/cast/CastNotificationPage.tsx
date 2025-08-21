@@ -193,7 +193,7 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
             <div className="pt-24">
                 {/* Notification list */}
                 {tab === '通知' && (
-                    <div className="px-4 py-4 flex flex-col gap-4">
+                    <div className="px-4 pt-4 pb-24 flex flex-col gap-4">
                         {notificationsLoading ? (
                             <Spinner />
                         ) : notificationsError ? (

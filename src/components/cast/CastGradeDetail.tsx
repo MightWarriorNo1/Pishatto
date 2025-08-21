@@ -241,7 +241,7 @@ const CastGradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             
             {/* Enhanced Member benefits */}
             <div className="px-4 py-6">
-                <div className="text-center font-bold text-white mb-6 text-lg">pishatto内特典</div>
+                <div className="text-center font-bold text-white mb-6 text-lg">Pishatto内特典</div>
                 <div className="grid grid-cols-3 gap-y-6 gap-x-4">
                     {benefits.map((b, i) => {
                         const isActive = gradeInfo.benefits[b.key as keyof typeof gradeInfo.benefits];

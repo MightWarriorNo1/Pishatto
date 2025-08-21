@@ -108,7 +108,7 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
             {/* Main title */}
             <div className="px-4 mt-2">
                 <div className="text-2xl font-bold mb-1 text-white">3つのステップを完了してください</div>
-                <div className="text-white text-sm mb-4">すべてのステップが完了すると、pishattoをご利用いただけます。</div>
+                <div className="text-white text-sm mb-4">すべてのステップが完了すると、Pishattoをご利用いただけます。</div>
                 {/* Progress */}
                 {(() => {
                     const isCardDone = !!hasRegisteredCard;

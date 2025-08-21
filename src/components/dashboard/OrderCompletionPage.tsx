@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { CheckCircle, MessageCircle, Calendar, MapPin, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CheckCircle, MessageCircle, Calendar, MapPin, User, X } from 'lucide-react';
 
 interface OrderCompletionPageProps {
   onViewChat: () => void;
@@ -18,6 +19,77 @@ interface OrderCompletionPageProps {
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
 
+// Add Reservation Completion Modal Component
+function ReservationCompletionModal({ isOpen, onClose, onNavigateToMessage }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onNavigateToMessage: () => void;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gradient-to-b from-primary to-blue-900 border border-white/20 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-fade-in">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-secondary to-red-600 px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+              <CheckCircle className="text-white w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">予約完了</h3>
+              <p className="text-white/80 text-sm">Reservation Complete</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white hover:text-gray-300 p-2 rounded-full hover:bg-white/10 transition-all duration-200"
+          >
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {/* Success Icon */}
+          <div className="flex justify-center mb-6">
+            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-12 h-12 text-green-400 animate-bounce" />
+            </div>
+          </div>
+
+          {/* Message */}
+          <div className="text-center mb-6">
+            <h4 className="text-white font-bold text-lg mb-3">予約完了しました</h4>
+            <p className="text-white/80 text-base leading-relaxed">
+              メッセージ画面に移動してマッチングまで少々お待ちください。
+            </p>
+          </div>
+
+          {/* Action Buttons */}
+          {/* <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 py-3 border border-white/20 text-white rounded-xl hover:bg-white/10 transition-all duration-200 font-semibold"
+            >
+              閉じる
+            </button>
+            <button
+              onClick={() => {
+                onNavigateToMessage();
+                onClose();
+              }}
+              className="flex-1 bg-gradient-to-r from-secondary to-red-500 text-white py-3 rounded-xl hover:from-red-500 hover:to-red-600 transition-all duration-200 font-semibold shadow-lg"
+            >
+              メッセージ画面へ
+            </button>
+          </div> */}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
   onViewChat,
   onBackToHome,
@@ -27,8 +99,21 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
   scheduledTime,
   duration
 }) => {
+  const navigate = useNavigate();
   const [showChatTooltip, setShowChatTooltip] = useState(false);
   const [showHomeTooltip, setShowHomeTooltip] = useState(false);
+  const [showReservationModal, setShowReservationModal] = useState(false);
+
+  const handleNavigateToMessage = () => {
+    // Navigate to message screen and close modal
+    navigate('/messages');
+    setShowReservationModal(false);
+  };
+
+  // Show reservation completion modal when component mounts
+  useEffect(() => {
+    setShowReservationModal(true);
+  }, []);
 
   const computeHours = (durationLabel: string): number => {
     if (!durationLabel) return 1;
@@ -182,10 +267,10 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
       {/* Action Buttons */}
       <div className="px-4 py-6 space-y-4">
         <div className="relative">
-          <button
-            onClick={() => { onViewChat(); setShowChatTooltip(true); setTimeout(() => setShowChatTooltip(false), 1200); }}
-            className="w-full bg-white text-primary py-4 rounded-lg font-bold text-lg hover:bg-gray-100 active:scale-95 transition-all flex items-center justify-center shadow-md focus:outline-none focus:ring-2 focus:ring-primary/40"
-          >
+                     <button
+             onClick={() => { handleNavigateToMessage(); setShowChatTooltip(true); setTimeout(() => setShowChatTooltip(false), 1200); }}
+             className="w-full bg-white text-primary py-4 rounded-lg font-bold text-lg hover:bg-gray-100 active:scale-95 transition-all flex items-center justify-center shadow-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+           >
             <MessageCircle className="w-5 h-5 mr-2" />
             メッセージを送る
           </button>
@@ -238,6 +323,13 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
+
+             {/* Reservation Completion Modal */}
+       <ReservationCompletionModal
+         isOpen={showReservationModal}
+         onClose={() => setShowReservationModal(false)}
+         onNavigateToMessage={handleNavigateToMessage}
+       />
     </div>
   );
 };

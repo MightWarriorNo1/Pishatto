@@ -77,6 +77,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     const [showFile, setShowFile] = useState(false);
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [inputBarHeight, setInputBarHeight] = useState<number>(0);
     
     // Proposal modal state
     const [showProposalModal, setShowProposalModal] = useState(false);
@@ -191,6 +192,24 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
         // Don't clear proposal sessions here - they will be restored from localStorage
         // setProposalSessions(new Map());
     }, [refetchMessages, message.id]);
+
+    // Measure input bar height (including dynamic content) and update on resize/state changes
+    useEffect(() => {
+        const updateHeights = () => {
+            if (inputBarRef.current) {
+                setInputBarHeight(inputBarRef.current.getBoundingClientRect().height);
+            }
+        };
+        updateHeights();
+        window.addEventListener('resize', updateHeights);
+        return () => window.removeEventListener('resize', updateHeights);
+    }, []);
+
+    useEffect(() => {
+        if (inputBarRef.current) {
+            setInputBarHeight(inputBarRef.current.getBoundingClientRect().height);
+        }
+    }, [imagePreview, attachedFile, showFile, showCamera]);
 
     // Auto scroll to bottom on new messages
     useEffect(() => {
@@ -524,9 +543,9 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
             <div
                 className="overflow-y-auto px-4 pt-4 scrollbar-hidden"
                 style={{
-                    marginTop: '4rem', // header height (h-16 = 4rem)
-                    marginBottom: '5.5rem', // input area height
-                    height: 'calc(100vh - 6.5rem)', // viewport height minus header and input heights
+                    marginTop: '4rem',
+                    height: `calc(100vh - 4rem - ${inputBarHeight}px)`,
+                    paddingBottom: 'env(safe-area-inset-bottom)'
                 }}
             >
                 {(sortedMessages || []).map((msg: any, idx: number) => {
@@ -849,7 +868,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
 
 
             {/* Input bar (always fixed at bottom) */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t border-secondary flex flex-col px-4 py-2 z-20">
+            <div ref={inputBarRef} className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t border-secondary flex flex-col px-4 py-2 z-20" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
                 {/* Image preview */}
                 {imagePreview && (
                     <div className="flex items-center mt-2 p-2 bg-gray-800 rounded-lg">
@@ -872,7 +891,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                         </button>
                     </div>
                 )}
-                <div className="flex items-center w-full relative" ref={inputBarRef}>
+                <div className="flex items-center w-full relative">
                     <input
                         type="text"
                         className="flex-1 px-4 py-2 rounded-full border border-secondary text-sm mr-2 bg-primary text-white"
@@ -1240,7 +1259,10 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
     }
     
     return (
-        <div className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-20">
+        <div
+            className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-20"
+            style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+        >
             {/* Fixed Header */}
             <div className="fixed top-0 left-0 right-0 max-w-md mx-auto bg-primary z-20 border-b border-secondary">
                 <h1 className="text-lg font-bold text-center py-3 text-white">メッセージ</h1>

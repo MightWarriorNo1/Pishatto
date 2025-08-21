@@ -412,7 +412,7 @@ const CastDashboardInner: React.FC = () => {
                 ...r,
                 title: r.location || '未設定',
                 time: r.scheduled_at ? parseLocalDateTime(r.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '〜' : '',
-                typeLabel: r.type === 'pishatto' ? 'プレミアム' : 'スタンダード',
+                typeLabel: r.type === 'Pishatto' ? 'プレミアム' : 'スタンダード',
                 people: r.details
                     ? (r.details.match(/(\d+)人/g)?.map((s: any) => Number(s.replace('人', ''))).reduce((a: any, b: any) => a + b, 0) || 1)
                     : 1,

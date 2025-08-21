@@ -238,7 +238,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
       const reservationData = {
         guest_id: user.id,
         cast_id: selectedCast.id,
-        type: 'pishatto' as const,
+        type: 'Pishatto' as const,
         scheduled_at: scheduledDate.toISOString(),
         location: meetingArea,
         meeting_location: meetingLocation,
