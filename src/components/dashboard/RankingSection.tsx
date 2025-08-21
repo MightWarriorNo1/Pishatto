@@ -43,7 +43,10 @@ const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking, hideLoadi
                 src={profile.avatar ? 
                   (Array.isArray(profile.avatar) && profile.avatar.length > 0 ? 
                     `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar[0]}` : 
-                    `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar}`
+                    (typeof profile.avatar === 'string' && profile.avatar.includes(',') ? 
+                      `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar.split(',')[0].trim()}` :
+                      `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar}`
+                    )
                   ) : 
                   '/assets/avatar/female.png'
                 }
