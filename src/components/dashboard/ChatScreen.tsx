@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Send, Calendar } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import { sendMessage, getChatMessages, fetchAllGifts, updateReservation, getChatById, getGuestReservations } from '../../services/api';
+import { sendMessage, getChatMessages, fetchAllGifts, getChatById, getGuestReservations } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useChatMessages } from '../../hooks/useRealtime';
@@ -102,16 +102,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const [showCalendarPage, setShowCalendarPage] = useState(false);
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
     
+    // Matching confirmation state
+    const [matchingConfirmed, setMatchingConfirmed] = useState(false);
+    const [matchingTime, setMatchingTime] = useState<string>('');
+    
     // Session management
     const {
         sessionState,
         isLoading: sessionLoading,
         error: sessionError,
-        formatElapsedTime,
-        handleMeet,
-        handleDissolve,
         acceptProposal: sessionAcceptProposal,
-        resetSession
     } = useSessionManagement({
         reservationId,
         chatId,
@@ -210,6 +210,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         getGuestReservations(user.id).then(setGuestReservations).catch(() => setGuestReservations([]));
     }, [user?.id]);
 
+    // Periodically refresh guest reservations so proposal acceptance reflects promptly
+    useEffect(() => {
+        if (!user?.id) return;
+        const interval = setInterval(() => {
+            getGuestReservations(user.id).then(setGuestReservations).catch(() => {});
+        }, 15000);
+        return () => clearInterval(interval);
+    }, [user?.id]);
+
     // Set up real-time listener for chat messages
     useChatMessages(chatId, (message) => {
         // Only process real-time messages if initial fetch is complete and user is loaded
@@ -244,6 +253,48 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             return [...filtered, message];
         });
     });
+
+    // Check for matching confirmation and add automatic message
+    useEffect(() => {
+        // This would typically be triggered by a real-time event or API call
+        // For now, we'll simulate it based on reservation state
+        if (reservationId && !matchingConfirmed) {
+            // Check if reservation is confirmed (you may need to adjust this logic based on your API)
+            const checkMatchingConfirmation = async () => {
+                try {
+                    // You can add API call here to check matching status
+                    // For now, we'll simulate the confirmation
+                    if (reservationId) {
+                        setMatchingConfirmed(true);
+                        const now = new Date();
+                        const meetingTime = new Date(now.getTime() + 30 * 60000); // 30 minutes from now
+                        const timeString = meetingTime.toLocaleTimeString('ja-JP', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                        setMatchingTime(timeString);
+                        
+                        // Add automatic matching confirmation message
+                        const matchingMessage = {
+                            id: `matching-${Date.now()}`,
+                            chat_id: chatId,
+                            sender_cast_id: castInfo?.id,
+                            message: `マッチングが成立しました。合流時間は${timeString}となります。キャストの合流ボタン押下後、マッチング開始となります。`,
+                            created_at: new Date().toISOString(),
+                            cast: castInfo,
+                            isSystemMessage: true
+                        };
+                        
+                        setMessages(prev => [...prev, matchingMessage]);
+                    }
+                } catch (error) {
+                    console.error('Error checking matching confirmation:', error);
+                }
+            };
+            
+            checkMatchingConfirmation();
+        }
+    }, [reservationId, matchingConfirmed, castInfo, chatId]);
 
     useEffect(() => {
         fetchAllGifts().then(setGifts);
@@ -494,7 +545,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             </div>
             {/* Session Timer - Only show if there's an active reservation */}
             {reservationId && (
-                <div className="fixed max-w-md mx-auto left-0 right-0 top-16 z-20 px-4 py-2 bg-primary border-b border-secondary">
+                <div className="fixed max-w-md mx-auto left-0 right-0 top-16 z-20 px-4 pt-2 bg-primary">
                     <SessionTimer
                         isActive={sessionState.isActive}
                         elapsedTime={sessionState.elapsedTime}
@@ -506,7 +557,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             
             {/* Chat history (scrollable, between header and input) */}
             <div
-                className="flex-1 overflow-y-auto px-4 py-4"
+                className="flex-1 overflow-y-auto px-4 pt-16 pb-4"
                 style={{
                     marginTop: reservationId ? '8rem' : '4rem', // Adjust margin based on whether timer is shown
                     marginBottom: '5.5rem', // input bar height (py-2 + px-4 + border + input height)
@@ -542,15 +593,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             if (parsed && parsed.type === 'proposal') proposal = parsed;
                         } catch (e) { }
                         if (proposal) {
-                            // Check if proposal is accepted by matching guest_id and scheduled_at
-                            const isAccepted = guestReservations.some(res =>
-                                res.guest_id === user?.id &&
-                                dayjs(res.scheduled_at).isSame(proposal?.date)
-                            ) || acceptedProposals.includes(msg.id);
+                            // Check if proposal is accepted by matching guest_id and scheduled_at (compare by day)
+                            const isAccepted = guestReservations.some(res => {
+                                const proposalDate = dayjs(proposal?.date);
+                                const reservationDate = dayjs(res.scheduled_at);
+                                return res.guest_id === user?.id && reservationDate.isSame(proposalDate, 'day');
+                            }) || acceptedProposals.includes(msg.id);
                             
-                            // Determine proposal position based on sender
+                            // Determine proposal alignment based on sender
                             const isProposalFromGuest = msg.sender_guest_id && !msg.sender_cast_id;
                             const proposalPosition = isProposalFromGuest ? 'justify-end' : 'justify-start';
+                            const alignment = isProposalFromGuest ? 'items-end' : 'items-start';
                             
                             return (
                                 <React.Fragment key={msg.id || `p-${idx}`}>
@@ -561,18 +614,51 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                             </span>
                                         </div>
                                     )}
-                                    <div
-                                        className={`flex ${proposalPosition} mb-4`}
-                                    >
-                                        <div className="bg-orange-600 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative">
-                                            <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
-                                            <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
-                                            <div>時間：{proposal.duration}</div>
-                                            <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
-                                            <div>（延長：{proposal.extensionPoints?.toLocaleString()}P / 15分）</div>
-                                            {isAccepted && (
-                                                <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">承認済み</span>
-                                            )}
+                                    <div className={`flex ${proposalPosition} mb-4`}>
+                                        <div className={`flex flex-col ${alignment} max-w-[80%]`}>
+                                            <div className={`bg-orange-600 text-white rounded-lg px-4 py-3 text-sm shadow-md relative w-full ${isAccepted? 'opacity-50 cursor-default' : 'cursor-pointer hover:bg-orange-600'}`}>
+                                                <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
+                                                <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
+                                                <div>時間：{proposal.duration}</div>
+                                                <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
+                                                <div>（延長：{proposal.extensionPoints?.toLocaleString()}P / 15分）</div>
+                                                {isAccepted && (
+                                                    <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">承認済み</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {isAccepted && (
+                                        <div className="mt-3 w-full max-w-[100%]">
+                                            <SessionTimer
+                                                isActive={sessionState.isActive}
+                                                elapsedTime={sessionState.elapsedTime}
+                                                isLoading={sessionLoading}
+                                            />
+                                        </div>
+                                    )}
+                                </React.Fragment>
+                            );
+                        }
+
+                        // Handle matching confirmation system message
+                        if (msg.isSystemMessage) {
+                            return (
+                                <React.Fragment key={msg.id || `matching-${idx}`}>
+                                    {(idx === 0 || currentDate !== prevDate) && (
+                                        <div className="flex justify-center my-2">
+                                            <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
+                                                {formatTime(msg.created_at)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-center mb-4">
+                                        <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg px-6 py-4 text-center max-w-[90%] shadow-lg border border-green-400">
+                                            <div className="flex items-center justify-center mb-2">
+                                                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse mr-2"></div>
+                                                <span className="font-semibold text-sm">システムメッセージ</span>
+                                            </div>
+                                            <div className="text-sm leading-relaxed">{msg.message}</div>
                                         </div>
                                     </div>
                                 </React.Fragment>
@@ -817,74 +903,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                 ? 'bg-secondary text-white hover:bg-red-700' 
                                                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
                                         }`}
-                                                                            onClick={async () => {
-                                        if (!user || !hasEnoughPoints) return;
-                                        
-                                        // Check if message notifications are enabled
-                                        const isMessageNotificationEnabled = isNotificationEnabled('messages');
-                                        
-                                        if (!isMessageNotificationEnabled) {
-                                            setSendError('メッセージ通知が無効になっています。設定で有効にしてください。');
-                                            return;
-                                        }
-                                        
-                                        setShowGift(false);
-                                        setSending(true);
-                                        setSendError(null);
-                                        
-                                        // Create optimistic gift message
-                                        const optimisticId = `optimistic-gift-${Date.now()}`;
-                                        const optimisticGiftMessage = {
-                                            id: optimisticId,
-                                            chat_id: chatId,
-                                            sender_guest_id: user.id,
-                                            gift_id: gift.id,
-                                            gift: {
-                                                id: gift.id,
-                                                name: gift.name || gift.label,
-                                                icon: gift.icon,
-                                                points: gift.points
-                                            },
-                                            created_at: new Date().toISOString(),
-                                            guest: user,
-                                            isOptimistic: true
-                                        };
-                                        
-                                        // Add optimistic gift message immediately
-                                        setMessages((prev) => [...prev, optimisticGiftMessage]);
-                                        
-                                        try {
-                                            const sent = await sendMessage({
-                                                chat_id: chatId,
-                                                sender_guest_id: user.id,
-                                                gift_id: gift.id,
-                                            });
-                                            // Ensure the sent message has the gift details
-                                            if (sent && !sent.gift && gift) {
-                                                sent.gift = {
-                                                    id: gift.id,
-                                                    name: gift.name || gift.label,
-                                                    icon: gift.icon,
-                                                    points: gift.points
-                                                };
-                                            }
-                                            // Replace optimistic message with real one
-                                            setMessages((prev) => prev.map(m => m.id === optimisticId ? sent : m));
-                                            // Refresh user points after sending gift
-                                            refreshUser();
-                                        } catch (e: any) {
-                                            // Remove optimistic message on error
-                                            setMessages((prev) => prev.filter(m => m.id !== optimisticId));
-                                            
-                                            if (e.response?.data?.error === 'Insufficient points to send this gift') {
-                                                setSendError(`ポイントが不足しています。必要: ${Number(e.response.data.required_points).toLocaleString()}P、所持: ${Number(e.response.data.available_points).toLocaleString()}P`);
-                                            } else {
-                                                setSendError('ギフトの送信に失敗しました');
-                                            }
-                                        } finally {
-                                            setSending(false);
-                                        }
-                                    }}
                                     >
                                         <span className="text-3xl mb-1">
                                             {gift.icon}
@@ -901,251 +919,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     </div>
                 </div>
             )}
-            {showGiftModal && (
-                <div className="fixed inset-0 z-50 bg-black bg-opacity-60">
-                    <div className="fixed left-0 right-0 bottom-0 bg-primary rounded-t-2xl shadow-lg p-6 flex flex-col items-center border-t border-secondary w-full max-w-md mx-auto animate-slide-up">
-                        <h2 className="font-bold text-lg mb-4 text-white">ギフトを選択</h2>
-                        <div className="flex gap-2 mb-4">
-                            {['standard', 'regional', 'grade', 'mygift'].map(cat => (
-                                <button
-                                    key={cat}
-                                    className={`px-3 py-1 rounded-full font-bold text-sm ${selectedGiftCategory === cat ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}
-                                    onClick={() => setSelectedGiftCategory(cat)}
-                                >
-                                    {cat === 'standard' ? '定番' : cat === 'regional' ? 'ご当地' : cat === 'grade' ? 'グレード' : 'Myギフト'}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="grid grid-cols-4 gap-4 mb-4">
-                            {gifts.filter(g => g.category === selectedGiftCategory).map(gift => {
-                                const hasEnoughPoints = user && user.points && user.points >= gift.points;
-                                return (
-                                <button
-                                    key={gift.id}
-                                    className={`flex flex-col items-center justify-center rounded-lg p-2 transition ${
-                                        hasEnoughPoints 
-                                            ? 'bg-secondary text-white hover:bg-red-700' 
-                                            : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                    }`}
-                                    onClick={() => {
-                                        if (!hasEnoughPoints) return;
-                                        setSelectedGift(gift);
-                                        setShowGiftDetailModal(true);
-                                    }}
-                                >
-                                    <span className="text-3xl mb-1">
-                                        {gift.icon}
-                                    </span>
-                                    <span className="text-xs">{gift.name}</span>
-                                    <span className="text-xs text-yellow-300 font-bold">{Number(gift.points).toLocaleString()}P</span>
-                                </button>
-                                );
-                            })}
-                        </div>
-                        <button className="text-white mt-2 hover:text-red-700 transition-all duration-200 font-medium" onClick={() => setShowGiftModal(false)}>閉じる</button>
-                    </div>
-                </div>
-            )}
-            {showProposalModal && selectedProposal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
-                        <h2 className="font-bold text-lg mb-4 text-black">予約提案の確認</h2>
-                        <div className="mb-4 text-black">
-                            <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
-                            <div>人数：{selectedProposal.people?.replace(/名$/, '')}人</div>
-                            <div>時間：{selectedProposal.duration}</div>
-                            <div>消費ポイント：{selectedProposal.totalPoints?.toLocaleString()}P</div>
-                            <div>（延長：{selectedProposal.extensionPoints?.toLocaleString()}P / 15分）</div>
-                        </div>
-                        {proposalActionError && <div className="text-red-500 mb-2">{proposalActionError}</div>}
-                        {sessionError && <div className="text-red-500 mb-2">{sessionError}</div>}
-                        <div className="flex gap-4">
-                            <button
-                                className="px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
-                                disabled={proposalActionLoading || sessionLoading}
-                                onClick={async () => {
-                                    setProposalActionLoading(true);
-                                    setProposalActionError(null);
-                                    try {
-                                        // Use session management hook to accept proposal
-                                        const proposalData = {
-                                            date: selectedProposal.date,
-                                            duration: selectedProposal.duration ? parseInt(selectedProposal.duration as string, 10) : 120, // Default to 2 hours
-                                            totalPoints: selectedProposal.totalPoints,
-                                            guestId: user?.id,
-                                            castId: castInfo?.id
-                                        };
-                                        
-                                        await sessionAcceptProposal(proposalData);
-                                        
-                                        // Mark proposal as accepted
-                                        if (proposalMsgId !== null && typeof proposalMsgId === 'number') {
-                                            setAcceptedProposals(prev => prev.includes(proposalMsgId) ? prev : [...prev, proposalMsgId]);
-                                        }
-                                        
-                                        setShowProposalModal(false);
-                                        setSelectedProposal(null);
-                                        setProposalMsgId(null);
-                                    } catch (e: any) {
-                                        setProposalActionError(e.message || '予約の更新に失敗しました');
-                                    } finally {
-                                        setProposalActionLoading(false);
-                                    }
-                                }}
-                            >承認</button>
-                            <button
-                                className="px-4 py-2 bg-gray-400 text-white rounded font-bold"
-                                onClick={() => { setShowProposalModal(false); setSelectedProposal(null); setProposalMsgId(null); }}
-                            >キャンセル</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {showGiftDetailModal && selectedGift && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                    <div className="bg-primary rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
-                        <h2 className="font-bold text-lg mb-4 text-white">ギフト詳細</h2>
-                        <div className="flex flex-col items-center mb-4">
-                            <span className="text-5xl mb-2">{selectedGift.icon}</span>
-                            <span className="text-lg font-bold text-white mb-1">{selectedGift.name}</span>
-                            <span className="text-yellow-300 font-bold mb-2">{Number(selectedGift.points).toLocaleString()}P</span>
-                            <span className="text-white text-sm whitespace-pre-line mb-2" style={{maxWidth: 320, textAlign: 'center'}}>{selectedGift.description || '説明はありません'}</span>
-                        </div>
-                        <div className="flex gap-4">
-                            <button
-                                className="px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
-                                disabled={sending || !user || (user.points ?? 0) < selectedGift.points}
-                                onClick={async () => {
-                                    if (!user || (user.points ?? 0) < selectedGift.points) return;
-                                    setSending(true);
-                                    setSendError(null);
-                                    
-                                    // Create optimistic gift message
-                                    const optimisticId = `optimistic-gift-detail-${Date.now()}`;
-                                    const optimisticGiftMessage = {
-                                        id: optimisticId,
-                                        chat_id: chatId,
-                                        sender_guest_id: user.id,
-                                        gift_id: selectedGift.id,
-                                        gift: {
-                                            id: selectedGift.id,
-                                            name: selectedGift.name || selectedGift.label,
-                                            icon: selectedGift.icon,
-                                            points: selectedGift.points,
-                                            description: selectedGift.description
-                                        },
-                                        created_at: new Date().toISOString(),
-                                        guest: user,
-                                        isOptimistic: true
-                                    };
-                                    
-                                    // Add optimistic gift message immediately
-                                    setMessages((prev) => [...prev, optimisticGiftMessage]);
-                                    
-                                    try {
-                                        const payload: any = {
-                                            chat_id: chatId,
-                                            sender_guest_id: user.id,
-                                            gift_id: selectedGift.id,
-                                        };
-                                        const sent = await sendMessage(payload);
-                                        // Ensure the sent message has the full gift details
-                                        let giftObj = sent.gift;
-                                        if (!giftObj) {
-                                            giftObj = gifts.find(g => g.id === selectedGift.id) || selectedGift;
-                                            sent.gift = {
-                                                id: giftObj.id,
-                                                name: giftObj.name || giftObj.label,
-                                                icon: giftObj.icon,
-                                                points: giftObj.points,
-                                                description: giftObj.description
-                                            };
-                                        }
-                                        // Replace optimistic message with real one
-                                        setMessages((prev) => prev.map(m => m.id === optimisticId ? sent : m));
-                                        refreshUser();
-                                        setShowGiftDetailModal(false);
-                                        setSelectedGift(null);
-                                    } catch (e: any) {
-                                        // Remove optimistic message on error
-                                        setMessages((prev) => prev.filter(m => m.id !== optimisticId));
-                                        setSendError('ギフトの送信に失敗しました');
-                                    } finally {
-                                        setSending(false);
-                                    }
-                                }}
-                            >
-                                送信
-                            </button>
-                            <button
-                                className="px-4 py-2 bg-gray-400 text-white rounded font-bold"
-                                onClick={() => { setShowGiftDetailModal(false); setSelectedGift(null); }}
-                            >
-                                キャンセル
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {/* Attach Popover */}
-            {/* This section is removed as the popover is now absolutely positioned */}
-
-            {/* Camera Modal */}
-            {showCamera && (
-                <div className="fixed inset-0 bg-black bg-opacity-80 flex flex-col items-center justify-center z-50">
-                    <div className="bg-primary p-6 rounded-lg flex flex-col items-center max-w-sm w-full mx-4">
-                        <h3 className="text-white text-lg font-bold mb-4">カメラ</h3>
-                        <div className="relative">
-                            <video
-                                ref={videoRef}
-                                autoPlay
-                                playsInline
-                                className="w-64 h-64 rounded-md bg-black object-cover"
-                            />
-                            {cameraError && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-75 rounded-md">
-                                    <div className="text-red-400 text-center p-4">
-                                        <div className="text-sm mb-2">カメラエラー</div>
-                                        <div className="text-xs">{cameraError}</div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        {cameraError && (
-                            <div className="text-red-400 mt-2 text-center text-sm">{cameraError}</div>
-                        )}
-                        <div className="flex mt-4 space-x-4">
-                            <button
-                                onClick={handleTakePhoto}
-                                className="bg-secondary text-white px-6 py-2 rounded-md font-bold disabled:opacity-50"
-                                disabled={!!cameraError}
-                            >
-                                撮影
-                            </button>
-                            <button
-                                onClick={handleCloseCamera}
-                                className="bg-gray-400 text-white px-6 py-2 rounded-md font-bold"
-                            >
-                                キャンセル
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-            {/* Image Lightbox */}
-            {lightboxUrl && (
-                <div
-                    className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center"
-                    onClick={() => setLightboxUrl(null)}
-                >
-                    <img src={lightboxUrl} alt="preview" className="max-w-[90vw] max-h-[90vh] rounded shadow-lg" />
-                </div>
-            )}
-
-
-
         </div>
     );
 };
 
-export default ChatScreen; 
+export default ChatScreen;

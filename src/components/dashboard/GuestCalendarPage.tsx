@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Heart, ChevronLeft, Clock, Users, Send } from 'lucide-react';
+import { Calendar, Heart, ChevronLeft, Clock, Users, Send, X } from 'lucide-react';
 import { getChatById, getReservationById, sendMessage, getCastProfileById } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import Spinner from '../ui/Spinner';
@@ -56,11 +56,22 @@ const parseDuration = (val: string) => {
     return 60; // default 1 hour
 };
 
-const calcPoints = (duration: string, castCategory?: string) => {
+// Helper function to get minimum allowed time
+const getMinTime = (selectedDate: string): string => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (selectedDate === today) {
+        const now = new Date();
+        // Add 30 minutes buffer to current time
+        now.setMinutes(now.getMinutes() + 30);
+        return now.toTimeString().slice(0, 5);
+    }
+    return '00:00';
+};
+
+const calcPoints = (duration: string, castGradePoints: number) => {
     const minutes = parseDuration(duration);
     const units = Math.ceil(minutes / 30);
-    const basePoints = castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000;
-    return basePoints * units;
+    return castGradePoints * units;
 };
 
 interface GuestCalendarPageProps {
@@ -73,15 +84,19 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const [reservationData, setReservationData] = useState<any>(null);
-    const [chatData, setChatData] = useState<any>(null);
     const [castInfo, setCastInfo] = useState<any>(null);
-    const [castCategory, setCastCategory] = useState<string>('一般');
+    const [castGradePoints, setCastGradePoints] = useState<number>(9000); // Default to 9000 if not available
     
     // Form state
     const [selectedDate, setSelectedDate] = useState('');
     const [selectedTime, setSelectedTime] = useState('');
     const [selectedDuration, setSelectedDuration] = useState('2時間');
     const [numberOfCastMembers] = useState(1);
+
+    // Modal state
+    const [showDateTimeModal, setShowDateTimeModal] = useState(false);
+    const [tempDate, setTempDate] = useState('');
+    const [tempTime, setTempTime] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -94,7 +109,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                     console.error('Chat not found');
                     return;
                 }
-                setChatData(chat);
+                
 
                 // Get reservation data if it exists
                 if (chat.reservation_id) {
@@ -104,12 +119,18 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                         // Pre-fill form with existing reservation data
                         if (reservation.scheduled_at) {
                             const reservationDate = new Date(reservation.scheduled_at);
-                            setSelectedDate(reservationDate.toISOString().slice(0, 16));
-                            setSelectedTime(formatTime(reservationDate));
+                            const reservationDateStr = reservationDate.toISOString().slice(0, 10);
+                            const reservationTimeStr = formatTime(reservationDate);
+                            console.log('Setting reservation values:', reservationDateStr, reservationTimeStr);
+                            setSelectedDate(reservationDateStr);
+                            setSelectedTime(reservationTimeStr);
                         }
                         if (reservation.duration) {
-                            const hours = Math.floor(reservation.duration);
-                            setSelectedDuration(`${hours}時間`);
+                            const hours = typeof reservation.duration === 'number' 
+                                ? reservation.duration 
+                                : parseFloat(reservation.duration);
+                            const label = Number.isInteger(hours) ? `${hours}時間` : `${hours.toFixed(1)}時間`;
+                            setSelectedDuration(label);
                         }
                     }
                 }
@@ -127,7 +148,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                             });
                             
                             // Set cast category for points calculation
-                            setCastCategory(castProfile.cast.category || '一般');
+                            setCastGradePoints(castProfile.cast.grade_points || 9000);
                         } else {
                             // Fallback to chat data if profile fetch fails
                             setCastInfo({
@@ -135,7 +156,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                                 nickname: chat.cast_nickname || 'キャスト',
                                 avatar: chat.cast_avatar
                             });
-                            setCastCategory('一般');
+                            setCastGradePoints(9000);
                         }
                     } catch (error) {
                         console.error('Error fetching cast profile:', error);
@@ -145,16 +166,19 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                             nickname: chat.cast_nickname || 'キャスト',
                             avatar: chat.cast_avatar
                         });
-                        setCastCategory('一般');
+                        setCastGradePoints(9000);
                     }
                 }
 
-                // Set default date and time if none selected
-                if (!selectedDate) {
+                // Set default date and time if no reservation data exists
+                if (!chat.reservation_id) {
                     const now = new Date();
                     now.setMinutes(now.getMinutes() + 30); // 30 minutes from now
-                    setSelectedDate(now.toISOString().slice(0, 16));
-                    setSelectedTime(formatTime(now));
+                    const defaultDate = now.toISOString().slice(0, 10);
+                    const defaultTime = formatTime(now);
+                    console.log('Setting default values:', defaultDate, defaultTime);
+                    setSelectedDate(defaultDate);
+                    setSelectedTime(defaultTime);
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -164,13 +188,29 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
         };
 
         fetchData();
-    }, [chatId]);
+    }, [chatId]); // Removed selectedDate dependency to prevent infinite loops
 
-    const totalPoints = calcPoints(selectedDuration, castCategory);
-    const extensionPoints = Math.round((castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000) / 2);
+    // Debug useEffect to track state changes
+    useEffect(() => {
+        console.log('State changed - selectedDate:', selectedDate, 'selectedTime:', selectedTime);
+    }, [selectedDate, selectedTime]);
+
+    // const totalPoints = calcPoints(selectedDuration, castCategory);
+    // const extensionPoints = Math.round((castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000) / 2);
+
+    const totalPoints = calcPoints(selectedDuration, castGradePoints);
+    const extensionPoints = Math.round(castGradePoints / 2);
 
     const handleResubmit = async () => {
         if (!user || !selectedDate || !selectedTime || !selectedDuration) {
+            return;
+        }
+        
+        // Check if selected date/time is in the past
+        const selectedDateTime = new Date(`${selectedDate}T${selectedTime}`);
+        const now = new Date();
+        if (selectedDateTime <= now) {
+            alert('過去の日時は選択できません。未来の日時を選択してください。');
             return;
         }
 
@@ -179,7 +219,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
             // Create proposal message
             const proposalData = {
                 type: 'proposal',
-                date: selectedDate,
+                date: `${selectedDate}T${selectedTime}`,
                 people: `${numberOfCastMembers}名`,
                 duration: selectedDuration,
                 totalPoints,
@@ -208,6 +248,65 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
         onBack();
     };
 
+
+
+    const openDateTimeModal = () => {
+        let dateToUse = selectedDate;
+        let timeToUse = selectedTime;
+        
+        if (!dateToUse || !timeToUse) {
+            const now = new Date();
+            dateToUse = now.toISOString().slice(0, 10);
+            timeToUse = getMinTime(dateToUse);
+        }
+        
+        console.log('Opening modal with dateToUse:', dateToUse, 'timeToUse:', timeToUse);
+        setTempDate(dateToUse);
+        setTempTime(timeToUse);
+        setShowDateTimeModal(true);
+    };
+
+    const closeModal = () => {
+        setShowDateTimeModal(false);
+        // Reset temp values to prevent stale data
+        setTempDate('');
+        setTempTime('');
+    };
+
+    const handleConfirmSelection = () => {
+        if (tempDate && tempTime) {
+            const selectedDateTime = new Date(`${tempDate}T${tempTime}`);
+            const now = new Date();
+            
+            // Check if selected date/time is in the past
+            if (selectedDateTime <= now) {
+                alert('過去の日時は選択できません。未来の日時を選択してください。');
+                return;
+            }
+            
+            // Additional validation for current date
+            if (tempDate === new Date().toISOString().slice(0, 10)) {
+                const currentTime = now.toTimeString().slice(0, 5);
+                if (tempTime < currentTime) {
+                    alert('今日の場合は、現在時刻より後の時間を選択してください。');
+                    return;
+                }
+            }
+            
+            // Store date and time separately for proper formatting
+            console.log('Setting selectedDate:', tempDate, 'selectedTime:', tempTime);
+            setSelectedDate(tempDate);
+            setSelectedTime(tempTime);
+            
+            // Force a re-render to see if the state updates
+            setTimeout(() => {
+                console.log('After state update - selectedDate:', tempDate, 'selectedTime:', tempTime);
+            }, 100);
+            
+            closeModal();
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-b from-primary via-primary/50 to-secondary flex flex-col items-center justify-center">
@@ -225,8 +324,8 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
             {/* Top Bar */}
             <div className="w-full max-w-md flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
                 <div className="flex items-center">
-                    <button onClick={onBack} className="mr-2 hover:text-secondary cursor-pointer">
-                        <ChevronLeft className="text-white" size={24} />
+                    <button onClick={onBack} className="mr-2">
+                        <ChevronLeft className="text-white  hover:text-secondary cursor-pointer" size={24} />
                     </button>
                     <div className="flex items-center">
                         <img 
@@ -252,7 +351,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                 <div className="flex items-center justify-center w-full mt-2">
                     <span className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
                         <img 
-                            src={castInfo?.avatar ? getFirstAvatarUrl(castInfo.avatar) : '/assets/avatar/avatar-2.png'} 
+                            src={castInfo?.avatar ? getFirstAvatarUrl(castInfo.avatar) : '/assets/avatar/female.png'} 
                             className="w-12 h-12 rounded-full object-cover" 
                             alt="avatar" 
                         />
@@ -263,31 +362,71 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
             </div>
 
             {/* Calendar Details Form */}
-            <div className="w-full max-w-md  bg-primary px-4 py-6 flex flex-col gap-4">
+            <div className="w-full max-w-m  px-4 py-6 flex flex-col gap-4">
                 <h2 className="text-xl font-bold text-white text-center mb-4">カレンダー詳細</h2>
                 
                 {/* Date Selection */}
                 <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
-                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                         <Calendar className="text-white" size={24} />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-300 mb-2">日付・時間</div>
-                        <input
-                            type="datetime-local"
-                            className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary"
-                            value={selectedDate}
-                            onChange={(e) => setSelectedDate(e.target.value)}
-                        />
+                        <button
+                            onClick={openDateTimeModal}
+                            className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary text-left hover:bg-primary/80 transition-colors"
+                        >
+                            {(() => {
+                                if (selectedDate && selectedTime) {
+                                    try {
+                                        const date = new Date(selectedDate);
+                                        if (isNaN(date.getTime())) {
+                                            console.error('Invalid date:', selectedDate);
+                                            return '日付・時間を選択';
+                                        }
+                                        return `${formatJPDate(date)} ${selectedTime}`;
+                                    } catch (error) {
+                                        console.error('Error formatting date:', error);
+                                        return '日付・時間を選択';
+                                    }
+                                }
+                                return '日付・時間を選択';
+                            })()}
+                        </button>
+                        {/* Debug info - remove this later */}
+                        {process.env.NODE_ENV === 'development' && (
+                            <div className="text-xs text-gray-400 mt-1">
+                                Debug: selectedDate={selectedDate}, selectedTime={selectedTime}
+                                <br />
+                                Button text: {selectedDate && selectedTime ? 
+                                    `${formatJPDate(new Date(selectedDate))} ${selectedTime}` : 
+                                    '日付・時間を選択'
+                                }
+                                <br />
+                                <button 
+                                    onClick={() => {
+                                        const now = new Date();
+                                        const testDate = now.toISOString().slice(0, 10);
+                                        const testTime = formatTime(now);
+                                        console.log('Test button clicked, setting:', testDate, testTime);
+                                        setSelectedDate(testDate);
+                                        setSelectedTime(testTime);
+                                    }}
+                                    className="text-xs bg-blue-500 text-white px-2 py-1 rounded mt-1"
+                                >
+                                    Test Set Date/Time
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 {/* Number of Cast Members */}
                 <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
-                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                         <Users className="text-white" size={24} />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-300 mb-2">キャスト人数</div>
                         <div className="text-white font-semibold">{numberOfCastMembers}名</div>
                         <div className="text-xs text-gray-400">固定で1名</div>
@@ -296,33 +435,43 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
 
                 {/* Duration Selection */}
                 <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
-                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                         <Clock className="text-white" size={24} />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-300 mb-2">時間</div>
                         <select
-                            className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary"
+                            className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary min-w-0"
                             value={selectedDuration}
                             onChange={(e) => setSelectedDuration(e.target.value)}
                         >
-                            <option value="1時間">1時間</option>
-                            <option value="1.5時間">1.5時間</option>
-                            <option value="2時間">2時間</option>
-                            <option value="2.5時間">2.5時間</option>
-                            <option value="3時間">3時間</option>
-                            <option value="3.5時間">3.5時間</option>
-                            <option value="4時間">4時間</option>
+                            {Array.from({ length: 47 }, (_, i) => 1 + i * 0.5).map((h) => {
+                                const label = Number.isInteger(h) ? `${h}時間` : `${h.toFixed(1)}時間`;
+                                return (
+                                    <option key={label} value={label}>{label}</option>
+                                );
+                            })}
                         </select>
                     </div>
                 </div>
 
                 {/* Occurrence Point */}
-                <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
-                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                {/* <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                         <span className="text-white font-bold text-lg">P</span>
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 min-w-0">
+                        <div className="text-sm text-gray-300">発生ポイント</div>
+                        <div className="text-white font-semibold">{totalPoints.toLocaleString()}P</div>
+                        <div className="text-xs text-gray-400">延長：{extensionPoints.toLocaleString()}P / 15分</div>
+                    </div>
+                </div> */}
+
+                <div className="flex items-center gap-3 p-3 bg-white/10 rounded-lg">
+                    <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-lg">P</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
                         <div className="text-sm text-gray-300">発生ポイント</div>
                         <div className="text-white font-semibold">{totalPoints.toLocaleString()}P</div>
                         <div className="text-xs text-gray-400">延長：{extensionPoints.toLocaleString()}P / 15分</div>
@@ -378,6 +527,100 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                     提案を送信すると、キャスト側で確認・承認が必要です
                 </div>
             </div>
+
+            {/* DateTime Selection Modal */}
+            {showDateTimeModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all duration-200 scale-100 animate-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <Calendar className="text-primary" size={20} />
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900">日付・時間を選択</h3>
+                            </div>
+                            <button
+                                onClick={closeModal}
+                                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-all duration-200"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="p-6 pt-4">
+                            <div className="space-y-5">
+                                {/* Date Selection */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                                        <Calendar size={16} className="text-primary" />
+                                        日付
+                                    </label>
+                                    <input
+                                        type="date"
+                                        className="w-full border-2 border-gray-200 rounded-xl p-4 text-base text-gray-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 hover:border-gray-300"
+                                        value={tempDate}
+                                        onChange={(e) => setTempDate(e.target.value)}
+                                        min={new Date().toISOString().slice(0, 10)}
+                                    />
+                                </div>
+                                
+                                {/* Time Selection */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                                        <Clock size={16} className="text-primary" />
+                                        時間
+                                    </label>
+                                    <input
+                                        type="time"
+                                        className="w-full border-2 border-gray-200 rounded-xl p-4 text-base text-gray-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 hover:border-gray-300"
+                                        value={tempTime}
+                                        onChange={(e) => setTempTime(e.target.value)}
+                                        min={getMinTime(tempDate)}
+                                        onBlur={(e) => {
+                                            if (tempDate === new Date().toISOString().slice(0, 10)) {
+                                                const selectedTime = e.target.value;
+                                                const minAllowedTime = getMinTime(tempDate);
+                                                if (selectedTime < minAllowedTime) {
+                                                    setTempTime(minAllowedTime);
+                                                }
+                                            }
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Preview */}
+                                {tempDate && tempTime && (
+                                    <div className="mt-4 p-4 bg-primary/5 rounded-xl border border-primary/20">
+                                        <div className="text-sm text-gray-600 mb-1">選択された日時:</div>
+                                        <div className="text-lg font-semibold text-primary">
+                                            {formatJPDate(new Date(`${tempDate}T${tempTime}`))} {tempTime}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        
+                        {/* Footer */}
+                        <div className="flex gap-3 p-6 pt-0">
+                            <button
+                                onClick={closeModal}
+                                className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-all duration-200 border border-gray-200"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                onClick={handleConfirmSelection}
+                                disabled={!tempDate || !tempTime}
+                                className="flex-1 py-3 px-4 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary shadow-lg shadow-primary/25"
+                            >
+                                確認
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

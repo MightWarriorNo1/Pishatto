@@ -344,7 +344,7 @@ const CastProfilePage: React.FC = () => {
                     </span>
                     {ranking && (
                         <span className="text-sm text-white/90">
-                            今月のランキング: {ranking.summary.my_rank !== null && ranking.summary.my_rank !== undefined ? `#${ranking.summary.my_rank}` : '—'} / Pt {ranking.summary.my_points ?? 0}
+                            今月のランキング: {ranking.summary.my_rank !== null && ranking.summary.my_rank !== undefined ? `#${ranking.summary.my_rank}` : '—'} / Pt {ranking.summary.my_points?.toLocaleString() ?? 0}
                         </span>
                     )}
                 </div>

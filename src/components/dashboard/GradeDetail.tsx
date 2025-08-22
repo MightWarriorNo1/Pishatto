@@ -85,7 +85,7 @@ const GradeDetail: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     if (loading) {
         return (
-            <div className="max-w-md mx-auto min-h-screen bg-primary flex items-center justify-center">
+            <div className="max-w-md mx-auto min-h-screen bg-gradien-to-b from-primary via-primary to-secondary flex items-center justify-center">
                 <Spinner />
             </div>
         );

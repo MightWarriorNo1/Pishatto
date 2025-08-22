@@ -30,7 +30,7 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
     };
 
     return (
-        <div className={`bg-secondary rounded-lg p-4 text-white ${className}`}>
+        <div className={`bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-4 border border-blue-400 mb-3 ${className}`}>
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                     <Clock size={20} />

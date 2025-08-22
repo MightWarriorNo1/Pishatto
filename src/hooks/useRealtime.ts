@@ -503,18 +503,35 @@ export function useCastReservations(
   useEffect(() => {
     if (!castId) return;
     
+    console.log(`useCastReservations: Setting up real-time listener for cast ${castId}`);
+    
     // Listen to general reservation updates
     const channel = echo.channel(`cast.${castId}`);
+    
+    // Add connection status logging
+    if (typeof channel.subscribed === 'function') {
+      channel.subscribed(() => {
+        console.log(`useCastReservations: Successfully subscribed to cast.${castId}`);
+      });
+    }
+    if (typeof channel.error === 'function') {
+      channel.error((error: any) => {
+        console.error(`useCastReservations: Error on cast.${castId} channel:`, error);
+      });
+    }
     
     const handleNewReservation = (e: { reservation: any }) => {
       const newReservation = e.reservation;
       console.log('useCastReservations: New reservation received:', newReservation);
       
-      // Update React Query cache for cast reservations
+      // Update React Query cache for all reservations (since cast dashboard shows all available reservations)
       queryClient.setQueryData(
         queryKeys.cast.reservations(castId),
         (oldData: any) => {
           if (!oldData) return [newReservation];
+          // Check if reservation already exists to avoid duplicates
+          const exists = oldData.some((r: any) => r.id === newReservation.id);
+          if (exists) return oldData;
           return [newReservation, ...oldData];
         }
       );
@@ -528,7 +545,7 @@ export function useCastReservations(
       const updatedReservation = e.reservation;
       console.log('useCastReservations: Reservation updated:', updatedReservation);
       
-      // Update React Query cache for cast reservations
+      // Update React Query cache for all reservations
       queryClient.setQueryData(
         queryKeys.cast.reservations(castId),
         (oldData: any) => {
@@ -544,12 +561,18 @@ export function useCastReservations(
       }
     };
     
+    console.log(`useCastReservations: Listening for ReservationCreated and ReservationUpdated events on cast.${castId}`);
     channel.listen("ReservationCreated", handleNewReservation);
     channel.listen("ReservationUpdated", handleReservationUpdate);
     
     return () => {
-      channel.stopListening("ReservationCreated");
-      channel.stopListening("ReservationUpdated");
+      console.log(`useCastReservations: Cleaning up listener for cast.${castId}`);
+      try {
+        channel.stopListening("ReservationCreated");
+        channel.stopListening("ReservationUpdated");
+      } catch (err) {
+        console.error('Error cleaning up channel listeners:', err);
+      }
     };
   }, [castId, onReservationUpdate]);
 }
@@ -669,6 +692,78 @@ export function useGuestChatsRealtime(
       channel.stopListening("ChatCreated");
     };
   }, [guestId, onChatUpdate]);
+}
+
+// Real-time cast chat updates (new chats or updates)
+export function useCastChatsRealtime(
+  castId: number,
+  onChatEvent?: (chat: any) => void
+) {
+  useEffect(() => {
+    if (!castId) return;
+    
+    console.log(`useCastChatsRealtime: Setting up real-time listener for cast ${castId}`);
+    
+    const channel = echo.channel(`cast.${castId}`);
+    
+    // Add connection status logging
+    if (typeof channel.subscribed === 'function') {
+      channel.subscribed(() => {
+        console.log(`useCastChatsRealtime: Successfully subscribed to cast.${castId}`);
+      });
+    }
+    if (typeof channel.error === 'function') {
+      channel.error((error: any) => {
+        console.error(`useCastChatsRealtime: Error on cast.${castId} channel:`, error);
+      });
+    }
+
+    const handleNewChat = (e: { chat: any }) => {
+      const newChat = e.chat;
+      console.log('useCastChatsRealtime: New chat received:', newChat);
+      
+      // Update React Query cache for cast chats
+      queryClient.setQueryData(
+        queryKeys.cast.chats(castId),
+        (oldData: any) => {
+          if (!oldData || !Array.isArray(oldData)) return [newChat];
+          // De-duplicate by id
+          const exists = oldData.some((c: any) => c.id === newChat.id);
+          if (exists) return oldData;
+          return [newChat, ...oldData];
+        }
+      );
+      onChatEvent?.(newChat);
+    };
+
+    const handleChatUpdated = (e: { chat: any }) => {
+      const updatedChat = e.chat;
+      console.log('useCastChatsRealtime: Chat updated:', updatedChat);
+      
+      queryClient.setQueryData(
+        queryKeys.cast.chats(castId),
+        (oldData: any) => {
+          if (!oldData || !Array.isArray(oldData)) return [updatedChat];
+          return oldData.map((c: any) => c.id === updatedChat.id ? { ...c, ...updatedChat } : c);
+        }
+      );
+      onChatEvent?.(updatedChat);
+    };
+
+    console.log(`useCastChatsRealtime: Listening for ChatCreated and ChatUpdated events on cast.${castId}`);
+    channel.listen("ChatCreated", handleNewChat);
+    channel.listen("ChatUpdated", handleChatUpdated);
+
+    return () => {
+      console.log(`useCastChatsRealtime: Cleaning up listener for cast.${castId}`);
+      try {
+        channel.stopListening("ChatCreated");
+        channel.stopListening("ChatUpdated");
+      } catch (err) {
+        console.error('Error cleaning up channel listeners:', err);
+      }
+    };
+  }, [castId, onChatEvent]);
 }
 
 

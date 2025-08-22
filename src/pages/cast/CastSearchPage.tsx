@@ -728,42 +728,115 @@ const RepeatGuestsModal: React.FC<RepeatGuestsModalProps> = ({ isOpen, onClose, 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-primary border border-secondary rounded-lg w-11/12 max-w-md max-h-[80vh] overflow-y-auto">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-secondary">
-                    <h2 className="text-lg font-bold text-white">リピートしそうなゲスト一覧</h2>
-                    <button onClick={onClose} className="text-white">
-                        <X size={24} />
+        <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-gradient-to-b from-primary via-primary to-secondary border-2 border-secondary rounded-2xl w-full max-w-md max-h-[85vh] overflow-hidden shadow-2xl">
+                {/* Enhanced Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b-2 border-secondary bg-gradient-to-r from-primary to-secondary">
+                    <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">👥</span>
+                        </div>
+                        <h2 className="text-xl font-bold text-white">リピートゲスト一覧</h2>
+                    </div>
+                    <button 
+                        onClick={onClose} 
+                        className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
+                    >
+                        <X size={20} className="text-white" />
                     </button>
                 </div>
-                <div className="p-4 grid grid-cols-2 gap-4">
+
+                {/* Guest Count Badge */}
+                <div className="px-6 py-3 bg-white/5 border-b border-white/10">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-300">総ゲスト数</span>
+                        <span className="bg-secondary text-white text-sm font-bold px-3 py-1 rounded-full">
+                            {guests.length}人
+                        </span>
+                    </div>
+                </div>
+
+                {/* Enhanced Guest Grid */}
+                <div className="p-6 overflow-y-auto max-h-[60vh]">
                     {guests.length === 0 ? (
-                        <div className="col-span-2 text-center text-white py-8">該当ゲストなし</div>
-                    ) : (
-                        guests.map((guest) => (
-                            <div
-                                key={guest.id}
-                                className="bg-primary rounded-lg shadow cursor-pointer transition-transform hover:scale-105 border border-secondary flex flex-col items-center p-3"
-                                onClick={() => onSelectGuest(guest)}
-                            >
-                                <div className="w-24 h-24 mb-2 relative">
-                                    <img
-                                        src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'}
-                                        alt={guest.nickname}
-                                        className="w-full h-full object-cover rounded-lg border-2 border-secondary"
-                                    />
-                                </div>
-                                <div className="text-xs text-white font-bold truncate w-full text-center">
-                                    {guest.nickname}
-                                    {guest.birth_year ? `（${new Date().getFullYear() - guest.birth_year}歳）` : ''}
-                                </div>
-                                {guest.residence && (
-                                    <div className="text-[10px] text-white opacity-80 truncate w-full text-center">{guest.residence}</div>
-                                )}
-                                <div className="text-xs text-white mt-1">{guest.reservations_count}回利用</div>
+                        <div className="text-center py-12">
+                            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-2xl">😔</span>
                             </div>
-                        ))
+                            <div className="text-white text-lg font-medium mb-2">該当ゲストなし</div>
+                            <div className="text-gray-300 text-sm">現在リピートしそうなゲストはいません</div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                            {guests.map((guest, index) => (
+                                <div
+                                    key={guest.id}
+                                    className="group bg-gradient-to-br from-white/10 to-white/5 rounded-xl shadow-lg cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-white/20 hover:border-secondary/50 overflow-hidden"
+                                    onClick={() => onSelectGuest(guest)}
+                                >
+                                    {/* Guest Avatar with Hover Effect */}
+                                    <div className="relative overflow-hidden">
+                                        <div className="w-full h-28 bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center">
+                                            <img
+                                                src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'}
+                                                alt={guest.nickname}
+                                                className="w-20 h-20 object-cover rounded-full border-3 border-white/30 group-hover:border-secondary/50 transition-all duration-300 group-hover:scale-110"
+                                            />
+                                        </div>
+                                        {/* Reservation Count Badge */}
+                                        <div className="absolute top-2 right-2 bg-secondary text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                                            {guest.reservations_count}回
+                                        </div>
+                                    </div>
+
+                                    {/* Guest Info */}
+                                    <div className="p-3 space-y-2">
+                                        <div className="text-center">
+                                            <div className="text-sm font-bold text-white truncate">
+                                                {guest.nickname}
+                                            </div>
+                                            {guest.birth_year && (
+                                                <div className="text-xs text-gray-300">
+                                                    {new Date().getFullYear() - guest.birth_year}歳
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        {guest.residence && (
+                                            <div className="flex items-center justify-center space-x-1">
+                                                <span className="text-[10px] text-gray-400">📍</span>
+                                                <span className="text-[10px] text-gray-300 truncate">
+                                                    {guest.residence}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* Hover Action Indicator */}
+                                        <div className="text-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <div className="text-xs text-secondary font-medium">
+                                                タップして詳細表示 →
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     )}
+                </div>
+
+                {/* Enhanced Footer */}
+                <div className="px-6 py-4 bg-white/5 border-t border-white/10">
+                    <div className="text-center">
+                        <div className="text-xs text-gray-400 mb-2">
+                            リピート率の高いゲストを優先表示
+                        </div>
+                        <button
+                            onClick={onClose}
+                            className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-6 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                        >
+                            閉じる
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

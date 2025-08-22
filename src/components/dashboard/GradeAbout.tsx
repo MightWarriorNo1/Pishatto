@@ -289,7 +289,7 @@ const GradeAbout: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     `;
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-primary pb-20">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-20">
             <style>{customAnimations}</style>
             {/* Enhanced Top bar */}
             <div className="sticky top-0 z-50 bg-gradient-to-r from-primary via-primary to-secondary border-b border-secondary shadow-xl backdrop-blur-sm">

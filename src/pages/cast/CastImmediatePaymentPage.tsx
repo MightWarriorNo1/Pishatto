@@ -289,11 +289,11 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
                 <div className="bg-white/10 rounded-xl shadow-lg p-6 mb-6 border border-secondary/50 backdrop-blur-sm">
                     <div className="text-center">
                         <div className="text-gray-300 text-sm mb-2">今月の獲得ポイント</div>
-                        <div className="text-3xl font-bold text-white mb-3">{castPointsData?.monthly_total_points?.toLocaleString() || 0} P</div>
+                        <div className="text-3xl font-bold text-white mb-3">{Number(castPointsData?.monthly_total_points ?? 0).toLocaleString('ja-JP')} P</div>
                         {castPointsData && (
                             <div className="bg-white/10 rounded-lg p-3">
                                 <div className="text-xs text-gray-300">
-                                    完了予約: <span className="text-white font-medium">{castPointsData.completed_reservations}</span>/{castPointsData.total_reservations}
+                                    完了予約: <span className="text-white font-medium">{Number(castPointsData?.completed_reservations ?? 0).toLocaleString('ja-JP')}</span>/{Number(castPointsData?.total_reservations ?? 0).toLocaleString('ja-JP')}
                                 </div>
                                 <div className="text-xs text-gray-300 mt-1">
                                     コパトバック率: <span className="text-white font-medium">{castPointsData.copat_back_rate}%</span>

@@ -1,4 +1,6 @@
 /*eslint-disable */
+// Ensure this file is treated as a module
+export {};
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Clock, Flag, UserRound, HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus, X, Calendar, CheckCircle } from 'lucide-react';
@@ -347,12 +349,12 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
                                 const parts = selectedArea.split('/');
                                 if (parts.length === 2) {
                                     const [name, prefecture] = parts;
-                                    return `${prefecture}/${name}`;
+                                    return `${name}/${prefecture}`;
                                 }
                                 return selectedArea;
                             }
                             const match = areaOptions.find(o => o.name === selectedArea || `${o.name}/${o.prefecture}` === selectedArea);
-                            return match ? `${match.prefecture}/${match.name}` : (selectedArea || 'エリアを選択');
+                            return match ? `${match.name}/${match.prefecture}` : (selectedArea || 'エリアを選択');
                         })()}
                     </button>
                 </div>
@@ -362,8 +364,8 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
                     onSelect={(area: string) => {
                         // area format: name/prefecture (store combined)
                         setSelectedArea(area);
-                        // Redirect back to main call screen after selecting area
-                        onBack();
+                        // Close modal and stay on Order History screen
+                        setShowAreaModal(false);
                     }}
                     locations={areaOptions.map(o => `${o.name}/${o.prefecture}`)}
                     loading={areasLoading}
@@ -1198,7 +1200,6 @@ function FreeCallReservationCompletionModal({ isOpen, onClose, onNavigateToMessa
                         </div>
                         <div>
                             <h3 className="text-xl font-bold text-white">予約完了</h3>
-                            <p className="text-white/80 text-sm">Reservation Complete</p>
                         </div>
                     </div>
                     <button

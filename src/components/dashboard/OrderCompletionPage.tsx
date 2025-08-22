@@ -38,7 +38,6 @@ function ReservationCompletionModal({ isOpen, onClose, onNavigateToMessage }: {
             </div>
             <div>
               <h3 className="text-xl font-bold text-white">予約完了</h3>
-              <p className="text-white/80 text-sm">Reservation Complete</p>
             </div>
           </div>
           <button

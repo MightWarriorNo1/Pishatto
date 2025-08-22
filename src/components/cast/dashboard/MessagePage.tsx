@@ -6,7 +6,7 @@ import timezone from 'dayjs/plugin/timezone';
 import { useNavigate } from 'react-router-dom';
 import MessageProposalPage from './MessageProposalPage';
 import { useCast } from '../../../contexts/CastContext';
-import { useChatMessages as useRealtimeChatMessages } from '../../../hooks/useRealtime';
+import { useChatMessages as useRealtimeChatMessages, useCastChatsRealtime } from '../../../hooks/useRealtime';
 import { 
   useCastChats, 
   useChatMessages, 
@@ -86,6 +86,10 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     // Local state to track accepted proposals for immediate UI feedback
     const [acceptedProposals, setAcceptedProposals] = useState<Set<string>>(new Set());
     
+    // Matching confirmation state
+    const [matchingConfirmed, setMatchingConfirmed] = useState(false);
+    const [matchingTime, setMatchingTime] = useState<string>('');
+    
     // Session management state for proposals
     const [proposalSessions, setProposalSessions] = useState<Map<string, {
         isActive: boolean;
@@ -161,6 +165,60 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
             queryKey: queryKeys.cast.chatMessages(Number(message.id), castId) 
         });
     });
+
+    // Check for matching confirmation and add automatic message
+    useEffect(() => {
+        // This would typically be triggered by a real-time event or API call
+        // For now, we'll simulate it based on reservation state
+        if (chatInfo?.reservation_id && !matchingConfirmed) {
+            // Check if reservation is confirmed (you may need to adjust this logic based on your API)
+            const checkMatchingConfirmation = async () => {
+                try {
+                    // You can add API call here to check matching status
+                    // For now, we'll simulate the confirmation
+                    if (chatInfo.reservation_id) {
+                        setMatchingConfirmed(true);
+                        const now = new Date();
+                        const meetingTime = new Date(now.getTime() + 30 * 60000); // 30 minutes from now
+                        const timeString = meetingTime.toLocaleTimeString('ja-JP', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                        });
+                        setMatchingTime(timeString);
+                        
+                        // Add automatic matching confirmation message
+                        const matchingMessage = {
+                            id: `matching-${Date.now()}`,
+                            chat_id: Number(message.id),
+                            sender_cast_id: castId,
+                            message: `マッチングが成立しました。合流時間は${timeString}となります。ゲストと合流する直前に合流ボタンを必ず押下してください。また大幅な遅刻等はマナー違反です。合流時間に従って行動するようにしてください。`,
+                            created_at: new Date().toISOString(),
+                            cast: { id: castId, nickname: 'システム' },
+                            isSystemMessage: true
+                        };
+                        
+                        // Add to messages state (this will trigger a re-render)
+                        // Note: In a real implementation, this would come from the backend
+                        // For now, we'll add it to the local state
+                        // We need to add this message to the React Query cache to display it
+                        queryClient.setQueryData(
+                            queryKeys.cast.chatMessages(Number(message.id), castId),
+                            (oldData: any) => {
+                                if (oldData && Array.isArray(oldData)) {
+                                    return [...oldData, matchingMessage];
+                                }
+                                return [matchingMessage];
+                            }
+                        );
+                    }
+                } catch (error) {
+                    console.error('Error checking matching confirmation:', error);
+                }
+            };
+            
+            checkMatchingConfirmation();
+        }
+    }, [chatInfo?.reservation_id, matchingConfirmed, castId, message.id]);
 
     // Close popover when clicking outside input bar or popover
     useEffect(() => {
@@ -584,16 +642,6 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                         const isAcceptedLocally = acceptedProposals.has(proposalKey);
                         const isAccepted = isAcceptedFromServer || isAcceptedLocally;
                         
-                        console.log('Proposal acceptance check:', {
-                            proposal: currentProposal,
-                            proposalKey,
-                            guestReservations,
-                            chatInfoGuestId: chatInfo?.guest?.id,
-                            isAcceptedFromServer,
-                            isAcceptedLocally,
-                            isAccepted
-                        });
-                        
                         return (
                             <React.Fragment key={msg.id || `p-${idx}`}>
                                 {(idx === 0 || currentDate !== prevDate) && (
@@ -604,7 +652,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                         </span>
                                     </div>
                                 )}
-                                <div className="flex justify-start mb-4">
+                                <div className="flex flex-col items-start mb-4">
                                     <div 
                                         className={`bg-orange-500 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative ${isAccepted ? 'opacity-50 cursor-default' : 'cursor-pointer hover:bg-orange-600'}`}
                                         onClick={!isAccepted ? () => {
@@ -626,7 +674,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                     
                                     {/* Enhanced Timer and Controls for Accepted Proposals */}
                                     {isAccepted && (
-                                        <div className="mt-3 w-full">
+                                        <div className="mt-3 w-full max-w-[100%]">
                                             {/* Timer Display */}
                                             <div className="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-4 border border-blue-400 mb-3">
                                                 <div className="flex items-center justify-between mb-2">
@@ -786,6 +834,30 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                             </React.Fragment>
                         );
                     }
+
+                    // Handle matching confirmation system message
+                    // if (msg.isSystemMessage) {
+                    //     return (
+                    //         <React.Fragment key={msg.id || `matching-${idx}`}>
+                    //             {(idx === 0 || currentDate !== prevDate) && (
+                    //                 <div className="flex justify-center my-2">
+                    //                     <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
+                    //                         {formatTime(msg.created_at)}
+                    //                     </span>
+                    //                 </div>
+                    //             )}
+                    //             <div className="flex justify-center mb-4">
+                    //                 <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg px-6 py-4 text-center max-w-[90%] shadow-lg border border-green-400">
+                    //                     <div className="flex items-center justify-center mb-2">
+                    //                         <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse mr-2"></div>
+                    //                         <span className="font-semibold text-sm">システムメッセージ</span>
+                    //                     </div>
+                    //                     <div className="text-sm leading-relaxed">{msg.message}</div>
+                    //                 </div>
+                    //             </div>
+                    //         </React.Fragment>
+                    //     );
+                    // }
                     const isSentByCast = castId && String(msg.sender_cast_id) === String(castId);
                     const isFromGuest = msg.sender_guest_id && !msg.sender_cast_id;
                     const isSent = isSentByCast && !isFromGuest;
@@ -828,7 +900,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
                                                 {msg.gift.icon}
                                             </span>
                                             <span className="font-bold">{msg.gift.name}</span>
-                                            <span className="ml-2 text-xs text-primary font-bold">{msg.gift.points}P</span>
+                                            <span className="ml-2 text-xs text-primary font-bold">{msg.gift.points?.toLocaleString()}P</span>
                                             {msg.isOptimistic && (
                                                 <span className="ml-2 text-xs text-yellow-300">送信中...</span>
                                             )}
@@ -1174,6 +1246,9 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
     // React Query hooks
     const { data: chats = [], isLoading: loading } = useCastChats(castId);
 
+    // Real-time: keep cast chats up-to-date without polling
+    useCastChatsRealtime(castId || 0);
+
     useEffect(() => {
         if (setIsMessageDetailOpen) setIsMessageDetailOpen(!!selectedMessage);
     }, [selectedMessage, setIsMessageDetailOpen]);
@@ -1260,8 +1335,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
     
     return (
         <div
-            className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-20"
-            style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}
+            className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary py-28 overflow-y-auto scrollbar-hidden"
         >
             {/* Fixed Header */}
             <div className="fixed top-0 left-0 right-0 max-w-md mx-auto bg-primary z-20 border-b border-secondary">
@@ -1333,7 +1407,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
             </div>
 
             {/* Content with top margin to account for fixed header and filter bar */}
-            <div className="px-4 mt-32">
+            <div className="px-4 mt-3">
                 
                 {loading ? (
                     <div className="flex justify-center items-center h-full">
