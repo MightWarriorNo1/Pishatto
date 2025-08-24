@@ -880,7 +880,6 @@ const CastSearchPage: React.FC = () => {
         initialCategory?: 'gift' | 'reservation';
         initialTimePeriod?: 'current' | 'yesterday' | 'lastWeek' | 'lastMonth' | 'allTime';
     } | null>(null);
-    const [lastSearchResults, setLastSearchResults] = useState<RankingItem[]>([]);
     const [lastSearchDisplayResults, setLastSearchDisplayResults] = useState<DisplayUser[]>([]);
 
     // React Query hooks
@@ -911,26 +910,40 @@ const CastSearchPage: React.FC = () => {
 
     const handleApplyFilters = (newFilters: FilterOptions) => {
         setFilters(newFilters);
-    };
+        
+        // Save filtered results to localStorage for "前回の検索結果" section
+        const filteredResults = repeatGuests.filter((guest) => {
+            // Region filter
+            const regionOk =
+                !newFilters.region || newFilters.region === '全国'
+                    ? true
+                    : (guest.residence || '').includes(newFilters.region);
 
-    // Load persisted last search results from localStorage
-    useEffect(() => {
+            // Age filter
+            const currentYear = new Date().getFullYear();
+            const guestAge = guest.birth_year ? currentYear - guest.birth_year : null;
+            const ageOk = guestAge === null
+                ? true
+                : guestAge >= newFilters.ageRange.min && guestAge <= newFilters.ageRange.max;
+
+            return regionOk && ageOk;
+        });
+
+        // Save to localStorage with a different key for filter results
         try {
-            const raw = localStorage.getItem('lastSearchResults');
-            if (!raw) return;
-            const parsed = JSON.parse(raw) as Array<any>;
-            const mapped: RankingItem[] = parsed.map((item, index) => ({
-                id: item.id ?? index + 1,
-                rank: index + 1,
-                name: item.name || item.nickname || 'Unknown',
-                nickname: item.nickname,
-                age: item.age ?? null,
-                avatar: item.avatar || '',
-                points: 0,
-                region: item.region,
+            const simplified = filteredResults.map((guest) => ({
+                id: guest.id,
+                name: guest.nickname,
+                nickname: guest.nickname,
+                age: guest.birth_year ? new Date().getFullYear() - guest.birth_year : null,
+                avatar: guest.avatar,
+                region: guest.residence,
+                userType: 'guest',
             }));
-            setLastSearchResults(mapped);
-            const displayMapped: DisplayUser[] = parsed.map((item) => ({
+            localStorage.setItem('lastFilterResults', JSON.stringify(simplified));
+            
+            // Update the display results immediately
+            const displayMapped: DisplayUser[] = simplified.map((item) => ({
                 id: item.id,
                 avatar: getFirstAvatarUrl(item.avatar || ''),
                 displayName: item.nickname || item.name || 'Unknown',
@@ -940,15 +953,50 @@ const CastSearchPage: React.FC = () => {
             }));
             setLastSearchDisplayResults(displayMapped);
         } catch (e) {
-            // ignore
+            console.error('Failed to save filter results:', e);
+        }
+    };
+
+    // Load persisted last filter results from localStorage
+    useEffect(() => {
+        try {
+            // First try to load filter results (絞り込む results)
+            const filterRaw = localStorage.getItem('lastFilterResults');
+            if (filterRaw) {
+                const parsed = JSON.parse(filterRaw) as Array<any>;
+                const displayMapped: DisplayUser[] = parsed.map((item) => ({
+                    id: item.id,
+                    avatar: getFirstAvatarUrl(item.avatar || ''),
+                    displayName: item.nickname || item.name || 'Unknown',
+                    age: item.age ?? null,
+                    region: item.region,
+                    userType: item.userType === 'cast' ? 'cast' : 'guest',
+                }));
+                setLastSearchDisplayResults(displayMapped);
+                return;
+            }
+
+            // Fallback to ranking results if no filter results exist
+            const rankingRaw = localStorage.getItem('lastSearchResults');
+            if (rankingRaw) {
+                const parsed = JSON.parse(rankingRaw) as Array<any>;
+                const displayMapped: DisplayUser[] = parsed.map((item) => ({
+                    id: item.id,
+                    avatar: getFirstAvatarUrl(item.avatar || ''),
+                    displayName: item.nickname || item.name || 'Unknown',
+                    age: item.age ?? null,
+                    region: item.region,
+                    userType: item.userType === 'cast' ? 'cast' : 'guest',
+                }));
+                setLastSearchDisplayResults(displayMapped);
+            }
+        } catch (e) {
+            console.error('Failed to load persisted results:', e);
         }
     }, []);
 
     // Normalize items for rendering in Previous Results section
     type DisplayUser = { id: number; avatar: string; displayName: string; age?: number | null; region?: string; userType?: 'cast' | 'guest' };
-    const previousResultsForDisplay: DisplayUser[] = useMemo(() => {
-        return lastSearchDisplayResults;
-    }, [lastSearchDisplayResults]);
     const filteredRepeatGuestsForDisplay: DisplayUser[] = useMemo(() => {
         return filteredRepeatGuests.map((g) => ({
             id: g.id,
@@ -1030,31 +1078,37 @@ const CastSearchPage: React.FC = () => {
                     </div>
                 ))}
             </div>
-            {/* Previous search results */}
-            <div className="px-4 pt-2 pb-1 text-base font-bold text-white">前回の検索結果</div>
+            {/* Previous filter results */}
+            <div className="px-4 pt-2 pb-1 text-base font-bold text-white">絞り込み結果</div>
             <div className="grid grid-cols-2 gap-4 px-4 ">
-                {(previousResultsForDisplay.length > 0 ? previousResultsForDisplay : filteredRepeatGuestsForDisplay).map((guest) => (
-                    <div
-                        key={guest.id}
-                        className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary flex flex-col items-center p-3"
-                        onClick={() => navigate(guest.userType === 'cast' ? `/cast/${guest.id}` : `/guest/${guest.id}`)}
-                    >
-                        <div className="w-32 h-32 mb-2 relative">
-                            <img
-                                src={guest.avatar}
-                                alt={guest.displayName}
-                                className="w-full h-full object-cover rounded-lg border-2 border-secondary"
-                            />
+                {lastSearchDisplayResults.length > 0 ? (
+                    lastSearchDisplayResults.map((guest) => (
+                        <div
+                            key={guest.id}
+                            className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary flex flex-col items-center p-3"
+                            onClick={() => navigate(guest.userType === 'cast' ? `/cast/${guest.id}` : `/guest/${guest.id}`)}
+                        >
+                            <div className="w-32 h-32 mb-2 relative">
+                                <img
+                                    src={guest.avatar}
+                                    alt={guest.displayName}
+                                    className="w-full h-full object-cover rounded-lg border-2 border-secondary"
+                                />
+                            </div>
+                            <div className="text-xs text-white font-bold truncate w-full text-center">
+                                {guest.displayName}
+                                {guest.age ? `（${guest.age}歳）` : ''}
+                            </div>
+                            {guest.region && (
+                                <div className="text-[10px] text-white opacity-80 truncate w-full text-center">{guest.region}</div>
+                            )}
                         </div>
-                        <div className="text-xs text-white font-bold truncate w-full text-center">
-                            {guest.displayName}
-                            {guest.age ? `（${guest.age}歳）` : ''}
-                        </div>
-                        {guest.region && (
-                            <div className="text-[10px] text-white opacity-80 truncate w-full text-center">{guest.region}</div>
-                        )}
+                    ))
+                ) : (
+                    <div className="col-span-2 text-center py-8">
+                        <div className="text-white text-sm">絞り込みを実行すると結果がここに表示されます</div>
                     </div>
-                ))}
+                )}
             </div>
             {/* Floating yellow button */}
             {/* <button

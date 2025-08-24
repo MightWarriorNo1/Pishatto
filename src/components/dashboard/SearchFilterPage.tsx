@@ -92,24 +92,30 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
                 }
             }
 
-            // birth month toggle
+            // birth month toggle - since we only have birth_year, we'll skip this filter
+            // as we can't determine birth month from just birth year
             if (birthMonth) {
-                const birthdate = c.birthdate || c.birth_day || c.birthDay;
-                const birth_month = c.birth_month || c.birthMonth;
-                let m: number | null = null;
-                if (birth_month) m = Number(birth_month);
-                else if (birthdate) {
-                    const d = new Date(birthdate);
-                    if (!isNaN(d.getTime())) m = d.getMonth() + 1;
-                }
-                if (m != null && m !== month) return false;
+                // Skip this filter as birth month is not available in the data
+                return false;
             }
 
-            // classes (if profile has a grade_label or class_name)
+            // activity area filter (maps to residence field)
+            if (activityArea !== '未選択') {
+                const residence = (c.residence || '').toLowerCase();
+                if (!residence.includes(activityArea.toLowerCase())) return false;
+            }
+
+            // birth place filter (maps to birthplace field)
+            if (birthPlace !== '未選択') {
+                const birthplace = (c.birthplace || '').toLowerCase();
+                if (!birthplace.includes(birthPlace.toLowerCase())) return false;
+            }
+
+            // classes (if profile has a category)
             if (selectedClasses.length > 0) {
-                const label = (c.grade_label || c.class_name || c.className || '').toString();
-                if (label) {
-                    const hit = selectedClasses.some(s => label.includes(s));
+                const category = (c.category || '').toString();
+                if (category) {
+                    const hit = selectedClasses.some(s => category.includes(s));
                     if (!hit) return false;
                 }
             }
@@ -148,8 +154,8 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
                 activityArea !== '未選択' ? activityArea : '',
                 birthPlace !== '未選択' ? birthPlace : '',
                 detailedProfile ? '詳細プロフィール' : '',
-                recentJoin ? '最近入会' : '',
-                birthMonth ? '今月誕生日' : ''
+                recentJoin ? '最近入会' : ''
+                // Removed birthMonth as it's not available in the data
             ].filter(Boolean).join(' ');
             
             if (filterQuery.trim()) {
@@ -169,7 +175,7 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
                     <div className="flex items-center justify-between px-4 py-3">
                         <button className="text-white text-xl" onClick={onClose}>×</button>
                         <div className="text-white font-bold">絞り込み検索</div>
-                        <button className="text-secondary font-bold" onClick={() => { setSelectedClasses([]); setKeyword(''); setDetailedProfile(false); setRecentJoin(false); setBirthMonth(false); setPointsPer30Min([7500, 30000]); setAge([20, 35]); setHeight([155, 250]); }}>クリア</button>
+                        <button className="text-secondary font-bold" onClick={() => { setSelectedClasses([]); setKeyword(''); setDetailedProfile(false); setRecentJoin(false); setBirthMonth(false); setPointsPer30Min([7500, 30000]); setAge([20, 35]); setHeight([155, 250]); setActivityArea('未選択'); setBirthPlace('未選択'); }}>クリア</button>
                     </div>
                     <div className="px-4 pb-3 flex flex-wrap gap-2">
                         {activityArea !== '未選択' && <span className="px-2 py-1 text-xs rounded-full bg-secondary/20 border border-secondary text-white">{activityArea}</span>}
@@ -256,8 +262,9 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-white">今月誕生日</span>
-                            <input type="checkbox" checked={birthMonth} onChange={(e) => setBirthMonth(e.target.checked)} />
+                            <input type="checkbox" checked={birthMonth} onChange={(e) => setBirthMonth(e.target.checked)} disabled />
                         </div>
+                        <div className="text-xs text-white/60 mt-1">※誕生日フィルターは現在利用できません</div>
                     </div>
 
                     <div className="px-4">
