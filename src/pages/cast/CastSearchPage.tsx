@@ -301,32 +301,7 @@ const FilterModal: React.FC<{
                     </select>
                 </div>
 
-                {/* User Type Filter */}
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-white mb-2">ユーザータイプ</label>
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => setLocalFilters({...localFilters, userType: 'cast'})}
-                            className={`px-3 py-1 rounded text-sm font-medium ${
-                                localFilters.userType === 'cast' 
-                                    ? 'bg-secondary text-white' 
-                                    : 'bg-primary text-white border border-secondary'
-                            }`}
-                        >
-                            キャスト
-                        </button>
-                        <button
-                            onClick={() => setLocalFilters({...localFilters, userType: 'guest'})}
-                            className={`px-3 py-1 rounded text-sm font-medium ${
-                                localFilters.userType === 'guest' 
-                                    ? 'bg-secondary text-white' 
-                                    : 'bg-primary text-white border border-secondary'
-                            }`}
-                        >
-                            ゲスト
-                        </button>
-                    </div>
-                </div>
+                {/* User Type selection removed as not required */}
 
                 {/* Points Range Filter */}
                 <div className="mb-6">
@@ -433,12 +408,27 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
 };
 
 // RankingPage component (updated with filters)
-const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+type RankingPageProps = {
+    onBack: () => void;
+    initialMainTab?: 'cast' | 'guest';
+    initialRegion?: string;
+    initialCategory?: 'gift' | 'reservation';
+    initialTimePeriod?: 'current' | 'yesterday' | 'lastWeek' | 'lastMonth' | 'allTime';
+};
+
+const RankingPage: React.FC<RankingPageProps> = ({ onBack, initialMainTab, initialRegion, initialCategory, initialTimePeriod }) => {
     const navigate = useNavigate();
-    const [mainTab, setMainTab] = useState<'cast' | 'guest'>('guest');
-    const [region, setRegion] = useState('全国');
-    const [category, setCategory] = useState('ギフト');
-    const [dateTab, setDateTab] = useState('昨日');
+    const [mainTab, setMainTab] = useState<'cast' | 'guest'>(initialMainTab || 'guest');
+    const [region, setRegion] = useState(initialRegion || '全国');
+    const [category, setCategory] = useState(
+        initialCategory === 'reservation' ? '予約' : 'ギフト'
+    );
+    const [dateTab, setDateTab] = useState(
+        initialTimePeriod === 'current' ? '今月' :
+        initialTimePeriod === 'yesterday' ? '昨日' :
+        initialTimePeriod === 'lastWeek' ? '先週' :
+        initialTimePeriod === 'lastMonth' ? '先月' : '全期間'
+    );
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [loading, setLoading] = useState(false);
     const [filters, setFilters] = useState<FilterOptions>({
@@ -521,6 +511,25 @@ const RankingPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             rank: index + 1,
         }));
     }, [rankingResponse, region]);
+
+    // Persist latest search results to localStorage to show on main page later
+    useEffect(() => {
+        if (!rankingData || rankingData.length === 0) return;
+        try {
+            const simplified = rankingData.map((item) => ({
+                id: item.id,
+                name: item.name,
+                nickname: item.nickname,
+                age: item.age,
+                avatar: item.avatar,
+                region: item.region,
+                userType: mainTab,
+            }));
+            localStorage.setItem('lastSearchResults', JSON.stringify(simplified));
+        } catch (e) {
+            // ignore persistence errors
+        }
+    }, [rankingData, mainTab]);
 
     // Apply filters
     const handleApplyFilters = (newFilters: FilterOptions) => {
@@ -855,20 +864,111 @@ const CastSearchPage: React.FC = () => {
     const [showGuestDetail, setShowGuestDetail] = useState(false);
     const [selectedGuest, setSelectedGuest] = useState<RepeatGuest | null>(null);
     const [showAllRepeatGuests, setShowAllRepeatGuests] = useState(false);
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [filters, setFilters] = useState<FilterOptions>({
+        region: '全国',
+        ageRange: { min: 18, max: 80 },
+        category: 'gift',
+        timePeriod: 'current',
+        userType: 'guest',
+        minPoints: 0,
+        maxPoints: 10000
+    });
+    const [rankingInit, setRankingInit] = useState<{
+        initialMainTab?: 'cast' | 'guest';
+        initialRegion?: string;
+        initialCategory?: 'gift' | 'reservation';
+        initialTimePeriod?: 'current' | 'yesterday' | 'lastWeek' | 'lastMonth' | 'allTime';
+    } | null>(null);
+    const [lastSearchResults, setLastSearchResults] = useState<RankingItem[]>([]);
+    const [lastSearchDisplayResults, setLastSearchDisplayResults] = useState<DisplayUser[]>([]);
 
     // React Query hooks
     const { data: repeatGuests = [], isLoading: loading } = useRepeatGuests();
+
+    // Derived list based on current filters
+    const filteredRepeatGuests = useMemo(() => {
+        return repeatGuests.filter((guest) => {
+            // Region filter
+            const regionOk =
+                !filters.region || filters.region === '全国'
+                    ? true
+                    : (guest.residence || '').includes(filters.region);
+
+            // Age filter
+            const currentYear = new Date().getFullYear();
+            const guestAge = guest.birth_year ? currentYear - guest.birth_year : null;
+            const ageOk = guestAge === null
+                ? true
+                : guestAge >= filters.ageRange.min && guestAge <= filters.ageRange.max;
+
+            // Points filter (if guest has reservations_count we can roughly map; otherwise ignore)
+            const pointsOk = true; // No points on guest model here – treated as pass
+
+            return regionOk && ageOk && pointsOk;
+        });
+    }, [repeatGuests, filters]);
+
+    const handleApplyFilters = (newFilters: FilterOptions) => {
+        setFilters(newFilters);
+    };
+
+    // Load persisted last search results from localStorage
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem('lastSearchResults');
+            if (!raw) return;
+            const parsed = JSON.parse(raw) as Array<any>;
+            const mapped: RankingItem[] = parsed.map((item, index) => ({
+                id: item.id ?? index + 1,
+                rank: index + 1,
+                name: item.name || item.nickname || 'Unknown',
+                nickname: item.nickname,
+                age: item.age ?? null,
+                avatar: item.avatar || '',
+                points: 0,
+                region: item.region,
+            }));
+            setLastSearchResults(mapped);
+            const displayMapped: DisplayUser[] = parsed.map((item) => ({
+                id: item.id,
+                avatar: getFirstAvatarUrl(item.avatar || ''),
+                displayName: item.nickname || item.name || 'Unknown',
+                age: item.age ?? null,
+                region: item.region,
+                userType: item.userType === 'cast' ? 'cast' : 'guest',
+            }));
+            setLastSearchDisplayResults(displayMapped);
+        } catch (e) {
+            // ignore
+        }
+    }, []);
+
+    // Normalize items for rendering in Previous Results section
+    type DisplayUser = { id: number; avatar: string; displayName: string; age?: number | null; region?: string; userType?: 'cast' | 'guest' };
+    const previousResultsForDisplay: DisplayUser[] = useMemo(() => {
+        return lastSearchDisplayResults;
+    }, [lastSearchDisplayResults]);
+    const filteredRepeatGuestsForDisplay: DisplayUser[] = useMemo(() => {
+        return filteredRepeatGuests.map((g) => ({
+            id: g.id,
+            avatar: g.avatar ? (g.avatar.startsWith('http') ? g.avatar : `${API_BASE_URL}/${g.avatar}`) : '/assets/avatar/female.png',
+            displayName: g.nickname,
+            age: g.birth_year ? new Date().getFullYear() - g.birth_year : null,
+            region: g.residence,
+        }));
+    }, [filteredRepeatGuests]);
     if (showGuestDetail && selectedGuest) {
         return <GuestDetailPage onBack={() => setShowGuestDetail(false)} guest={selectedGuest} />;
     }
     if (showRanking) {
-        return <RankingPage onBack={() => setShowRanking(false)} />;
+        return <RankingPage onBack={() => setShowRanking(false)} {...(rankingInit || {})} />;
     }
     if (showEasyMessage) {
         return <EasyMessagePage onClose={() => setShowEasyMessage(false)} />;
     }
     if (showNotification) {
-        return <CastNotificationPage     onBack={() => setShowNotification(false)} />;
+        return <CastNotificationPage   onBack={() => setShowNotification(false)} />;
     }
     return (
         <div className="flex-1 max-w-md pb-20 bg-gradient-to-b from-primary via-primary to-secondary">
@@ -877,15 +977,26 @@ const CastSearchPage: React.FC = () => {
                 <span className="text-white hover:text-secondary transition-colors cursor-pointer" onClick={() => setShowNotification(true)}>
                     <Bell />
                 </span>
-                <button className="flex items-center bg-secondary text-white rounded-full px-4 py-1 font-bold text-base"><span className="mr-2">
-                    <SlidersHorizontal /></span>絞り込み中</button>
+                <button className="flex items-center bg-secondary text-white rounded-full px-4 py-1 font-bold text-base" onClick={() => setShowFilterModal(true)}><span className="mr-2">
+                    <SlidersHorizontal /></span>絞り込む</button>
                 <span className="text-2xl text-white cursor-pointer" onClick={() => setShowRanking(true)}>
                     <img src="/assets/icons/crown.png" alt='crown' />
                 </span>
             </div>
+
+            {/* Active Filters Display */}
+            {(filters.region !== '全国' || filters.ageRange.min !== 18 || filters.ageRange.max !== 80) && (
+                <div className="px-4 py-2 bg-secondary bg-opacity-20 border-b border-secondary">
+                    <div className="text-xs text-white">
+                        フィルター適用中:
+                        {filters.region !== '全国' && ` 地域: ${filters.region}`}
+                        {(filters.ageRange.min !== 18 || filters.ageRange.max !== 80) && ` 年齢: ${filters.ageRange.min}-${filters.ageRange.max}歳`}
+                    </div>
+                </div>
+            )}
             {/* Repeat guests */}
             <div className="px-4 pt-2 pb-1 flex items-center justify-between">
-                <span className="text-base font-bold text-white">あなたにリピートしそうなゲスト <span className="text-xs text-white ml-1">i</span></span>
+                <span className="text-base font-bold text-white">あなたにリピートしそうなゲスト</span>
                 <button className="text-xs text-white font-bold" onClick={() => setShowAllRepeatGuests(true)}>すべて見る &gt;</button>
             </div>
             <div className="gap-3 px-4 pb-4 max-w-md mx-auto overflow-x-auto flex flex-row items-center">
@@ -922,25 +1033,25 @@ const CastSearchPage: React.FC = () => {
             {/* Previous search results */}
             <div className="px-4 pt-2 pb-1 text-base font-bold text-white">前回の検索結果</div>
             <div className="grid grid-cols-2 gap-4 px-4 ">
-                {repeatGuests.map((guest) => (
+                {(previousResultsForDisplay.length > 0 ? previousResultsForDisplay : filteredRepeatGuestsForDisplay).map((guest) => (
                     <div
                         key={guest.id}
                         className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary flex flex-col items-center p-3"
-                        onClick={() => navigate(`/guest/${guest.id}`)}
+                        onClick={() => navigate(guest.userType === 'cast' ? `/cast/${guest.id}` : `/guest/${guest.id}`)}
                     >
                         <div className="w-32 h-32 mb-2 relative">
                             <img
-                                src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'}
-                                alt={guest.nickname}
+                                src={guest.avatar}
+                                alt={guest.displayName}
                                 className="w-full h-full object-cover rounded-lg border-2 border-secondary"
                             />
                         </div>
                         <div className="text-xs text-white font-bold truncate w-full text-center">
-                            {guest.nickname}
-                            {guest.birth_year ? `（${new Date().getFullYear() - guest.birth_year}歳）` : ''}
+                            {guest.displayName}
+                            {guest.age ? `（${guest.age}歳）` : ''}
                         </div>
-                        {guest.residence && (
-                            <div className="text-[10px] text-white opacity-80 truncate w-full text-center">{guest.residence}</div>
+                        {guest.region && (
+                            <div className="text-[10px] text-white opacity-80 truncate w-full text-center">{guest.region}</div>
                         )}
                     </div>
                 ))}
@@ -963,6 +1074,14 @@ const CastSearchPage: React.FC = () => {
                     navigate(`/guest/${guest.id}`);
                     setShowAllRepeatGuests(false);
                 }}
+            />
+
+            {/* Filter Modal */}
+            <FilterModal
+                isOpen={showFilterModal}
+                onClose={() => setShowFilterModal(false)}
+                filters={filters}
+                onApplyFilters={handleApplyFilters}
             />
         </div>
     );

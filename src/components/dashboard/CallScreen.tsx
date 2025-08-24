@@ -500,8 +500,8 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
                     {castTypeOptions.map(opt => (
                         <button
                             key={opt}
-                            className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedSituations.includes(opt) ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
-                            onClick={() => toggle(selectedSituations, setSelectedSituations, opt)}
+                            className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedCastTypes.includes(opt) ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
+                            onClick={() => toggle(selectedCastTypes, setSelectedCastTypes, opt)}
                         >{opt}</button>
                     ))}
                 </div>
@@ -1281,6 +1281,15 @@ function OrderFinalConfirmationScreen({
     const [reservationMessage, setReservationMessage] = useState<string | null>(null);
     const [showReservationModal, setShowReservationModal] = useState(false);
 
+    // Map selected options into explicit categories for display
+    const pickSelections = (source: string[], options: string[]) => source.filter(v => options.includes(v));
+    const selectedAges = pickSelections(selectedSituations, ageOptions);
+    const selectedConversations = pickSelections(selectedSituations, conversationOptions);
+    const selectedOils = pickSelections(selectedSituations, oilScentOptions);
+    const selectedTypes = pickSelections(selectedCastTypes, castTypeOptions);
+    const selectedPressures = pickSelections(selectedCastTypes, massageIntensityOptions);
+    const selectedTiredAreas = pickSelections(selectedCastSkills, tiredAreasOptions);
+
     const handleNavigateToMessage = () => {
         // Navigate to message screen and close modal
         navigate('/messages');
@@ -1446,15 +1455,24 @@ function OrderFinalConfirmationScreen({
                         <span className="text-white mr-2">設定時間</span>
                         <span className="ml-auto font-bold text-white">{selectedDuration}</span>
                     </div>
-                    {/* Show selected situations, cast types, and skills if any */}
-                    {selectedSituations.length > 0 && (
-                        <div className="text-white text-sm mb-1">シチュエーション: {selectedSituations.join(', ')}</div>
+                    {/* Detailed category breakdown */}
+                    {selectedAges.length > 0 && (
+                        <div className="text-white text-sm mb-1">年代: {selectedAges.join(', ')}</div>
                     )}
-                    {selectedCastTypes.length > 0 && (
-                        <div className="text-white text-sm mb-1">キャストタイプ: {selectedCastTypes.join(', ')}</div>
+                    {selectedTypes.length > 0 && (
+                        <div className="text-white text-sm mb-1">キャストタイプ: {selectedTypes.join(', ')}</div>
                     )}
-                    {selectedCastSkills.length > 0 && (
-                        <div className="text-white text-sm mb-1">キャストスキル: {selectedCastSkills.join(', ')}</div>
+                    {selectedPressures.length > 0 && (
+                        <div className="text-white text-sm mb-1">指圧: {selectedPressures.join(', ')}</div>
+                    )}
+                    {selectedTiredAreas.length > 0 && (
+                        <div className="text-white text-sm mb-1">お疲れ箇所: {selectedTiredAreas.join(', ')}</div>
+                    )}
+                    {selectedConversations.length > 0 && (
+                        <div className="text-white text-sm mb-1">会話: {selectedConversations.join(', ')}</div>
+                    )}
+                    {selectedOils.length > 0 && (
+                        <div className="text-white text-sm mb-1">オイルの香り: {selectedOils.join(', ')}</div>
                     )}
                 </div>
             </div>

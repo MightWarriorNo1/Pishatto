@@ -23,6 +23,7 @@ import { queryKeys } from '../../lib/react-query';
 import { useChatMessages, useTweets, useNotifications, useUnreadMessageCount, useTweetNotifications, useGuestChatsRealtime } from '../../hooks/useRealtime';
 import { formatPoints } from '../../utils/formatters';
 import Spinner from '../ui/Spinner';
+import { SearchProvider } from '../../contexts/SearchContext';
 
 // Add Modal component above Dashboard
 const Modal: React.FC<{ onClose: () => void; children: React.ReactNode }> = ({ onClose, children }) => {
@@ -348,137 +349,139 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
-      {/* Global Loading Overlay */}
-      {isGlobalLoading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-          <Spinner />
-        </div>
-      )}
-      
-      {/* Show TopNavigation and search tabs only when in search mode */}
-      {activeBottomTab === 'search' && (
-        <>
-          <TopNavigation 
-            activeTab={activeSearchTab} 
-            onTabChange={setActiveSearchTab}
-          />
-          <div className={`max-w-md mx-auto pb-16 ${hasSearchResults ? 'pt-4' : 'pt-28'}`}>
-            {renderSearchTabContent()}
+    <SearchProvider>
+      <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
+        {/* Global Loading Overlay */}
+        {isGlobalLoading && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+            <Spinner />
           </div>
-        </>
-      )}
-      {/* Show other tab content when not in search mode */}
-      {activeBottomTab !== 'search' && renderOtherTabContent()}
-      {/* Only show BottomNavigation if not in chat detail, order flow, or concierge detail */}
-      {!showOrder && showChat === null && !showConcierge && (
-        <BottomNavigation
-          activeTab={activeBottomTab}
-          onTabChange={tab => {
-            setActiveBottomTab(tab as 'search' | 'message' | 'call' | 'tweet' | 'mypage');
-          }}
-          messageCount={messageCount}
-          tweetCount={tweetCount}
-        />
-      )}
-      {showNotificationPopup && latestNotification && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-secondary text-white px-6 py-4 rounded-lg shadow-lg z-50 animate-fade-in">
-          <div className="font-bold mb-1">新着通知</div>
-          <div>{latestNotification.message}</div>
-          <button className="mt-2 text-xs underline" onClick={async () => {
-            setShowNotificationPopup(false)
-          }}>閉じる</button>
-        </div>
-      )}
-      {/* Modal rendering */}
-      {modalType === 'satisfaction' && (
-        <Modal onClose={() => setModalType(null)}>
-          <div className="p-0">
-            <h2 className="text-lg font-bold mb-2">ユーザー満足度の高いキャスト一覧</h2>
-            <p className="text-sm text-white/80 mb-4">検索・並び替えで目的のキャストを見つけましょう。</p>
-            <div className="flex items-center gap-2 mb-4">
-              <input
-                type="text"
-                value={satisfactionSearch}
-                onChange={(e) => setSatisfactionSearch(e.target.value)}
-                placeholder="名前で検索"
-                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary text-primary"
-              />
-              <select
-                value={satisfactionSort}
-                onChange={(e) => setSatisfactionSort(e.target.value as any)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-primary"
-              >
-                <option value="rating">評価が高い順</option>
-                <option value="feedback">レビュー数が多い順</option>
-                <option value="price">料金が安い順</option>
-                <option value="name">名前順</option>
-              </select>
+        )}
+        
+        {/* Show TopNavigation and search tabs only when in search mode */}
+        {activeBottomTab === 'search' && (
+          <>
+            <TopNavigation 
+              activeTab={activeSearchTab} 
+              onTabChange={setActiveSearchTab}
+            />
+            <div className={`max-w-md mx-auto pb-16 ${hasSearchResults ? 'pt-4' : 'pt-28'}`}>
+              {renderSearchTabContent()}
             </div>
-
-            {satisfactionLoading ? (
-              <div className="grid grid-cols-2 gap-4">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-48 bg-gray-200 rounded-lg animate-pulse" />
-                ))}
-              </div>
-            ) : filteredAndSortedSatisfactionCasts.length === 0 ? (
-              <div className="text-center text-white/80 py-6">該当するキャストが見つかりませんでした。</div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                {filteredAndSortedSatisfactionCasts.map((cast: any) => (
-                  <div key={cast.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer relative">
-                    <img
-                      src={cast.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${cast.avatar}` : '/assets/avatar/female.png'}
-                      alt={cast.nickname}
-                      onClick={()=>navigate(`/cast/${cast.id}`)}  
-                      className="w-full h-32 object-cover rounded-lg border border-secondary mb-2"
-                    />
-                    <div className="font-medium text-white text-sm truncate">{cast.nickname}</div>
-                    <div className="text-xs text-white mt-1">{(cast.average_rating || 0).toFixed(1)} ★ / {cast.feedback_count || 0}件</div>
-                    <div className="text-xs text-white mt-1">{formatPoints(cast.grade_points)}/30分</div>
-                  </div>
-                ))}
-              </div>
-            )}
+          </>
+        )}
+        {/* Show other tab content when not in search mode */}
+        {activeBottomTab !== 'search' && renderOtherTabContent()}
+        {/* Only show BottomNavigation if not in chat detail, order flow, or concierge detail */}
+        {!showOrder && showChat === null && !showConcierge && (
+          <BottomNavigation
+            activeTab={activeBottomTab}
+            onTabChange={tab => {
+              setActiveBottomTab(tab as 'search' | 'message' | 'call' | 'tweet' | 'mypage');
+            }}
+            messageCount={messageCount}
+            tweetCount={tweetCount}
+          />
+        )}
+        {showNotificationPopup && latestNotification && (
+          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 bg-secondary text-white px-6 py-4 rounded-lg shadow-lg z-50 animate-fade-in">
+            <div className="font-bold mb-1">新着通知</div>
+            <div>{latestNotification.message}</div>
+            <button className="mt-2 text-xs underline" onClick={async () => {
+              setShowNotificationPopup(false)
+            }}>閉じる</button>
           </div>
-        </Modal>
-      )}
-      {modalType === 'ranking' && (
-        <Modal onClose={() => setModalType(null)}>
-          <div className="p-0">
-            <h2 className="text-lg font-bold mb-2">ランキング</h2>
-            <p className="text-sm text-white/80 mb-4">期間とカテゴリを選択して表示します。</p>
+        )}
+        {/* Modal rendering */}
+        {modalType === 'satisfaction' && (
+          <Modal onClose={() => setModalType(null)}>
+            <div className="p-0">
+              <h2 className="text-lg font-bold mb-2">ユーザー満足度の高いキャスト一覧</h2>
+              <p className="text-sm text-white/80 mb-4">検索・並び替えで目的のキャストを見つけましょう。</p>
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="text"
+                  value={satisfactionSearch}
+                  onChange={(e) => setSatisfactionSearch(e.target.value)}
+                  placeholder="名前で検索"
+                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-secondary text-primary"
+                />
+                <select
+                  value={satisfactionSort}
+                  onChange={(e) => setSatisfactionSort(e.target.value as any)}
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-primary"
+                >
+                  <option value="rating">評価が高い順</option>
+                  <option value="feedback">レビュー数が多い順</option>
+                  <option value="price">料金が安い順</option>
+                  <option value="name">名前順</option>
+                </select>
+              </div>
 
-            {rankingLoading ? (
-              <div className="grid grid-cols-2 gap-4">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-48 bg-gray-200 rounded-lg animate-pulse" />)
-                )}
-              </div>
-            ) : allRankings.length === 0 ? (
-              <div className="text-center text-white/80 py-6">ランキングはまだありません。</div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                {allRankings.map((profile: any, index: number) => (
-                  <div key={profile.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer relative">
-                    <img
-                      src={profile.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar}` : '/assets/avatar/female.png'}
-                      alt={profile.name}
-                      onClick={()=>navigate(`/cast/${profile.id}`)}  
-                      className="w-full h-32 object-cover rounded-lg border border-secondary mb-2"
-                    />
-                    <div className="font-medium text-white text-sm truncate">{profile.name}</div>
-                    <div className="text-xs text-white mt-1">{profile.points}ポイント {profile.gift_count && `(${profile.gift_count}件)`}</div>
-                    <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">{index + 1}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </Modal>
-      )}
-    </div>
+              {satisfactionLoading ? (
+                <div className="grid grid-cols-2 gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="h-48 bg-gray-200 rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : filteredAndSortedSatisfactionCasts.length === 0 ? (
+                <div className="text-center text-white/80 py-6">該当するキャストが見つかりませんでした。</div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {filteredAndSortedSatisfactionCasts.map((cast: any) => (
+                    <div key={cast.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer relative">
+                      <img
+                        src={cast.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${cast.avatar}` : '/assets/avatar/female.png'}
+                        alt={cast.nickname}
+                        onClick={()=>navigate(`/cast/${cast.id}`)}  
+                        className="w-full h-32 object-cover rounded-lg border border-secondary mb-2"
+                      />
+                      <div className="font-medium text-white text-sm truncate">{cast.nickname}</div>
+                      <div className="text-xs text-white mt-1">{(cast.average_rating || 0).toFixed(1)} ★ / {cast.feedback_count || 0}件</div>
+                      <div className="text-xs text-white mt-1">{formatPoints(cast.grade_points)}/30分</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Modal>
+        )}
+        {modalType === 'ranking' && (
+          <Modal onClose={() => setModalType(null)}>
+            <div className="p-0">
+              <h2 className="text-lg font-bold mb-2">ランキング</h2>
+              <p className="text-sm text-white/80 mb-4">期間とカテゴリを選択して表示します。</p>
+
+              {rankingLoading ? (
+                <div className="grid grid-cols-2 gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="h-48 bg-gray-200 rounded-lg animate-pulse" />)
+                  )}
+                </div>
+              ) : allRankings.length === 0 ? (
+                <div className="text-center text-white/80 py-6">ランキングはまだありません。</div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  {allRankings.map((profile: any, index: number) => (
+                    <div key={profile.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer relative">
+                      <img
+                        src={profile.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar}` : '/assets/avatar/female.png'}
+                        alt={profile.name}
+                        onClick={()=>navigate(`/cast/${profile.id}`)}  
+                        className="w-full h-32 object-cover rounded-lg border border-secondary mb-2"
+                      />
+                      <div className="font-medium text-white text-sm truncate">{profile.name}</div>
+                      <div className="text-xs text-white mt-1">{profile.points}ポイント {profile.gift_count && `(${profile.gift_count}件)`}</div>
+                      <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">{index + 1}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Modal>
+        )}
+      </div>
+    </SearchProvider>
   );
 };
 

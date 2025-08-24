@@ -17,7 +17,7 @@ import LineLogin from './pages/LineLogin';
 import CastLineLogin from './pages/cast/CastLineLogin';
 import LineRegister from './pages/LineRegister';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import AuthDebugger from './components/debug/AuthDebugger';
+// import AuthDebugger from './components/debug/AuthDebugger';
 import RealtimeProvider from './components/RealtimeProvider';
 import { UserProvider } from './contexts/UserContext';
 import { CastProvider } from './contexts/CastContext';
@@ -76,7 +76,7 @@ const App: React.FC = () => {
                       </ProtectedRoute>
                     } />
                   </Routes>
-                  <AuthDebugger />
+                  {/* <AuthDebugger /> */}
                 </Router>
               </RealtimeProvider>
             </ConciergeProvider>

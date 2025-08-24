@@ -5,6 +5,7 @@ import { FiStar } from 'react-icons/fi';
 import { useTopSatisfactionCasts } from '../../hooks/useQueries';
 import getFirstAvatarUrl from '../../utils/avatar';
 import Spinner from '../ui/Spinner';
+import { useSearch } from '../../contexts/SearchContext';
 
 interface SatisfactionCast {
   id: number;
@@ -23,6 +24,28 @@ interface BestSatisfactionSectionProps {
 const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideLoading = false }) => {
   const navigate = useNavigate();
   const { data: casts = [], isLoading: loading } = useTopSatisfactionCasts();
+  const { searchQuery, isSearchActive, filterResults } = useSearch();
+
+  // Filter casts based on search query and filter results
+  const filteredCasts = React.useMemo(() => {
+    // If we have filter results, use them to filter the current section data
+    if (isSearchActive && filterResults.length > 0) {
+      const filterResultIds = new Set(filterResults.map((r: any) => r.id));
+      return casts.filter((cast: SatisfactionCast) => filterResultIds.has(cast.id));
+    }
+    
+    // If no filter results but search query exists, do text-based filtering
+    if (isSearchActive && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      return casts.filter((cast: SatisfactionCast) => {
+        const nickname = cast.nickname.toLowerCase();
+        return nickname.includes(query);
+      });
+    }
+    
+    // No search active, return all casts
+    return casts;
+  }, [casts, searchQuery, isSearchActive, filterResults]);
 
   const handleCastClick = (castId: number) => {
     navigate(`/cast/${castId}`);
@@ -33,11 +56,16 @@ const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideL
       <h2 className="font-bold text-lg mb-2 text-white">最高満足度</h2>
       {loading && !hideLoading ? (
         <Spinner />
-      ) : casts.length === 0 ? (
-        <div className="text-white">データがありません</div>
+      ) : filteredCasts.length === 0 ? (
+        <div className="text-white">
+          {isSearchActive && searchQuery.trim() 
+            ? '一致するキャストはいません' 
+            : 'データがありません'
+          }
+        </div>
       ) : (
         <div className="flex gap-3 overflow-x-auto">
-          {casts.map((cast: SatisfactionCast) => (
+          {filteredCasts.map((cast: SatisfactionCast) => (
             <div 
               key={cast.id} 
               className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer min-w-[120px] max-w-[120px] flex-shrink-0"

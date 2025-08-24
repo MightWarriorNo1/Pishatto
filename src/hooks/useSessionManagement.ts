@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createReservation, updateReservation } from '../services/api';
+import { createReservation, updateReservation, startReservation, stopReservation } from '../services/api';
 
 interface SessionState {
     isActive: boolean;
@@ -11,6 +11,7 @@ interface SessionState {
 interface UseSessionManagementProps {
     reservationId?: number | null;
     chatId: number;
+    castId?: number | null;
     onSessionStart?: () => void;
     onSessionEnd?: () => void;
     onReservationUpdate?: (reservation: any) => void;
@@ -19,6 +20,7 @@ interface UseSessionManagementProps {
 export const useSessionManagement = ({
     reservationId,
     chatId,
+    castId,
     onSessionStart,
     onSessionEnd,
     onReservationUpdate
@@ -64,8 +66,15 @@ export const useSessionManagement = ({
 
     // Start session (Meet button)
     const handleMeet = useCallback(async () => {
+        console.log('handleMeet called with reservationId:', reservationId, 'castId:', castId);
+        
         if (!reservationId) {
             setError('予約IDが見つかりません');
+            return;
+        }
+
+        if (!castId) {
+            setError('キャストIDが見つかりません');
             return;
         }
 
@@ -73,10 +82,9 @@ export const useSessionManagement = ({
         setError(null);
 
         try {
-            // Update reservation to mark as started by setting started_at
-            const updatedReservation = await updateReservation(reservationId, {
-                started_at: new Date().toISOString()
-            });
+            // Use cast-specific start reservation endpoint
+            const updatedReservation = await startReservation(reservationId, castId);
+            console.log('Reservation updated after start:', updatedReservation);
 
             // Update local state
             setSessionState({
@@ -89,11 +97,12 @@ export const useSessionManagement = ({
             onSessionStart?.();
             onReservationUpdate?.(updatedReservation);
         } catch (err: any) {
+            console.error('Error starting session:', err);
             setError(err.message || 'セッション開始に失敗しました');
         } finally {
             setIsLoading(false);
         }
-    }, [reservationId, onSessionStart, onReservationUpdate]);
+    }, [reservationId, castId, onSessionStart, onReservationUpdate]);
 
     // Stop session (Dissolve button)
     const handleDissolve = useCallback(async () => {
@@ -102,14 +111,17 @@ export const useSessionManagement = ({
             return;
         }
 
+        if (!castId) {
+            setError('キャストIDが見つかりません');
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
 
         try {
-            // Update reservation to mark as completed by setting ended_at
-            const updatedReservation = await updateReservation(reservationId, {
-                ended_at: new Date().toISOString()
-            });
+            // Use cast-specific stop reservation endpoint
+            const updatedReservation = await stopReservation(reservationId, castId);
 
             // Update local state
             setSessionState(prev => ({
@@ -125,7 +137,7 @@ export const useSessionManagement = ({
         } finally {
             setIsLoading(false);
         }
-    }, [reservationId, onSessionEnd, onReservationUpdate]);
+    }, [reservationId, castId, onSessionEnd, onReservationUpdate]);
 
     // Create new reservation
     const createNewReservation = useCallback(async (proposalData: any) => {
@@ -204,6 +216,44 @@ export const useSessionManagement = ({
         setError(null);
     }, []);
 
+    // Initialize session from reservation data
+    const initializeSession = useCallback((reservation: any) => {
+        console.log('Initializing session with reservation:', reservation);
+        
+        if (reservation && reservation.started_at && !reservation.ended_at) {
+            // Session is active - calculate elapsed time
+            const startTime = new Date(reservation.started_at);
+            const elapsedTime = Math.floor((Date.now() - startTime.getTime()) / 1000);
+            
+            console.log('Session is active, startTime:', startTime, 'elapsedTime:', elapsedTime);
+            
+            setSessionState({
+                isActive: true,
+                startTime: startTime,
+                endTime: null,
+                elapsedTime: elapsedTime
+            });
+        } else if (reservation && reservation.ended_at) {
+            // Session is completed
+            console.log('Session is completed');
+            setSessionState({
+                isActive: false,
+                startTime: reservation.started_at ? new Date(reservation.started_at) : null,
+                endTime: new Date(reservation.ended_at),
+                elapsedTime: 0
+            });
+        } else {
+            // Session not started
+            console.log('Session not started');
+            setSessionState({
+                isActive: false,
+                startTime: null,
+                endTime: null,
+                elapsedTime: 0
+            });
+        }
+    }, []);
+
     return {
         sessionState,
         isLoading,
@@ -212,7 +262,8 @@ export const useSessionManagement = ({
         handleMeet,
         handleDissolve,
         acceptProposal,
-        resetSession
+        resetSession,
+        initializeSession
     };
 };
 

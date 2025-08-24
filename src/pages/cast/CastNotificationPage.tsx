@@ -7,6 +7,8 @@ import { useAdminNews } from '../../hooks/useRealtime';
 import { useCast } from '../../contexts/CastContext';
 import Spinner from '../../components/ui/Spinner';
 import { useCastNotifications } from '../../hooks/useQueries';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '../../lib/react-query';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -22,6 +24,7 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
     // Use authenticated cast context
     const { castId } = useCast() as any;
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     // Use React Query hook for notifications
     const {
@@ -29,6 +32,20 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
         isLoading: notificationsLoading,
         error: notificationsError
     } = useCastNotifications(castId || 0);
+
+    // Delete notification mutation
+    const deleteNotificationMutation = useMutation({
+        mutationFn: deleteNotification,
+        onSuccess: () => {
+            // Invalidate and refetch notifications
+            queryClient.invalidateQueries({ 
+                queryKey: queryKeys.cast.notifications(castId) 
+            });
+        },
+        onError: (error) => {
+            console.error('Failed to delete notification:', error);
+        }
+    });
 
     const loadAdminNews = async () => {
         try {
@@ -83,12 +100,19 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
     };
 
     const handleDeleteNotification = async (notificationId: number) => {
+        console.log('Attempting to delete notification:', notificationId);
+        
+        if (!window.confirm('この通知を削除しますか？')) {
+            return;
+        }
+        
         try {
-            await deleteNotification(notificationId);
-            // React Query will handle the update automatically
-            // No need to manually update state
+            console.log('Calling deleteNotificationMutation...');
+            await deleteNotificationMutation.mutateAsync(notificationId);
+            console.log('Notification deleted successfully');
         } catch (error) {
             console.error('Failed to delete notification:', error);
+            alert('通知の削除に失敗しました。');
         }
     };
 
@@ -161,7 +185,7 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
     };
 
     return (
-        <div className="max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-20">
+        <div className="max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-20 overflow-y-auto scrollbar-hidden">
             {/* Header - Fixed */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50">
                 <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-b from-primary via-primary to-secondary border-secondary">
@@ -193,7 +217,7 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
             <div className="pt-24">
                 {/* Notification list */}
                 {tab === '通知' && (
-                    <div className="px-4 pt-4 pb-24 flex flex-col gap-4">
+                    <div className="px-4 pt-4 pb-16 flex flex-col gap-4">
                         {notificationsLoading ? (
                             <Spinner />
                         ) : notificationsError ? (
@@ -246,9 +270,14 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
                                                     e.stopPropagation();
                                                     handleDeleteNotification(notification.id);
                                                 }}
-                                                className="absolute top-4 right-4 text-gray-400 hover:text-red-600 transition-colors p-1"
+                                                disabled={deleteNotificationMutation.isPending}
+                                                className="absolute top-4 right-4 text-gray-400 hover:text-red-600 transition-colors p-2 disabled:opacity-50 z-10 cursor-pointer"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                {deleteNotificationMutation.isPending ? (
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-500"></div>
+                                                ) : (
+                                                    <Trash2 className="w-4 h-4" />
+                                                )}
                                             </button>
                                         </div>
                                     </div>

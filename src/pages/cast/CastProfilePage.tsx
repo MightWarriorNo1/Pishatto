@@ -328,9 +328,14 @@ const CastProfilePage: React.FC = () => {
                     </div>
                     <span className="font-bold text-lg text-white">{cast ? cast.nickname : '◎ えま◎'}</span>
                 </div>
-                <button className="text-white  hover:text-secondary" onClick={() => setShowEdit(true)}>
-                    <Pencil />
-                </button>
+                <div className="flex items-center gap-2">
+                    <div className="text-[12px] text-white/90 rounded px-2 py-0.5 whitespace-nowrap">
+                        30分設定pt：{formatNumber(cast?.grade_points || 0)}pt
+                    </div>
+                    <button className="text-white  hover:text-secondary" onClick={() => setShowEdit(true)}>
+                        <Pencil />
+                    </button>
+                </div>
             </div>
             {/* Grade section */}
             <div className="bg-secondary text-white text-center py-2 font-bold">今期のグレード</div>
@@ -357,7 +362,7 @@ const CastProfilePage: React.FC = () => {
                 <div className="flex items-center mb-2">
                     <span className="text-xs font-medium text-white mr-2">今月の総売上ポイント</span>
                     <span className="text-xs text-white">
-                        <CircleQuestionMark />i
+                        <CircleQuestionMark />
                     </span>
                 </div>
                 <div className="text-3xl font-bold text-white mb-2">

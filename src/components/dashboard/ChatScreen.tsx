@@ -1,3 +1,4 @@
+/* eslint-disable */
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Send, Calendar } from 'lucide-react';
@@ -103,8 +104,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
     
     // Matching confirmation state
-    const [matchingConfirmed, setMatchingConfirmed] = useState(false);
-    const [matchingTime, setMatchingTime] = useState<string>('');
+
     
     // Session management
     const {
@@ -254,47 +254,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         });
     });
 
-    // Check for matching confirmation and add automatic message
-    useEffect(() => {
-        // This would typically be triggered by a real-time event or API call
-        // For now, we'll simulate it based on reservation state
-        if (reservationId && !matchingConfirmed) {
-            // Check if reservation is confirmed (you may need to adjust this logic based on your API)
-            const checkMatchingConfirmation = async () => {
-                try {
-                    // You can add API call here to check matching status
-                    // For now, we'll simulate the confirmation
-                    if (reservationId) {
-                        setMatchingConfirmed(true);
-                        const now = new Date();
-                        const meetingTime = new Date(now.getTime() + 30 * 60000); // 30 minutes from now
-                        const timeString = meetingTime.toLocaleTimeString('ja-JP', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                        });
-                        setMatchingTime(timeString);
-                        
-                        // Add automatic matching confirmation message
-                        const matchingMessage = {
-                            id: `matching-${Date.now()}`,
-                            chat_id: chatId,
-                            sender_cast_id: castInfo?.id,
-                            message: `マッチングが成立しました。合流時間は${timeString}となります。キャストの合流ボタン押下後、マッチング開始となります。`,
-                            created_at: new Date().toISOString(),
-                            cast: castInfo,
-                            isSystemMessage: true
-                        };
-                        
-                        setMessages(prev => [...prev, matchingMessage]);
-                    }
-                } catch (error) {
-                    console.error('Error checking matching confirmation:', error);
-                }
-            };
-            
-            checkMatchingConfirmation();
-        }
-    }, [reservationId, matchingConfirmed, castInfo, chatId]);
+    // Matching messages are now handled by backend through group chats
+    // No need for frontend simulation
 
     useEffect(() => {
         fetchAllGifts().then(setGifts);
@@ -544,7 +505,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 </div>
             </div>
             {/* Session Timer - Only show if there's an active reservation */}
-            {reservationId && (
+            {/* {reservationId && (
                 <div className="fixed max-w-md mx-auto left-0 right-0 top-16 z-20 px-4 pt-2 bg-primary">
                     <SessionTimer
                         isActive={sessionState.isActive}
@@ -553,16 +514,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         className="w-full"
                     />
                 </div>
-            )}
+            )} */}
             
             {/* Chat history (scrollable, between header and input) */}
             <div
                 className="flex-1 overflow-y-auto px-4 pt-16 pb-4"
-                style={{
-                    marginTop: reservationId ? '8rem' : '4rem', // Adjust margin based on whether timer is shown
-                    marginBottom: '5.5rem', // input bar height (py-2 + px-4 + border + input height)
-                    minHeight: 0,
-                }}
             >
                 {fetching ? (
                     <div className="flex justify-center items-center h-40">
@@ -628,7 +584,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                             </div>
                                         </div>
                                     </div>
-                                    {isAccepted && (
+                                    {/* {isAccepted && (
                                         <div className="mt-3 w-full max-w-[100%]">
                                             <SessionTimer
                                                 isActive={sessionState.isActive}
@@ -636,34 +592,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                 isLoading={sessionLoading}
                                             />
                                         </div>
-                                    )}
+                                    )} */}
                                 </React.Fragment>
                             );
                         }
 
-                        // Handle matching confirmation system message
-                        if (msg.isSystemMessage) {
-                            return (
-                                <React.Fragment key={msg.id || `matching-${idx}`}>
-                                    {(idx === 0 || currentDate !== prevDate) && (
-                                        <div className="flex justify-center my-2">
-                                            <span className="text-xs text-gray-300 bg-black/20 px-3 py-1 rounded-full">
-                                                {formatTime(msg.created_at)}
-                                            </span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-center mb-4">
-                                        <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg px-6 py-4 text-center max-w-[90%] shadow-lg border border-green-400">
-                                            <div className="flex items-center justify-center mb-2">
-                                                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse mr-2"></div>
-                                                <span className="font-semibold text-sm">システムメッセージ</span>
-                                            </div>
-                                            <div className="text-sm leading-relaxed">{msg.message}</div>
-                                        </div>
-                                    </div>
-                                </React.Fragment>
-                            );
-                        }
                         return (
                             <React.Fragment key={msg.id || idx}>
                                 {(idx === 0 || currentDate !== prevDate) && (
@@ -767,11 +700,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         </button>
                     </div>
                 )}
-                <div className="flex items-center w-full relative" ref={inputBarRef}>
+                <div className="flex items-center w-full relative gap-2 flex-wrap" ref={inputBarRef}>
                     <button 
-                        className={`mr-2 ${
+                        className={`${
                             isNotificationEnabled('messages') ? 'text-white' : 'text-gray-500'
-                        }`} 
+                        } flex-shrink-0`} 
                         onClick={() => setShowCalendarPage(true)}
                         disabled={!isNotificationEnabled('messages')}
                     >
@@ -779,7 +712,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     </button>
                     <input
                         type="text"
-                        className={`flex-1 px-4 py-2 rounded-full border border-secondary text-sm mr-2 ${
+                        className={`flex-1 min-w-0 px-4 py-2 rounded-full border border-secondary text-sm ${
                             isNotificationEnabled('messages') 
                                 ? 'bg-primary text-white' 
                                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -795,7 +728,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         disabled={!isNotificationEnabled('messages')}
                     />
                     <span 
-                        className={`cursor-pointer ${
+                        className={`cursor-pointer flex-shrink-0 ${
                             isNotificationEnabled('messages') ? 'text-white' : 'text-gray-500'
                         }`} 
                         onClick={isNotificationEnabled('messages') ? handleImageButtonClick : undefined}
@@ -819,11 +752,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         disabled={!isNotificationEnabled('messages')}
                     />
                     <button 
-                        className={`ml-2 ${
+                        className={`${
                             user && user.points && user.points > 0 && isNotificationEnabled('messages') 
                                 ? 'text-white' 
                                 : 'text-gray-500'
-                        }`} 
+                        } flex-shrink-0`} 
                         onClick={() => setShowGiftModal(true)}
                         disabled={!user || !user.points || user.points <= 0 || !isNotificationEnabled('messages')}
                     >
@@ -832,7 +765,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     <button
                         onClick={handleSend}
                         disabled={sending || (!input.trim() && !attachedFile) || !isNotificationEnabled('messages')}
-                        className={`ml-2 px-6 py-2 rounded-full text-sm disabled:opacity-50 ${
+                        className={`flex-shrink-0 px-6 py-2 rounded-full text-sm disabled:opacity-50 ${
                             isNotificationEnabled('messages') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-gray-300'
                         }`}
                     >

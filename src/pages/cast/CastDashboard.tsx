@@ -338,6 +338,7 @@ const CastDashboardInner: React.FC = () => {
         isApproved?: boolean;
         isInProgress?: boolean;
         isCompleted?: boolean;
+        isActuallyCompleted?: boolean;
         statusText?: string;
     };
 
@@ -420,6 +421,8 @@ const CastDashboardInner: React.FC = () => {
                 extra: '',
                 active: !inactive,
                 statusText,
+                isApplied,
+                isApproved,
                 isInProgress,
                 isActuallyCompleted
             };
@@ -430,18 +433,29 @@ const CastDashboardInner: React.FC = () => {
         : calls.filter(call => call.title.includes(selectedArea));
 
     let sortedCalls: CallWithActive[] = [...filteredByArea];
-    if (selectedSort === '新しい順') {
-        sortedCalls = sortedCalls.slice().reverse();
-    } else if (selectedSort === '古い順') {
-        // As is
-    } else if (selectedSort === '人気順') {
-        sortedCalls = sortedCalls.slice().sort((a, b) => b.people - a.people);
-    } else if (selectedSort === 'おすすめ順') {
-        sortedCalls = sortedCalls.slice().sort((a, b) => {
+    
+    // First, sort by availability status (open reservations first)
+    sortedCalls = sortedCalls.slice().sort((a, b) => {
+        const aIsOpen = a.active && !a.isApplied && !a.isApproved && !a.isInProgress && !a.isActuallyCompleted;
+        const bIsOpen = b.active && !b.isApplied && !b.isApproved && !b.isInProgress && !b.isActuallyCompleted;
+        
+        if (aIsOpen && !bIsOpen) return -1;
+        if (!aIsOpen && bIsOpen) return 1;
+        
+        // If both have the same availability status, apply the selected sort
+        if (selectedSort === '新しい順') {
+            return new Date(b.scheduled_at || '').getTime() - new Date(a.scheduled_at || '').getTime();
+        } else if (selectedSort === '古い順') {
+            return new Date(a.scheduled_at || '').getTime() - new Date(b.scheduled_at || '').getTime();
+        } else if (selectedSort === '人気順') {
+            return b.people - a.people;
+        } else if (selectedSort === 'おすすめ順') {
             const getPoints = (call: CallWithActive) => parseInt((call.points || '0').replace(/[^\d]/g, ''));
             return getPoints(b) - getPoints(a);
-        });
-    }
+        }
+        
+        return 0;
+    });
 
     // TabBar filtering
     const now = new Date();

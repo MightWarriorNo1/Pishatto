@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNewCasts } from '../../hooks/useQueries';
 import Spinner from '../ui/Spinner';
+import { useSearch } from '../../contexts/SearchContext';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -40,6 +41,35 @@ interface NewCastSectionProps {
 const NewCastSection: React.FC<NewCastSectionProps> = ({ hideLoading = false }) => {
   const navigate = useNavigate();
   const { data: castProfiles = [], isLoading: loading } = useNewCasts();
+  const { searchQuery, isSearchActive, filterResults } = useSearch();
+
+  // Filter casts based on search query and filter results
+  const filteredCasts = useMemo(() => {
+    // If we have filter results, use them to filter the current section data
+    if (isSearchActive && filterResults.length > 0) {
+      const filterResultIds = new Set(filterResults.map((r: any) => r.id));
+      return castProfiles.filter((profile: CastProfile) => filterResultIds.has(profile.id));
+    }
+    
+    // If no filter results but search query exists, do text-based filtering
+    if (isSearchActive && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      return castProfiles.filter((profile: CastProfile) => {
+        const nickname = (profile.nickname || '').toLowerCase();
+        const name = (profile.name || '').toLowerCase();
+        const location = (profile.location || '').toLowerCase();
+        const favoriteArea = (profile.favorite_area || '').toLowerCase();
+        
+        return nickname.includes(query) || 
+               name.includes(query) || 
+               location.includes(query) || 
+               favoriteArea.includes(query);
+      });
+    }
+    
+    // No search active, return all profiles
+    return castProfiles;
+  }, [castProfiles, searchQuery, isSearchActive, filterResults]);
 
   const handleCastClick = (castId: number) => {
     navigate(`/cast/${castId}`);
@@ -52,11 +82,16 @@ const NewCastSection: React.FC<NewCastSectionProps> = ({ hideLoading = false }) 
         
         {loading && !hideLoading ? (
           <Spinner />
-        ) : castProfiles.length === 0 ? (
-          <div className="text-white">本日登録されたキャストはいません</div>
+        ) : filteredCasts.length === 0 ? (
+          <div className="text-white">
+            {isSearchActive && searchQuery.trim() 
+              ? '一致するキャストはいません' 
+              : '本日登録されたキャストはいません'
+            }
+          </div>
         ) : (
           <div className="flex gap-3 overflow-x-auto">
-            {castProfiles.map((profile: CastProfile) => (
+            {filteredCasts.map((profile: CastProfile) => (
               <div
                 key={profile.id}
                 className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:opacity-75 border border-secondary min-w-[120px] max-w-[120px] flex-shrink-0"
@@ -90,4 +125,4 @@ const NewCastSection: React.FC<NewCastSectionProps> = ({ hideLoading = false }) 
   );
 };
 
-export default NewCastSection; 
+export default NewCastSection;

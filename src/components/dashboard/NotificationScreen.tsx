@@ -116,9 +116,18 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
     };
 
     const handleDeleteNotification = async (id: number) => {
+        console.log('Attempting to delete notification:', id);
+        
+        if (!window.confirm('この通知を削除しますか？')) {
+            return;
+        }
+        
         try {
             setDeletingId(id);
+            console.log('Calling deleteNotification API...');
             await deleteNotification(id);
+            console.log('Notification deleted successfully');
+            
             const updatedNotifications = notifications.filter(n => n.id !== id);
             setNotifications(updatedNotifications);
             
@@ -127,6 +136,7 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
             onNotificationCountChange?.(unreadCount);
         } catch (error) {
             console.error('Failed to delete notification:', error);
+            alert('通知の削除に失敗しました。');
         } finally {
             setDeletingId(null);
         }
@@ -257,7 +267,7 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
                                     <button 
                                         onClick={() => handleDeleteNotification(notification.id)}
                                         disabled={deletingId === notification.id}
-                                        className="absolute top-2 right-2 p-1 text-gray-400 hover:text-red-500 disabled:opacity-50"
+                                        className="absolute top-2 right-2 p-2 text-gray-400 hover:text-red-500 disabled:opacity-50 z-10 cursor-pointer"
                                     >
                                         {deletingId === notification.id ? (
                                             <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-500"></div>

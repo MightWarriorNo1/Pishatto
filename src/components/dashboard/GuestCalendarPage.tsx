@@ -190,10 +190,6 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
         fetchData();
     }, [chatId]); // Removed selectedDate dependency to prevent infinite loops
 
-    // Debug useEffect to track state changes
-    useEffect(() => {
-        console.log('State changed - selectedDate:', selectedDate, 'selectedTime:', selectedTime);
-    }, [selectedDate, selectedTime]);
 
     // const totalPoints = calcPoints(selectedDuration, castCategory);
     // const extensionPoints = Math.round((castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000) / 2);
@@ -393,31 +389,6 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                                 return '日付・時間を選択';
                             })()}
                         </button>
-                        {/* Debug info - remove this later */}
-                        {process.env.NODE_ENV === 'development' && (
-                            <div className="text-xs text-gray-400 mt-1">
-                                Debug: selectedDate={selectedDate}, selectedTime={selectedTime}
-                                <br />
-                                Button text: {selectedDate && selectedTime ? 
-                                    `${formatJPDate(new Date(selectedDate))} ${selectedTime}` : 
-                                    '日付・時間を選択'
-                                }
-                                <br />
-                                <button 
-                                    onClick={() => {
-                                        const now = new Date();
-                                        const testDate = now.toISOString().slice(0, 10);
-                                        const testTime = formatTime(now);
-                                        console.log('Test button clicked, setting:', testDate, testTime);
-                                        setSelectedDate(testDate);
-                                        setSelectedTime(testTime);
-                                    }}
-                                    className="text-xs bg-blue-500 text-white px-2 py-1 rounded mt-1"
-                                >
-                                    Test Set Date/Time
-                                </button>
-                            </div>
-                        )}
                     </div>
                 </div>
 

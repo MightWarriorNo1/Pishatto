@@ -2,6 +2,8 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRanking } from '../../hooks/useQueries';
 import Spinner from '../ui/Spinner';
+import { useSearch } from '../../contexts/SearchContext';
+
 interface RankingSectionProps {
   onSeeRanking?: () => void;
   hideLoading?: boolean;
@@ -15,7 +17,30 @@ const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking, hideLoadi
     category: 'gift',
     area: '全国'
   });
-  const rankings = rankingData?.data || [];
+  const { searchQuery, isSearchActive, filterResults } = useSearch();
+
+  // Filter rankings based on search query and filter results
+  const filteredRankings = React.useMemo(() => {
+    const rankings = rankingData?.data || [];
+    
+    // If we have filter results, use them to filter the current section data
+    if (isSearchActive && filterResults.length > 0) {
+      const filterResultIds = new Set(filterResults.map((r: any) => r.id));
+      return rankings.filter((profile: any) => filterResultIds.has(profile.id));
+    }
+    
+    // If no filter results but search query exists, do text-based filtering
+    if (isSearchActive && searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      return rankings.filter((profile: any) => {
+        const name = (profile.name || '').toLowerCase();
+        return name.includes(query);
+      });
+    }
+    
+    // No search active, return all rankings
+    return rankings;
+  }, [rankingData?.data, searchQuery, isSearchActive, filterResults]);
 
   const handleCastClick = (castId: number) => {
     navigate(`/cast/${castId}`);
@@ -29,11 +54,16 @@ const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking, hideLoadi
       </div>
       {loading && !hideLoading ? (
         <Spinner />
-      ) : rankings.length === 0 ? (
-        <div className="text-white">ランキングデータがありません</div>
+      ) : filteredRankings.length === 0 ? (
+        <div className="text-white">
+          {isSearchActive && searchQuery.trim() 
+            ? '一致するキャストはいません' 
+            : 'ランキングデータがありません'
+          }
+        </div>
       ) : (
         <div className="grid grid-cols-3 gap-4">
-          {rankings.slice(0, 6).map((profile: any, index: number) => (
+          {filteredRankings.slice(0, 6).map((profile: any, index: number) => (
             <div
               key={profile.id}
               className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer relative"

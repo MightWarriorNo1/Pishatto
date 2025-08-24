@@ -537,12 +537,12 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                 )}
                 
                 <div className="flex items-center space-x-2">
-                    <button
+                    {/* <button
                         onClick={() => setShowScheduleModal(true)}
                         className="text-white p-2"
                     >
                         <Calendar className="w-5 h-5" />
-                    </button>
+                    </button> */}
                     
                     <button
                         ref={attachBtnRef}

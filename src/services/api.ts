@@ -1071,6 +1071,20 @@ export const refundUnusedPoints = async (reservationId: number) => {
   return response.data;
 };
 
+export const completeSession = async (sessionData: {
+  chat_id: number;
+  cast_id: number;
+  guest_id: number;
+  session_duration: number;
+  total_points: number;
+  cast_points: number;
+  guest_points: number;
+  session_key: string;
+}) => {
+  const response = await api.post('/sessions/complete', sessionData);
+  return response.data;
+};
+
 export const getPointBreakdown = async (reservationId: number) => {
   const response = await api.get(`/reservations/${reservationId}/point-breakdown`);
   return response.data;
@@ -1335,6 +1349,7 @@ export const getGuestGrade = async (guestId: number): Promise<GradeInfo> => {
 
 export const getCastGrade = async (castId: number): Promise<GradeInfo> => {
   try {
+    console.log("CASTID", castId);
     const response = await api.get(`/grades/cast/${castId}`);
     return response.data.data;
   } catch (error) {

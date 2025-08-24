@@ -2,12 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Image, Camera, FolderClosed,  ChevronLeft, X, Users, Send } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants } from '../../../services/api';
+import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants, getReservationById } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
 import { useUser } from '../../../contexts/UserContext';
-import { useGroupMessages } from '../../../hooks/useRealtime';
+import { useGroupMessages, useReservationUpdates } from '../../../hooks/useRealtime';
+import { useSessionManagement } from '../../../hooks/useSessionManagement';
 import dayjs from 'dayjs';
 import Spinner from '../../ui/Spinner';
+import SessionTimer from '../../ui/SessionTimer';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -74,13 +76,55 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     const attachBtnRef = useRef<HTMLButtonElement>(null);
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     
+    // Session management state
+    const [reservationId, setReservationId] = useState<number | null>(null);
+    const [reservationData, setReservationData] = useState<any>(null);
+    
     // Camera functionality
     const [showCamera, setShowCamera] = useState(false);
     const [cameraError, setCameraError] = useState('');
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
 
+    // Session management
+    const {
+        sessionState,
+        isLoading: sessionLoading,
+        error: sessionError,
+        formatElapsedTime,
+        handleMeet,
+        handleDissolve,
+        acceptProposal: sessionAcceptProposal,
+        resetSession,
+        initializeSession
+    } = useSessionManagement({
+        reservationId,
+        chatId: groupId, // Use groupId as chatId for session management
+        castId,
+        onSessionStart: () => {
+            console.log('Cast group session started');
+        },
+        onSessionEnd: () => {
+            console.log('Cast group session ended');
+        },
+        onReservationUpdate: (reservation) => {
+            if (reservation) {
+                setReservationId(reservation.id);
+                setReservationData(reservation);
+                // Re-initialize session state when reservation is updated
+                initializeSession(reservation);
+            }
+        }
+    });
 
+    // Real-time reservation updates
+    useReservationUpdates(reservationId?.toString() || '', (reservation) => {
+        console.log('Real-time reservation update received:', reservation);
+        if (reservation) {
+            setReservationData(reservation);
+            initializeSession(reservation);
+        }
+    });
 
     // Fetch messages on component mount
     useEffect(() => {
@@ -133,18 +177,43 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
         fetchMessages();
     }, [groupId, castId, user?.id]);
 
-    // Fetch participants
+    // Fetch participants and reservation info
     useEffect(() => {
         const fetchParticipants = async () => {
             try {
                 const response = await getGroupParticipants(groupId);
                 setParticipants(response.participants || []);
+                
+                // Get reservation information from group
+                if (response.group && response.group.reservation_id) {
+                    console.log('Found reservation_id:', response.group.reservation_id);
+                    setReservationId(response.group.reservation_id);
+                    
+                    // Fetch reservation details
+                    try {
+                        const reservation = await getReservationById(response.group.reservation_id);
+                        console.log('Fetched reservation details:', reservation);
+                        setReservationData(reservation);
+                        // Initialize session state based on reservation data
+                        initializeSession(reservation);
+                    } catch (e) {
+                        console.error('Failed to fetch reservation details:', e);
+                    }
+                }
             } catch (e) {
                 console.error('Failed to fetch participants:', e);
             }
         };
         fetchParticipants();
-    }, [groupId]);
+    }, [groupId]); // Removed initializeSession from dependencies to prevent infinite loops
+
+    // Initialize session when reservation data changes
+    useEffect(() => {
+        if (reservationData) {
+            console.log('Reservation data changed, initializing session:', reservationData);
+            initializeSession(reservationData);
+        }
+    }, [reservationData, initializeSession]);
 
     // Fetch gifts
     useEffect(() => {
@@ -448,7 +517,10 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             </div>
 
             {/* Messages - Scrollable Area */}
-            <div className="h-screen overflow-y-auto px-4 py-2 space-y-4 pt-16 pb-28 relative scrollbar-hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="h-screen overflow-y-auto px-4 py-2 space-y-4 pt-16 pb-28 relative scrollbar-hidden" style={{ 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none',
+            }}>
                 {fetchError && (
                     <div className="text-red-500 text-center py-4">
                         <div>{fetchError}</div>
@@ -536,7 +608,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         );
                     }
 
-                    return (
+                    const messageElement = (
                         <div key={message.id}>
                             {showDate && (
                                 <div className="text-center text-gray-400 text-sm py-2">
@@ -594,6 +666,35 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                             </div>
                         </div>
                     );
+
+                    // Check if this is the admin message (matching confirmation)
+                    const isAdminMessage = message.message && (
+                        message.message.includes('マッチングが成立しました') && 
+                        message.message.includes('ゲストと合流する直前に合流ボタンを必ず押下してください')
+                    );
+
+                    // If this is the admin message, render it followed by the timer
+                    if (isAdminMessage && reservationId) {
+                        return (
+                            <div key={message.id}>
+                                {messageElement}
+                                
+                                {/* Session Timer - Displayed right after admin message */}
+                                <div className="px-4 py-2 bg-primary border-t border-secondary mt-4">
+                                    <SessionTimer
+                                        isActive={sessionState.isActive}
+                                        elapsedTime={sessionState.elapsedTime}
+                                        onMeet={handleMeet}
+                                        onDissolve={handleDissolve}
+                                        isLoading={sessionLoading}
+                                        className="w-full"
+                                    />
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    return messageElement;
                 })}
                 <div ref={messagesEndRef} />
 
@@ -623,6 +724,9 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             <div className="border-t border-secondary p-4 max-w-md mx-auto w-full bg-primary fixed bottom-0 left-0 right-0 z-20">
                 {sendError && (
                     <div className="text-red-500 text-sm mb-2">{sendError}</div>
+                )}
+                {sessionError && (
+                    <div className="text-red-500 text-sm mb-2">{sessionError}</div>
                 )}
                 
                 <div className="flex items-center space-x-2">

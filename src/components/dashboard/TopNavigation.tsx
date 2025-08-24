@@ -5,18 +5,24 @@ import { Search, QrCode, X } from 'lucide-react';
 import { getCastList } from '../../services/api';
 import { CastProfile } from '../../services/api';
 import QRCodeModal from './QRCodeModal';
+import SearchFilterPage from './SearchFilterPage';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/react-query';
+import { useSearch } from '../../contexts/SearchContext';
 
 interface TopNavigationProps {
   activeTab: 'home' | 'favorites' | 'footprints' | 'ranking';
   // eslint-disable-next-line
   onTabChange: (tab: 'home' | 'favorites' | 'footprints' | 'ranking') => void;
+  // push search results up to dashboard content area
+  onSearchResults?: (results: CastProfile[]) => void;
+  onSearchActiveChange?: (active: boolean) => void;
 }
 
-const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange, onSearchResults, onSearchActiveChange }) => {
+  const { searchQuery, setSearchQuery, setIsSearchActive } = useSearch();
+  const [searchQueryLocal, setSearchQueryLocal] = useState(searchQuery);
   const [searchResults, setSearchResults] = useState<CastProfile[]>([]);
   const [allCasts, setAllCasts] = useState<CastProfile[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -25,9 +31,32 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
   const [isLoading, setIsLoading] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { isNotificationEnabled } = useNotificationSettings();
   const queryClient = useQueryClient();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showFilterPage, setShowFilterPage] = useState(false);
+
+  // Sync local search query with context only on mount
+  useEffect(() => {
+    setSearchQueryLocal(searchQuery);
+  }, [searchQuery]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Update parent component when local search query changes
+  useEffect(() => {
+    if (onSearchResults) {
+      onSearchResults(searchResults);
+    }
+  }, [searchResults, onSearchResults]);
 
   // Filter tabs based on notification settings
   const getAvailableTabs = () => {
@@ -119,6 +148,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
     if (!query.trim()) {
       setSearchResults([]);
       setShowResults(false);
+      setIsSearchActive(false);
       return;
     }
 
@@ -126,8 +156,10 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
     try {
       // Use the existing API with search parameter
       const response = await getCastList({ search: query });
-      setSearchResults(response.casts || []);
-      setShowResults(true);
+      const results = response.casts || [];
+      setSearchResults(results);
+      setShowResults(false);
+      setIsSearchActive(true);
     } catch (error) {
       console.error('Search error:', error);
       const filtered = allCasts.filter(cast => {
@@ -144,40 +176,30 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
         return heightMatch || ageMatch;
       });
       setSearchResults(filtered);
-      setShowResults(true);
+      setShowResults(false);
+      setIsSearchActive(true);
     } finally {
       setIsSearching(false);
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    
-    if (value.trim()) {
-      // Debounce search
-      const timeoutId = setTimeout(() => {
-        handleSearch(value);
-      }, 300);
-      
-      return () => clearTimeout(timeoutId);
-    } else {
-      setSearchResults([]);
-      setShowResults(false);
-    }
+    // Disable direct typing - only allow filter page
+    e.preventDefault();
+    setShowFilterPage(true);
   };
 
   const handleInputFocus = () => {
-    if (!searchQuery.trim() && allCasts.length > 0) {
-      setSearchResults(allCasts);
-      setShowResults(true);
-    }
+    // Open the filter page when user taps the search bar
+    setShowFilterPage(true);
   };
 
   const clearSearch = () => {
-    setSearchQuery('');
+    setSearchQueryLocal('');
+    setSearchQuery(''); // Update context
     setSearchResults([]);
     setShowResults(false);
+    setIsSearchActive(false);
   };
 
   const getAgeFromBirthYear = (birthYear?: number) => {
@@ -218,14 +240,15 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
           <div className="flex-1 relative" ref={searchRef}>
             <input
               type="text"
-              value={searchQuery}
+              value={searchQueryLocal}
               onChange={handleInputChange}
               onFocus={handleInputFocus}
-              placeholder="年齢,身長検索が可能になりました (例: 25歳 160cm)"
-              className="w-full pl-10 pr-10 py-2 rounded-full bg-primary text-white text-sm border border-secondary placeholder-red-500"
+                                         placeholder="年齢,身長検索が可能になりました (例: 25歳 170cm)"
+              className="w-full pl-10 pr-10 py-2 rounded-full bg-primary text-white text-sm border border-secondary placeholder-red-500 cursor-pointer"
+              readOnly
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white" />
-            {searchQuery && (
+            {searchQueryLocal && (
               <button
                 onClick={clearSearch}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white hover:text-gray-300"
@@ -255,7 +278,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
             ) : searchResults.length > 0 ? (
               <div className="p-2">
                 <div className="text-white text-sm mb-2 px-2">
-                  {searchQuery.trim() ? `検索結果: ${searchResults.length}件` : `全キャスト: ${searchResults.length}件`}
+                  {searchQueryLocal.trim() ? `検索結果: ${searchResults.length}件` : `全キャスト: ${searchResults.length}件`}
                 </div>
                 {searchResults.map((cast) => (
                   <div
@@ -267,7 +290,7 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
                       // You can add navigation logic here
                       // For now, just close the search results
                       setShowResults(false);
-                      setSearchQuery('');
+                      setSearchQueryLocal('');
                     }}
                   >
                     <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mr-3 overflow-hidden">
@@ -304,12 +327,9 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
                   </div>
                 ))}
               </div>
-            ) : searchQuery.trim() ? (
+            ) : searchQueryLocal.trim() ? (
               <div className="p-4 text-center text-white">
-                <p>検索結果が見つかりませんでした</p>
-                <p className="text-sm text-gray-400 mt-1">
-                  別のキーワードで検索してください
-                </p>
+                <p>一致するキャストはいません</p>
               </div>
             ) : allCasts.length === 0 ? (
               <div className="p-4 text-center text-white">
@@ -344,6 +364,33 @@ const TopNavigation: React.FC<TopNavigationProps> = ({ activeTab, onTabChange })
       
       {/* QR Code Modal */}
       {showQRCode && <QRCodeModal onClose={() => setShowQRCode(false)} />}
+      {showFilterPage && (
+        <SearchFilterPage
+          casts={allCasts}
+          onClose={() => setShowFilterPage(false)}
+          onApply={(results, filters) => {
+            // Update local state for display
+            setSearchResults(results);
+            setShowResults(false);
+            
+            // Update search context (this will filter all sections)
+            if (results.length > 0) {
+              // Create a search query from filters for display
+              const filterQuery = [
+                filters.keyword,
+                filters.selectedClasses.join(','),
+                filters.age[0] !== 20 || filters.age[1] !== 35 ? `年齢${filters.age[0]}-${filters.age[1]}歳` : '',
+                filters.height[0] !== 155 || filters.height[1] !== 250 ? `身長${filters.height[0]}-${filters.height[1]}cm` : '',
+                filters.pointsPer30Min[0] !== 7500 || filters.pointsPer30Min[1] !== 30000 ? `${filters.pointsPer30Min[0]}-${filters.pointsPer30Min[1]}P` : ''
+              ].filter(Boolean).join(' ');
+              
+              setSearchQueryLocal(filterQuery);
+            }
+            
+            setShowFilterPage(false);
+          }}
+        />
+      )}
     </div>
   );
 };
