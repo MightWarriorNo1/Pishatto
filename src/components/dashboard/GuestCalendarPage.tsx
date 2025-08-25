@@ -111,20 +111,12 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                 }
                 
 
-                // Get reservation data if it exists
+                // Get reservation data if it exists (but don't set it as default)
                 if (chat.reservation_id) {
                     const reservation = await getReservationById(chat.reservation_id);
                     if (reservation) {
                         setReservationData(reservation);
-                        // Pre-fill form with existing reservation data
-                        if (reservation.scheduled_at) {
-                            const reservationDate = new Date(reservation.scheduled_at);
-                            const reservationDateStr = reservationDate.toISOString().slice(0, 10);
-                            const reservationTimeStr = formatTime(reservationDate);
-                            console.log('Setting reservation values:', reservationDateStr, reservationTimeStr);
-                            setSelectedDate(reservationDateStr);
-                            setSelectedTime(reservationTimeStr);
-                        }
+                        // Don't pre-fill form with existing reservation data
                         if (reservation.duration) {
                             const hours = typeof reservation.duration === 'number' 
                                 ? reservation.duration 
@@ -170,16 +162,13 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                     }
                 }
 
-                // Set default date and time if no reservation data exists
-                if (!chat.reservation_id) {
-                    const now = new Date();
-                    now.setMinutes(now.getMinutes() + 30); // 30 minutes from now
-                    const defaultDate = now.toISOString().slice(0, 10);
-                    const defaultTime = formatTime(now);
-                    console.log('Setting default values:', defaultDate, defaultTime);
-                    setSelectedDate(defaultDate);
-                    setSelectedTime(defaultTime);
-                }
+                // Always set current date and time as default
+                const now = new Date();
+                const defaultDate = now.toISOString().slice(0, 10);
+                const defaultTime = formatTime(now);
+                console.log('Setting current time as default:', defaultDate, defaultTime);
+                setSelectedDate(defaultDate);
+                setSelectedTime(defaultTime);
             } catch (error) {
                 console.error('Error fetching data:', error);
             } finally {
@@ -247,18 +236,14 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
 
 
     const openDateTimeModal = () => {
-        let dateToUse = selectedDate;
-        let timeToUse = selectedTime;
+        // Always use current date and time when opening modal
+        const now = new Date();
+        const currentDate = now.toISOString().slice(0, 10);
+        const currentTime = formatTime(now);
         
-        if (!dateToUse || !timeToUse) {
-            const now = new Date();
-            dateToUse = now.toISOString().slice(0, 10);
-            timeToUse = getMinTime(dateToUse);
-        }
-        
-        console.log('Opening modal with dateToUse:', dateToUse, 'timeToUse:', timeToUse);
-        setTempDate(dateToUse);
-        setTempTime(timeToUse);
+        console.log('Opening modal with current date/time:', currentDate, currentTime);
+        setTempDate(currentDate);
+        setTempTime(currentTime);
         setShowDateTimeModal(true);
     };
 
@@ -373,20 +358,22 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                             className="w-full border rounded-lg p-2 text-sm bg-primary text-white border-secondary text-left hover:bg-primary/80 transition-colors"
                         >
                             {(() => {
+                                const currentTime = `${formatJPDate(new Date())} ${formatTime(new Date())}`;
+                                
                                 if (selectedDate && selectedTime) {
                                     try {
                                         const date = new Date(selectedDate);
                                         if (isNaN(date.getTime())) {
                                             console.error('Invalid date:', selectedDate);
-                                            return '日付・時間を選択';
+                                            return currentTime;
                                         }
                                         return `${formatJPDate(date)} ${selectedTime}`;
                                     } catch (error) {
                                         console.error('Error formatting date:', error);
-                                        return '日付・時間を選択';
+                                        return currentTime;
                                     }
                                 }
-                                return '日付・時間を選択';
+                                return `日付・時間を選択 (現在: ${currentTime})`;
                             })()}
                         </button>
                     </div>
@@ -502,7 +489,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
             {/* DateTime Selection Modal */}
             {showDateTimeModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all duration-200 scale-100 animate-in zoom-in-95 duration-200">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl transform transition-all duration-200 scale-100 animate-in zoom-in-95">
                         {/* Header */}
                         <div className="flex items-center justify-between p-6 pb-4 border-b border-gray-100">
                             <div className="flex items-center gap-3">
@@ -524,7 +511,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                             <div className="space-y-5">
                                 {/* Date Selection */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
                                         <Calendar size={16} className="text-primary" />
                                         日付
                                     </label>
@@ -539,7 +526,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                                 
                                 {/* Time Selection */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                                    <label className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
                                         <Clock size={16} className="text-primary" />
                                         時間
                                     </label>
