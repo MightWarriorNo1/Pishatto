@@ -272,15 +272,15 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
                             onChange={(e) => setMessage(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                             placeholder="メッセージを入力..."
-                            className="flex-1 px-4 py-2 rounded-full border border-secondary bg-primary text-white text-sm placeholder-gray-400"
+                            className="flex-1 w-0 min-w-0 px-4 py-2 rounded-full border border-secondary bg-primary text-white text-sm placeholder-gray-400"
                         />
-                        <button className="p-2 text-white hover:bg-secondary rounded-full transition-colors">
+                        <button className="p-2 text-white hover:bg-secondary rounded-full transition-colors shrink-0">
                             <FiImage className="w-5 h-5" />
                         </button>
                         <button
                         onClick={handleSendMessage}
                         disabled={sending || (!message.trim() && !attachedFile)}
-                        className={`ml-2 px-6 py-2 rounded-full text-sm disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600`}
+                        className={`ml-2 px-6 py-2 rounded-full text-sm disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600 shrink-0`}
                     >
                         {sending ? (
                             <div className="flex items-center">

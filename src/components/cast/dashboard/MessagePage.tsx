@@ -6,7 +6,7 @@ import timezone from 'dayjs/plugin/timezone';
 import { useNavigate } from 'react-router-dom';
 import MessageProposalPage from './MessageProposalPage';
 import { useCast } from '../../../contexts/CastContext';
-import { useChatMessages as useRealtimeChatMessages, useGroupMessages, useCastChatsRealtime } from '../../../hooks/useRealtime';
+import { useChatMessages as useRealtimeChatMessages, useGroupMessages, useCastChatsRealtime, useGroupChatsRealtime } from '../../../hooks/useRealtime';
 import {
     useCastChats,
     useChatMessages,
@@ -403,6 +403,14 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         return dayjs.utc(timestamp).tz(userTz).format('YYYY-MM-DD HH:mm');
     };
 
+    // Normalize proposal key to be stable across sessions/refreshes
+    const makeProposalKey = (date: any, duration: any): string => {
+        if (!date || !duration) return '';
+        const normalizedDate = dayjs(date).format('YYYY-MM-DD');
+        const normalizedDuration = parseInt(String(duration), 10);
+        return `${normalizedDate}-${normalizedDuration}`;
+    };
+
     const handleImageButtonClick = () => {
         setShowFile((prev) => !prev);
     };
@@ -524,7 +532,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
     // Session management functions for proposals
     const startProposalSession = async (proposal: Proposal) => {
-        const proposalKey = `${proposal.date}-${proposal.duration}`;
+        const proposalKey = makeProposalKey(proposal.date, proposal.duration);
 
         try {
             // Find the matching reservation
@@ -574,7 +582,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
     // Function to handle proposal clicks and update reservations
     const handleProposalClick = async (proposal: Proposal, messageId: string) => {
-        const proposalKey = `${proposal.date}-${proposal.duration}`;
+        const proposalKey = makeProposalKey(proposal.date, proposal.duration);
         
         // Mark proposal as clicked
         setClickedProposals(prev => {
@@ -660,7 +668,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     };
 
     const exitProposalSession = async (proposal: Proposal) => {
-        const proposalKey = `${proposal.date}-${proposal.duration}`;
+        const proposalKey = makeProposalKey(proposal.date, proposal.duration);
         const session = proposalSessions.get(proposalKey);
 
         if (!session) {
@@ -965,7 +973,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
     // Simplified session start function that works without database reservations
     const startSimpleSession = (proposal: Proposal) => {
-        const proposalKey = `${proposal.date}-${proposal.duration}`;
+        const proposalKey = makeProposalKey(proposal.date, proposal.duration);
         console.log('Starting simple session for proposal:', proposal);
         console.log('Current proposalSessions before:', Array.from(proposalSessions.entries()));
 
@@ -1554,36 +1562,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         // Create a non-null proposal reference for use in the JSX
                         const currentProposal = { ...proposal, type: proposal.type || 'proposal' };
 
-                        // Check if proposal is accepted by matching guest_id and scheduled_at
-                        // Also check local state for immediate UI feedback
-                        const proposalKey = `${currentProposal.date}-${currentProposal.duration}`;
-                        const isAcceptedFromServer = guestReservations.some((res: any) => {
-                            const proposalDate = dayjs(currentProposal.date);
-                            const reservationDate = dayjs(res.scheduled_at);
-                            const matches = res.guest_id === chatInfo?.guest?.id &&
-                                reservationDate.isSame(proposalDate, 'day'); // Compare only the day, not exact time
-
-                            if (matches) {
-                                console.log('Proposal accepted - matching reservation:', res);
-                                console.log('Date comparison:', {
-                                    proposalDate: proposalDate.format('YYYY-MM-DD HH:mm:ss'),
-                                    reservationDate: reservationDate.format('YYYY-MM-DD HH:mm:ss'),
-                                    isSame: reservationDate.isSame(proposalDate, 'day')
-                                });
-                            }
-                            return matches;
-                        });
+                        // Check if proposal is accepted only when cast explicitly accepted it locally
+                        const proposalKey = makeProposalKey(currentProposal.date, currentProposal.duration);
                         const isAcceptedLocally = acceptedProposals.has(proposalKey);
-                        const isAccepted = isAcceptedFromServer || isAcceptedLocally;
-                        
-                        console.log('Proposal acceptance check:', {
-                            proposalKey,
-                            isAcceptedFromServer,
-                            isAcceptedLocally,
-                            isAccepted,
-                            guestReservationsCount: guestReservations.length,
-                            acceptedProposalsCount: acceptedProposals.size
-                        });
+                        const isAccepted = isAcceptedLocally;
                         
                         // Check if proposal has been clicked by cast member
                         const isClicked = clickedProposals.has(proposalKey);
@@ -1609,8 +1591,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                 )}
                                 <div className="flex flex-col items-start mb-4">
                                     <div
-                                        className={`${isClicked ? 'bg-blue-600 shadow-lg shadow-blue-500/30' : 'bg-orange-500'} text-white rounded-lg px-4 py-3 max-w-[85%] md:max-w-[70%] text-sm shadow-md relative transition-all duration-300 ${(isAccepted || isClicked) ? 'opacity-50 cursor-default' : 'cursor-pointer hover:bg-orange-600'}`}
-                                        onClick={(!isAccepted && !isClicked) ? () => {
+                                        className={`${isClicked ? 'bg-blue-600 shadow-lg shadow-blue-500/30' : 'bg-orange-500'} text-white rounded-lg px-4 py-3 max-w-[85%] md:max-w-[70%] text-sm shadow-md relative transition-all duration-300 ${isAccepted ? 'opacity-50 cursor-default' : 'cursor-pointer hover:bg-orange-600'}`}
+                                        onClick={!isAccepted ? () => {
                                             handleProposalClick(currentProposal, msg.id);
                                         } : undefined}
                                     >
@@ -1638,7 +1620,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     {/* {isAccepted && (
                                         <div className="mt-3 w-full max-w-[100%]">
                                             {(() => {
-                                                const proposalKey = `${currentProposal.date}-${currentProposal.duration}`;
+                                                const proposalKey = makeProposalKey(currentProposal.date, currentProposal.duration);
                                                 const session = proposalSessions.get(proposalKey);
                                                 if (session && !session.isActive && session.elapsedTime > 0) {
                                                     return (
@@ -2054,7 +2036,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         await acceptProposal(proposalData);
 
                                         // Add to local accepted state for immediate UI feedback
-                                        const proposalKey = `${selectedProposal.date}-${duration}`;
+                                        const proposalKey = makeProposalKey(selectedProposal.date, duration);
                                         console.log('Adding proposal to accepted set:', proposalKey);
                                         
                                         setAcceptedProposals(prev => {
@@ -2113,6 +2095,12 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
 
     // Real-time: keep cast chats up-to-date without polling
     useCastChatsRealtime(castId || 0);
+
+    // Real-time group chat updates for cast
+    useGroupChatsRealtime(castId || 0, 'cast', (groupChat) => {
+        console.log('MessagePage: Real-time group chat created:', groupChat);
+        // The hook automatically updates the React Query cache
+    });
 
     useEffect(() => {
         if (setIsMessageDetailOpen) setIsMessageDetailOpen(!!selectedMessage);
@@ -2179,6 +2167,12 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
             (guestAge && guestAge.toString().includes(filterAge));
 
         return nicknameMatch && ageMatch;
+    })
+    // Sort by last activity (timestamp desc)
+    .sort((a: Message, b: Message) => {
+        const ta = a?.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const tb = b?.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return tb - ta;
     });
 
     if (selectedMessage) {
@@ -2332,7 +2326,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                                                     )}
                                                 </div>
                                                 <span className="text-xs text-gray-400">
-                                                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {dayjs(message.timestamp).tz(userTz).format('YYYY-MM-DD HH:mm')}
                                                 </span>
                                             </div>
                                             <div className="flex items-center">

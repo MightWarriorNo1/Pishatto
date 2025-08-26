@@ -54,6 +54,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   useEffect(() => {
     // Only redirect after we've completed all authentication checks
     if (!userLoading && !castLoading && !isCheckingLine && hasCheckedAuth) {
+      // Don't redirect if we're already on the home page (role selection)
+      if (location.pathname === '/') {
+        console.log('ProtectedRoute: On home page, not redirecting');
+        return;
+      }
+      
       if (userType === 'guest') {
         if (!user) {
           console.log('ProtectedRoute: Guest not authenticated, redirecting to register');

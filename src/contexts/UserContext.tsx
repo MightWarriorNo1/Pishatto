@@ -97,6 +97,10 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     // Clear session timeout
     sessionTimeout.stop();
     clearSession();
+    
+    // Use a more direct approach - force redirect to home page
+    // and prevent any route guards from interfering
+    window.location.replace('/');
   };
 
   const extendSession = () => {

@@ -19,6 +19,7 @@ import LineRegister from './pages/LineRegister';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 // import AuthDebugger from './components/debug/AuthDebugger';
 import RealtimeProvider from './components/RealtimeProvider';
+import RealtimeTestPanel from './components/RealtimeTestPanel';
 import { UserProvider } from './contexts/UserContext';
 import { CastProvider } from './contexts/CastContext';
 import { ConciergeProvider } from './contexts/ConciergeContext';
@@ -77,6 +78,7 @@ const App: React.FC = () => {
                     } />
                   </Routes>
                   {/* <AuthDebugger /> */}
+                  <RealtimeTestPanel />
                 </Router>
               </RealtimeProvider>
             </ConciergeProvider>

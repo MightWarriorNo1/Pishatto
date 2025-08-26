@@ -11,6 +11,11 @@ const REVERB_KEY =
   (process.env.REVERB_KEY as string) ||
   "local";
 
+const REVERB_CLUSTER =
+  (process.env.REACT_APP_REVERB_CLUSTER as string) ||
+  (process.env.REVERB_CLUSTER as string) ||
+  "mt1";
+
 const REVERB_HOST =
   (process.env.REACT_APP_REVERB_HOST as string) ||
   (process.env.REVERB_HOST as string) ||
@@ -39,8 +44,9 @@ const REVERB_WSS_PORT = Number(
 const forceTLS = REVERB_SCHEME === 'https';
 
 const echo = new Echo({
-  broadcaster: "reverb",
+  broadcaster: "pusher",
   key: REVERB_KEY,
+  cluster: REVERB_CLUSTER, // Add default cluster
   wsHost: REVERB_HOST,
   wsPort: REVERB_PORT,
   wssPort: REVERB_WSS_PORT,
@@ -50,39 +56,7 @@ const echo = new Echo({
 });
 
 
-// Add connection event listeners for debugging
-if (echo.connector && 'pusher' in echo.connector) {
-  const pusherConnector = echo.connector as any;
-  if (pusherConnector.pusher && pusherConnector.pusher.connection) {
-    pusherConnector.pusher.connection.bind('connected', () => {
-      console.log('✅ Echo: Connected to WebSocket server');
-    });
-
-    pusherConnector.pusher.connection.bind('disconnected', () => {
-      console.log('❌ Echo: Disconnected from WebSocket server');
-    });
-
-    pusherConnector.pusher.connection.bind('error', (error: any) => {
-      console.error('❌ Echo: WebSocket connection error:', error);
-    });
-  }
-}
-
-// Test connection function
-export const testEchoConnection = () => {
-  if (echo.connector && 'pusher' in echo.connector) {
-    const pusherConnector = echo.connector as any;
-    if (pusherConnector.pusher && pusherConnector.pusher.connection) {
-      const state = pusherConnector.pusher.connection.state;
-      console.log('🔍 Echo connection state:', state);
-      return state === 'connected';
-    }
-  }
-  console.log('🔍 Echo connection state: unknown');
-  return false;
-};
-
-// Expose Echo for debugging tools that reference window.Echo
+// Expose Echo for debugging tools that reference window.Echo (optional)
 (window as any).Echo = echo;
 
 export default echo;

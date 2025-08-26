@@ -207,6 +207,16 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
       return;
     }
 
+    if (!meetingLocation.trim()) {
+      setErrorMessage('合流場所を入力してください。');
+      return;
+    }
+
+    if (!reservationName.trim()) {
+      setErrorMessage('予約名を入力してください。');
+      return;
+    }
+
     if (!user) {
       setErrorMessage('ユーザー情報が見つかりません。');
       return;
@@ -245,28 +255,23 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
         reservation_name: reservationName,
         duration: hours,
         points: finalComputedPoints,
-        details: `予約名: ${reservationName}, キャスト: ${selectedCast.nickname}, 合流エリア: ${meetingArea}, 設定時間: ${updatedDuration}, 使用ポイント: ${finalComputedPoints.toLocaleString()}P, 合流時間: ${scheduledDate.toLocaleString()}`,
+        details: `キャスト: ${selectedCast.nickname}, 合流エリア: ${meetingArea}, 設定時間: ${updatedDuration}, 使用ポイント: ${finalComputedPoints.toLocaleString()}P, 合流時間: ${scheduledDate.toLocaleString()}`,
       };
 
+      // Debug: Log the reservation data being sent
+      console.log('Sending reservation data:', reservationData);
+
       const reservation = await createReservation(reservationData);
+      
+      // Debug: Log the response from the API
+      console.log('Reservation response:', reservation);
+      
       const reservationId = reservation.reservation.id;
 
       // Create chat between user and cast
       const chat = await createChat(selectedCast.id, user.id, reservationId);
       const chatId = chat.id;
 
-      // Deduct points from user
-      // await deductPoints(user.id, finalComputedPoints);
-
-      // Create pending point transaction
-      // await createPointTransaction({
-      //   user_type: 'guest',
-      //   user_id: user.id,
-      //   amount: -finalComputedPoints,
-      //   type: 'pending',
-      //   reservation_id: reservationId,
-      //   description: `${selectedCast.nickname}さんとの予約 - ${meetingArea}`
-      // });
 
       // Refresh user data to get updated point balance
       await refreshUser();
@@ -304,16 +309,15 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
     <div className="min-h-screen bg-gradient-to-b from-primary via-primary to-secondary">
       {/* Fixed Header */}
       <div className="fixed top-0 max-w-md mx-auto w-full z-50 bg-primary px-4 py-3 border-b border-white/10 shadow-lg shadow-primary/30 bg-gradient-to-r from-primary via-blue-900 to-secondary">
-        <div className="flex items-center justify-between">
+        <div className="relative flex items-center justify-center">
           <button 
             onClick={onBack}
-            className="text-white text-xl font-bold hover:bg-white/10 rounded-full w-10 h-10 flex items-center justify-center transition-colors"
+            className="absolute left-0 text-white text-xl font-bold hover:bg-white/10 rounded-full w-10 h-10 flex items-center justify-center transition-colors"
             aria-label="戻る"
           >
             ✕
           </button>
           <h1 className="text-lg font-bold text-white tracking-wide drop-shadow">注文内容</h1>
-          <div></div>
         </div>
         <h2 className="text-2xl font-bold text-white mt-2 pt-4 tracking-tight">注文内容</h2>
       </div>

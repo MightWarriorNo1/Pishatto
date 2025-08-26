@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Heart, MessageSquare, User, MapPin, Briefcase, GraduationCap, DollarSign, GlassWater, Cigarette, Users, Home, Star } from 'lucide-react';
-import { getGuestProfileById, GuestProfile, likeGuest, createChat, getLikeStatus, recordGuestVisit, checkNotificationEnabled } from '../services/api';
+import { getGuestProfileById, GuestProfile, likeGuest, createChat, getLikeStatus, recordGuestVisit, checkNotificationEnabled, sendMessage } from '../services/api';
 import { useNotificationSettings } from '../contexts/NotificationSettingsContext';
 import { useCast } from '../contexts/CastContext';
 import Spinner from '../components/ui/Spinner';
@@ -136,6 +136,15 @@ const GuestDetail: React.FC = () => {
                 const chatRes = await createChat(Number(castId), guest.id);
                 const chatId = (chatRes && (chatRes.chat?.id ?? chatRes.id ?? chatRes.chat_id)) as number | undefined;
                 if (chatId) {
+                    try {
+                        await sendMessage({
+                            chat_id: chatId,
+                            sender_cast_id: Number(castId),
+                            message: '👍',
+                        });
+                    } catch (e) {
+                        console.error('Failed to send thumbs up:', e);
+                    }
                     navigate(`/cast/${chatId}/message`);
                 } else {
                     console.error('Chat ID not found in createChat response:', chatRes);

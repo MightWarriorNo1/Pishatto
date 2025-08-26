@@ -138,8 +138,9 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     // Clear session timeout
     sessionTimeout.stop();
     clearSession();
-    // Redirect to role selection page
-    window.location.href = '/';
+    
+    // Redirect directly to cast login page
+    window.location.replace('/cast/login');
   };
 
   const extendSession = () => {

@@ -566,7 +566,6 @@ export function useCastReservations(
     channel.listen("ReservationUpdated", handleReservationUpdate);
     
     return () => {
-      console.log(`useCastReservations: Cleaning up listener for cast.${castId}`);
       try {
         channel.stopListening("ReservationCreated");
         channel.stopListening("ReservationUpdated");
@@ -642,24 +641,60 @@ export function useGuestChatsRealtime(
   onChatUpdate?: (chat: any) => void
 ) {
   useEffect(() => {
-    if (!guestId) return;
+    if (!guestId) {
+      console.log('useGuestChatsRealtime: No guestId provided, skipping setup');
+      return;
+    }
+    
+    console.log(`useGuestChatsRealtime: Setting up real-time listener for guest ${guestId}`);
     
     const channel = echo.channel(`guest.${guestId}`);
+    
+    // Add connection status logging
+    if (typeof channel.subscribed === 'function') {
+      channel.subscribed(() => {
+        console.log(`useGuestChatsRealtime: Successfully subscribed to guest.${guestId}`);
+      });
+    } else {
+      console.log(`useGuestChatsRealtime: Channel subscription method not available for guest.${guestId}`);
+    }
+    
+    if (typeof channel.error === 'function') {
+      channel.error((error: any) => {
+        console.error(`useGuestChatsRealtime: Error on guest.${guestId} channel:`, error);
+      });
+    }
+    
+    // Test if channel is available
+    console.log(`useGuestChatsRealtime: Channel object:`, channel);
+    console.log(`useGuestChatsRealtime: Channel name: guest.${guestId}`);
     
     const handleChatUpdate = (e: { chat: any }) => {
       const updatedChat = e.chat;
       console.log('useGuestChatsRealtime: Chat updated:', updatedChat);
       
-      // Update React Query cache for guest chats
+      // Update React Query cache for guest chats - this will trigger UI updates
       queryClient.setQueryData(
         queryKeys.guest.chats(guestId),
         (oldData: any) => {
-          if (!oldData) return [updatedChat];
+          if (!oldData || !Array.isArray(oldData)) return [updatedChat];
           return oldData.map((chat: any) => 
-            chat.id === updatedChat.id ? updatedChat : chat
+            chat.id === updatedChat.id ? { ...chat, ...updatedChat } : chat
           );
         }
       );
+      
+      // Refetch guest chats to ensure data consistency
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.guest.chats(guestId)
+      });
+      
+      // Also refetch cast chats if this chat involves a cast member
+      if (updatedChat.cast_id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.cast.chats(updatedChat.cast_id)
+        });
+      }
       
       if (onChatUpdate) {
         onChatUpdate(updatedChat);
@@ -669,27 +704,98 @@ export function useGuestChatsRealtime(
     const handleNewChat = (e: { chat: any }) => {
       const newChat = e.chat;
       console.log('useGuestChatsRealtime: New chat created:', newChat);
+      console.log('useGuestChatsRealtime: Event data:', e);
       
-      // Update React Query cache for guest chats
+      // Update React Query cache for guest chats - this will trigger UI updates
       queryClient.setQueryData(
         queryKeys.guest.chats(guestId),
         (oldData: any) => {
-          if (!oldData) return [newChat];
+          if (!oldData || !Array.isArray(oldData)) return [newChat];
+          // De-duplicate by id
+          const exists = oldData.some((c: any) => c.id === newChat.id);
+          if (exists) return oldData;
+          // Add new chat at the beginning for immediate visibility
           return [newChat, ...oldData];
         }
       );
+      
+      // Refetch guest chats to ensure data consistency
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.guest.chats(guestId)
+      });
+      
+      // Also refetch cast chats if this chat involves a cast member
+      if (newChat.cast_id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.cast.chats(newChat.cast_id)
+        });
+      }
       
       if (onChatUpdate) {
         onChatUpdate(newChat);
       }
     };
+
+    const handleChatListUpdate = (e: { chat: any }) => {
+      const updatedChat = e.chat;
+      console.log('useGuestChatsRealtime: Chat list updated:', updatedChat);
+      
+      // Update React Query cache for guest chats - this will trigger UI updates
+      queryClient.setQueryData(
+        queryKeys.guest.chats(guestId),
+        (oldData: any) => {
+          if (!oldData || !Array.isArray(oldData)) return [updatedChat];
+          // Update existing chat or add new one
+          const existingIndex = oldData.findIndex((c: any) => c.id === updatedChat.id);
+          if (existingIndex >= 0) {
+            const newData = [...oldData];
+            newData[existingIndex] = { ...newData[existingIndex], ...updatedChat };
+            return newData;
+          } else {
+            // Add new chat at the beginning for immediate visibility
+            return [updatedChat, ...oldData];
+          }
+        }
+      );
+      
+      // Refetch guest chats to ensure data consistency
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.guest.chats(guestId)
+      });
+      
+      // Also refetch cast chats if this chat involves a cast member
+      if (updatedChat.cast_id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.cast.chats(updatedChat.cast_id)
+        });
+      }
+      
+      if (onChatUpdate) {
+        onChatUpdate(updatedChat);
+      }
+    };
+
+    console.log(`useGuestChatsRealtime: Setting up listeners for .ChatUpdated, .ChatCreated, and .ChatListUpdated on guest.${guestId}`);
     
-    channel.listen("ChatUpdated", handleChatUpdate);
-    channel.listen("ChatCreated", handleNewChat);
+    try {
+      channel.listen(".ChatUpdated", handleChatUpdate);
+      channel.listen(".ChatCreated", handleNewChat);
+      channel.listen(".ChatListUpdated", handleChatListUpdate);
+      console.log(`useGuestChatsRealtime: Successfully set up listeners for guest.${guestId}`);
+    } catch (error) {
+      console.error(`useGuestChatsRealtime: Error setting up listeners for guest.${guestId}:`, error);
+    }
     
     return () => {
-      channel.stopListening("ChatUpdated");
-      channel.stopListening("ChatCreated");
+      console.log(`useGuestChatsRealtime: Cleaning up listeners for guest.${guestId}`);
+      try {
+        channel.stopListening(".ChatUpdated");
+        channel.stopListening(".ChatCreated");
+        channel.stopListening(".ChatListUpdated");
+        console.log(`useGuestChatsRealtime: Successfully cleaned up listeners for guest.${guestId}`);
+      } catch (err) {
+        console.error('Error cleaning up channel listeners:', err);
+      }
     };
   }, [guestId, onChatUpdate]);
 }
@@ -722,7 +828,7 @@ export function useCastChatsRealtime(
       const newChat = e.chat;
       console.log('useCastChatsRealtime: New chat received:', newChat);
       
-      // Update React Query cache for cast chats
+      // Update React Query cache for cast chats - this will trigger UI updates
       queryClient.setQueryData(
         queryKeys.cast.chats(castId),
         (oldData: any) => {
@@ -730,9 +836,23 @@ export function useCastChatsRealtime(
           // De-duplicate by id
           const exists = oldData.some((c: any) => c.id === newChat.id);
           if (exists) return oldData;
+          // Add new chat at the beginning for immediate visibility
           return [newChat, ...oldData];
         }
       );
+      
+      // Refetch cast chats to ensure data consistency
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.cast.chats(castId)
+      });
+      
+      // Also refetch guest chats if this chat involves a guest member
+      if (newChat.guest_id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.guest.chats(newChat.guest_id)
+        });
+      }
+      
       onChatEvent?.(newChat);
     };
 
@@ -740,6 +860,7 @@ export function useCastChatsRealtime(
       const updatedChat = e.chat;
       console.log('useCastChatsRealtime: Chat updated:', updatedChat);
       
+      // Update React Query cache for cast chats - this will trigger UI updates
       queryClient.setQueryData(
         queryKeys.cast.chats(castId),
         (oldData: any) => {
@@ -747,23 +868,144 @@ export function useCastChatsRealtime(
           return oldData.map((c: any) => c.id === updatedChat.id ? { ...c, ...updatedChat } : c);
         }
       );
+      
+      // Refetch cast chats to ensure data consistency
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.cast.chats(castId)
+      });
+      
+      // Also refetch guest chats if this chat involves a guest member
+      if (updatedChat.guest_id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.guest.chats(updatedChat.guest_id)
+        });
+      }
+      
       onChatEvent?.(updatedChat);
     };
 
-    console.log(`useCastChatsRealtime: Listening for ChatCreated and ChatUpdated events on cast.${castId}`);
-    channel.listen("ChatCreated", handleNewChat);
-    channel.listen("ChatUpdated", handleChatUpdated);
+    const handleChatListUpdate = (e: { chat: any }) => {
+      const updatedChat = e.chat;
+      console.log('useCastChatsRealtime: Chat list updated:', updatedChat);
+      
+      // Update React Query cache for cast chats - this will trigger UI updates
+      queryClient.setQueryData(
+        queryKeys.cast.chats(castId),
+        (oldData: any) => {
+          if (!oldData || !Array.isArray(oldData)) return [updatedChat];
+          // Update existing chat or add new one
+          const existingIndex = oldData.findIndex((c: any) => c.id === updatedChat.id);
+          if (existingIndex >= 0) {
+            const newData = [...oldData];
+            newData[existingIndex] = { ...newData[existingIndex], ...updatedChat };
+            return newData;
+          } else {
+            // Add new chat at the beginning for immediate visibility
+            return [updatedChat, ...oldData];
+          }
+        }
+      );
+      
+      // Refetch cast chats to ensure data consistency
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.cast.chats(castId)
+      });
+      
+      // Also refetch guest chats if this chat involves a guest member
+      if (updatedChat.guest_id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.guest.chats(updatedChat.guest_id)
+        });
+      }
+      
+      onChatEvent?.(updatedChat);
+    };
+
+    console.log(`useCastChatsRealtime: Listening for .ChatCreated, .ChatUpdated, and .ChatListUpdated events on cast.${castId}`);
+    channel.listen(".ChatCreated", handleNewChat);
+    channel.listen(".ChatUpdated", handleChatUpdated);
+    channel.listen(".ChatListUpdated", handleChatListUpdate);
 
     return () => {
-      console.log(`useCastChatsRealtime: Cleaning up listener for cast.${castId}`);
       try {
-        channel.stopListening("ChatCreated");
-        channel.stopListening("ChatUpdated");
+        channel.stopListening(".ChatCreated");
+        channel.stopListening(".ChatUpdated");
+        channel.stopListening(".ChatListUpdated");
       } catch (err) {
         console.error('Error cleaning up channel listeners:', err);
       }
     };
   }, [castId, onChatEvent]);
+}
+
+// Real-time group chat creation updates
+export function useGroupChatsRealtime(
+  userId: number,
+  userType: 'guest' | 'cast',
+  onGroupChatCreated?: (groupChat: any) => void
+) {
+  useEffect(() => {
+    if (!userId) return;
+    
+    
+    const channel = echo.channel(`${userType}.${userId}`);
+    
+    const handleGroupChatCreated = (e: { chatGroup: any }) => {
+      const newGroupChat = e.chatGroup;
+      
+      // Update React Query cache for chats - this will trigger UI updates
+      const queryKey = userType === 'guest' 
+        ? queryKeys.guest.chats(userId)
+        : queryKeys.cast.chats(userId);
+      
+      // Note: The actual chat entries will be updated by ChatCreated events
+      // This hook primarily handles group chat metadata updates
+      queryClient.setQueryData(
+        queryKey,
+        (oldData: any) => {
+          if (!oldData || !Array.isArray(oldData)) return [];
+          // The individual chat entries will be added by ChatCreated events
+          // We just ensure the cache is available
+          return oldData;
+        }
+      );
+      
+      // Refetch chats for the current user to ensure data consistency
+      queryClient.invalidateQueries({
+        queryKey: queryKey
+      });
+      
+      // Also refetch chats for all participants in the group
+      if (newGroupChat.participants) {
+        newGroupChat.participants.forEach((participant: any) => {
+          if (participant.guest_id && participant.guest_id !== userId) {
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.guest.chats(participant.guest_id)
+            });
+          }
+          if (participant.cast_id && participant.cast_id !== userId) {
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.cast.chats(participant.cast_id)
+            });
+          }
+        });
+      }
+      
+      if (onGroupChatCreated) {
+        onGroupChatCreated(newGroupChat);
+      }
+    };
+    
+    channel.listen(".ChatGroupCreated", handleGroupChatCreated);
+    
+    return () => {
+      try {
+        channel.stopListening(".ChatGroupCreated");
+      } catch (err) {
+        console.error('Error cleaning up group chat listeners:', err);
+      }
+    };
+  }, [userId, userType, onGroupChatCreated]);
 }
 
 

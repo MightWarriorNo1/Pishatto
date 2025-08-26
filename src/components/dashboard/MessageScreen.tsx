@@ -8,36 +8,13 @@ import { getNotifications, markNotificationRead, getCastProfileById, markChatMes
 import { useGuestChats, useGuestFavorites, useFavoriteChat, useUnfavoriteChat } from '../../hooks/useQueries';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
-import { useNotifications, useGuestChatsRealtime, useUnreadMessageCount } from '../../hooks/useRealtime';
+import { useNotifications, useGuestChatsRealtime, useUnreadMessageCount, useGroupChatsRealtime } from '../../hooks/useRealtime';
 import { queryClient } from '../../lib/react-query';
 import { queryKeys } from '../../lib/react-query';
 import echo from '../../services/echo';
 import NotificationScreen from './NotificationScreen';
 import Spinner from '../ui/Spinner';
 
-/**
- * MessageScreen Component with Real-Time Updates
- * 
- * This component implements a three-step approach for real-time data management:
- * 
- * 1. **Initial Data Fetching**: Uses React Query hooks to fetch data once and store in cache
- * 2. **Persistent Reverb Connection**: Maintains WebSocket connections for real-time updates
- * 3. **Real-Time Cache Updates**: Updates React Query cache immediately when new data arrives via Reverb
- * 
- * Real-Time Events Handled:
- * - New messages (MessageSent, GroupMessageSent) → Updates unread counts and chat data
- * - Chat creation (ChatCreated) → Adds new chats to the list
- * - Chat updates (ChatUpdated) → Updates chat metadata and cast profiles
- * - Message read status (MessagesRead) → Resets unread counts
- * - Favorite toggles (FavoriteToggled) → Updates favorites list
- * - Notifications (NotificationSent) → Updates notification list and badges
- * 
- * Benefits:
- * - Instant UI updates without page refresh
- * - Reduced server load (no constant polling)
- * - Better user experience with real-time feedback
- * - Automatic cache synchronization across components
- */
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 interface MessageScreenProps {
@@ -127,6 +104,12 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         if (activeBottomTab !== 'message' && updatedChat.unread > 0) {
             onNotificationCountChange?.(updatedChat.unread);
         }
+    });
+
+    // Real-time group chat updates for guest
+    useGroupChatsRealtime(userId, 'guest', (groupChat) => {
+        console.log('MessageScreen: Real-time group chat created:', groupChat);
+        // The hook automatically updates the React Query cache
     });
 
     // Real-time unread message count updates
@@ -353,15 +336,15 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         };
 
         channel.listen("MessagesRead", handleMessagesRead);
-        channel.listen("ChatCreated", handleNewChat);
-        channel.listen("ChatUpdated", handleChatUpdated);
+        channel.listen(".ChatCreated", handleNewChat);
+        channel.listen(".ChatUpdated", handleChatUpdated);
         channel.listen("FavoriteToggled", handleFavoriteToggled);
 
         return () => {
             try {
                 channel.stopListening("MessagesRead");
-                channel.stopListening("ChatCreated");
-                channel.stopListening("ChatUpdated");
+                channel.stopListening(".ChatCreated");
+                channel.stopListening(".ChatUpdated");
                 channel.stopListening("FavoriteToggled");
             } catch (error) {
                 console.warn('Error cleaning up channel listeners:', error);
@@ -515,12 +498,20 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         return true;
     }), [chats, favoritedChatIds, isNotificationEnabled, searchQuery, filterAge, castProfiles]);
 
-    // Sort chats to show unread first
+    // Helper to get last activity timestamp for sorting
+    const getLastActivityTime = (chat: any): number => {
+        const timeStr = chat?.updated_at || chat?.last_message_at || chat?.created_at;
+        if (!timeStr) return 0;
+        const t = new Date(timeStr).getTime();
+        return Number.isFinite(t) ? t : 0;
+    };
+
+    // Sort chats by last activity (newest first)
     const sortedFilteredChats = useMemo(() => {
-        return [...filteredChats].sort((a, b) => (b?.unread || 0) - (a?.unread || 0));
+        return [...filteredChats].sort((a, b) => getLastActivityTime(b) - getLastActivityTime(a));
     }, [filteredChats]);
     const sortedFilteredFavoriteChats = useMemo(() => {
-        return [...filteredFavoriteChats].sort((a, b) => (b?.unread || 0) - (a?.unread || 0));
+        return [...filteredFavoriteChats].sort((a, b) => getLastActivityTime(b) - getLastActivityTime(a));
     }, [filteredFavoriteChats]);
 
     // Counts for tabs

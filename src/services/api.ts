@@ -284,6 +284,8 @@ export const createFreeCall = async (data: {
   guest_id: number;
   scheduled_at: string;
   location?: string;
+  meeting_location?: string;
+  reservation_name?: string;
   duration?: number;
   custom_duration_hours?: number;
   details?: string;
@@ -302,6 +304,8 @@ export const createFreeCallReservation = async (data: {
   guest_id: number;
   scheduled_at: string;
   location?: string;
+  address?: string;
+  name?: string;
   duration?: number;
   custom_duration_hours?: number;
   details?: string;

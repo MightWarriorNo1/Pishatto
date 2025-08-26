@@ -1,7 +1,8 @@
 /* eslint-disable */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { CastProfile } from '../../services/api';
 import { useSearch } from '../../contexts/SearchContext';
+import { locationService } from '../../services/locationService';
 
 interface SearchFilterPageProps {
     onClose: () => void;
@@ -26,8 +27,51 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
     const [showAreaPicker, setShowAreaPicker] = useState(false);
     const [showBirthPicker, setShowBirthPicker] = useState(false);
 
-    const AREA_OPTIONS = ['未選択', '全国', '北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州・沖縄'];
-    const PREF_OPTIONS = ['未選択', '北海道', '青森', '岩手', '宮城', '秋田', '山形', '福島', '茨城', '栃木', '群馬', '埼玉', '千葉', '東京', '神奈川', '新潟', '富山', '石川', '福井', '山梨', '長野', '岐阜', '静岡', '愛知', '三重', '滋賀', '京都', '大阪', '兵庫', '奈良', '和歌山', '鳥取', '島根', '岡山', '広島', '山口', '徳島', '香川', '愛媛', '高知', '福岡', '佐賀', '長崎', '熊本', '大分', '宮崎', '鹿児島', '沖縄'];
+    // Locations fetched from API (locations.name)
+    const [locationNames, setLocationNames] = useState<string[]>(['未選択']);
+    const [locationsLoading, setLocationsLoading] = useState<boolean>(false);
+    const [locationsError, setLocationsError] = useState<string | null>(null);
+
+    // Search queries for pickers
+    const [areaQuery, setAreaQuery] = useState<string>('');
+    const [birthQuery, setBirthQuery] = useState<string>('');
+
+    useEffect(() => {
+        let mounted = true;
+        const fetchLocations = async () => {
+            try {
+                setLocationsLoading(true);
+                setLocationsError(null);
+                const active = await locationService.getActiveLocations();
+                if (!mounted) return;
+                const unique = Array.from(new Set(active.filter(Boolean)));
+                setLocationNames(['未選択', ...unique]);
+            } catch (e) {
+                if (!mounted) return;
+                setLocationsError('場所の取得に失敗しました');
+                setLocationNames(['未選択']);
+            } finally {
+                if (!mounted) return;
+                setLocationsLoading(false);
+            }
+        };
+        fetchLocations();
+        return () => {
+            mounted = false;
+        };
+    }, []);
+
+    const filteredAreaOptions = useMemo(() => {
+        if (!areaQuery.trim()) return locationNames;
+        const q = areaQuery.trim().toLowerCase();
+        return locationNames.filter(n => n === '未選択' || n.toLowerCase().includes(q));
+    }, [locationNames, areaQuery]);
+
+    const filteredBirthOptions = useMemo(() => {
+        if (!birthQuery.trim()) return locationNames;
+        const q = birthQuery.trim().toLowerCase();
+        return locationNames.filter(n => n === '未選択' || n.toLowerCase().includes(q));
+    }, [locationNames, birthQuery]);
 
     const toggleClass = (c: string) => {
         setSelectedClasses(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
@@ -136,10 +180,10 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
             age,
             height,
         };
-        
+
         // Set filter results in context
         setFilterResults(results);
-        
+
         // Update search context with the keyword and activate search
         if (keyword.trim()) {
             setSearchQuery(keyword.trim());
@@ -157,21 +201,21 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
                 recentJoin ? '最近入会' : ''
                 // Removed birthMonth as it's not available in the data
             ].filter(Boolean).join(' ');
-            
+
             if (filterQuery.trim()) {
                 setSearchQuery(filterQuery.trim());
                 setIsSearchActive(true);
             }
         }
-        
+
         onApply && onApply(results, payload);
         onClose();
     };
 
     return (
         <>
-            <div className="fixed inset-0 max-w-md mx-auto bg-gradient-to-b from-primary via-primary to-secondary z-[60]">
-                <div className="sticky top-0 bg-primary/95 backdrop-blur border-b border-secondary z-10">
+            <div className="fixed inset-0 max-w-md mx-auto bg-gradient-to-b from-primary via-primary to-secondary z-[60] overflow-y-auto scrollbar-hidden">
+                <div className="sticky top-0 bg-primary/95 backdrop-blur-sm z-10">
                     <div className="flex items-center justify-between px-4 py-3">
                         <button className="text-white text-xl" onClick={onClose}>×</button>
                         <div className="text-white font-bold">絞り込み検索</div>
@@ -189,42 +233,12 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
                     </div>
                 </div>
 
-                <div className="px-4 pt-4 pb-32 space-y-6 overflow-y-auto max-h-[calc(100vh-120px)] scrollbar-hidden">
+                <div className="px-4 pt-4 pb-4 space-y-6 overflow-y-auto max-h-[calc(100vh-120px)] scrollbar-hidden">
                     {/* 基本プロフィール */}
                     <div className="text-white text-sm font-bold">基本プロフィール</div>
-                    <div className="divide-y divide-secondary/60 rounded-lg border border-secondary">
-                        <button className="w-full flex items-center justify-between px-4 py-3 text-white" onClick={() => setShowAreaPicker(true)}>
-                            <span>活動エリア</span>
-                            <span className="text-secondary font-bold">{activityArea}</span>
-                        </button>
-                        <button className="w-full flex items-center justify-between px-4 py-3 text-white" onClick={() => setShowBirthPicker(true)}>
-                            <span>出身地</span>
-                            <span className="text-secondary font-bold">{birthPlace}</span>
-                        </button>
-                        <div className="px-4 py-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-white">年齢</span>
-                                <div className="flex items-center gap-3 text-white text-sm">
-                                    <span>{age[0]}歳</span>
-                                    <input type="range" min={18} max={80} value={age[0]} onChange={(e) => setAge([parseInt(e.target.value, 10), age[1]])} />
-                                    <input type="range" min={18} max={80} value={age[1]} onChange={(e) => setAge([age[0], parseInt(e.target.value, 10)])} />
-                                    <span>{age[1]}歳</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between mt-6">
-                                <span className="text-white">身長</span>
-                                <div className="flex items-center gap-3 text-white text-sm">
-                                    <span>{height[0]}cm</span>
-                                    <input type="range" min={155} max={250} value={height[0]} onChange={(e) => setHeight([parseInt(e.target.value, 10), height[1]])} />
-                                    <input type="range" min={155} max={250} value={height[1]} onChange={(e) => setHeight([height[0], parseInt(e.target.value, 10)])} />
-                                    <span>{height[1]}cm</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                     <div className="space-x-2 flex flex-wrap">
                         {classes.map(c => (
-                            <button 
+                            <button
                                 key={c}
                                 onClick={() => toggleClass(c)}
                                 className={`px-3 py-1 rounded-full text-sm border transition-colors mb-2 ${selectedClasses.includes(c) ? 'bg-secondary text-white border-secondary' : 'bg-primary text-white hover:bg-white/10 border-secondary/70'}`}
@@ -234,13 +248,13 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
                             </button>
                         ))}
                     </div>
-
-                    <div className="text-xs text-white/80 space-y-2">
-                        <div>「プレミアム」合格率10%の面談を通過した厳選キャスト</div>
-                        <div>「VIP」厳選キャストの中でも更に10%しかいない特別なキャスト</div>
-                        <div>「ロイヤルVIP」 キャストの中でも1%しかいない最上級キャスト</div>
+                    <div>
+                        <div className="text-xs text-white/80 space-y-2">
+                            <div>「プレミアム」合格率10%の面談を通過した厳選キャスト</div>
+                            <div>「VIP」厳選キャストの中でも更に10%しかいない特別なキャスト</div>
+                            <div>「ロイヤルVIP」 キャストの中でも1%しかいない最上級キャスト</div>
+                        </div>
                     </div>
-
                     <div>
                         <label className="block text-white text-sm mb-2">フリーワード</label>
                         <input
@@ -262,12 +276,12 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
                         </div>
                         <div className="flex items-center justify-between">
                             <span className="text-white">今月誕生日</span>
-                            <input type="checkbox" checked={birthMonth} onChange={(e) => setBirthMonth(e.target.checked)} disabled />
+                            <input type="checkbox" checked={birthMonth} onChange={(e) => setBirthMonth(e.target.checked)}/>
                         </div>
                         <div className="text-xs text-white/60 mt-1">※誕生日フィルターは現在利用できません</div>
                     </div>
 
-                    <div className="px-4">
+                    <div>
                         <label className="block text-white text-sm mb-2">30分あたりのポイント</label>
                         <div className="flex items-center gap-3 text-white text-sm">
                             <span>{pointsPer30Min[0].toLocaleString()}P</span>
@@ -278,19 +292,73 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
                     </div>
                 </div>
 
+
+                <div className="pb-4">
+                    <button className="w-full flex items-center justify-between px-4 py-3 text-white" onClick={() => setShowAreaPicker(true)}>
+                        <span>活動エリア</span>
+                        <span className="text-secondary font-bold">{activityArea}</span>
+                    </button>
+                    <button className="w-full flex items-center justify-between px-4 py-3 text-white" onClick={() => setShowBirthPicker(true)}>
+                        <span>出身地</span>
+                        <span className="text-secondary font-bold">{birthPlace}</span>
+                    </button>
+                    <div className="px-4 py-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-white">年齢</span>
+                            <div className="flex items-center gap-3 text-white text-sm">
+                                <span>{age[0]}歳</span>
+                                <input type="range" min={18} max={80} value={age[0]} onChange={(e) => setAge([parseInt(e.target.value, 10), age[1]])} />
+                                <input type="range" min={18} max={80} value={age[1]} onChange={(e) => setAge([age[0], parseInt(e.target.value, 10)])} />
+                                <span>{age[1]}歳</span>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between mt-6">
+                            <span className="text-white">身長</span>
+                            <div className="flex items-center gap-3 text-white text-sm">
+                                <span>{height[0]}cm</span>
+                                <input type="range" min={155} max={250} value={height[0]} onChange={(e) => setHeight([parseInt(e.target.value, 10), height[1]])} />
+                                <input type="range" min={155} max={250} value={height[1]} onChange={(e) => setHeight([height[0], parseInt(e.target.value, 10)])} />
+                                <span>{height[1]}cm</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
                 <div className="sticky bottom-0 p-4 pb-24">
                     <button onClick={apply} className="w-full py-3 rounded-lg font-bold bg-gradient-to-r from-secondary to-secondary/80 text-white shadow-lg active:scale-[0.99] transition">この条件で検索する</button>
                 </div>
+
             </div>
 
             {/* Pickers */}
             {showAreaPicker && (
-                <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-end">
+                <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-end pb-24 overflow-y-auto scrollbar-hidden">
                     <div className="w-full bg-primary border-t border-secondary max-w-md mx-auto rounded-t-2xl overflow-hidden shadow-2xl">
                         <div className="w-12 h-1.5 bg-white/30 rounded-full mx-auto mt-2" />
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-secondary text-white"><span>活動エリア</span><button onClick={() => setShowAreaPicker(false)} className="text-secondary font-bold">閉じる</button></div>
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-secondary text-white">
+                            <span>活動エリア</span>
+                            <button onClick={() => setShowAreaPicker(false)} className="text-secondary font-bold">閉じる</button>
+                        </div>
+                        <div className="px-4 py-2 border-b border-secondary/60 bg-primary">
+                            <input
+                                value={areaQuery}
+                                onChange={(e) => setAreaQuery(e.target.value)}
+                                placeholder="エリアを検索"
+                                className="w-full px-3 py-2 rounded-lg bg-primary text-white border border-secondary placeholder-white/50"
+                            />
+                        </div>
                         <div className="max-h-80 overflow-y-auto scrollbar-hidden">
-                            {AREA_OPTIONS.map(opt => (
+                            {locationsLoading && (
+                                <div className="px-4 py-3 text-white/70">読み込み中...</div>
+                            )}
+                            {locationsError && !locationsLoading && (
+                                <div className="px-4 py-3 text-red-400">{locationsError}</div>
+                            )}
+                            {!locationsLoading && !locationsError && filteredAreaOptions.length === 0 && (
+                                <div className="px-4 py-3 text-white/70">該当するエリアがありません</div>
+                            )}
+                            {filteredAreaOptions.map(opt => (
                                 <button key={opt} className={`w-full text-left px-4 py-3 border-b border-secondary text-white ${activityArea === opt ? 'bg-secondary/30' : ''}`} onClick={() => { setActivityArea(opt); setShowAreaPicker(false); }}>
                                     {opt}
                                 </button>
@@ -300,12 +368,32 @@ const SearchFilterPage: React.FC<SearchFilterPageProps> = ({ onClose, onApply, c
                 </div>
             )}
             {showBirthPicker && (
-                <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-end">
+                <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-end pb-24 overflow-y-auto scrollbar-hidden">
                     <div className="w-full bg-primary border-t border-secondary max-w-md mx-auto rounded-t-2xl overflow-hidden shadow-2xl">
                         <div className="w-12 h-1.5 bg-white/30 rounded-full mx-auto mt-2" />
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-secondary text-white"><span>出身地</span><button onClick={() => setShowBirthPicker(false)} className="text-secondary font-bold">閉じる</button></div>
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-secondary text-white">
+                            <span>出身地</span>
+                            <button onClick={() => setShowBirthPicker(false)} className="text-secondary font-bold">閉じる</button>
+                        </div>
+                        <div className="px-4 py-2 border-b border-secondary/60 bg-primary">
+                            <input
+                                value={birthQuery}
+                                onChange={(e) => setBirthQuery(e.target.value)}
+                                placeholder="出身地を検索"
+                                className="w-full px-3 py-2 rounded-lg bg-primary text-white border border-secondary placeholder-white/50"
+                            />
+                        </div>
                         <div className="max-h-80 overflow-y-auto scrollbar-hidden">
-                            {PREF_OPTIONS.map(opt => (
+                            {locationsLoading && (
+                                <div className="px-4 py-3 text-white/70">読み込み中...</div>
+                            )}
+                            {locationsError && !locationsLoading && (
+                                <div className="px-4 py-3 text-red-400">{locationsError}</div>
+                            )}
+                            {!locationsLoading && !locationsError && filteredBirthOptions.length === 0 && (
+                                <div className="px-4 py-3 text-white/70">該当する出身地がありません</div>
+                            )}
+                            {filteredBirthOptions.map(opt => (
                                 <button key={opt} className={`w-full text-left px-4 py-3 border-b border-secondary text-white ${birthPlace === opt ? 'bg-secondary/30' : ''}`} onClick={() => { setBirthPlace(opt); setShowBirthPicker(false); }}>
                                     {opt}
                                 </button>

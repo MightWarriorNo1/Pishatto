@@ -47,6 +47,8 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
             const res = await uploadIdentity(selectedFile, user.id);
             if (!res.success) throw new Error('アップロードに失敗しました');
             setSubmitted(true);
+            // Optimistically set status to pending until admin reviews
+            setVerificationStatus('pending');
             // Refresh verification status after successful upload
             await getIdentityVerificationStatus();
         } catch (err: any) {
@@ -61,8 +63,15 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
         setIsLoadingStatus(true);
         try {
             const res = await getGuestProfileById(user.id);
-            setVerificationImage(res.identity_verification);
-            setVerificationStatus(res.identity_verification_completed);
+            const image = res.identity_verification;
+            const status = res.identity_verification_completed as typeof verificationStatus;
+            setVerificationImage(image);
+            // Guard against inconsistent backend data where status is success but no image exists
+            if (status === 'success' && !image) {
+                setVerificationStatus(null);
+            } else {
+                setVerificationStatus(status || null);
+            }
         } catch (error) {
             console.error('Failed to fetch verification status:', error);
         } finally {
@@ -200,8 +209,8 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                         <span className="ml-2">管理者が承認するまでお待ちください。</span>
                     </div>
                 )}
-                {/* Show success message if status is success */}
-                {verificationStatus === 'success' && (
+                {/* Show success message only if status is success AND an image exists */}
+                {verificationStatus === 'success' && verificationImage && (
                     <div className="mt-4 text-center text-white font-bold">既に本人確認を完了しています。</div>
                 )}
                 {/* Show error if any */}

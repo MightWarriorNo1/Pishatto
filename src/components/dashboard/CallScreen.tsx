@@ -564,6 +564,62 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
     );
 }
 
+function OrderAddressScreen({ onBack, onNext, reservationName, setReservationName, meetingLocation, setMeetingLocation }: {
+    onBack: () => void,
+    onNext: () => void,
+    reservationName: string,
+    setReservationName: (v: string) => void,
+    meetingLocation: string,
+    setMeetingLocation: (v: string) => void,
+}) {
+    const canProceed = (meetingLocation?.trim() || '').length > 0 && (reservationName?.trim() || '').length > 0;
+    return (
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
+            <Stepper step={2} />
+            <div className="px-4 pt-2 pb-2 flex items-center">
+                <button onClick={onBack} className="mr-2 text-2xl text-white hover:text-secondary transition-colors p-2 rounded-full cursor-pointer">
+                    <ChevronLeft />
+                </button>
+                <span className="text-xl font-bold text-white">住所とお名前</span>
+            </div>
+            <div className="px-4 mt-8 pb-24">
+                <div className="font-bold mb-3 text-white">住所</div>
+                <input
+                    type="text"
+                    value={meetingLocation}
+                    onChange={(e) => {
+                        console.log('Setting meetingLocation to:', e.target.value);
+                        setMeetingLocation(e.target.value);
+                    }}
+                    placeholder="住所（ホテル名・部屋番号等）"
+                    className="w-full px-4 py-3 rounded-lg bg-white/90 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-secondary"
+                />
+                <div className="font-bold mb-3 mt-6 text-white">お名前</div>
+                <input
+                    type="text"
+                    value={reservationName}
+                    onChange={(e) => {
+                        console.log('Setting reservationName to:', e.target.value);
+                        setReservationName(e.target.value);
+                    }}
+                    placeholder="お名前"
+                    className="w-full px-4 py-3 rounded-lg bg-white/90 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-secondary"
+                />
+                <p className="text-sm text-white mt-4">
+                    ※キャストが伺う先は、ご自宅かホテルのみになります。飲食店等ではご利用できませんので、ご留意ください。
+                </p>
+            </div>
+            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-28 to-secondary z-20">
+                <button
+                    className={`w-full text-white py-3 rounded-lg font-bold text-lg transition-all shadow-lg ${canProceed ? 'bg-secondary hover:bg-red-700' : 'bg-gray-500 cursor-not-allowed opacity-60'}`}
+                    onClick={onNext}
+                    disabled={!canProceed}
+                >次に進む</button>
+            </div>
+        </div>
+    );
+}
+
 function PishattoCallScreen({ onBack, onNext, isProcessingFreeCall, defaultSelectedArea }: {
     onBack: () => void,
     onNext: (selectedLoc?: string, selectedPrefecture?: string) => void,
@@ -1263,10 +1319,12 @@ function OrderFinalConfirmationScreen({
     selectedCastTypes,
     selectedCastSkills,
     customDurationHours,
+    reservationName,
+    meetingLocation,
 }: {
     onBack: () => void;
     onConfirmed: () => void;
-    onNext: () => void;
+    onNext: () => Promise<void>;
     selectedTime: string;
     selectedArea: string;
     counts: number[];
@@ -1275,6 +1333,8 @@ function OrderFinalConfirmationScreen({
     selectedCastTypes: string[];
     selectedCastSkills: string[];
     customDurationHours: number | null;
+    reservationName: string;
+    meetingLocation: string;
 }) {
     const { user, refreshUser } = useUser();
     const navigate = useNavigate();
@@ -1355,6 +1415,8 @@ function OrderFinalConfirmationScreen({
                 scheduled_at: scheduledTime.toISOString(),
                 // Store combined as shown in frontend
                 location: selectedArea,
+                address: meetingLocation,
+                name: reservationName,
                 duration: hours, // always a number, 4 if '4時間以上'
                 details: `フリーコール: VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, プレミアム:${counts[2]}人, 合計ポイント: ${totalCost.toLocaleString()}P, シチュ: ${selectedSituations.join(',')}, タイプ: ${selectedCastTypes.join(',')}, スキル: ${selectedCastSkills.join(',')}`,
                 total_cost: totalCost,
@@ -1403,7 +1465,7 @@ function OrderFinalConfirmationScreen({
 
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-24">
             <Stepper step={2} />
             {/* Back and Title */}
             <div className="flex items-center px-4 pt-2 pb-2">
@@ -1513,7 +1575,7 @@ function OrderFinalConfirmationScreen({
                 </div>
             </div>
             {/* Confirm button sticky */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-28 z-20">
+            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pt-24 pb-28 z-20">
                 <button
                     className={`w-full py-3 rounded-lg font-bold text-lg transition shadow-lg ${hasEnoughPoints
                         ? 'bg-secondary text-white hover:bg-red-700'
@@ -1681,7 +1743,9 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     const [selectedCastTypes, setSelectedCastTypes] = useState<string[]>([]);
     const [selectedCastSkills, setSelectedCastSkills] = useState<string[]>([]);
     const [customDurationHours, setCustomDurationHours] = useState<number | null>(null);
-    const [page, setPage] = useState<'main' | 'orderHistory' | 'orderDetail' | 'orderFinal' | 'stepRequirement' | 'freeCall' | 'castSelection' | 'orderConfirmation' | 'orderCompletion'>('main');
+    const [reservationName, setReservationName] = useState<string>("");
+    const [meetingLocation, setMeetingLocation] = useState<string>("");
+    const [page, setPage] = useState<'main' | 'orderHistory' | 'orderDetail' | 'orderAddress' | 'orderFinal' | 'stepRequirement' | 'freeCall' | 'castSelection' | 'orderConfirmation' | 'orderCompletion'>('main');
     const [showAreaModal, setShowAreaModal] = useState(false);
     const [showMyOrder, setShowMyOrder] = useState(false);
     const [showStepRequirement, setShowStepRequirement] = useState(false);
@@ -1763,14 +1827,22 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                 location: selectedArea,
                 duration: hours,
                 custom_duration_hours: customDurationHours || undefined,
-                details: `Free call - VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, プレミアム:${counts[2]}人`,
+                details: `Free call - VIP:${counts[1]}人, ロイヤルVIP:${counts[0]}人, プレミアム:${counts[2]}人, ${meetingLocation ? ` / 住所:${meetingLocation}` : ''}, ${reservationName ? ` / お名前:${reservationName}` : ''}`,
                 time: selectedTime,
+                address: meetingLocation || undefined,
+                name: reservationName || undefined,
                 cast_counts: {
                     royal_vip: counts[0],
                     vip: counts[1],
                     premium: counts[2]
                 }
             };
+
+            // Debug: Log the request data being sent
+            console.log('Free call request data:', requestData);
+            console.log('State values - meetingLocation:', meetingLocation, 'reservationName:', reservationName);
+            console.log('Address field in request:', requestData.address);
+            console.log('Name field in request:', requestData.name);
 
             const response = await createFreeCall(requestData);
 
@@ -1848,13 +1920,23 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     if (page === 'orderDetail') return (
         <OrderDetailConditionsScreen
             onBack={() => setPage('orderHistory')}
-            onNext={() => setPage('orderFinal')}
+            onNext={() => setPage('orderAddress')}
             selectedSituations={selectedSituations}
             setSelectedSituations={setSelectedSituations}
             selectedCastTypes={selectedCastTypes}
             setSelectedCastTypes={setSelectedCastTypes}
             selectedCastSkills={selectedCastSkills}
             setSelectedCastSkills={setSelectedCastSkills}
+        />
+    );
+    if (page === 'orderAddress') return (
+        <OrderAddressScreen
+            onBack={() => setPage('orderDetail')}
+            onNext={() => setPage('orderFinal')}
+            reservationName={reservationName}
+            setReservationName={setReservationName}
+            meetingLocation={meetingLocation}
+            setMeetingLocation={setMeetingLocation}
         />
     );
     if (page === 'orderFinal') return (
@@ -1872,6 +1954,8 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             selectedCastTypes={selectedCastTypes}
             selectedCastSkills={selectedCastSkills}
             customDurationHours={customDurationHours}
+            reservationName={reservationName}
+            meetingLocation={meetingLocation}
         />
     );
     if (page === 'freeCall') return (

@@ -5,6 +5,13 @@ import Spinner from '../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
+// Format numbers with comma separators (e.g., 2,000)
+const formatAmount = (value: unknown): string => {
+  const num = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  if (!isFinite(num)) return '0';
+  return new Intl.NumberFormat('en-US').format(num);
+};
+
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     if (!avatarString) {
@@ -243,7 +250,7 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
                 <div className="flex-1">
                   <div className="text-white font-bold">{item.name || item.nickname || ''}</div>
                   {item.points !== undefined && (
-                    <div className="text-xs text-white mt-1">ポイント: {item.points}</div>
+                    <div className="text-xs text-white mt-1">ポイント: {formatAmount(item.points)}</div>
                   )}
                 </div>
               </div>
