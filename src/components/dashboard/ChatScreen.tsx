@@ -60,10 +60,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const { user, refreshUser } = useUser();
     const navigate = useNavigate();
     
-    // Debug user state
-    useEffect(() => {
-        console.log('User state changed:', { user, userId: user?.id, chatId, userLoaded: !!user });
-    }, [user, chatId]);
     
     // Check if user is fully loaded
     const isUserLoaded = user && typeof user.id === 'number';
@@ -151,24 +147,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         setFetching(true);
         setFetchError(null);
         const fetchMessages = async () => {
-            console.log('Fetching messages:', { chatId, userId: user?.id, user });
             if (!chatId || isNaN(Number(chatId))) {
-                console.log('Invalid chatId, skipping fetch');
                 setMessages([]);
                 setFetching(false);
                 return;
             }
             
             if (!isUserLoaded) {
-                console.log('User not fully loaded yet, skipping fetch');
                 setMessages([]);
                 setFetching(false);
                 return;
             }
             try {
-                console.log('Making API call to getChatMessages with:', { chatId, userId: user.id, userType: 'guest' });
                 const msgs = await getChatMessages(chatId, user.id, 'guest');
-                console.log('Messages fetched:', msgs);
                 setMessages(Array.isArray(msgs) ? msgs : []);
                 setFetchError(null);
             } catch (e: any) {
@@ -194,7 +185,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         // Fetch reservation_id and cast information for this chat
         setCastLoading(true);
         getChatById(chatId).then(chat => {
-            console.log('Chat info fetched:', chat);
             if (chat && chat.reservation_id) setReservationId(chat.reservation_id);
             if (chat && chat.cast) setCastInfo(chat.cast);
         }).catch((error: any) => {
@@ -625,18 +615,22 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                         </div>
                                     )}
                                     <div className={`${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
-                                        {msg.gift_id && msg.gift && (
-                                            <div className="flex items-center mb-1">
-                                                <span className="text-3xl mr-2">
-                                                    {msg.gift.icon || '🎁'}
-                                                </span>
-                                                <span className="font-bold">{msg.gift.name || 'ギフト'}</span>
-                                                <span className="ml-2 text-xs text-primary font-bold">{typeof msg.gift.points === 'number' ? msg.gift.points.toLocaleString() : Number(msg.gift.points || 0).toLocaleString()}P</span>
-                                                {msg.isOptimistic && (
-                                                    <span className="ml-2 text-xs text-yellow-300">送信中...</span>
-                                                )}
-                                            </div>
-                                        )}
+                                        {(() => {
+                                            const giftObj = msg.gift_id ? (msg.gift || (Array.isArray(gifts) ? gifts.find((g: any) => g.id === msg.gift_id) : null)) : null;
+                                            if (!giftObj) return null;
+                                            return (
+                                                <div className="flex items-center mb-1">
+                                                    <span className="text-3xl mr-2">
+                                                        {giftObj.icon || '🎁'}
+                                                    </span>
+                                                    <span className="font-bold">{giftObj.name || 'ギフト'}</span>
+                                                    <span className="ml-2 text-xs text-primary font-bold">{typeof giftObj.points === 'number' ? giftObj.points.toLocaleString() : Number(giftObj.points || 0).toLocaleString()}P</span>
+                                                    {msg.isOptimistic && (
+                                                        <span className="ml-2 text-xs text-yellow-300">送信中...</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
                                         {(() => {
                                             if (!msg.image) return null;
                                             if (typeof msg.image !== 'string') return null;
@@ -814,41 +808,109 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     )}
                 </div>
             </div>
-            {/* Gift window (fixed below input bar, does not move input bar) */}
-            {showGift && (
-                <div className="fixed left-0 right-0 bottom-14 max-w-md mx-auto bg-primary rounded-lg border border-secondary shadow-lg p-0 overflow-hidden animate-fade-in z-10 h-80">
-                    <div className="flex flex-col items-center relative h-full">
-                        <div className="flex w-full border-b border-secondary">
-                            <button className={`flex-1 py-3 font-bold ${giftTab === 'standard' ? 'text-white border-b-2 border-secondary' : 'text-white'}`} onClick={() => setGiftTab('standard')}>定番</button>
-                            <button className={`flex-1 py-3 font-bold ${giftTab === 'local' ? 'text-white border-b-2 border-secondary' : 'text-white'}`} onClick={() => setGiftTab('local')}>ご当地</button>
-                            <button className={`flex-1 py-3 font-bold ${giftTab === 'grade' ? 'text-white border-b-2 border-secondary' : 'text-white'}`} onClick={() => setGiftTab('grade')}>グレード</button>
-                            <button className={`flex-1 py-3 font-bold ${giftTab === 'mygift' ? 'text-white border-b-2 border-secondary' : 'text-white'}`} onClick={() => setGiftTab('mygift')}>Myギフト</button>
+            {/* Gift modal (match Group chat style) */}
+            {showGiftModal && (
+                <div className="fixed inset-0 z-50 bg-black bg-opacity-60">
+                    <div className="fixed left-0 right-0 bottom-0 bg-primary rounded-t-2xl shadow-lg p-6 flex flex-col items-center border-t border-secondary w-full max-w-md mx-auto animate-slide-up">
+                        <h2 className="font-bold text-lg mb-2 text-white">ギフトを選択</h2>
+                        <div className="flex gap-2 mb-4">
+                            {['standard', 'regional', 'grade', 'mygift'].map(cat => (
+                                <button
+                                    key={cat}
+                                    className={`px-3 py-1 rounded-full font-bold text-sm ${selectedGiftCategory === cat ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}
+                                    onClick={() => setSelectedGiftCategory(cat)}
+                                >
+                                    {cat === 'standard' ? '定番' : cat === 'regional' ? 'ご当地' : cat === 'grade' ? 'グレード' : 'Myギフト'}
+                                </button>
+                            ))}
                         </div>
-                        <div className="py-4 text-center flex-1 flex flex-col justify-center w-full">
-                            <div className="grid grid-cols-4 gap-4 px-4">
-                                {gifts.map(gift => {
-                                    const hasEnoughPoints = user && user.points && user.points >= gift.points;
-                                    return (
-                                    <button
-                                        key={gift.id}
-                                        className={`flex flex-col items-center justify-center rounded-lg p-2 transition ${
-                                            hasEnoughPoints 
-                                                ? 'bg-secondary text-white hover:bg-red-700' 
-                                                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                        }`}
-                                    >
-                                        <span className="text-3xl mb-1">
-                                            {gift.icon}
-                                        </span>
-                                        <span className="text-xs">{gift.label}</span>
-                                    </button>
-                                    );
-                                })}
-                            </div>
+                        <div className="grid grid-cols-4 gap-4 mb-4">
+                            {gifts.filter(g => g.category === selectedGiftCategory).map(gift => {
+                                const hasEnoughPoints = user && user.points && user.points >= gift.points;
+                                return (
+                                <button
+                                    key={gift.id}
+                                    className={`flex flex-col items-center justify-center rounded-lg p-2 transition ${
+                                        hasEnoughPoints 
+                                            ? 'bg-secondary text-white hover:bg-red-700' 
+                                            : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                    }`}
+                                    onClick={() => {
+                                        if (!hasEnoughPoints) return;
+                                        setSelectedGift(gift);
+                                        setShowGiftDetailModal(true);
+                                    }}
+                                >
+                                    <span className="text-3xl mb-1">{gift.icon}</span>
+                                    <span className="text-xs">{gift.name || gift.label}</span>
+                                    <span className="text-xs text-yellow-300 font-bold">{Number(gift.points).toLocaleString()}P</span>
+                                </button>
+                                );
+                            })}
                         </div>
-                        <button className="absolute top-2 right-2 text-white text-2xl" onClick={() => setShowGift(false)}>
-                            <X size={30} />
-                        </button>
+                        <button className="text-white mt-2 hover:text-red-700 transition-all duration-200 font-medium" onClick={() => setShowGiftModal(false)}>閉じる</button>
+                    </div>
+                </div>
+            )}
+
+            {showGiftDetailModal && selectedGift && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                    <div className="bg-primary rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
+                        <h2 className="font-bold text-lg mb-4 text-white">ギフト詳細</h2>
+                        <div className="flex flex-col items-center mb-4">
+                            <span className="text-5xl mb-2">{selectedGift.icon}</span>
+                            <span className="text-lg font-bold text-white mb-1">{selectedGift.name || selectedGift.label}</span>
+                            <span className="text-yellow-300 font-bold mb-2">{Number(selectedGift.points).toLocaleString()}P</span>
+                            <span className="text-white text-sm whitespace-pre-line mb-2" style={{maxWidth: 320, textAlign: 'center'}}>{selectedGift.description || '説明はありません'}</span>
+                        </div>
+                        <div className="flex gap-4">
+                            <button
+                                className="px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
+                                disabled={sending || !user || (user.points ?? 0) < selectedGift.points}
+                                onClick={async () => {
+                                    if (!user || (user.points ?? 0) < selectedGift.points) return;
+                                    setSending(true);
+                                    setSendError(null);
+                                    try {
+                                        const payload: any = {
+                                            chat_id: chatId,
+                                            sender_guest_id: user.id,
+                                            gift_id: selectedGift.id,
+                                            message: input.trim() || ''
+                                        };
+                                        const sent = await sendMessage(payload);
+                                        let giftObj = sent.gift;
+                                        if (!giftObj) {
+                                            giftObj = gifts.find((g: any) => g.id === selectedGift.id) || selectedGift;
+                                            sent.gift = {
+                                                id: giftObj.id,
+                                                name: giftObj.name || giftObj.label,
+                                                icon: giftObj.icon,
+                                                points: giftObj.points,
+                                                description: giftObj.description
+                                            };
+                                        }
+                                        setMessages((prev) => [...prev, sent]);
+                                        refreshUser();
+                                        setShowGiftDetailModal(false);
+                                        setSelectedGift(null);
+                                        setShowGiftModal(false);
+                                    } catch (e: any) {
+                                        setSendError('ギフトの送信に失敗しました');
+                                    } finally {
+                                        setSending(false);
+                                    }
+                                }}
+                            >
+                                送信
+                            </button>
+                            <button
+                                className="px-4 py-2 bg-gray-400 text-white rounded font-bold"
+                                onClick={() => { setShowGiftDetailModal(false); setSelectedGift(null); }}
+                            >
+                                キャンセル
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
