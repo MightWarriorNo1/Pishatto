@@ -46,7 +46,7 @@ const RoleSelect: React.FC<RoleSelectProps> = ({ onSelect }) => {
                             onClick={() => onSelect('cast')}
                             className="group relative flex w-full items-center gap-4 rounded-2xl border border-white/20 bg-gradient-to-b from-secondary/80 to-secondary/60 p-4 shadow-xl ring-1 ring-white/20 transition-all hover:-translate-y-0.5 hover:ring-white/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                         >
-                            <span className="absolute right-3 top-3 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold tracking-wide">おすすめ</span>
+                            <span className="absolute right-1 top-1 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-semibold tracking-wide">おすすめ</span>
                             <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
                                 <Sparkle className="h-6 w-6" aria-hidden />
                             </span>

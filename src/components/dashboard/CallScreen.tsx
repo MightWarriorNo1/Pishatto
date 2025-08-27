@@ -54,9 +54,9 @@ interface AppliedCast {
 
 
 const classOptions = [
-    { name: 'ロイヤルVIP', color: 'bg-gray-800', price: 15000 },
-    { name: 'VIP', color: 'bg-yellow-300', price: 12000 },
-    { name: 'プレミアム', color: 'bg-green-300', price: 9000 },
+    { name: 'ロイヤルVIP', color: 'bg-gray-800', price: 18000 },
+    { name: 'VIP', color: 'bg-yellow-300', price: 15000 },
+    { name: 'プレミアム', color: 'bg-green-300', price: 12000 },
 ];
 
 const timeOptions = ['30分後', '60分後', '90分後', 'それ以外'];
@@ -1374,9 +1374,9 @@ function OrderFinalConfirmationScreen({
 
     // Calculate total cost using customDurationHours if present
     const durationHours = customDurationHours || (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', '')));
-    const baseCost = 15000 * counts[0] * durationHours * 60 / 30 +
-        12000 * counts[1] * durationHours * 60 / 30 +
-        9000 * counts[2] * durationHours * 60 / 30;
+    const baseCost = 18000 * counts[0] * durationHours * 60 / 30 +
+        15000 * counts[1] * durationHours * 60 / 30 +
+        12000 * counts[2] * durationHours * 60 / 30;
     const nightTimeFee = isNightTime ? nightTimeFeePerHour * durationHours * (counts[0] + counts[1] + counts[2]) : 0;
     const totalCost = baseCost + nightTimeFee;
 
@@ -1543,15 +1543,15 @@ function OrderFinalConfirmationScreen({
                 <div className="bg-white/10 rounded-lg p-4 border border-secondary shadow-sm">
                     <div className="flex justify-between text-sm mb-1 text-white">
                         <span>ロイヤルVIP {counts[0]}人</span>
-                        <span>{(15000 * counts[0] * durationHours * 60 / 30).toLocaleString()}P</span>
+                        <span>{(18000 * counts[0] * durationHours * 60 / 30).toLocaleString()}P</span>
                     </div>
                     <div className="flex justify-between text-sm mb-1 text-white">
                         <span>VIP {counts[1]}人</span>
-                        <span>{(12000 * counts[1] * durationHours * 60 / 30).toLocaleString()}P</span>
+                        <span>{(15000 * counts[1] * durationHours * 60 / 30).toLocaleString()}P</span>
                     </div>
                     <div className="flex justify-between text-sm mb-1 text-white">
                         <span>プレミアム {counts[2]}人</span>
-                        <span>{(9000 * counts[2] * durationHours * 60 / 30).toLocaleString()}P</span>
+                        <span>{(12000 * counts[2] * durationHours * 60 / 30).toLocaleString()}P</span>
                     </div>
                     <div className="flex justify-between text-sm mt-2 text-white">
                         <span>小計</span>
@@ -2361,7 +2361,7 @@ function CalendarPopupWindow({ isOpen, onClose }: {
     });
 
     // Mock data for demonstration - in real implementation, this would come from props or API
-    const occurrencePoints = 15000; // Example points
+    const occurrencePoints = 18000; // Example points
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">

@@ -181,7 +181,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
 
 
     // const totalPoints = calcPoints(selectedDuration, castCategory);
-    // const extensionPoints = Math.round((castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000) / 2);
+    // const extensionPoints = Math.round((castCategory === 'VIP' ? 15000 : castCategory === 'ロイヤルVIP' ? 18000 : 12000) / 2);
 
     const totalPoints = calcPoints(selectedDuration, castGradePoints);
     const extensionPoints = Math.round(castGradePoints / 2);

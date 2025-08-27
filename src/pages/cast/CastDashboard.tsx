@@ -417,7 +417,7 @@ const CastDashboardInner: React.FC = () => {
                 people: r.details
                     ? (r.details.match(/(\d+)人/g)?.map((s: any) => Number(s.replace('人', ''))).reduce((a: any, b: any) => a + b, 0) || 1)
                     : 1,
-                points:  r.duration ? `${(r.duration * 60 / 30 * (cast?.category === 'VIP' ? 12000 : cast?.category === 'ロイヤルVIP' ? 15000 : 9000)).toLocaleString()}P〜` : '0P〜',
+                points:  r.duration ? `${(r.duration * 60 / 30 * (cast?.category === 'VIP' ? 15000 : cast?.category === 'ロイヤルVIP' ? 18000 : 12000)).toLocaleString()}P〜` : '0P〜',
                 extra: '',
                 active: !inactive,
                 statusText,

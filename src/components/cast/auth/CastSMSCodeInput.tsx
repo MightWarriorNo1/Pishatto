@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { castLogin, castRegister, sendSmsVerificationCode } from '../../../services/api';
+import { castLogin, castRegister, sendSmsVerificationCode, verifySmsCode } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
 
 interface CastSMSCodeInputProps {
     onBack: () => void;
     phone: string;
     verificationCode?: string | null;
+    onError?: (error: string) => void;
 }
 
-const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, verificationCode }) => {
+const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, verificationCode, onError }) => {
     const [code, setCode] = useState<string[]>(['', '', '', '', '', '']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -167,7 +168,18 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
                                     setLoading(true);
                                     setError(null);
                                     try {
-                                        const response = await castLogin(phone);
+                                        const verificationCode = code.join('');
+                                        
+                                        // First verify the SMS code
+                                        const verificationResponse = await verifySmsCode(phone, verificationCode);
+                                        if (!verificationResponse.success) {
+                                            setError(verificationResponse.message || '認証コードが正しくありません');
+                                            setLoading(false);
+                                            return;
+                                        }
+                                        
+                                        // Try to login
+                                        const response = await castLogin(phone, verificationCode);
                                         if (response.cast) {
                                             setCast(response.cast);
                                             setCastId(response.cast.id);
@@ -176,14 +188,20 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
                                             }, 100);
                                             return;
                                         }
-                                        const result = await castRegister({ phone });
-                                        setCast(result.cast);
-                                        setCastId(result.cast.id);
-                                        setTimeout(() => {
-                                            navigate('/cast/dashboard');
-                                        }, 100);
+                                        
+                                        // If no cast found, pass error to parent
+                                        if (onError) {
+                                            onError('お客様の情報は存在しません。管理者までご連絡ください。');
+                                        }
                                     } catch (err: any) {
-                                        setError('ログインに失敗しました。もう一度お試しください。');
+                                        // Check if it's a 404 error with the specific message
+                                        if (err.response?.status === 404 && err.response?.data?.message) {
+                                            if (onError) {
+                                                onError(err.response.data.message);
+                                            }
+                                        } else {
+                                            setError('ログインに失敗しました。もう一度お試しください。');
+                                        }
                                     } finally {
                                         setLoading(false);
                                     }

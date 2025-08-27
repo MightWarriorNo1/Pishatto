@@ -44,7 +44,7 @@ const parseDuration = (val: string) => {
 const calcPoints = (duration: string, castCategory?: string) => {
     const minutes = parseDuration(duration);
     const units = Math.ceil(minutes / 30);
-    const basePoints = castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000;
+    const basePoints = castCategory === 'VIP' ? 15000 : castCategory === 'ロイヤルVIP' ? 18000 : 12000;
     return basePoints * units;
 };
 
@@ -178,11 +178,11 @@ const MessageProposalPage: React.FC<{
                 date,
                 duration,
                 totalPoints,
-                extensionPoints: Math.round((castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000) / 2), // 15min = half of 30min
+                extensionPoints: Math.round((castCategory === 'VIP' ? 15000 : castCategory === 'ロイヤルVIP' ? 18000 : 12000) / 2), // 15min = half of 30min
             });
         }
     };
-    const basePoints = castCategory === 'VIP' ? 12000 : castCategory === 'ロイヤルVIP' ? 15000 : 9000;
+    const basePoints = castCategory === 'VIP' ? 15000 : castCategory === 'ロイヤルVIP' ? 18000 : 12000;
 
     if (loading) {
         return (

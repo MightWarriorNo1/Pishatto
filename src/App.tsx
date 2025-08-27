@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import RoleSelectPage from './pages/RoleSelectPage';
 import RegisterSteps from './components/auth/RegisterSteps';
 import CastLoginOptions from './components/cast/auth/CastLoginOptions';
@@ -17,9 +16,6 @@ import LineLogin from './pages/LineLogin';
 import CastLineLogin from './pages/cast/CastLineLogin';
 import LineRegister from './pages/LineRegister';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-// import AuthDebugger from './components/debug/AuthDebugger';
-import RealtimeProvider from './components/RealtimeProvider';
-import RealtimeTestPanel from './components/RealtimeTestPanel';
 import { UserProvider } from './contexts/UserContext';
 import { CastProvider } from './contexts/CastContext';
 import { ConciergeProvider } from './contexts/ConciergeContext';
@@ -38,7 +34,6 @@ const App: React.FC = () => {
         <CastProvider>
           <NotificationSettingsProvider>
             <ConciergeProvider>
-              <RealtimeProvider>
                 <Router>
                   <Routes>
                     <Route path="/" element={<RoleSelectPage />} />
@@ -77,15 +72,11 @@ const App: React.FC = () => {
                       </ProtectedRoute>
                     } />
                   </Routes>
-                  {/* <AuthDebugger /> */}
-                  <RealtimeTestPanel />
                 </Router>
-              </RealtimeProvider>
             </ConciergeProvider>
           </NotificationSettingsProvider>
         </CastProvider>
       </UserProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
 };

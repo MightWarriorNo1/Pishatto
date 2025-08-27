@@ -431,8 +431,17 @@ export const getRepeatGuests = async (): Promise<RepeatGuest[]> => {
   return response.data.guests;
 };
 
-export const castLogin = async (phone: string) => {
-  const response = await api.post('/cast/login', { phone }, { withCredentials: true });
+export const castLogin = async (phone: string, verificationCode?: string) => {
+  const payload: { phone: string; verification_code?: string } = { phone };
+  if (verificationCode) {
+    payload.verification_code = verificationCode;
+  }
+  const response = await api.post('/cast/login', payload, { withCredentials: true });
+  return response.data;
+};
+
+export const checkCastExists = async (phone: string) => {
+  const response = await api.post('/cast/check-exists', { phone });
   return response.data;
 };
 

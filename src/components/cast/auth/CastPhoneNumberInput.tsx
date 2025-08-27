@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import CastSMSCodeInput from './CastSMSCodeInput';
 import { ChevronLeft } from 'lucide-react';
-import { sendSmsVerificationCode } from '../../../services/api';
+import { sendSmsVerificationCode, checkCastExists } from '../../../services/api';
 
 interface CastPhoneNumberInputProps {
     onBack: () => void;
@@ -29,6 +29,15 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
         setError(null);
 
         try {
+            // First check if cast exists
+            const castCheckResponse = await checkCastExists(phone);
+            if (!castCheckResponse.exists) {
+                setError(castCheckResponse.message || 'お客様の情報は存在しません。管理者までご連絡ください。');
+                setLoading(false);
+                return;
+            }
+
+            // If cast exists, send SMS verification code
             const response = await sendSmsVerificationCode(phone);
             if (response.success) {
                 // Show verification code in development mode
@@ -46,14 +55,24 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
                 setError(response.message || 'SMS送信に失敗しました');
             }
         } catch (err: any) {
-            setError('SMS送信に失敗しました。もう一度お試しください。');
+            // Check if it's a 404 error with the specific message
+            if (err.response?.status === 404 && err.response?.data?.message) {
+                setError(err.response.data.message);
+            } else {
+                setError('SMS送信に失敗しました。もう一度お試しください。');
+            }
         } finally {
             setLoading(false);
         }
     };
 
+    const handleError = (errorMessage: string) => {
+        setError(errorMessage);
+        setShowSMS(false); // Go back to phone input page
+    };
+
     if (showSMS) {
-        return <CastSMSCodeInput onBack={() => setShowSMS(false)} phone={phone} verificationCode={verificationCode} />;
+        return <CastSMSCodeInput onBack={() => setShowSMS(false)} phone={phone} verificationCode={verificationCode} onError={handleError} />;
     }
 
     const isActive = isValidPhoneNumber(phone);

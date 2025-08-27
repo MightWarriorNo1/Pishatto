@@ -260,29 +260,29 @@ const GuestDetail: React.FC = () => {
                 <div className="text-lg text-white font-bold mb-4 flex items-center gap-2"><User size={18}/>プロフィール詳細</div>
                 <div className="grid grid-cols-2 gap-y-3 text-sm bg-primary/80 backdrop-blur rounded-xl shadow p-4 border border-white/5">
                     <div className="flex items-center gap-2 text-white/85"><Star size={16}/>年齢：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.age || ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.age || '未設定'}</span></div>
                     <div className="flex items-center gap-2 text-white/85"><MapPin size={16}/>身長：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.height ? `${guest.height}cm` : ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.height ? `${guest.height}cm` : '未設定'}</span></div>
                     <div className="flex items-center gap-2 text-white/85"><Home size={16}/>居住地：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.residence || ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.residence || '未設定'}</span></div>
                     <div className="flex items-center gap-2 text-white/85"><MapPin size={16}/>出身地：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.birthplace || ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.birthplace || '未設定'}</span></div>
                     <div className="flex items-center gap-2 text-white/85"><GraduationCap size={16}/>学歴：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.education || ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.education || '未設定'}</span></div>
                     <div className="flex items-center gap-2 text-white/85"><DollarSign size={16}/>年収：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.annual_income || ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.annual_income || '未設定'}</span></div>
                     <div className="flex items-center gap-2 text-white/85"><Briefcase size={16}/>お仕事：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.occupation || ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.occupation || '未設定'}</span></div>
                     <div className="flex items-center gap-2 text-white/85"><GlassWater size={16}/>お酒：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.alcohol || ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.alcohol || '未設定'}</span></div>
                     <div className="flex items-center gap-2 text-white/85"><Cigarette size={16}/>タバコ：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.tobacco || ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.tobacco || '未設定'}</span></div>
                     <div className="flex items-center gap-2 text-white/85"><Users size={16}/>兄弟姉妹：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.siblings || ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.siblings || '未設定'}</span></div>
                     <div className="flex items-center gap-2 text-white/85"><Home size={16}/>同居人：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.cohabitant || ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.cohabitant || '未設定'}</span></div>
                     <div className="flex items-center gap-2 text-white/85"><MapPin size={16}/>好みのエリア：</div>
-                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.favorite_area || ''}</span></div>
+                    <div className="font-bold text-white/95"><span className="inline-block rounded px-2 py-1 bg-white/5 border border-white/10">{guest.favorite_area || '未設定'}</span></div>
                 </div>
             </div>
 
