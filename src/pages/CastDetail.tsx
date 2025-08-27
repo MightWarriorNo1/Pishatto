@@ -575,7 +575,7 @@ const CastDetail: React.FC = () => {
                                             )}
                                         </div>
                                         <span className="font-bold text-sm mb-1 text-white text-center">{rec.nickname || ''}</span>
-                                        <span className="text-xs text-gray-300">{rec.birth_year ? (new Date().getFullYear() - rec.birth_year)+'歳' : ''}</span>
+                                        <span className="text-xs text-gray-300 text-center">{rec.birth_year ? (new Date().getFullYear() - rec.birth_year)+'歳' : ''}</span>
                                     </div>
                                 ))
                             )}

@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CastProfile, getCastProfileById, checkCastAuth, checkLineAuthCast, lineLogout } from '../services/api';
 import { createSessionTimeout, checkSessionValidity, clearSession } from '../utils/sessionTimeout';
-import SessionWarningModal from '../components/ui/SessionWarningModal';
+// import SessionWarningModal from '../components/ui/SessionWarningModal';
 
 interface CastContextType {
   cast: CastProfile | null;
@@ -327,13 +327,13 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
       {children}
       
       {/* Session Warning Modal */}
-      <SessionWarningModal
+      {/* <SessionWarningModal
         isOpen={showSessionWarning}
         remainingMinutes={remainingSessionTime}
         onExtend={extendSession}
         onLogout={logout}
         onClose={() => setShowSessionWarning(false)}
-      />
+      /> */}
     </CastContext.Provider>
   );
 };

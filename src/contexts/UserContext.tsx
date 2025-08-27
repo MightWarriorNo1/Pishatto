@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { GuestProfile, getGuestProfile, getGuestProfileByLineId, GuestInterest, checkGuestAuth, checkLineAuthGuest, lineLogout } from '../services/api';
 import { createSessionTimeout, checkSessionValidity, clearSession } from '../utils/sessionTimeout';
-import SessionWarningModal from '../components/ui/SessionWarningModal';
+// import SessionWarningModal from '../components/ui/SessionWarningModal';
 
 interface UserContextType {
   user: GuestProfile | null;
@@ -260,13 +260,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       {children}
       
       {/* Session Warning Modal */}
-      <SessionWarningModal
+      {/* <SessionWarningModal
         isOpen={showSessionWarning}
         remainingMinutes={remainingSessionTime}
         onExtend={extendSession}
         onLogout={logout}
         onClose={() => setShowSessionWarning(false)}
-      />
+      /> */}
     </UserContext.Provider>
   );
 };

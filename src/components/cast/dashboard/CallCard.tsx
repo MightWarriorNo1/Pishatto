@@ -70,7 +70,6 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
         return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
     };
 
-
     // Render
     if (closed) {
         return (
@@ -105,29 +104,29 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
             {(() => {
                 if (state === 'before' && scheduled && plannedEnd) {
                     return <>
-                        <div><b>現在時刻:</b> {format(now)}</div>
-                        <div><b>予約開始:</b> {format(scheduled)}</div>
-                        <div><b>予約終了:</b> {format(plannedEnd)}</div>
-                        <div className="font-mono text-blue-400">開始まで: {diff(scheduled, now)}</div>
+                        {/* <div><b>現在時刻:</b> {format(now)}</div> */}
+                        <div className="text-xs">予約開始: {format(scheduled)}</div>
+                        <div className="text-xs">予約終了: {format(plannedEnd)}</div>
+                        <div className="font-mono text-blue-400 text-sm">開始まで: {diff(scheduled, now)}</div>
                     </>;
                 }
                 if (state === 'during' && scheduled && plannedEnd) {
                     return <>
-                        <div><b>予約開始:</b> {format(scheduled)}</div>
-                        <div><b>予約終了:</b> {format(plannedEnd)}</div>
-                        <div><b>現在時刻:</b> {format(now)}</div>
+                        {/* <div><b>予約開始:</b> {format(scheduled)}</div> */}
+                        <div className="text-xs">予約終了: {format(plannedEnd)}</div>
+                        <div className="text-xs">現在時刻: {format(now)}</div>
                         <div className="flex items-center justify-between">
-                            <div className="font-mono text-green-400">経過: {diff(now, scheduled)}</div>
+                            <div className="font-mono text-green-400 text-sm">経過: {diff(now, scheduled)}</div>
                         </div>
                     </>;
                 }
                 if (state === 'after' && scheduled && plannedEnd) {
-                    return <>
-                        <div><b>予約開始:</b> {format(scheduled)}</div>
-                        <div><b>予約終了:</b> {format(plannedEnd)}</div>
-                        {ended && <div><b>終了時刻:</b> {format(ended)}</div>}
-                        {exceededAt && <div className="font-mono text-red-400">超過: {diff(new Date(exceededAt + plannedEnd.getTime()), plannedEnd)}</div>}
-                        {typeof localPoints === 'number' && <div><b>獲得ポイント:</b> <span className="font-bold">{localPoints}P</span></div>}
+                    return <>P
+                        <div className="text-xs">予約開始: {format(scheduled)}</div>
+                        <div className="text-xs">予約終了: {format(plannedEnd)}</div>
+                        {ended && <div className="text-xs">終了時刻: {format(ended)}</div>}
+                        {exceededAt && <div className="font-mono text-red-400 text-sm">超過: {diff(new Date(exceededAt + plannedEnd.getTime()), plannedEnd)}</div>}
+                        {typeof localPoints === 'number' && <div className="text-sm">獲得ポイント: <span className="font-bold">{localPoints}P</span></div>}
                     </>;
                 }
                 return null;

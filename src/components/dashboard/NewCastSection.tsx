@@ -90,11 +90,11 @@ const NewCastSection: React.FC<NewCastSectionProps> = ({ hideLoading = false }) 
             }
           </div>
         ) : (
-          <div className="flex gap-3 overflow-x-auto">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2">
             {filteredCasts.map((profile: CastProfile) => (
               <div
                 key={profile.id}
-                className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:opacity-75 border border-secondary min-w-[120px] max-w-[120px] flex-shrink-0"
+                className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:opacity-75 border border-secondary flex-shrink-0 w-[calc(20%-8px)] min-w-[100px] sm:min-w-[120px]"
                 onClick={() => handleCastClick(profile.id)}
               >
                 <div className="aspect-w-3 aspect-h-4 relative">
@@ -109,11 +109,11 @@ const NewCastSection: React.FC<NewCastSectionProps> = ({ hideLoading = false }) 
                     </div>
                   )}
                 </div>
-                <div className="p-2">
+                <div className="p-1 sm:p-2">
                   <div className="flex flex-col gap-1 text-xs items-center">
-                    <span className="text-white">{profile.nickname || profile.name || ''}</span>
+                    <span className="text-white text-center leading-tight">{profile.nickname || profile.name || ''}</span>
                     <span className="text-white">{profile.birth_year ? new Date().getFullYear() - profile.birth_year + '歳' : ''}</span>
-                    <span className="text-white">{profile.location || profile.favorite_area || ''}</span>
+                    <span className="text-white text-center leading-tight">{profile.location || profile.favorite_area || ''}</span>
                   </div>
                 </div>
               </div>

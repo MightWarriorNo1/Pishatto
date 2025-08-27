@@ -12,7 +12,7 @@ import {
   useLikeStatus, 
   useRecordGuestVisit
 } from '../../hooks/useQueries';
-import { fetchRanking, checkNotificationEnabled } from '../../services/api';
+import { fetchRanking, updateRanking, checkNotificationEnabled } from '../../services/api';
 import CastNotificationPage from './CastNotificationPage';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
@@ -180,6 +180,11 @@ const FilterModal: React.FC<{
 }> = ({ isOpen, onClose, filters, onApplyFilters }) => {
     const [localFilters, setLocalFilters] = useState<FilterOptions>(filters);
 
+    // Keep local state in sync when parent filters change or modal opens
+    useEffect(() => {
+        setLocalFilters(filters);
+    }, [filters, isOpen]);
+
     const handleApply = () => {
         onApplyFilters(localFilters);
         onClose();
@@ -191,9 +196,7 @@ const FilterModal: React.FC<{
             ageRange: { min: 18, max: 80 },
             category: 'gift',
             timePeriod: 'current',
-            userType: 'guest',
-            minPoints: 0,
-            maxPoints: 10000
+            userType: 'guest'
         };
         setLocalFilters(defaultFilters);
     };
@@ -303,34 +306,7 @@ const FilterModal: React.FC<{
 
                 {/* User Type selection removed as not required */}
 
-                {/* Points Range Filter */}
-                <div className="mb-6">
-                    <label className="block text-sm font-medium text-white mb-2">ポイント範囲</label>
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="number"
-                            value={localFilters.minPoints}
-                            onChange={(e) => setLocalFilters({
-                                ...localFilters, 
-                                minPoints: parseInt(e.target.value) || 0
-                            })}
-                            className="w-20 bg-primary border border-secondary rounded px-2 py-1 text-white text-center"
-                            min="0"
-                        />
-                        <span className="text-white">〜</span>
-                        <input
-                            type="number"
-                            value={localFilters.maxPoints}
-                            onChange={(e) => setLocalFilters({
-                                ...localFilters, 
-                                maxPoints: parseInt(e.target.value) || 10000
-                            })}
-                            className="w-20 bg-primary border border-secondary rounded px-2 py-1 text-white text-center"
-                            min="0"
-                        />
-                        <span className="text-white text-sm">pt</span>
-                    </div>
-                </div>
+
 
                 {/* Action Buttons */}
                 <div className="flex space-x-2">
@@ -359,8 +335,6 @@ interface FilterOptions {
     category: string;
     timePeriod: string;
     userType: string;
-    minPoints: number;
-    maxPoints: number;
 }
 
 // Ranking Data Type
@@ -436,9 +410,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ onBack, initialMainTab, initi
         ageRange: { min: 18, max: 80 },
         category: 'gift',
         timePeriod: 'current',
-        userType: 'guest',
-        minPoints: 0,
-        maxPoints: 10000
+        userType: 'guest'
     });
 
     const categories = ['ギフト', '予約'];
@@ -594,13 +566,12 @@ const RankingPage: React.FC<RankingPageProps> = ({ onBack, initialMainTab, initi
             </div>
 
             {/* Active Filters Display */}
-            {(filters.region !== '全国' || filters.ageRange.min !== 18 || filters.ageRange.max !== 80 || filters.minPoints > 0 || filters.maxPoints < 10000) && (
+            {(filters.region !== '全国' || filters.ageRange.min !== 18 || filters.ageRange.max !== 80) && (
                 <div className="px-4 py-2 bg-secondary bg-opacity-20 border-b border-secondary">
                     <div className="text-xs text-white">
                         フィルター適用中: 
                         {filters.region !== '全国' && ` 地域: ${filters.region}`}
                         {(filters.ageRange.min !== 18 || filters.ageRange.max !== 80) && ` 年齢: ${filters.ageRange.min}-${filters.ageRange.max}歳`}
-                        {(filters.minPoints > 0 || filters.maxPoints < 10000) && ` ポイント: ${filters.minPoints.toLocaleString()}-${filters.maxPoints.toLocaleString()}P`}
                     </div>
                 </div>
             )}
@@ -870,10 +841,9 @@ const CastSearchPage: React.FC = () => {
         ageRange: { min: 18, max: 80 },
         category: 'gift',
         timePeriod: 'current',
-        userType: 'guest',
-        minPoints: 0,
-        maxPoints: 10000
+        userType: 'guest'
     });
+    const [filterLoading, setFilterLoading] = useState(false);
     const [rankingInit, setRankingInit] = useState<{
         initialMainTab?: 'cast' | 'guest';
         initialRegion?: string;
@@ -908,42 +878,64 @@ const CastSearchPage: React.FC = () => {
         });
     }, [repeatGuests, filters]);
 
-    const handleApplyFilters = (newFilters: FilterOptions) => {
+    const handleApplyFilters = async (newFilters: FilterOptions) => {
         setFilters(newFilters);
-        
-        // Save filtered results to localStorage for "前回の検索結果" section
-        const filteredResults = repeatGuests.filter((guest) => {
-            // Region filter
-            const regionOk =
-                !newFilters.region || newFilters.region === '全国'
-                    ? true
-                    : (guest.residence || '').includes(newFilters.region);
-
-            // Age filter
-            const currentYear = new Date().getFullYear();
-            const guestAge = guest.birth_year ? currentYear - guest.birth_year : null;
-            const ageOk = guestAge === null
-                ? true
-                : guestAge >= newFilters.ageRange.min && guestAge <= newFilters.ageRange.max;
-
-            return regionOk && ageOk;
-        });
-
-        // Save to localStorage with a different key for filter results
+        setFilterLoading(true);
         try {
-            const simplified = filteredResults.map((guest) => ({
-                id: guest.id,
-                name: guest.nickname,
-                nickname: guest.nickname,
-                age: guest.birth_year ? new Date().getFullYear() - guest.birth_year : null,
-                avatar: guest.avatar,
-                region: guest.residence,
-                userType: 'guest',
+            const backendCategory = newFilters.category === 'reservation' ? 'reservation' : 'gift';
+            const backendTimePeriod = newFilters.timePeriod === 'yesterday'
+                ? 'yesterday'
+                : newFilters.timePeriod === 'lastWeek'
+                ? 'lastWeek'
+                : newFilters.timePeriod === 'lastMonth'
+                ? 'lastMonth'
+                : newFilters.timePeriod === 'allTime'
+                ? 'allTime'
+                : 'current';
+
+            // Ensure backend ranking is up-to-date for the selected filters
+            try {
+                await updateRanking({
+                    userType: newFilters.userType as 'cast' | 'guest',
+                    timePeriod: backendTimePeriod,
+                    category: backendCategory,
+                    area: newFilters.region,
+                });
+            } catch (e) {
+                // Non-fatal if recalculation is not required
+            }
+
+            const response = await fetchRanking({
+                userType: newFilters.userType as 'cast' | 'guest',
+                timePeriod: backendTimePeriod,
+                category: backendCategory,
+                area: newFilters.region,
+            });
+
+            // Support multiple possible response shapes
+            const possible = (response as any) || {};
+            const dataArray = Array.isArray(possible.data)
+                ? possible.data
+                : Array.isArray(possible)
+                ? possible
+                : Array.isArray(possible.ranking)
+                ? possible.ranking
+                : Array.isArray(possible.list)
+                ? possible.list
+                : [];
+            const simplified = dataArray.map((item: any, index: number) => ({
+                id: item.id || item.user_id || index + 1,
+                name: item.name || item.nickname || 'Unknown',
+                nickname: item.nickname,
+                age: item.age ?? null,
+                avatar: item.avatar || '',
+                region: item.region || newFilters.region,
+                userType: newFilters.userType,
             }));
+
             localStorage.setItem('lastFilterResults', JSON.stringify(simplified));
-            
-            // Update the display results immediately
-            const displayMapped: DisplayUser[] = simplified.map((item) => ({
+
+            const displayMapped: DisplayUser[] = simplified.map((item: any) => ({
                 id: item.id,
                 avatar: getFirstAvatarUrl(item.avatar || ''),
                 displayName: item.nickname || item.name || 'Unknown',
@@ -953,7 +945,10 @@ const CastSearchPage: React.FC = () => {
             }));
             setLastSearchDisplayResults(displayMapped);
         } catch (e) {
-            console.error('Failed to save filter results:', e);
+            console.error('Failed to fetch filter results:', e);
+            setLastSearchDisplayResults([]);
+        } finally {
+            setFilterLoading(false);
         }
     };
 
@@ -1081,7 +1076,11 @@ const CastSearchPage: React.FC = () => {
             {/* Previous filter results */}
             <div className="px-4 pt-2 pb-1 text-base font-bold text-white">絞り込み結果</div>
             <div className="grid grid-cols-2 gap-4 px-4 ">
-                {lastSearchDisplayResults.length > 0 ? (
+                {filterLoading ? (
+                    <div className="col-span-2 flex items-center justify-center py-8">
+                        <Spinner />
+                    </div>
+                ) : lastSearchDisplayResults.length > 0 ? (
                     lastSearchDisplayResults.map((guest) => (
                         <div
                             key={guest.id}

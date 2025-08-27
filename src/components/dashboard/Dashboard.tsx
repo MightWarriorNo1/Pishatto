@@ -37,23 +37,23 @@ const Modal: React.FC<{ onClose: () => void; children: React.ReactNode }> = ({ o
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="bg-gradient-to-b from-primary via-primary to-secondary rounded-2xl p-0 max-w-md w-full mx-4 relative shadow-xl border border-secondary"
+        className="bg-gradient-to-b from-primary via-primary to-secondary rounded-2xl p-0 w-full max-w-xs sm:max-w-md mx-2 sm:mx-4 relative shadow-xl border border-secondary"
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 text-white/80 hover:text-white text-2xl"
+          className="absolute top-2 sm:top-3 right-2 sm:right-3 text-white/80 hover:text-white text-xl sm:text-2xl"
           aria-label="閉じる"
         >
           ×
         </button>
-        <div className="max-h-[80vh] overflow-y-auto p-6 text-white">{children}</div>
+        <div className="max-h-[80vh] overflow-y-auto p-3 sm:p-6 text-white">{children}</div>
       </div>
     </div>
   );
@@ -398,7 +398,7 @@ const Dashboard: React.FC = () => {
             <div className="p-0">
               <h2 className="text-lg font-bold mb-2">ユーザー満足度の高いキャスト一覧</h2>
               <p className="text-sm text-white/80 mb-4">検索・並び替えで目的のキャストを見つけましょう。</p>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mb-4">
                 <input
                   type="text"
                   value={satisfactionSearch}
@@ -419,22 +419,22 @@ const Dashboard: React.FC = () => {
               </div>
 
               {satisfactionLoading ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="h-48 bg-gray-200 rounded-lg animate-pulse" />
+                    <div key={i} className="h-40 sm:h-48 bg-gray-200 rounded-lg animate-pulse" />
                   ))}
                 </div>
               ) : filteredAndSortedSatisfactionCasts.length === 0 ? (
                 <div className="text-center text-white/80 py-6">該当するキャストが見つかりませんでした。</div>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {filteredAndSortedSatisfactionCasts.map((cast: any) => (
-                    <div key={cast.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer relative">
+                    <div key={cast.id} className="bg-primary rounded-lg shadow p-2 sm:p-3 border border-secondary cursor-pointer relative">
                       <img
                         src={cast.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${cast.avatar}` : '/assets/avatar/female.png'}
                         alt={cast.nickname}
                         onClick={()=>navigate(`/cast/${cast.id}`)}  
-                        className="w-full h-32 object-cover rounded-lg border border-secondary mb-2"
+                        className="w-full h-28 sm:h-32 object-cover rounded-lg border border-secondary mb-2"
                       />
                       <div className="font-medium text-white text-sm truncate">{cast.nickname}</div>
                       <div className="text-xs text-white mt-1">{(cast.average_rating || 0).toFixed(1)} ★ / {cast.feedback_count || 0}件</div>
@@ -453,22 +453,22 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-white/80 mb-4">期間とカテゴリを選択して表示します。</p>
 
               {rankingLoading ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="h-48 bg-gray-200 rounded-lg animate-pulse" />)
-                  )}
+                    <div key={i} className="h-40 sm:h-48 bg-gray-200 rounded-lg animate-pulse" />
+                  ))}
                 </div>
               ) : allRankings.length === 0 ? (
                 <div className="text-center text-white/80 py-6">ランキングはまだありません。</div>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {allRankings.map((profile: any, index: number) => (
-                    <div key={profile.id} className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer relative">
+                    <div key={profile.id} className="bg-primary rounded-lg shadow p-2 sm:p-3 border border-secondary cursor-pointer relative">
                       <img
                         src={profile.avatar ? `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/${profile.avatar}` : '/assets/avatar/female.png'}
                         alt={profile.name}
                         onClick={()=>navigate(`/cast/${profile.id}`)}  
-                        className="w-full h-32 object-cover rounded-lg border border-secondary mb-2"
+                        className="w-full h-28 sm:h-32 object-cover rounded-lg border border-secondary mb-2"
                       />
                       <div className="font-medium text-white text-sm truncate">{profile.name}</div>
                       <div className="text-xs text-white mt-1">{profile.points}ポイント {profile.gift_count && `(${profile.gift_count}件)`}</div>
