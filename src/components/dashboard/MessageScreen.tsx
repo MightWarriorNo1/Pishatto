@@ -610,7 +610,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                     <FiBell className="w-6 h-6 text-white" />
                     {messageNotifications.length > 0 && (
                         <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] leading-[18px] text-center font-bold">
-                            {messageNotifications.length}
+                            {messageNotifications.length > 99 ? '+99' : messageNotifications.length}
                         </span>
                     )}
                 </button>

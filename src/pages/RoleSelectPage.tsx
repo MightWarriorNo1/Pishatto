@@ -20,10 +20,10 @@ const RoleSelectPage: React.FC = () => {
             
             if (cast) {
                 console.log('RoleSelectPage: cast authenticated, navigating to /cast/dashboard');
-                navigate('/cast/dashboard');
+                navigate('/cast/dashboard', { replace: true });
             } else if (user) {
                 console.log('RoleSelectPage: user authenticated, navigating to /dashboard');
-                navigate('/dashboard');
+                navigate('/dashboard', { replace: true });
             }
         }
     }, [user, cast, userLoading, castLoading, hasCheckedAuth, navigate]);

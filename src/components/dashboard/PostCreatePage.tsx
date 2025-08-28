@@ -123,7 +123,10 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
     };
 
     const handleSubmit = () => {
-        if (content.trim()) onSubmit(content, image);
+        // Allow submission if there's either content or an image
+        if (content.trim() || image) {
+            onSubmit(content, image);
+        }
     };
     
     try {
@@ -137,7 +140,7 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
                 <span className="flex-1 text-center text-lg font-bold text-white">つぶやきを投稿</span>
                 <button
                     className="text-white font-bold text-base hover:text-secondary cursor-pointer"
-                    disabled={!content.trim()}
+                    disabled={!content.trim() && !image}
                     onClick={handleSubmit}
                 >
                     投稿する

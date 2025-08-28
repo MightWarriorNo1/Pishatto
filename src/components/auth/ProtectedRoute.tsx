@@ -66,6 +66,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           // Redirect to appropriate login page
           const redirectPath = redirectTo || '/register';
           navigate(redirectPath, { 
+            replace: true,
             state: { 
               from: location.pathname,
               message: 'Please log in to access this page'
@@ -78,6 +79,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           // Redirect to cast login page
           const redirectPath = redirectTo || '/cast/login';
           navigate(redirectPath, { 
+            replace: true,
             state: { 
               from: location.pathname,
               message: 'Please log in to access this page'

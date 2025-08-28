@@ -86,6 +86,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const [showProposalModal, setShowProposalModal] = useState(false);
     const [selectedProposal, setSelectedProposal] = useState<any>(null);
     const [proposalMsgId, setProposalMsgId] = useState<number | null>(null);
+    const [proposalMessage, setProposalMessage] = useState<any>(null);
     const [proposalActionLoading, setProposalActionLoading] = useState(false);
     const [proposalActionError, setProposalActionError] = useState<string | null>(null);
     const [acceptedProposals, setAcceptedProposals] = useState<number[]>([]);
@@ -209,6 +210,28 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         return () => clearInterval(interval);
     }, [user?.id]);
 
+    // More frequent refresh when there are proposals to ensure real-time updates
+    useEffect(() => {
+        if (!user?.id) return;
+        
+        // Check if there are any proposal messages
+        const hasProposals = messages.some(msg => {
+            try {
+                const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                return parsed && parsed.type === 'proposal';
+            } catch (e) {
+                return false;
+            }
+        });
+
+        if (hasProposals) {
+            const interval = setInterval(() => {
+                getGuestReservations(user.id).then(setGuestReservations).catch(() => {});
+            }, 3000); // Check every 3 seconds when proposals exist for faster updates
+            return () => clearInterval(interval);
+        }
+    }, [user?.id, messages]);
+
     // Set up real-time listener for chat messages
     useChatMessages(chatId, (message) => {
         // Only process real-time messages if initial fetch is complete and user is loaded
@@ -221,6 +244,25 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 message.gift = foundGift;
             }
         }
+
+        // Check if this message might be related to proposal updates
+        let shouldRefreshReservations = false;
+        try {
+            const parsed = typeof message.message === 'string' ? JSON.parse(message.message) : null;
+            if (parsed && parsed.type === 'proposal') {
+                shouldRefreshReservations = true;
+            }
+            // Also check for system messages about proposal acceptance
+            if (message.message && typeof message.message === 'string') {
+                if (message.message.includes('承認') || message.message.includes('accepted') || 
+                    message.message.includes('承認済み') || message.message.includes('accepted')) {
+                    shouldRefreshReservations = true;
+                }
+            }
+        } catch (e) {
+            // Not a proposal message
+        }
+
         setMessages((prev) => {
             // Remove optimistic message if real one matches (by image or message and sender information)
             // Also check for duplicate messages by ID to prevent duplicates
@@ -242,6 +284,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             });
             return [...filtered, message];
         });
+
+        // If this message is related to proposals, refresh guest reservations
+        if (shouldRefreshReservations && user?.id) {
+            // Immediate refresh for proposal updates
+            getGuestReservations(user.id).then(setGuestReservations).catch(() => {});
+            
+            // Additional refresh after a short delay to ensure backend updates are reflected
+            setTimeout(() => {
+                getGuestReservations(user.id).then(setGuestReservations).catch(() => {});
+            }, 1000);
+        }
     });
 
     // Matching messages are now handled by backend through group chats
@@ -508,7 +561,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             
             {/* Chat history (scrollable, between header and input) */}
             <div
-                className="flex-1 overflow-y-auto px-4 pt-16 pb-4"
+                className="flex-1 overflow-y-auto px-4 pt-16 pb-12"
             >
                 {fetching ? (
                     <div className="flex justify-center items-center h-40">
@@ -539,12 +592,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             if (parsed && parsed.type === 'proposal') proposal = parsed;
                         } catch (e) { }
                         if (proposal) {
-                            // Check if proposal is accepted by matching guest_id and scheduled_at (compare by day)
-                            const isAccepted = guestReservations.some(res => {
-                                const proposalDate = dayjs(proposal?.date);
-                                const reservationDate = dayjs(res.scheduled_at);
-                                return res.guest_id === user?.id && reservationDate.isSame(proposalDate, 'day');
-                            }) || acceptedProposals.includes(msg.id);
+                            // Check if proposal is accepted by multiple methods:
+                            // 1. Local accepted proposals state (immediate UI feedback)
+                            // 2. Matching reservation in guestReservations
+                            // 3. Current reservationId if it matches the proposal
+                            const isAccepted = acceptedProposals.includes(msg.id) || 
+                                guestReservations.some(res => {
+                                    const proposalDate = dayjs(proposal?.date);
+                                    const reservationDate = dayjs(res.scheduled_at);
+                                    return res.guest_id === user?.id && reservationDate.isSame(proposalDate, 'day');
+                                }) ||
+                                (reservationId && proposal.reservationId === reservationId);
                             
                             // Determine proposal alignment based on sender
                             const isProposalFromGuest = msg.sender_guest_id && !msg.sender_cast_id;
@@ -562,7 +620,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                     )}
                                     <div className={`flex ${proposalPosition} mb-4`}>
                                         <div className={`flex flex-col ${alignment} max-w-[80%]`}>
-                                            <div className={`bg-orange-600 text-white rounded-lg px-4 py-3 text-sm shadow-md relative w-full ${isAccepted? 'opacity-50 cursor-default' : 'cursor-pointer hover:bg-orange-600'}`}>
+                                            <div 
+                                                className={`bg-orange-600 text-white rounded-lg px-4 py-3 text-sm shadow-md relative w-full ${isAccepted ? 'opacity-50 cursor-default' : 'cursor-pointer hover:bg-orange-600'}`}
+                                                onClick={!isAccepted ? () => {
+                                                    setSelectedProposal(proposal);
+                                                    setProposalMsgId(msg.id);
+                                                    setProposalMessage(msg);
+                                                    setShowProposalModal(true);
+                                                } : undefined}
+                                            >
                                                 <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
                                                 <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
                                                 <div>時間：{proposal.duration}</div>
@@ -907,6 +973,95 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             <button
                                 className="px-4 py-2 bg-gray-400 text-white rounded font-bold"
                                 onClick={() => { setShowGiftDetailModal(false); setSelectedGift(null); }}
+                            >
+                                キャンセル
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Proposal Modal */}
+            {showProposalModal && selectedProposal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
+                        <h2 className="font-bold text-lg mb-4 text-black">予約提案の確認</h2>
+                        <div className="mb-4 text-black">
+                            <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '未設定'}～</div>
+                            <div>人数：{selectedProposal.people?.replace(/名$/, '') || '未設定'}人</div>
+                            <div>時間：{selectedProposal.duration || '未設定'}</div>
+                            <div>消費ポイント：{selectedProposal.totalPoints?.toLocaleString() || '0'}P</div>
+                            <div>（延長：{selectedProposal.extensionPoints?.toLocaleString() || '0'}P / 15分）</div>
+                        </div>
+                        {proposalActionError && <div className="text-red-500 mb-2">{proposalActionError}</div>}
+                        <div className="flex gap-4 w-full flex-col sm:flex-row">
+                            <button
+                                className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
+                                disabled={proposalActionLoading}
+                                onClick={async () => {
+                                    if (!selectedProposal || !user?.id || !selectedProposal.date) {
+                                        setProposalActionError('Missing required data for proposal acceptance');
+                                        return;
+                                    }
+
+                                    try {
+                                        setProposalActionLoading(true);
+                                        setProposalActionError(null);
+
+                                        // Prepare proposal data for acceptance
+                                        const duration = parseInt(selectedProposal.duration?.toString() || '0', 10);
+                                        if (isNaN(duration) || duration <= 0) {
+                                            setProposalActionError('Invalid duration for proposal acceptance');
+                                            return;
+                                        }
+
+                                        const proposalData = {
+                                            guest_id: user.id,
+                                            cast_id: proposalMessage?.sender_cast_id,
+                                            date: selectedProposal.date,
+                                            duration: duration,
+                                            reservation_id: reservationId || selectedProposal.reservationId
+                                        };
+
+                                        // Accept the proposal using session management
+                                        const newReservation = await sessionAcceptProposal(proposalData);
+
+                                        // Update local reservation ID if a new one was created
+                                        if (newReservation && newReservation.id) {
+                                            setReservationId(newReservation.id);
+                                        }
+
+                                        // Add to local accepted proposals for immediate UI feedback
+                                        if (proposalMsgId) {
+                                            setAcceptedProposals(prev => [...prev, proposalMsgId]);
+                                        }
+
+                                        // The onReservationUpdate callback in useSessionManagement will automatically
+                                        // update both reservationId and guestReservations, so no manual refresh needed here
+
+                                        // Close modal and reset state
+                                        setShowProposalModal(false);
+                                        setSelectedProposal(null);
+                                        setProposalMsgId(null);
+                                        setProposalMessage(null);
+                                    } catch (e: any) {
+                                        console.error('Error accepting proposal:', e);
+                                        setProposalActionError('提案の承認に失敗しました');
+                                    } finally {
+                                        setProposalActionLoading(false);
+                                    }
+                                }}
+                            >
+                                {proposalActionLoading ? '処理中...' : '承認'}
+                            </button>
+                            <button
+                                className="w-full sm:w-auto px-4 py-2 bg-gray-400 text-white rounded font-bold"
+                                onClick={() => {
+                                    setShowProposalModal(false);
+                                    setSelectedProposal(null);
+                                    setProposalMsgId(null);
+                                    setProposalMessage(null);
+                                }}
                             >
                                 キャンセル
                             </button>

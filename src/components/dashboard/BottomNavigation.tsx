@@ -28,7 +28,9 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ activeTab, onTabCha
           <span className="relative text-2xl mb-1">
             <MessageCircle />
             {messageCount > 0 && (
-              <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{messageCount}</span>
+              <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                {messageCount > 99 ? '+99' : messageCount}
+              </span>
             )}
           </span>
           <span>メッセージ</span>

@@ -73,7 +73,7 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                     
                     // Small delay to ensure context is updated
                     setTimeout(() => {
-                        navigate('/dashboard');
+                        navigate('/dashboard', { replace: true });
                     }, 100);
                 } else if (data.user_type === 'cast') {
                     console.log('LineLogin: Processing cast login...', data.user);
@@ -102,7 +102,7 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                             // Wait a bit more to ensure context is fully updated
                             setTimeout(() => {
                                 console.log('LineLogin: Final navigation to cast dashboard');
-                                navigate('/cast/dashboard');
+                                navigate('/cast/dashboard', { replace: true });
                             }, 100);
                         } else {
                             console.error('Cast data is missing, cannot navigate');
@@ -140,7 +140,7 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
             onError?.(errorMessage);
             // For cast, redirect to cast/login on failure
             if (userType === 'cast') {
-                navigate('/cast/login');
+                navigate('/cast/login', { replace: true });
             }
         }
     };

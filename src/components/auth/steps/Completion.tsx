@@ -6,7 +6,7 @@ const Completion: React.FC = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     }, 3000);
 
     return () => clearTimeout(timer);
@@ -21,7 +21,7 @@ const Completion: React.FC = () => {
       </p>
       <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-secondary mx-auto mb-6"></div>
       <button
-        onClick={() => navigate('/dashboard')}
+        onClick={() => navigate('/dashboard', { replace: true })}
         className="mx-auto px-6 py-3 rounded-lg bg-secondary text-white hover:bg-red-400 focus:outline-none focus:ring-2 focus:ring-secondary/60"
       >
         今すぐ移動する

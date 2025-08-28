@@ -29,7 +29,9 @@ const BottomNavigationBar: React.FC<BottomNavigationBarProps> = ({ selected = 0,
                     <span className="relative text-2xl mb-1">
                         {nav.icon}
                         {nav.label === 'メッセージ' && messageBadgeCount > 0 && (
-                            <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{messageBadgeCount}</span>
+                            <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                                {messageBadgeCount > 99 ? '+99' : messageBadgeCount}
+                            </span>
                         )}
                         {nav.label === 'つぶやき' && tweetBadgeCount > 0 && (
                             <span className="absolute -top-1 -right-2 bg-secondary text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">{tweetBadgeCount}</span>

@@ -505,17 +505,18 @@ export function useCastReservations(
     
     console.log(`useCastReservations: Setting up real-time listener for cast ${castId}`);
     
-    // Listen to general reservation updates
-    const channel = echo.channel(`cast.${castId}`);
+    // Listen to per-cast updates and global casts channel for new free calls
+    const castChannel = echo.channel(`cast.${castId}`);
+    const globalCastsChannel = echo.channel('casts');
     
     // Add connection status logging
-    if (typeof channel.subscribed === 'function') {
-      channel.subscribed(() => {
+    if (typeof castChannel.subscribed === 'function') {
+      castChannel.subscribed(() => {
         console.log(`useCastReservations: Successfully subscribed to cast.${castId}`);
       });
     }
-    if (typeof channel.error === 'function') {
-      channel.error((error: any) => {
+    if (typeof castChannel.error === 'function') {
+      castChannel.error((error: any) => {
         console.error(`useCastReservations: Error on cast.${castId} channel:`, error);
       });
     }
@@ -561,19 +562,36 @@ export function useCastReservations(
       }
     };
     
-    console.log(`useCastReservations: Listening for ReservationCreated and ReservationUpdated events on cast.${castId}`);
-    channel.listen("ReservationCreated", handleNewReservation);
-    channel.listen("ReservationUpdated", handleReservationUpdate);
+    console.log(`useCastReservations: Listening for ReservationCreated and ReservationUpdated events on cast.${castId} and global casts channel`);
+    castChannel.listen("ReservationCreated", handleNewReservation);
+    castChannel.listen(".ReservationCreated", handleNewReservation);
+    castChannel.listen("ReservationUpdated", handleReservationUpdate);
+    castChannel.listen(".ReservationUpdated", handleReservationUpdate);
+    // Also listen on a global channel for new reservations (e.g., free calls)
+    globalCastsChannel.listen("ReservationCreated", handleNewReservation);
+    globalCastsChannel.listen(".ReservationCreated", handleNewReservation);
     
     return () => {
       try {
-        channel.stopListening("ReservationCreated");
-        channel.stopListening("ReservationUpdated");
+        castChannel.stopListening("ReservationCreated");
+        castChannel.stopListening("ReservationUpdated");
+        castChannel.stopListening(".ReservationCreated");
+        castChannel.stopListening(".ReservationUpdated");
+        globalCastsChannel.stopListening("ReservationCreated");
+        globalCastsChannel.stopListening(".ReservationCreated");
       } catch (err) {
         console.error('Error cleaning up channel listeners:', err);
       }
     };
   }, [castId, onReservationUpdate]);
+}
+
+// Convenience wrapper to avoid naming collisions with data query hook
+export function useCastReservationsRealtime(
+  castId: number,
+  onReservationUpdate?: (reservation: any) => void
+) {
+  return useCastReservations(castId, onReservationUpdate);
 }
 
 // Real-time application updates for cast dashboard

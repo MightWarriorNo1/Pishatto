@@ -168,7 +168,7 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
             onNotificationCountChange?.(unreadCount);
 
             // Navigate to dashboard message tab with the created chat opened
-            navigate('/dashboard', { state: { openChatId: chatId, openMessageTab: true } });
+            navigate('/dashboard', { replace: true, state: { openChatId: chatId, openMessageTab: true } });
         } catch (error) {
             console.error('Failed to send message:', error);
             alert('メッセージの送信に失敗しました。');

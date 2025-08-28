@@ -214,7 +214,80 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         queryClient.invalidateQueries({
             queryKey: queryKeys.cast.chatMessages(Number(message.id), castId)
         });
+
+        // Check if this message might be related to proposal updates
+        let shouldRefreshReservations = false;
+        try {
+            const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+            if (parsed && parsed.type === 'proposal') {
+                shouldRefreshReservations = true;
+            }
+            // Also check for system messages about proposal acceptance
+            if (msg.message && typeof msg.message === 'string') {
+                if (msg.message.includes('承認') || msg.message.includes('accepted') || 
+                    msg.message.includes('承認済み') || msg.message.includes('accepted')) {
+                    shouldRefreshReservations = true;
+                }
+            }
+        } catch (e) {
+            // Not a proposal message
+        }
+
+        // If this message is related to proposals, refresh guest reservations
+        if (shouldRefreshReservations && chatInfo?.guest?.id) {
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.cast.guestReservations(chatInfo.guest.id)
+            });
+        }
     });
+
+    // Refresh guest reservations when proposals are present to ensure acceptance status is up-to-date
+    useEffect(() => {
+        if (!chatInfo?.guest?.id || !castId) return;
+        
+        // Check if there are any proposal messages
+        const hasProposals = messages.some((msg: any) => {
+            try {
+                const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                return parsed && parsed.type === 'proposal';
+            } catch (e) {
+                return false;
+            }
+        });
+
+        if (hasProposals) {
+            // Invalidate guest reservations query to get fresh data
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.cast.guestReservations(chatInfo.guest.id)
+            });
+        }
+    }, [chatInfo?.guest?.id, castId, messages, queryClient]);
+
+    // Periodic refresh of guest reservations when proposals are present
+    useEffect(() => {
+        if (!chatInfo?.guest?.id || !castId) return;
+        
+        // Check if there are any proposal messages
+        const hasProposals = messages.some((msg: any) => {
+            try {
+                const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                return parsed && parsed.type === 'proposal';
+            } catch (e) {
+                return false;
+            }
+        });
+
+        if (hasProposals) {
+            // Set up periodic refresh every 3 seconds when proposals exist
+            const interval = setInterval(() => {
+                queryClient.invalidateQueries({
+                    queryKey: queryKeys.cast.guestReservations(chatInfo.guest.id)
+                });
+            }, 3000);
+            
+            return () => clearInterval(interval);
+        }
+    }, [chatInfo?.guest?.id, castId, messages, queryClient]);
 
     // Set up real-time listener for group messages
     const [groupId, setGroupId] = useState<number | null>(null);
@@ -1030,17 +1103,130 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                 </div>
             </div>
 
+            {/* Fixed Timer - Always visible under header */}
+            <div className="fixed left-0 right-0 top-16 mx-auto w-full max-w-md z-20 px-4 py-2 bg-primary border-b border-secondary">
+                <div className="p-4 bg-gradient-to-r from-green-900 to-blue-900 rounded-lg border border-green-400">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-white text-sm font-bold">⏱️ セッションタイマー</span>
+                        {(() => {
+                            let hasActiveSession = false;
+                            proposalSessions.forEach((session) => { if (session.isActive) hasActiveSession = true; });
+                            return (
+                                <div className="flex items-center space-x-2">
+                                    <div className={`w-2 h-2 rounded-full ${hasActiveSession ? 'bg-green-400 animate-pulse' : 'bg-gray-400'}`}></div>
+                                    <span className={`${hasActiveSession ? 'text-green-300' : 'text-gray-300'} text-xs`}>{hasActiveSession ? 'アクティブ' : '待機中'}</span>
+                                </div>
+                            );
+                        })()}
+                    </div>
+                    <div className="flex items-center justify-between">
+                        <span className="text-white text-xs">経過時間</span>
+                        <div className="text-2xl font-mono font-bold text-green-400">
+                            {(() => {
+                                let displayTime = '00:00';
+                                proposalSessions.forEach((session) => {
+                                    if (session.isActive) displayTime = formatElapsedTime(session.elapsedTime);
+                                    else if (!session.isActive && session.elapsedTime > 0) displayTime = formatElapsedTime(session.elapsedTime);
+                                });
+                                return displayTime;
+                            })()}
+                        </div>
+                    </div>
+
+                    {/* Control Buttons (always accessible) */}
+                    <div className="flex space-x-2 mt-3">
+                        {(!buttonUsage.meetUpUsed) && (
+                            <button
+                                onClick={() => {
+                                    const testProposal: any = { type: 'proposal', date: new Date().toISOString().split('T')[0], duration: 60 };
+                                    startSimpleSession(testProposal);
+                                    setButtonUsage(prev => ({ ...prev, meetUpUsed: true }));
+                                }}
+                                disabled={(() => { let active = false; proposalSessions.forEach(s => { if (s.isActive) active = true; }); return active; })()}
+                                className={`flex-1 px-4 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-50 ${(() => { let active = false; proposalSessions.forEach(s => { if (s.isActive) active = true; }); return active ? 'bg-gray-400 text-white' : 'bg-green-500 hover:bg-green-600 text-white'; })()}`}
+                            >
+                                🤝 合流する
+                            </button>
+                        )}
+
+                        {(!buttonUsage.dismissUsed) && (
+                            <button
+                                onClick={async () => {
+                                    const newMap = new Map(proposalSessions);
+                                    const activeSessions = Array.from(newMap.entries()).filter(([_, s]) => s.isActive);
+                                    if (activeSessions.length === 0) return;
+                                    for (const [key, session] of activeSessions) {
+                                        const finalElapsedTime = Math.floor((Date.now() - (session.startTime as Date).getTime()) / 1000);
+                                        let totalPoints = 0, castPoints = 0, guestPoints = 0, pendingAmount = 0;
+                                        try {
+                                            const parts = key.split('-');
+                                            const datePart = parts.length >= 4 ? parts.slice(0, -1).join('-') : parts[0];
+                                            let matchingReservation = guestReservations.find((res: any) => {
+                                                if (!res.scheduled_at || !chatInfo?.guest?.id) return false;
+                                                return res.guest_id === chatInfo.guest.id && dayjs(res.scheduled_at).isSame(dayjs(datePart), 'day');
+                                            });
+                                            if (!matchingReservation && chatInfo?.reservation_id) {
+                                                matchingReservation = guestReservations.find((res: any) => res.id === chatInfo.reservation_id) || await getReservationDetails(chatInfo.reservation_id);
+                                            }
+                                            if (!matchingReservation && guestReservations.length > 0) {
+                                                matchingReservation = guestReservations.find((res: any) => res.guest_id === chatInfo?.guest?.id);
+                                                if (matchingReservation) pendingAmount = 1000;
+                                            }
+                                            if (!matchingReservation) {
+                                                if (chatInfo?.reservation_id) throw new Error('No matching reservation');
+                                                pendingAmount = 1000;
+                                                matchingReservation = { id: 0, guest_id: chatInfo?.guest?.id, scheduled_at: new Date().toISOString(), total_points: pendingAmount } as any;
+                                            }
+                                            pendingAmount = pendingAmount || extractPendingAmount(matchingReservation);
+                                            const castProfile = await getCastProfileById(castId);
+                                            if (!castProfile || typeof castProfile.cast.grade_points !== 'number') throw new Error('Invalid cast grade');
+                                            const pointsPerMinute = castProfile.cast.grade_points / 30;
+                                            totalPoints = Math.max(1, Math.floor(pointsPerMinute * (finalElapsedTime / 60)));
+                                            if (totalPoints > pendingAmount) totalPoints = pendingAmount;
+                                            castPoints = totalPoints;
+                                            guestPoints = Math.max(0, pendingAmount - totalPoints);
+                                            if (!chatInfo?.guest?.id) throw new Error('Missing guest');
+                                            await completeSession({
+                                                chat_id: Number(message.id),
+                                                cast_id: castId,
+                                                guest_id: chatInfo.guest.id,
+                                                session_duration: finalElapsedTime,
+                                                total_points: totalPoints,
+                                                cast_points: castPoints,
+                                                guest_points: guestPoints,
+                                                session_key: key
+                                            });
+                                            newMap.set(key, { ...session, isActive: false, startTime: null, elapsedTime: finalElapsedTime, totalPoints, castPoints, guestPoints });
+                                        } catch (e) {
+                                            const fallback = Math.max(1, Math.ceil(finalElapsedTime / 60));
+                                            totalPoints = fallback; castPoints = fallback; guestPoints = Math.max(0, pendingAmount - fallback);
+                                            newMap.set(key, { ...session, isActive: false, startTime: null, elapsedTime: finalElapsedTime, totalPoints, castPoints, guestPoints });
+                                        }
+                                    }
+                                    setProposalSessions(newMap);
+                                    setButtonUsage(prev => ({ ...prev, dismissUsed: true }));
+                                }}
+                                disabled={(() => { let active = false; proposalSessions.forEach(s => { if (s.isActive) active = true; }); return !active; })()}
+                                className={`flex-1 px-4 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-50 ${(() => { let active = false; proposalSessions.forEach(s => { if (s.isActive) active = true; }); return active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-400 text-white'; })()}`}
+                            >
+                                🚪 解散
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+
             <div
                 className="overflow-y-auto px-4 pt-4 scrollbar-hidden"
                 style={{
-                    marginTop: '4rem',
-                    height: `calc(100vh - 4rem - ${inputBarHeight}px)`,
-                    paddingBottom: 'env(safe-area-inset-bottom)'
+                    marginTop: '13rem',
+                    height: `calc(100vh - 8rem - ${inputBarHeight}px)`,
+                    paddingBottom: '4rem'
                 }}
             >
 
-                {/* Standalone Timer Section - Always Visible */}
-                <div className="mb-6 p-4 bg-gradient-to-r from-green-900 to-blue-900 rounded-lg border border-green-400">
+                {/* Standalone Timer Section - moved to fixed header area */}
+                <div className="hidden">
                     <div className="flex items-center justify-between mb-3">
                         <span className="text-white text-lg font-bold">⏱️ セッションタイマー</span>
                         <div className="flex items-center space-x-2">
@@ -1194,7 +1380,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                 })()
                                     }`}
                             >
-                                🤝 待ち合わせ開始
+                                🤝 合流する
                             </button>
                         )}
 
@@ -1562,13 +1748,23 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         // Create a non-null proposal reference for use in the JSX
                         const currentProposal = { ...proposal, type: proposal.type || 'proposal' };
 
-                        // Check if proposal is accepted only when cast explicitly accepted it locally
+                        // Check if proposal is accepted by multiple methods:
+                        // 1. Local accepted proposals state (immediate UI feedback)
+                        // 2. Matching reservation in guestReservations (backend data)
                         const proposalKey = makeProposalKey(currentProposal.date, currentProposal.duration);
                         const isAcceptedLocally = acceptedProposals.has(proposalKey);
-                        const isAccepted = isAcceptedLocally;
+                        const isAcceptedByReservation = guestReservations.some((res: any) => {
+                            const proposalDate = dayjs(currentProposal?.date);
+                            const reservationDate = dayjs(res.scheduled_at);
+                            return res.guest_id === chatInfo?.guest?.id && reservationDate.isSame(proposalDate, 'day');
+                        });
+                        const isAccepted = isAcceptedLocally || isAcceptedByReservation;
                         
                         // Check if proposal has been clicked by cast member
                         const isClicked = clickedProposals.has(proposalKey);
+                        
+                        // Check if this proposal was sent by the current cast member
+                        const isSentByCast = castId && String(msg.sender_cast_id) === String(castId);
                         
                         // Auto-mark accepted proposals as clicked to prevent re-clicking after refresh
                         if (isAccepted && !isClicked) {
@@ -1589,10 +1785,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         </span>
                                     </div>
                                 )}
-                                <div className="flex flex-col items-start mb-4">
+                                <div className={`${isSentByCast ? 'flex justify-end' : 'flex justify-start'} mb-4`}>
                                     <div
-                                        className={`${isClicked ? 'bg-blue-600 shadow-lg shadow-blue-500/30' : 'bg-orange-500'} text-white rounded-lg px-4 py-3 max-w-[85%] md:max-w-[70%] text-sm shadow-md relative transition-all duration-300 ${isAccepted ? 'opacity-50 cursor-default' : 'cursor-pointer hover:bg-orange-600'}`}
-                                        onClick={!isAccepted ? () => {
+                                        className={`${isClicked ? 'bg-blue-600 shadow-lg shadow-blue-500/30' : isSentByCast ? 'bg-orange-500' : 'bg-orange-500'} text-white rounded-lg px-4 py-3 max-w-[85%] md:max-w-[70%] text-sm shadow-md relative transition-all duration-300 `}
+                                        onClick={!isAccepted && !isSentByCast ? () => {
                                             handleProposalClick(currentProposal, msg.id);
                                         } : undefined}
                                     >
@@ -1801,6 +1997,9 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     </div>
                 )}
                 <div className="flex items-center w-full relative gap-2 flex-wrap">
+                    <span className="text-white cursor-pointer flex-shrink-0" onClick={() => setMessageProposal(true)}>
+                        <Calendar size={30} />
+                    </span>
                     <input
                         type="text"
                         className="flex-1 min-w-0 px-4 py-2 rounded-full border border-secondary text-sm bg-primary text-white"
@@ -1853,9 +2052,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         style={{ display: 'none' }}
                         onChange={handleImageChange}
                     />
-                    <span className="text-white cursor-pointer flex-shrink-0" onClick={() => setMessageProposal(true)}>
-                        <Calendar size={30} />
-                    </span>
+                    
                     <button
                         onClick={async () => {
                             if ((newMessage.trim() || attachedFile) && !sendMessageMutation.isPending) {

@@ -16,9 +16,20 @@ import QRCodeModal from '../../components/dashboard/QRCodeModal';
 import Spinner from '../../components/ui/Spinner';
 import { useCastData } from '../../hooks/useCastData';
 import { useCastMonthlyRanking } from '../../hooks/useQueries';
-import { formatNumber, formatPoints } from '../../utils/formatters';
+import { formatNumber, formatPoints, formatFanPoints } from '../../utils/formatters';
+import { formatBadgeCount, shouldShowBadge } from '../../utils/badgeFormatter';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+const formatDateJa = (dateString?: string): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}年${month}月${day}日`;
+};
 
 const getAllAvatarUrls = (avatarString: string | null | undefined): string[] => {
     if (!avatarString) {
@@ -99,6 +110,7 @@ const CastProfilePage: React.FC = () => {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const [selectedMonth, setSelectedMonth] = useState<'current' | 'last'>('current');
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [showFptInfo, setShowFptInfo] = useState(false);
 
     // Use React Query hooks for data fetching
     const {
@@ -267,9 +279,9 @@ const CastProfilePage: React.FC = () => {
                     className="text-2xl text-white hover:text-secondary transition-colors relative"
                 >
                     <Bell />
-                    {notificationCount > 0 && (
+                    {shouldShowBadge(notificationCount) && (
                         <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
-                            {notificationCount > 99 ? '99+' : notificationCount}
+                            {formatBadgeCount(notificationCount)}
                         </span>
                     )}
                 </button>
@@ -349,7 +361,7 @@ const CastProfilePage: React.FC = () => {
                     </span>
                     {ranking && (
                         <span className="text-sm text-white/90">
-                            今月のランキング: {ranking.summary.my_rank !== null && ranking.summary.my_rank !== undefined ? `#${ranking.summary.my_rank}` : '—'} / Pt {ranking.summary.my_points?.toLocaleString() ?? 0}
+                            今月のランキング: {ranking.summary.my_rank !== null && ranking.summary.my_rank !== undefined ? `#${ranking.summary.my_rank}` : '—'} / {`${(ranking.summary.my_points ?? 0).toLocaleString()} fpt`}
                         </span>
                     )}
                 </div>
@@ -361,24 +373,24 @@ const CastProfilePage: React.FC = () => {
             <div className="bg-gradient-to-b from-primary via-primary to-secondary border border-secondary rounded-lg mx-4 my-2 p-4">
                 <div className="flex items-center mb-2">
                     <span className="text-xs font-medium text-white mr-2">今月の総売上ポイント</span>
-                    <span className="text-xs text-white">
+                    <button type="button" onClick={() => setShowFptInfo(true)} className="text-xs text-white hover:text-secondary transition-colors" aria-label="FPTについて">
                         <CircleQuestionMark />
-                    </span>
+                    </button>
                 </div>
                 <div className="text-3xl font-bold text-white mb-2">
-                    {pointsData ? formatPoints(pointsData.monthly_total_points) : '0P'}
+                    {pointsData ? formatFanPoints(pointsData.monthly_total_points) : '0 fpt'}
                 </div>
                 <div className="flex space-x-2 mb-2">
                     <div className="flex-1 bg-gray-900 rounded-lg p-2 text-center border border-secondary">
                         <div className="text-xs text-gray-400">ギフト獲得ポイント</div>
                         <div className="font-bold text-lg text-white">
-                            {pointsData ? `${formatNumber(pointsData.gift_points)}p` : '0p'}
+                            {pointsData ? formatFanPoints(pointsData.gift_points) : '0 fpt'}
                         </div>
                     </div>
                     <div className="flex-1 bg-gray-900 rounded-lg p-2 text-center border border-secondary">
                         <div className="text-xs text-gray-400">予約獲得ポイント</div>
                         <div className="font-bold text-lg text-white">
-                            {pointsData ? `${formatNumber(pointsData.transfer_points)}p` : '0p'}
+                            {pointsData ? formatFanPoints(pointsData.transfer_points) : '0 fpt'}
                         </div>
                     </div>
                 </div>
@@ -448,13 +460,14 @@ const CastProfilePage: React.FC = () => {
                                         </div>
                                         <div>
                                             <div className="text-white font-semibold">あなたの順位</div>
-                                            <div className="text-yellow-400 text-sm">{ranking.summary.my_points?.toLocaleString()}P</div>
+                                            <div className="text-yellow-400 text-sm">{`${(ranking.summary.my_points ?? 0).toLocaleString()} fpt`}</div>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <div className="text-white/70 text-xs">期間</div>
-                                        <div className="text-white text-sm">
-                                            {ranking.summary.period_start} - {ranking.summary.period_end}
+                                        <div className="text-white text-sm leading-tight">
+                                            <div>{formatDateJa(ranking.summary.period_start)} 〜</div>
+                                            <div>{formatDateJa(ranking.summary.period_end)}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -485,7 +498,7 @@ const CastProfilePage: React.FC = () => {
                                             {item.name}
                                         </div>
                                     </div>
-                                    <div className="text-white font-semibold">{item.points.toLocaleString()}P</div>
+                                    <div className="text-white font-semibold">{`${item.points.toLocaleString()} fpt`}</div>
                                 </div>
                             ))}
                              {/* Show current user's ranking even if not in TOP 10 */}
@@ -507,7 +520,7 @@ const CastProfilePage: React.FC = () => {
                                                  {cast?.nickname || 'あなた'}
                                              </div>
                                          </div>
-                                         <div className="text-white font-semibold">{(ranking.summary.my_points ?? 0).toLocaleString()}P</div>
+                                         <div className="text-white font-semibold">{`${(ranking.summary.my_points ?? 0).toLocaleString()} fpt`}</div>
                                      </div>
                                  </>
                              )}
@@ -608,6 +621,19 @@ const CastProfilePage: React.FC = () => {
                                 ログアウト
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+            {/* FPT Info Modal */}
+            {showFptInfo && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowFptInfo(false)} role="dialog" aria-modal="true">
+                    <div className="bg-gradient-to-b from-primary via-primary to-secondary border border-secondary rounded-lg p-6 max-w-sm w-full text-white" onClick={(e) => e.stopPropagation()}>
+                        <div className="mb-4 text-center text-base leading-relaxed">
+                            FPTはファンポイントの略となります。キャストのグレードによって還元率が異なります。還元率UPを目指してキャストのグレードを向上させましょう！
+                        </div>
+                        <button onClick={() => setShowFptInfo(false)} className="w-full py-2 rounded-lg bg-secondary text-white font-bold hover:bg-red-700 transition">
+                            閉じる
+                        </button>
                     </div>
                 </div>
             )}

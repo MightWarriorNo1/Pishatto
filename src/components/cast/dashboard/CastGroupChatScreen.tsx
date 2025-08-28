@@ -516,10 +516,25 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                 </div> */}
             </div>
 
+            {/* Session Timer - Fixed below header when reservation is active */}
+            {reservationId && (
+                <div className="fixed max-w-md mx-auto left-0 right-0 top-16 z-20 px-4 py-2 bg-primary border-b border-secondary">
+                    <SessionTimer
+                        isActive={sessionState.isActive}
+                        elapsedTime={sessionState.elapsedTime}
+                        onMeet={handleMeet}
+                        onDissolve={handleDissolve}
+                        isLoading={sessionLoading}
+                        className="w-full"
+                    />
+                </div>
+            )}
+
             {/* Messages - Scrollable Area */}
-            <div className="h-screen overflow-y-auto px-4 py-2 space-y-4 pt-16 pb-28 relative scrollbar-hidden" style={{ 
+            <div className="h-screen overflow-y-auto px-4 py-2 space-y-4 pb-28 relative scrollbar-hidden" style={{ 
                 scrollbarWidth: 'none', 
                 msOverflowStyle: 'none',
+                marginTop: reservationId ? '18rem' : '4rem'
             }}>
                 {fetchError && (
                     <div className="text-red-500 text-center py-4">
@@ -673,27 +688,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         message.message.includes('ゲストと合流する直前に合流ボタンを必ず押下してください')
                     );
 
-                    // If this is the admin message, render it followed by the timer
-                    if (isAdminMessage && reservationId) {
-                        return (
-                            <div key={message.id}>
-                                {messageElement}
-                                
-                                {/* Session Timer - Displayed right after admin message */}
-                                <div className="px-4 py-2 bg-primary border-t border-secondary mt-4">
-                                    <SessionTimer
-                                        isActive={sessionState.isActive}
-                                        elapsedTime={sessionState.elapsedTime}
-                                        onMeet={handleMeet}
-                                        onDissolve={handleDissolve}
-                                        isLoading={sessionLoading}
-                                        className="w-full"
-                                    />
-                                </div>
-                            </div>
-                        );
-                    }
-
+                    // Always render message; timer is fixed at top when active
                     return messageElement;
                 })}
                 <div ref={messagesEndRef} />

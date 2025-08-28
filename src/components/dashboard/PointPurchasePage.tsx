@@ -57,7 +57,7 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
     refreshUser();
     setTimeout(() => {
       setSuccessAnim(false);
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     }, 1800);
   };
 

@@ -211,7 +211,7 @@ const CastDetail: React.FC = () => {
             // await sendCastMessage(chatId, Number(id), '👍');
             
             // Navigate directly to guest dashboard message tab with this chat opened
-            navigate('/dashboard', { state: { openChatId: chatId, openMessageTab: true } });
+            navigate('/dashboard', { replace: true, state: { openChatId: chatId, openMessageTab: true } });
         } catch (error) {
             // Show error toast
             setToastMessage('メッセージの送信に失敗しました。再度お試しください。');

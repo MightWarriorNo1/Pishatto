@@ -16,7 +16,7 @@ import FeedbackForm from '../../components/feedback/FeedbackForm';
 import { Reservation, getAllReservations, getAllChats, fetchRanking } from '../../services/api';
 import { applyReservation, startReservation, stopReservation, getAllCastApplications } from '../../services/api';
 import { ChatRefreshProvider, useChatRefresh } from '../../contexts/ChatRefreshContext';
-import { useTweets, useUnreadMessageCount, useNotifications, useTweetNotifications } from '../../hooks/useRealtime';
+import { useTweets, useUnreadMessageCount, useNotifications, useTweetNotifications, useCastReservationsRealtime } from '../../hooks/useRealtime';
 import echo from '../../services/echo';
 import { getCastProfileById } from '../../services/api';
 import { useCast } from '../../contexts/CastContext';
@@ -282,6 +282,12 @@ const CastDashboardInner: React.FC = () => {
             setMessageBadgeCount(unreadCount);
         }
     }, [chats]);
+
+    // Subscribe to realtime reservations so new free calls appear immediately
+    useCastReservationsRealtime(castId || 0, (newOrUpdated) => {
+        // No-op: cache update is handled inside the hook; keep here for side-effects if needed
+        console.log('CastDashboard: realtime reservation event received', newOrUpdated?.id);
+    });
 
     React.useEffect(() => {
         const channels = reservations

@@ -29,6 +29,16 @@ export const formatPoints = (value: number | string | null | undefined, locale: 
 };
 
 /**
+ * Format fan points (fpt) for cast-side displays
+ * @param value - The fpt value to format
+ * @param locale - The locale to use for formatting (defaults to 'ja-JP')
+ * @returns Formatted fan points string with 'fpt' suffix
+ */
+export const formatFanPoints = (value: number | string | null | undefined, locale: string = 'ja-JP'): string => {
+  return `${formatNumber(value, locale)} fpt`;
+};
+
+/**
  * Format currency (Japanese Yen) with thousand separators and '円' suffix
  * @param value - The amount to format
  * @param locale - The locale to use for formatting (defaults to 'ja-JP')

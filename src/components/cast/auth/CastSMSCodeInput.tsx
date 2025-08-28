@@ -184,7 +184,7 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
                                             setCast(response.cast);
                                             setCastId(response.cast.id);
                                             setTimeout(() => {
-                                                navigate('/cast/dashboard');
+                                                navigate('/cast/dashboard', { replace: true });
                                             }, 100);
                                             return;
                                         }

@@ -137,8 +137,19 @@ const CastTimelinePage: React.FC = () => {
 
     const handleAddTweet = async (content: string, image?: File | null) => {
         if (!castId) return;
+        
+        // Allow posting if there's either content or an image
+        if (!content.trim() && !image) {
+            alert('テキストまたは画像を入力してください');
+            return;
+        }
+        
         try {
-            const newTweet = await createTweetMutation.mutateAsync({ content, cast_id: castId, image });
+            const newTweet = await createTweetMutation.mutateAsync({ 
+                content: content.trim() || '', // Ensure content is never undefined
+                cast_id: castId, 
+                image 
+            });
             setShowPostCreate(false);
             
             // Add the new tweet to local state immediately for seamless UX
@@ -151,7 +162,7 @@ const CastTimelinePage: React.FC = () => {
     const handleLike = async (tweetId: number) => {
         if (!user && !castId) return;
         try {
-            await likeTweetMutation.mutateAsync({ 
+        await likeTweetMutation.mutateAsync({ 
                 tweetId, 
                 userId: user ? user.id : undefined, 
                 castId: !user && castId ? castId : undefined 
