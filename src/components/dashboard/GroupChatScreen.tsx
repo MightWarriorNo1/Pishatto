@@ -341,7 +341,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
     }
 
     return (
-        <div className="min-h-screen flex flex-col relative pt-14 pb-28">
+        <div className="min-h-screen max-w-md mx-auto flex flex-col relative pt-14 pb-28">
             <div className="fixed inset-0 -z-10 bg-gradient-to-b from-primary via-primary to-secondary" />
             {/* Fixed Header */}
             <div className="fixed max-w-md mx-auto w-full top-0 inset-x-0 z-20 flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary">

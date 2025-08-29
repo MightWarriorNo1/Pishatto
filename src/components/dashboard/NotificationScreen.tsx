@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, ChevronLeft, Trash2 } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
-import { getNotifications, deleteNotification, Notification, createChat, sendGuestMessage, getAdminNews, AdminNews, getCastProfileById, markAllNotificationsRead } from '../../services/api';
+import { getNotifications, deleteNotification, Notification, createChat, sendGuestMessage, getAdminNews, AdminNews, getCastProfileById, markAllNotificationsRead, fetchUserChats } from '../../services/api';
 import { useAdminNews } from '../../hooks/useRealtime';
 import Spinner from '../ui/Spinner';
 
@@ -151,23 +151,40 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
         try {
             setSendingMessage(notification.id);
             
-            // Create a chat with the cast
-            const chatResponse = await createChat(notification.cast.id, user.id);
-            const chatId = chatResponse.chat.id;
+            let chatId: number;
             
-            // Send an initial message
-            await sendGuestMessage(chatId, user.id, 'こんにちは！');
+            // Check if this is a "キャストと合流しました" notification
+            if (notification.message.includes('キャストと合流しました。合流後は自動延長となります。解散する際はキャストに解散とお伝えし、ボタン押下して終了となります。それでは、キャストとの時間をごゆっくりとお楽しみください。')) {
+                // For meeting notifications, find the existing chat
+                const existingChats = await fetchUserChats('guest', user.id);
+                const existingChat = existingChats.find((chat: any) => chat.cast_id === notification.cast!.id);
+                
+                if (existingChat) {
+                    chatId = existingChat.id;
+                } else {
+                    // If no existing chat found, create a new one
+                    const chatResponse = await createChat(notification.cast.id, user.id);
+                    chatId = chatResponse.chat.id;
+                }
+            } else {
+                // For other notifications, create a new chat
+                const chatResponse = await createChat(notification.cast.id, user.id);
+                chatId = chatResponse.chat.id;
+                
+                // Send an initial message only for new chats
+                await sendGuestMessage(chatId, user.id, 'こんにちは！');
+            }
             
-            // Mark notification as read
-            await deleteNotification(notification.id);
-            const updatedNotifications = notifications.filter(n => n.id !== notification.id);
+            // Mark notification as read locally without deleting it
+            const updatedNotifications = notifications.map(n =>
+                n.id === notification.id ? { ...n, read: true } : n
+            );
             setNotifications(updatedNotifications);
-            
             // Update unread count
             const unreadCount = updatedNotifications.filter(n => !n.read).length;
             onNotificationCountChange?.(unreadCount);
 
-            // Navigate to dashboard message tab with the created chat opened
+            // Navigate to dashboard message tab with the chat opened
             navigate('/dashboard', { replace: true, state: { openChatId: chatId, openMessageTab: true } });
         } catch (error) {
             console.error('Failed to send message:', error);
@@ -186,6 +203,114 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
         if (diffInMinutes < 60) return `${diffInMinutes}分前`;
         if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}時間前`;
         return `${Math.floor(diffInMinutes / 1440)}日前`;
+    };
+
+    const renderNotificationMessage = (message: string) => {
+        // Split message by newlines and process each line
+        const lines = message.split('\n');
+        
+        return lines.map((line, index) => {
+            // Check if line contains a URL
+            if (line.includes('🔗') || line.includes('URL：') || line.includes('http')) {
+                // Extract URL from the line
+                const urlMatch = line.match(/(https?:\/\/[^\s]+)/);
+                if (urlMatch) {
+                    const url = urlMatch[1];
+                    const displayText = line.replace(url, '').trim();
+
+                    const sameOrigin = (() => {
+                        try {
+                            const u = new URL(url);
+                            return u.origin === window.location.origin;
+                        } catch {
+                            return false;
+                        }
+                    })();
+
+                    // If same origin, do client-side navigation to show PublicReceiptView
+                    if (sameOrigin) {
+                        const path = new URL(url).pathname;
+                        return (
+                            <div key={index} className="mb-2">
+                                <span className="text-white/90">{displayText}</span>
+                                <button
+                                    onClick={() => navigate(path)}
+                                    className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 underline font-medium transition-colors ml-1 hover:scale-105"
+                                >
+                                    {url}
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                </button>
+                            </div>
+                        );
+                    }
+                    
+                    // External link fallback
+                    return (
+                        <div key={index} className="mb-2">
+                            <span className="text-white/90">{displayText}</span>
+                            <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 underline font-medium transition-colors ml-1 hover:scale-105"
+                            >
+                                {url}
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
+                        </div>
+                    );
+                }
+            }
+            
+            // Regular line without URL - check for emojis and style accordingly
+            if (line.trim() === '') {
+                return <div key={index} className="h-2"></div>; // Empty line spacing
+            }
+            
+            // Style lines with emojis
+            if (line.includes('🎉') || line.includes('✅')) {
+                return (
+                    <div key={index} className="text-green-300 font-semibold text-base mb-2">
+                        {line}
+                    </div>
+                );
+            }
+            
+            if (line.includes('📄') || line.includes('🔗')) {
+                return (
+                    <div key={index} className="text-blue-300 font-medium mb-2">
+                        {line}
+                    </div>
+                );
+            }
+            
+            if (line.includes('⚠️')) {
+                return (
+                    <div key={index} className="text-yellow-300 font-medium mb-2">
+                        {line}
+                    </div>
+                );
+            }
+            
+            if (line.includes('🙏')) {
+                return (
+                    <div key={index} className="text-purple-300 font-medium mb-2">
+                        {line}
+                    </div>
+                );
+            }
+            
+            // Default styling for regular text
+            return (
+                <div key={index} className="text-white/90 mb-2">
+                    {line}
+                </div>
+            );
+        });
     };
 
     return (
@@ -217,33 +342,39 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
                             </div>
                         ) : (
                             notifications.map((notification) => (
-                                <div key={notification.id} className="bg-white/10 rounded-lg p-4 flex gap-3 items-start relative">
+                                <div key={notification.id} className="bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm rounded-xl p-5 flex gap-4 items-start relative border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
                                     {notification.cast && (
                                         <img 
                                             src={getFirstAvatarUrl(notification.cast.avatar)} 
                                             alt={notification.cast.nickname} 
-                                            className="w-14 h-14 rounded-full object-cover border-2 border-white cursor-pointer"
+                                            className="w-16 h-16 rounded-full object-cover border-3 border-white/30 shadow-lg cursor-pointer hover:border-white/50 transition-all duration-300"
                                             onError={(e) => {
                                                 e.currentTarget.src = '/assets/avatar/female.png';
                                             }}
                                             onClick={() => navigate(`/cast/${notification.cast!.id}`)}
                                         />
                                     )}
-                                    <div className="flex-1">
-                                        <div className="text-xs text-white mb-1">
-                                            {formatTimeAgo(notification.created_at)}・{notification.type === 'admin_news' ? 'Admin News' : '足あとがつきました'}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="text-xs text-white/70 font-medium">
+                                                {formatTimeAgo(notification.created_at)}
+                                                {notification.type === 'admin_news' && (
+                                                    <span className="ml-2 px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs">Admin News</span>
+                                                )}
+                                            </div>
                                         </div>
                                         {notification.cast && (
-                                            <div className="flex items-center mb-1">
-                                                <span className="text-lg font-bold mr-1">{notification.cast.nickname}</span>
+                                            <div className="flex items-center mb-3">
+                                                <span className="text-lg font-bold text-white mr-2">{notification.cast.nickname}</span>
+                                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                                             </div>
                                         )}
-                                        <div className="text-sm text-white mb-2">
-                                            {notification.message}
+                                        <div className="text-sm text-white/90 leading-relaxed">
+                                            {renderNotificationMessage(notification.message)}
                                         </div>
-                                        {/* Only show send message button for certain notification types */}
-                                        {!notification.message.includes('新しいメッセージが届きました') && 
-                                         !notification.message.includes('予約がキャストにマッチされました') &&
+                                        {/* Show message button for specific notification types */}
+                                        {/* {!notification.message.includes('新しいメッセージが届きました') && 
+                                         !notification.message.includes('キャストが予約に応募しました') &&
                                          notification.type !== 'admin_news' && (
                                             <button 
                                                 onClick={() => handleSendMessage(notification)}
@@ -262,15 +393,15 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
                                                     </>
                                                 )}
                                             </button>
-                                        )}
+                                        )} */}
                                     </div>
                                     <button 
                                         onClick={() => handleDeleteNotification(notification.id)}
                                         disabled={deletingId === notification.id}
-                                        className="absolute top-2 right-2 p-2 text-gray-400 hover:text-red-500 disabled:opacity-50 z-10 cursor-pointer"
+                                        className="absolute top-3 right-3 p-2 text-white/60 hover:text-red-400 hover:bg-red-500/20 disabled:opacity-50 z-10 cursor-pointer rounded-full transition-all duration-300 hover:scale-110"
                                     >
                                         {deletingId === notification.id ? (
-                                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-500"></div>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-red-400"></div>
                                         ) : (
                                             <Trash2 className="w-4 h-4" />
                                         )}

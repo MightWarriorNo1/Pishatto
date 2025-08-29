@@ -22,10 +22,16 @@ const PublicReceiptView: React.FC = () => {
         // Extract the actual receipt number from the URL (remove the random part)
         const cleanReceiptNumber = receiptNumber.split('-')[0];
         const response = await getReceiptByNumber(cleanReceiptNumber);
-        setReceipt(response);
+        if (response && response.success && response.receipt) {
+          setReceipt(response.receipt);
+          setLoading(false);
+        } else {
+          setError('領収書が見つかりません');
+        }
       } catch (err) {
         setError('領収書が見つかりません');
         console.error('Failed to fetch receipt:', err);
+        setReceipt(null);
       } finally {
         setLoading(false);
       }

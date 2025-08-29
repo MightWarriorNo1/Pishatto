@@ -184,6 +184,78 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
         return date.toLocaleDateString('ja-JP');
     };
 
+    // Render message with clickable URLs and subtle styling like guest NotificationScreen
+    const renderNotificationMessage = (message: string) => {
+        const lines = message.split('\n');
+        return lines.map((line, index) => {
+            if (line.includes('🔗') || line.includes('URL：') || line.includes('http')) {
+                const urlMatch = line.match(/(https?:\/\/[^\s]+)/);
+                if (urlMatch) {
+                    const url = urlMatch[1];
+                    const displayText = line.replace(url, '').trim();
+                    return (
+                        <div key={index} className="mb-2">
+                            <span className="text-white/90">{displayText}</span>
+                            <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-blue-300 hover:text-blue-200 underline font-medium transition-colors ml-1 hover:scale-105"
+                            >
+                                {url}
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                            </a>
+                        </div>
+                    );
+                }
+            }
+
+            if (line.trim() === '') {
+                return <div key={index} className="h-2"></div>;
+            }
+
+            if (line.includes('🎉') || line.includes('✅')) {
+                return (
+                    <div key={index} className="text-green-300 font-semibold text-base mb-2">
+                        {line}
+                    </div>
+                );
+            }
+
+            if (line.includes('📄') || line.includes('🔗')) {
+                return (
+                    <div key={index} className="text-blue-300 font-medium mb-2">
+                        {line}
+                    </div>
+                );
+            }
+
+            if (line.includes('⚠️')) {
+                return (
+                    <div key={index} className="text-yellow-300 font-medium mb-2">
+                        {line}
+                    </div>
+                );
+            }
+
+            if (line.includes('🙏')) {
+                return (
+                    <div key={index} className="text-purple-300 font-medium mb-2">
+                        {line}
+                    </div>
+                );
+            }
+
+            return (
+                <div key={index} className="text-white/90 mb-2">
+                    {line}
+                </div>
+            );
+        });
+    };
+
     return (
         <div className="max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-20 overflow-y-auto scrollbar-hidden">
             {/* Header - Fixed */}
@@ -233,7 +305,7 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
                                 {notifications.map((notification) => (
                                     <div 
                                         key={notification.id} 
-                                        className={`bg-white/10 rounded-lg p-4 flex gap-3 items-start relative`}
+                                        className={`bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm rounded-xl p-5 flex gap-3 items-start relative border border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]`}
                                     >
                                         {notification.cast && (
                                             <img 
@@ -247,14 +319,14 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
                                             />
                                         )}
                                         <div className="flex-1">
-                                            <div className="text-xs text-white mb-1">
+                                            <div className="text-xs text-white/70 font-medium mb-1">
                                                 {formatTimeAgo(notification.created_at)}
                                             </div>
-                                            <div className="text-sm text-white mb-2">
-                                                {notification.message}
+                                            <div className="text-sm text-white/90 leading-relaxed mb-2">
+                                                {renderNotificationMessage(notification.message)}
                                             </div>
                                             <div className="flex gap-2 mt-2">
-                                                {(notification.reservation_id || notification.cast) && (
+                                                {(notification.type !== 'meetup_dissolution') && (notification.reservation_id || notification.cast) && (
                                                     <button 
                                                         className="w-full bg-orange-500 text-white rounded font-bold py-2 flex items-center justify-center gap-2 disabled:opacity-50"
                                                         onClick={() => handleOpenChat(notification)}

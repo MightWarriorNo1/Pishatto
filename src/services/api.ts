@@ -624,9 +624,9 @@ export const getReceipt = async (receiptId: number): Promise<Receipt> => {
   return response.data.receipt;
 };
 
-export const getReceiptByNumber = async (receiptNumber: string): Promise<Receipt> => {
+export const getReceiptByNumber = async (receiptNumber: string): Promise<{ success: boolean; receipt?: Receipt; error?: string }> => {
   const response = await api.get(`/receipts/by-number/${receiptNumber}`);
-  return response.data.receipt;
+  return response.data;
 };
 
 export const registerPaymentInfo = async (user_id: number, user_type: 'guest' | 'cast', payment_info: string) => {
@@ -736,7 +736,7 @@ export const startReservation = async (reservation_id: number, cast_id: number) 
 
 export const stopReservation = async (reservation_id: number, cast_id: number) => {
   const response = await api.post('/reservation/stop', { reservation_id, cast_id });
-  return response.data.reservation;
+  return response.data;
 };
 
 export const getPointTransactions = async (userType: 'guest' | 'cast', userId: number) => {

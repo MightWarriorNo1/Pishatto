@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Image, Camera, FolderClosed,  ChevronLeft, X, Users, Send } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants, getReservationById } from '../../../services/api';
+import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants, getReservationById, getCastProfile, createPointTransaction } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
 import { useUser } from '../../../contexts/UserContext';
 import { useGroupMessages, useReservationUpdates } from '../../../hooks/useRealtime';
@@ -79,6 +79,17 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     // Session management state
     const [reservationId, setReservationId] = useState<number | null>(null);
     const [reservationData, setReservationData] = useState<any>(null);
+    const [dissolveButtonUsed, setDissolveButtonUsed] = useState(false);
+    const [sessionSummary, setSessionSummary] = useState<{
+        elapsedTime: number;
+        castEarnings: Array<{
+            castId: number;
+            nickname: string;
+            avatar: string;
+            points: number;
+            category: string;
+        }>;
+    } | null>(null);
     
     // Camera functionality
     const [showCamera, setShowCamera] = useState(false);
@@ -93,7 +104,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
         error: sessionError,
         formatElapsedTime,
         handleMeet,
-        handleDissolve,
+        handleDissolve: originalHandleDissolve,
         acceptProposal: sessionAcceptProposal,
         resetSession,
         initializeSession
@@ -116,6 +127,119 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             }
         }
     });
+
+    // Custom dissolve handler that calculates cast earnings
+    const handleDissolve = async () => {
+        if (!reservationData || !participants.length) return;
+        
+        try {
+            // Mark dissolve button as used
+            setDissolveButtonUsed(true);
+            
+            // Calculate elapsed time
+            const startTime = reservationData.started_at ? new Date(reservationData.started_at) : new Date();
+            const endTime = new Date();
+            const elapsedTime = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+
+            console.log("ELAPS", elapsedTime);
+            
+            // Get cast participants and fetch their profiles for category information
+            const castParticipants = participants.filter(p => p.type === 'cast');
+            const castEarnings = [];
+            
+            console.log("CAST PARTICIPANTS", castParticipants);
+            for (const cast of castParticipants) {
+                try {
+                    // Fetch cast profile to get category information
+                    const castProfile = await getCastProfile(cast.id);
+                    let categoryPoints = 12000; // Default プレミアム
+                    let category = 'プレミアム';
+                    
+                    if (castProfile?.cast?.category) {
+                        category = castProfile.cast.category;
+                        switch (castProfile.cast.category) {
+                            case 'ロイヤルVIP':
+                                categoryPoints = 18000;
+                                break;
+                            case 'VIP':
+                                categoryPoints = 15000;
+                                break;
+                            case 'プレミアム':
+                            default:
+                                categoryPoints = 12000;
+                                break;
+                        }
+                    }
+                    
+                    // Calculate points: category_points * (elapsed_minutes / 30)
+                    const elapsedMinutes = elapsedTime / 60;
+                    const points = Math.floor(categoryPoints * elapsedMinutes / 30);
+                    
+                    console.log("POINTS", points);
+                    castEarnings.push({
+                        castId: cast.id,
+                        nickname: cast.nickname || 'キャスト',
+                        avatar: cast.avatar || '/assets/avatar/female.png',
+                        points: Math.max(1, points), // Minimum 1 point
+                        category: category
+                    });
+                    console.log("CASTE", castEarnings);
+                } catch (castError) {
+                    console.error(`Failed to fetch cast profile for cast ${cast.id}:`, castError);
+                    // Use default values if cast profile fetch fails
+                    const elapsedMinutes = elapsedTime / 60;
+                    const points = Math.floor(12000 * elapsedMinutes / 30);
+                    
+                    castEarnings.push({
+                        castId: cast.id,
+                        nickname: cast.nickname || 'キャスト',
+                        avatar: cast.avatar || '/assets/avatar/female.png',
+                        points: Math.max(1, points),
+                        category: 'プレミアム'
+                    });
+                }
+            }
+            
+            // Create point transfer transactions per cast using computed earnings
+            try {
+                const guestIdForSettlement = reservationData.guest_id;
+                const reservationIdForSettlement = reservationData.id;
+
+                if (guestIdForSettlement && reservationIdForSettlement) {
+                    const transfers = castEarnings
+                        .filter(e => e.points && e.points > 0)
+                        .map(e => createPointTransaction({
+                            user_type: 'cast',
+                            user_id: e.castId,
+                            amount: e.points,
+                            type: 'transfer',
+                            reservation_id: reservationIdForSettlement,
+                            description: `Free group call settlement - ${reservationIdForSettlement}`
+                        }));
+
+                    if (transfers.length > 0) {
+                        await Promise.allSettled(transfers);
+                    }
+                }
+            } catch (settleErr) {
+                console.error('Failed to create transfer transactions for group settlement:', settleErr);
+            }
+
+            // Set session summary
+            setSessionSummary({
+                elapsedTime,
+                castEarnings
+            });
+            
+            // Call original dissolve handler
+            await originalHandleDissolve();
+            
+        } catch (error) {
+            console.error('Error in custom dissolve handler:', error);
+            // Still call original handler even if calculation fails
+            await originalHandleDissolve();
+        }
+    };
 
     // Real-time reservation updates
     useReservationUpdates(reservationId?.toString() || '', (reservation) => {
@@ -212,8 +336,80 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
         if (reservationData) {
             console.log('Reservation data changed, initializing session:', reservationData);
             initializeSession(reservationData);
+            
+            // Check if session was already dissolved and set summary if available
+            if (reservationData.ended_at && !sessionSummary) {
+                const startTime = reservationData.started_at ? new Date(reservationData.started_at) : new Date();
+                const endTime = new Date(reservationData.ended_at);
+                const elapsedTime = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+                
+                // Set dissolve button as used if session already ended
+                setDissolveButtonUsed(true);
+                
+                // Calculate cast earnings for completed session
+                const calculateCompletedSessionEarnings = async () => {
+                    const castParticipants = participants.filter(p => p.type === 'cast');
+                    const castEarnings = [];
+                    
+                    for (const cast of castParticipants) {
+                        try {
+                            const castProfile = await getCastProfile(cast.id);
+                            let categoryPoints = 12000;
+                            let category = 'プレミアム';
+                            
+                            if (castProfile?.cast?.category) {
+                                category = castProfile.cast.category;
+                                switch (castProfile.cast.category) {
+                                    case 'ロイヤルVIP':
+                                        categoryPoints = 18000;
+                                        break;
+                                    case 'VIP':
+                                        categoryPoints = 15000;
+                                        break;
+                                    case 'プレミアム':
+                                    default:
+                                        categoryPoints = 12000;
+                                        break;
+                                }
+                            }
+                            
+                            const elapsedMinutes = elapsedTime / 60;
+                            const points = Math.floor(categoryPoints * elapsedMinutes / 30);
+                            
+                            castEarnings.push({
+                                castId: cast.id,
+                                nickname: cast.nickname || 'キャスト',
+                                avatar: cast.avatar || '/assets/avatar/female.png',
+                                points: Math.max(1, points),
+                                category: category
+                            });
+                        } catch (castError) {
+                            console.error(`Failed to fetch cast profile for cast ${cast.id}:`, castError);
+                            const elapsedMinutes = elapsedTime / 60;
+                            const points = Math.floor(12000 * elapsedMinutes / 30);
+                            
+                            castEarnings.push({
+                                castId: cast.id,
+                                nickname: cast.nickname || 'キャスト',
+                                avatar: cast.avatar || '/assets/avatar/female.png',
+                                points: Math.max(1, points),
+                                category: 'プレミアム'
+                            });
+                        }
+                    }
+                    
+                    setSessionSummary({
+                        elapsedTime,
+                        castEarnings
+                    });
+                };
+                
+                if (participants.length > 0) {
+                    calculateCompletedSessionEarnings();
+                }
+            }
         }
-    }, [reservationData, initializeSession]);
+    }, [reservationData, initializeSession, participants, sessionSummary]);
 
     // Fetch gifts
     useEffect(() => {
@@ -523,9 +719,11 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         isActive={sessionState.isActive}
                         elapsedTime={sessionState.elapsedTime}
                         onMeet={handleMeet}
-                        onDissolve={handleDissolve}
+                        onDissolve={dissolveButtonUsed ? undefined : handleDissolve}
                         isLoading={sessionLoading}
                         className="w-full"
+                        dissolveButtonUsed={dissolveButtonUsed}
+                        sessionSummary={sessionSummary}
                     />
                 </div>
             )}
@@ -534,7 +732,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             <div className="h-screen overflow-y-auto px-4 py-2 space-y-4 pb-28 relative scrollbar-hidden" style={{ 
                 scrollbarWidth: 'none', 
                 msOverflowStyle: 'none',
-                marginTop: reservationId ? '18rem' : '4rem'
+                marginTop: reservationId ? (dissolveButtonUsed && sessionSummary ? '30rem' : '18rem') : '4rem'
             }}>
                 {fetchError && (
                     <div className="text-red-500 text-center py-4">
