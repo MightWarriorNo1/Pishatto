@@ -31,14 +31,14 @@ const REVERB_SCHEME =
 const REVERB_PORT = Number(
   (process.env.REACT_APP_REVERB_PORT as string) ||
   (process.env.REVERB_PORT as string) ||
-  (process.env.WS_PORT as string) ||
-  (REVERB_SCHEME === 'https' ? '443' : '8080')
+  (process.env.WS_PORT as string) 
+  // (REVERB_SCHEME === 'https' ? '443' : '8080')
 );
 
 const REVERB_WSS_PORT = Number(
   (process.env.REACT_APP_REVERB_WSS_PORT as string) ||
   (process.env.REVERB_WSS_PORT as string) ||
-  '443'
+  '8080'
 );
 
 const forceTLS = REVERB_SCHEME === 'https';
@@ -55,7 +55,7 @@ const echo = new Echo({
   enabledTransports: forceTLS ? ['wss', 'ws'] : ['ws', 'wss'],
 });
 
-
+console.log("here is echo", echo);
 // Expose Echo for debugging tools that reference window.Echo (optional)
 (window as any).Echo = echo;
 
