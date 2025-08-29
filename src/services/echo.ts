@@ -29,9 +29,8 @@ const REVERB_SCHEME =
   (window.location.protocol === 'https:' ? 'https' : 'http');
 
 const REVERB_PORT = Number(
-  (process.env.REACT_APP_REVERB_PORT as string) ||
-  (process.env.REVERB_PORT as string) ||
-  (process.env.WS_PORT as string) 
+  (process.env.WS_PORT as string) ||
+  "8080"
   // (REVERB_SCHEME === 'https' ? '443' : '8080')
 );
 
@@ -52,7 +51,7 @@ const echo = new Echo({
   wssPort: REVERB_WSS_PORT,
   forceTLS,
   encrypted: forceTLS,
-  enabledTransports: forceTLS ? ['wss', 'ws'] : ['ws', 'wss'],
+  enabledTransports: forceTLS ? ['wss'] : ['ws'],
 });
 
 console.log("here is echo", echo);
