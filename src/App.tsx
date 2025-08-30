@@ -22,9 +22,16 @@ import { ConciergeProvider } from './contexts/ConciergeContext';
 import { NotificationSettingsProvider } from './contexts/NotificationSettingsContext';
 import { queryClient } from './lib/react-query';
 import CastRegisterPage from './pages/cast/CastRegisterPage';
+import { useFavicon } from './hooks/useFavicon';
 
 const CastLoginWrapper: React.FC = () => {
   return <CastLoginOptions onNext={() => {}} />;
+};
+
+// Component that manages favicon state
+const FaviconManager: React.FC = () => {
+  useFavicon();
+  return null; // This component doesn't render anything
 };
 
 const App: React.FC = () => {
@@ -34,6 +41,7 @@ const App: React.FC = () => {
         <CastProvider>
           <NotificationSettingsProvider>
             <ConciergeProvider>
+              <FaviconManager />
                 <Router>
                   <Routes>
                     <Route path="/" element={<RoleSelectPage />} />

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { GuestProfile, getGuestProfile, getGuestProfileByLineId, GuestInterest, checkGuestAuth, checkLineAuthGuest, lineLogout } from '../services/api';
 import { createSessionTimeout, checkSessionValidity, clearSession } from '../utils/sessionTimeout';
+import { setFavicon } from '../utils/favicon';
 // import SessionWarningModal from '../components/ui/SessionWarningModal';
 
 interface UserContextType {
@@ -69,6 +70,17 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     setUser(prev => (prev ? { ...prev, ...updates } : prev));
   };
 
+  // Wrapper function to set user and update favicon
+  const setUserWithFavicon = (newUser: GuestProfile | null) => {
+    setUser(newUser);
+    // Update favicon based on user authentication
+    if (newUser) {
+      setFavicon('guest');
+    } else {
+      setFavicon(null); // Reset to default favicon
+    }
+  };
+
   const logout = async () => {
     // If user has LINE ID, call server-side LINE logout to clear server session
     if (user?.line_id) {
@@ -86,7 +98,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       }
     }
     
-    setUser(null);
+    setUserWithFavicon(null);
     setInterests([]);
     setPhone(null);
     setShowSessionWarning(false);
@@ -132,7 +144,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       }
       
       if (guest) {
-        setUser(guest);
+        setUserWithFavicon(guest);
         setInterests(guest.interests || []);
         // Reset session timeout when user data is refreshed
         sessionTimeout.reset();
@@ -149,7 +161,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       const lineAuthResult = await checkLineAuthGuest();
       if (lineAuthResult.success && lineAuthResult.authenticated && lineAuthResult.user_type === 'guest') {
-        setUser(lineAuthResult.user);
+        setUserWithFavicon(lineAuthResult.user);
         setInterests(lineAuthResult.user.interests || []);
         if (lineAuthResult.user.phone) {
           setPhone(lineAuthResult.user.phone);
@@ -192,7 +204,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
         
         if (authResult.authenticated && authResult.guest) {
           // User is already authenticated, set the user data
-          setUser(authResult.guest);
+          setUserWithFavicon(authResult.guest);
           setInterests(authResult.guest.interests || []);
           setPhone(authResult.guest.phone);
           // Start session timeout for authenticated user
@@ -244,7 +256,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       user, 
       interests, 
       loading, 
-      setUser, 
+      setUser: setUserWithFavicon, 
       setInterests, 
       phone, 
       setPhone, 

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { CastProfile, getCastProfileById, checkCastAuth, checkLineAuthCast, lineLogout } from '../services/api';
 import { createSessionTimeout, checkSessionValidity, clearSession } from '../utils/sessionTimeout';
+import { setFavicon } from '../utils/favicon';
 // import SessionWarningModal from '../components/ui/SessionWarningModal';
 
 interface CastContextType {
@@ -82,6 +83,8 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     if (newCast && newCast.id) {
       console.log('CastContext: Valid cast data, updating state...');
       setCast(newCast);
+      // Update favicon for cast user
+      setFavicon('cast');
       // Store cast data in localStorage for fallback
       localStorage.setItem('castData', JSON.stringify(newCast));
       // Also store cast ID for consistency
@@ -106,6 +109,8 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     } else {
       console.warn('CastContext: Invalid cast data provided:', newCast);
       setCast(null);
+      // Reset favicon when cast is cleared
+      setFavicon(null);
       localStorage.removeItem('castData');
       setCastId(null);
       setIsSettingCastExternally(false);
@@ -132,6 +137,8 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     setCast(null);
     setCastId(null);
     setShowSessionWarning(false);
+    // Reset favicon when cast logs out
+    setFavicon(null);
     // Clear all localStorage data
     localStorage.removeItem('castId');
     localStorage.removeItem('castData');
