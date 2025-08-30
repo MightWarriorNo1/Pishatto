@@ -75,7 +75,7 @@ export function setFavicon(userType: UserType): void {
       } else {
         console.warn(`Favicon file not found: ${faviconPath}, using default`);
         // Fall back to default favicon
-        faviconLink.href = '/favicon.ico';
+        faviconLink.href = '/favicon-guest.png';
       }
     });
   } else {
