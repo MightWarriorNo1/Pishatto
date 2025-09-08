@@ -1,5 +1,6 @@
 /* eslint-disable */
 import React, { useState } from 'react';
+import { handleLineLogin } from '../../../utils/lineLogin';
 
 interface LoginOptionsProps {
   onNext: () => void;
@@ -11,19 +12,18 @@ const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
   const [error, setError] = useState<string | null>(null);
   const userType = 'guest';
 
-  const handleLineLogin = () => {
+  const handleLineLoginClick = () => {
     setIsLoading(true);
     setError(null);
 
-    try {
-        const redirectUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/redirect?user_type=${userType}`;
-        window.location.href = redirectUrl;
-    } catch (err: any) {
-        const errorMessage = err.message || 'Line login failed';
+    handleLineLogin({
+      userType,
+      onError: (errorMessage: string) => {
         setError(errorMessage);
-    } finally {
-        setIsLoading(false);
-    }
+      }
+    }).finally(() => {
+      setIsLoading(false);
+    });
   };
 
   return (
@@ -44,7 +44,7 @@ const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
           </button>
 
           <button
-            onClick={handleLineLogin}
+            onClick={handleLineLoginClick}
             aria-label="LINEで始める"
             className="w-full flex items-center justify-center py-3 px-4 rounded-full bg-secondary hover:bg-red-400 text-white border border-secondary font-medium relative focus:outline-none focus:ring-2 focus:ring-secondary/60"
           >

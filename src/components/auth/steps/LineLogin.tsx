@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../../contexts/UserContext';
 import { useCast } from '../../../contexts/CastContext';
 import Spinner from '../../ui/Spinner';
+import { handleLineLogin } from '../../../utils/lineLogin';
 
 interface LineLoginProps {
     userType?: 'guest' | 'cast';
@@ -18,13 +19,18 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleLineLogin = async () => {
+    const handleLineLoginClick = async () => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const redirectUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/redirect?user_type=${userType}`;
-            window.location.href = redirectUrl;
+            await handleLineLogin({
+                userType,
+                onError: (errorMessage) => {
+                    setError(errorMessage);
+                    onError?.(errorMessage);
+                }
+            });
         } catch (err: any) {
             const errorMessage = err.message || 'Line login failed';
             setError(errorMessage);
@@ -167,7 +173,7 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
             )}
             
             <button 
-                onClick={handleLineLogin}
+                onClick={handleLineLoginClick}
                 disabled={isLoading}
                 aria-label="LINEでログイン" 
                 className="bg-secondary hover:bg-red-400 disabled:bg-gray-400 text-white px-6 py-3 rounded-full font-bold text-lg focus:outline-none focus:ring-2 focus:ring-secondary/60 transition-colors"
