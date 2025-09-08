@@ -331,7 +331,7 @@ const CastTimelinePage: React.FC = () => {
                 )}
             </div>
             {/* Floating 投稿 button */}
-            <button className="fixed left-1/2 -translate-x-1/2 bottom-20 z-30 bg-secondary text-white rounded-full px-6 py-4 shadow-lg font-bold text-lg flex items-center hover:bg-red-700 transition" onClick={() => setShowPostCreate(true)}>
+            <button className="fixed left-1/2 -translate-x-1/2 bottom-24 z-30 bg-secondary text-white rounded-full px-6 py-4 shadow-lg font-bold text-lg flex items-center hover:bg-red-700 transition" onClick={() => setShowPostCreate(true)}>
                 <span className="mr-2 text-2xl">
                     <Plus /></span>投稿
             </button>
