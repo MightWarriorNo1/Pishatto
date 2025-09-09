@@ -7,9 +7,7 @@ type LegalLayoutProps = {
 
 const LegalLayout: React.FC<LegalLayoutProps> = ({ title, children }) => {
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-gradient-to-b from-primary via-primary/80 to-secondary text-white">
-      <div aria-hidden className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute -bottom-28 -right-24 h-80 w-80 rounded-full bg-white/10 blur-3xl" />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden max-w-md mx-auto bg-gradient-to-b from-primary via-primary/80 to-secondary text-white">
 
       {/* Top header with back button */}
       <div className="absolute inset-x-0 top-0 z-20">
