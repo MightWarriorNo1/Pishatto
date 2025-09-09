@@ -7,10 +7,10 @@ import { ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { getPaymentInfo } from '../../services/api';
 import Spinner from '../ui/Spinner';
 
-// Offer points and their corresponding prices (1P = 12 JPY)
+// Offer points and their corresponding prices (1P = 1.2 JPY)
 const amounts = [1000, 3000, 5000, 10000, 30000, 50000];
-const YEN_PER_POINT = 12;
-const prices = amounts.map(p => p * YEN_PER_POINT);
+const YEN_PER_POINT = 1.2;
+const prices = amounts.map(p => Math.round(p * YEN_PER_POINT));
 
 const Skeleton = () => (
   <div className="animate-pulse bg-gray-200 h-20 rounded-2xl w-full mb-6" />

@@ -24,8 +24,8 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
   userId,
 }) => {
   const { user } = useUser();
-  const YEN_PER_POINT = 12;
-  const yenAmount = amount * YEN_PER_POINT;
+  const YEN_PER_POINT = 1.2;
+  const yenAmount = Math.round(amount * YEN_PER_POINT);
   const [loading, setLoading] = useState(false);
   const [cardData, setCardData] = useState<CardData>({
     number: '',
