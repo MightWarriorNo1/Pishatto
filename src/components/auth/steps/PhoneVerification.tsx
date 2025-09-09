@@ -303,14 +303,6 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
               ))}
             </div>
 
-            {/* Display verification code for testing */}
-            {displayedCode && (
-              <div className="mb-4 p-3 bg-secondary/20 border border-secondary rounded-lg">
-                <div className="text-xs text-white mb-1">テスト用認証コード:</div>
-                <div className="text-lg font-mono text-white text-center">{displayedCode}</div>
-              </div>
-            )}
-
             {/* Resend Code */}
             <div className="bg-primary rounded-lg p-3 text-center">
               <button

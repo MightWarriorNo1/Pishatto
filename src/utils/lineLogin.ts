@@ -81,44 +81,11 @@ export const detectLineApp = (): Promise<boolean> => {
  */
 export const openLineApp = (userType: 'guest' | 'cast'): Promise<boolean> => {
   return new Promise((resolve) => {
-    const redirectUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/redirect?user_type=${userType}`;
-    const lineAppUrl = `line://oauth/authorize?response_type=code&client_id=${process.env.REACT_APP_LINE_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUrl)}&state=${userType}`;
-    
-    let resolved = false;
-    
-    const timeout = setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        resolve(false);
-      }
-    }, 1000);
-    
-    try {
-      // Try to open LINE app
-      const newWindow = window.open(lineAppUrl, '_self');
-      
-      // If window.open returns null, it means the app opened
-      if (newWindow === null) {
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          resolve(true);
-        }
-      } else {
-        // If we get a window object, the app didn't open
-        if (!resolved) {
-          resolved = true;
-          clearTimeout(timeout);
-          resolve(false);
-        }
-      }
-    } catch (error) {
-      if (!resolved) {
-        resolved = true;
-        clearTimeout(timeout);
-        resolve(false);
-      }
-    }
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+    const redirectUrl = `${apiBase}/line/redirect?user_type=${userType}`;
+    // Delegate to backend redirect which has proper client_id configured
+    window.location.href = redirectUrl;
+    resolve(true);
   });
 };
 
@@ -185,25 +152,14 @@ export const retryLineLoginWithDisabledAutoLogin = (userType: 'guest' | 'cast'):
     // Generate secure state parameter
     const state = generateState();
     storeState(state, userType);
-    
-    const redirectUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/redirect?user_type=${userType}`;
-    
-    // Always use disable_auto_login=true for retry
-    const lineAuthUrl = new URL('https://access.line.me/oauth2/v2.1/authorize');
-    lineAuthUrl.searchParams.set('disable_auto_login', 'true');
-    lineAuthUrl.searchParams.set('response_type', 'code');
-    lineAuthUrl.searchParams.set('client_id', process.env.REACT_APP_LINE_CLIENT_ID || '');
-    lineAuthUrl.searchParams.set('redirect_uri', redirectUrl);
-    lineAuthUrl.searchParams.set('state', state);
-    lineAuthUrl.searchParams.set('scope', 'profile openid');
-    
-    // Generate nonce for additional security
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+    const redirectTo = new URL(`${apiBase}/line/redirect`);
+    redirectTo.searchParams.set('user_type', userType);
+    redirectTo.searchParams.set('disable_auto_login', 'true');
+    // Optional local nonce
     const nonce = generateState();
-    lineAuthUrl.searchParams.set('nonce', nonce);
     sessionStorage.setItem('line_oauth_nonce', nonce);
-    
-    console.log('Retrying LINE login with disable_auto_login=true');
-    window.location.href = lineAuthUrl.toString();
+    window.location.href = redirectTo.toString();
   } catch (error: any) {
     console.error('LINE retry login error:', error);
   }
@@ -216,50 +172,20 @@ export const handleLineLogin = async (options: LineLoginOptions): Promise<void> 
   const { userType, onError } = options;
   
   try {
-    // Generate secure state parameter
+    // Generate secure state parameter (for local validation/UI)
     const state = generateState();
     storeState(state, userType);
     
-    const redirectUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/redirect?user_type=${userType}`;
-    
+    const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+    const redirectTo = new URL(`${apiBase}/line/redirect`);
+    redirectTo.searchParams.set('user_type', userType);
     if (isIOSSafari()) {
-      // For iOS Safari, use disable_auto_login=true as recommended by LINE
-      console.log('iOS Safari detected, using disable_auto_login=true for stable authentication');
-      
-      // Build LINE OAuth URL with disable_auto_login parameter
-      const lineAuthUrl = new URL('https://access.line.me/oauth2/v2.1/authorize');
-      lineAuthUrl.searchParams.set('disable_auto_login', 'true');
-      lineAuthUrl.searchParams.set('response_type', 'code');
-      lineAuthUrl.searchParams.set('client_id', process.env.REACT_APP_LINE_CLIENT_ID || '');
-      lineAuthUrl.searchParams.set('redirect_uri', redirectUrl);
-      lineAuthUrl.searchParams.set('state', state);
-      lineAuthUrl.searchParams.set('scope', 'profile openid');
-      
-      // Generate nonce for additional security
-      const nonce = generateState();
-      lineAuthUrl.searchParams.set('nonce', nonce);
-      sessionStorage.setItem('line_oauth_nonce', nonce);
-      
-      console.log('Redirecting to LINE OAuth with disable_auto_login=true');
-      window.location.href = lineAuthUrl.toString();
-    } else {
-      // For non-iOS browsers, use standard redirect (with auto-login enabled)
-      console.log('Non-iOS browser detected, using standard redirect with auto-login');
-      
-      const lineAuthUrl = new URL('https://access.line.me/oauth2/v2.1/authorize');
-      lineAuthUrl.searchParams.set('response_type', 'code');
-      lineAuthUrl.searchParams.set('client_id', process.env.REACT_APP_LINE_CLIENT_ID || '');
-      lineAuthUrl.searchParams.set('redirect_uri', redirectUrl);
-      lineAuthUrl.searchParams.set('state', state);
-      lineAuthUrl.searchParams.set('scope', 'profile openid');
-      
-      // Generate nonce for additional security
-      const nonce = generateState();
-      lineAuthUrl.searchParams.set('nonce', nonce);
-      sessionStorage.setItem('line_oauth_nonce', nonce);
-      
-      window.location.href = lineAuthUrl.toString();
+      redirectTo.searchParams.set('disable_auto_login', 'true');
     }
+    // Optional local nonce for UI checks
+    const nonce = generateState();
+    sessionStorage.setItem('line_oauth_nonce', nonce);
+    window.location.href = redirectTo.toString();
   } catch (error: any) {
     console.error('LINE login error:', error);
     const errorMessage = error.message || 'LINE login failed';

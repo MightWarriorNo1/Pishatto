@@ -138,12 +138,6 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
                         ))}
                     </div>
 
-                    {displayedCode && (
-                        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl">
-                            <div className="text-xs text-rose-500 mb-1">テスト用認証コード</div>
-                            <div className="text-lg font-mono text-rose-700 text-center tracking-widest">{displayedCode}</div>
-                        </div>
-                    )}
 
                     <div className="text-center">
                         <button
