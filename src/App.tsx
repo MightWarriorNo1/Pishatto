@@ -23,6 +23,9 @@ import { NotificationSettingsProvider } from './contexts/NotificationSettingsCon
 import { queryClient } from './lib/react-query';
 import CastRegisterPage from './pages/cast/CastRegisterPage';
 import { useFavicon } from './hooks/useFavicon';
+import TermsOfService from './pages/legal/TermsOfService';
+import PrivacyPolicy from './pages/legal/PrivacyPolicy';
+import TermsOfSale from './pages/legal/TermsOfSale';
 
 const CastLoginWrapper: React.FC = () => {
   return <CastLoginOptions onNext={() => {}} />;
@@ -45,6 +48,9 @@ const App: React.FC = () => {
                 <Router>
                   <Routes>
                     <Route path="/" element={<RoleSelectPage />} />
+                    <Route path="/legal/terms" element={<TermsOfService />} />
+                    <Route path="/legal/privacy" element={<PrivacyPolicy />} />
+                    <Route path="/legal/specified-commercial" element={<TermsOfSale />} />
                     <Route path="/register" element={<RegisterSteps />} />
                     <Route path="/cast/login" element={<CastLoginWrapper />} />
                     <Route path="/line-login" element={<LineLogin />} />

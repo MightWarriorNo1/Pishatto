@@ -58,9 +58,9 @@ const RoleSelect: React.FC<RoleSelectProps> = ({ onSelect }) => {
                         </button>
                     </div>
 
-                    <p id="policy" className="mt-6 text-center text-[11px] leading-5 text-white/70">
-                        18歳以上の方のみご利用いただけます。利用規約 と プライバシーポリシーに同意のうえお進みください。
-                    </p>
+                    <div id="policy" className="mt-6 text-center text-[11px] leading-5 text-white/70">
+                        18歳以上の方のみご利用いただけます。<a href="/legal/terms" className="underline hover:text-white">利用規約</a> と <a href="/legal/privacy" className="underline hover:text-white">プライバシーポリシー</a>、<a href="/legal/specified-commercial" className="underline hover:text-white">特定商取引法に基づく表記</a> に同意のうえお進みください。
+                    </div>
                 </div>
             </div>
         </div>
