@@ -251,12 +251,12 @@ const MessageProposalPage: React.FC<{
     const displayTime = time || formatTime(new Date());
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-primary via-primary/50 to-secondary flex flex-col items-center pb-24">
+        <div className="min-h-screen bg-gradient-to-b from-primary via-primary/50 to-secondary flex flex-col items-center">
             {/* Top Bar */}
             <div className="w-full max-w-md flex items-center justify-between px-4 py-3 border-b border-secondary bg-primary sticky top-0 z-10">
                 <div className="flex items-center">
-                    <button onClick={onBack} className="mr-2 hover:text-secondary cursor-pointer">
-                        <ChevronLeft className="text-white" size={24} />
+                    <button onClick={onBack} className="mr-2">
+                        <ChevronLeft className="text-white  hover:text-secondary cursor-pointer" size={24} />
                     </button>
                     {groupInfo?.isGroupChat ? (
                         // Group chat display
@@ -368,7 +368,7 @@ const MessageProposalPage: React.FC<{
             </div>
 
             {/* Calendar Details Form */}
-            <div className="w-full max-w-md px-4 py-6 flex flex-col gap-4">
+            <div className="w-full max-w-md px-4 py-6 flex flex-col gap-4 overflow-y-auto scrollbar-hidden">
                 <h2 className="text-xl font-bold text-white text-center mb-4">日程提案詳細</h2>
                 
                 {/* Date and Time Selection */}

@@ -90,6 +90,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const [proposalActionLoading, setProposalActionLoading] = useState(false);
     const [proposalActionError, setProposalActionError] = useState<string | null>(null);
     const [acceptedProposals, setAcceptedProposals] = useState<number[]>([]);
+    const [deniedProposals, setDeniedProposals] = useState<number[]>([]);
     const [reservationId, setReservationId] = useState<number | null>(null);
     const [guestReservations, setGuestReservations] = useState<any[]>([]);
     const [castInfo, setCastInfo] = useState<any>(null);
@@ -136,6 +137,51 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         }
     });
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    // Build accepted proposal set from DB marker messages
+    const acceptedFromDb = useMemo(() => {
+        const set = new Set<number>();
+        (messages || []).forEach((m: any) => {
+            try {
+                const parsed = typeof m.message === 'string' ? JSON.parse(m.message) : null;
+                if (parsed && parsed.type === 'proposal_accept' && typeof parsed.proposalMsgId === 'number') {
+                    set.add(parsed.proposalMsgId);
+                }
+            } catch (_) {}
+        });
+        return set;
+    }, [messages]);
+
+    // Merge DB acceptance into local state so it persists after refresh
+    useEffect(() => {
+        if (acceptedFromDb.size === 0) return;
+        setAcceptedProposals(prev => {
+            const merged = Array.from(new Set([...(prev || []), ...Array.from(acceptedFromDb)]));
+            return merged;
+        });
+    }, [acceptedFromDb]);
+
+    // Build denied proposal set from DB marker messages
+    const deniedFromDb = useMemo(() => {
+        const set = new Set<number>();
+        (messages || []).forEach((m: any) => {
+            try {
+                const parsed = typeof m.message === 'string' ? JSON.parse(m.message) : null;
+                if (parsed && parsed.type === 'proposal_reject' && typeof parsed.proposalMsgId === 'number') {
+                    set.add(parsed.proposalMsgId);
+                }
+            } catch (_) {}
+        });
+        return set;
+    }, [messages]);
+
+    useEffect(() => {
+        if (deniedFromDb.size === 0) return;
+        setDeniedProposals(prev => {
+            const merged = Array.from(new Set([...(prev || []), ...Array.from(deniedFromDb)]));
+            return merged;
+        });
+    }, [deniedFromDb]);
     
     // Camera functionality
     const [showCamera, setShowCamera] = useState(false);
@@ -592,22 +638,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             if (parsed && parsed.type === 'proposal') proposal = parsed;
                         } catch (e) { }
                         if (proposal) {
-                            // Check if proposal is accepted by multiple methods:
-                            // 1. Local accepted proposals state (immediate UI feedback)
-                            // 2. Matching reservation in guestReservations
-                            // 3. Current reservationId if it matches the proposal
-                            const isAccepted = acceptedProposals.includes(msg.id) || 
-                                guestReservations.some(res => {
-                                    const proposalDate = dayjs(proposal?.date);
-                                    const reservationDate = dayjs(res.scheduled_at);
-                                    return res.guest_id === user?.id && reservationDate.isSame(proposalDate, 'day');
-                                }) ||
-                                (reservationId && proposal.reservationId === reservationId);
+                            // Only consider locally accepted proposals to avoid false positives
+                            const isAccepted = acceptedProposals.includes(msg.id);
+                            const isDenied = deniedProposals.includes(msg.id);
                             
                             // Determine proposal alignment based on sender
                             const isProposalFromGuest = msg.sender_guest_id && !msg.sender_cast_id;
                             const proposalPosition = isProposalFromGuest ? 'justify-end' : 'justify-start';
                             const alignment = isProposalFromGuest ? 'items-end' : 'items-start';
+                            const canClickProposal = !isAccepted && !isProposalFromGuest; // Guest cannot click their own proposals
                             
                             return (
                                 <React.Fragment key={msg.id || `p-${idx}`}>
@@ -621,8 +660,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                     <div className={`flex ${proposalPosition} mb-4`}>
                                         <div className={`flex flex-col ${alignment} max-w-[80%]`}>
                                             <div 
-                                                className={`bg-orange-600 text-white rounded-lg px-4 py-3 text-sm shadow-md relative w-full ${isAccepted ? 'opacity-50 cursor-default' : 'cursor-pointer hover:bg-orange-600'}`}
-                                                onClick={!isAccepted ? () => {
+                                                className={`bg-orange-600 text-white rounded-lg px-4 py-3 text-sm shadow-md relative w-full ${canClickProposal ? 'cursor-pointer hover:bg-orange-600' : 'opacity-50 cursor-default'}`}
+                                                onClick={canClickProposal ? () => {
                                                     setSelectedProposal(proposal);
                                                     setProposalMsgId(msg.id);
                                                     setProposalMessage(msg);
@@ -636,6 +675,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                 <div>（延長：{proposal.extensionPoints?.toLocaleString()}P / 15分）</div>
                                                 {isAccepted && (
                                                     <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">承認済み</span>
+                                                )}
+                                                {!isAccepted && isDenied && (
+                                                    <span className="absolute top-2 right-2 bg-gray-600 text-white text-xs px-2 py-1 rounded">却下</span>
                                                 )}
                                             </div>
                                         </div>
@@ -653,6 +695,27 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             );
                         }
 
+                        {
+                            let hide = false;
+                            let displayText: string | null = null;
+                            try {
+                                const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                                if (parsed && (parsed.type === 'proposal_accept' || parsed.type === 'proposal_reject')) {
+                                    hide = true;
+                                } else if (parsed && parsed.type === 'system') {
+                                    if (parsed.target !== 'guest') {
+                                        hide = true;
+                                    } else {
+                                        displayText = parsed.text || parsed.content || '';
+                                    }
+                                }
+                            } catch (e) {}
+                            if (hide) return null;
+                            // Attach normalized text for rendering below
+                            if (displayText !== null) {
+                                msg = { ...msg, message: displayText };
+                            }
+                        }
                         return (
                             <React.Fragment key={msg.id || idx}>
                                 {(idx === 0 || currentDate !== prevDate) && (
@@ -680,42 +743,56 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                             <span>{senderName}</span>
                                         </div>
                                     )}
-                                    <div className={`${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
-                                        {(() => {
-                                            const giftObj = msg.gift_id ? (msg.gift || (Array.isArray(gifts) ? gifts.find((g: any) => g.id === msg.gift_id) : null)) : null;
-                                            if (!giftObj) return null;
-                                            return (
-                                                <div className="flex items-center mb-1">
-                                                    <span className="text-3xl mr-2">
-                                                        {giftObj.icon || '🎁'}
-                                                    </span>
-                                                    <span className="font-bold">{giftObj.name || 'ギフト'}</span>
-                                                    <span className="ml-2 text-xs text-primary font-bold">{typeof giftObj.points === 'number' ? giftObj.points.toLocaleString() : Number(giftObj.points || 0).toLocaleString()}P</span>
-                                                    {msg.isOptimistic && (
-                                                        <span className="ml-2 text-xs text-yellow-300">送信中...</span>
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
-                                        {(() => {
-                                            if (!msg.image) return null;
-                                            if (typeof msg.image !== 'string') return null;
-                                            const isAbsolute = msg.image.startsWith('http') || msg.image.startsWith('data:') || msg.image.startsWith('blob:');
-                                            const src = isAbsolute ? msg.image : `${IMAGE_BASE_URL}/storage/${msg.image}`;
-                                            return (
-                                                <img
-                                                    src={src}
-                                                    alt="sent"
-                                                    className="max-w-full max-h-40 rounded mb-2 cursor-zoom-in"
-                                                    onClick={() => setLightboxUrl(src)}
-                                                />
-                                            );
-                                        })()}
-                                        {msg.message}
-                                        {msg.isOptimistic && !msg.gift_id && (
-                                            <div className="text-xs text-yellow-300 mt-1">送信中...</div>
-                                        )}
-                                    </div>
+                                    {(() => {
+                                        // Hide internal marker messages and system messages targeted to other roles
+                                        try {
+                                            const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                                            if (parsed && parsed.type === 'proposal_accept') {
+                                                return null;
+                                            }
+                                            if (parsed && parsed.type === 'system') {
+                                                if (parsed.target !== 'guest') return null;
+                                                const text = parsed.text || parsed.content || '';
+                                                return (
+                                                    <div className={`${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
+                                                        {text}
+                                                    </div>
+                                                );
+                                            }
+                                        } catch (_) {}
+                                        return (
+                                            <div className={`${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
+                                                {(() => {
+                                                    const giftObj = msg.gift_id ? (msg.gift || (Array.isArray(gifts) ? gifts.find((g: any) => g.id === msg.gift_id) : null)) : null;
+                                                    if (!giftObj) return null;
+                                                    return (
+                                                        <div className="flex items-center mb-1">
+                                                            <span className="text-3xl mr-2">{giftObj.icon || '🎁'}</span>
+                                                            <span className="font-bold">{giftObj.name || 'ギフト'}</span>
+                                                            <span className="ml-2 text-xs text-primary font-bold">{typeof giftObj.points === 'number' ? giftObj.points.toLocaleString() : Number(giftObj.points || 0).toLocaleString()}P</span>
+                                                            {msg.isOptimistic && (<span className="ml-2 text-xs text-yellow-300">送信中...</span>)}
+                                                        </div>
+                                                    );
+                                                })()}
+                                                {(() => {
+                                                    if (!msg.image) return null;
+                                                    if (typeof msg.image !== 'string') return null;
+                                                    const isAbsolute = msg.image.startsWith('http') || msg.image.startsWith('data:') || msg.image.startsWith('blob:');
+                                                    const src = isAbsolute ? msg.image : `${IMAGE_BASE_URL}/storage/${msg.image}`;
+                                                    return (
+                                                        <img
+                                                            src={src}
+                                                            alt="sent"
+                                                            className="max-w-full max-h-40 rounded mb-2 cursor-zoom-in"
+                                                            onClick={() => setLightboxUrl(src)}
+                                                        />
+                                                    );
+                                                })()}
+                                                {msg.message}
+                                                {msg.isOptimistic && !msg.gift_id && (<div className="text-xs text-yellow-300 mt-1">送信中...</div>)}
+                                            </div>
+                                        );
+                                    })()}
                                     <div className="text-xs text-gray-400 mt-1 text-right">
                                         {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''} */}
                                         {formatTime(msg.created_at)}
@@ -1036,6 +1113,42 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                             setAcceptedProposals(prev => [...prev, proposalMsgId]);
                                         }
 
+                                        // Persist acceptance and send automatic messages
+                                        try {
+                                            // Persist acceptance marker (readable by both sides)
+                                            if (proposalMsgId) {
+                                                await sendMessage({
+                                                    chat_id: chatId,
+                                                    sender_guest_id: user.id,
+                                                    message: JSON.stringify({
+                                                        type: 'proposal_accept',
+                                                        proposalMsgId,
+                                                        proposalKey: `${selectedProposal.date ? dayjs(selectedProposal.date).format('YYYY-MM-DD HH:mm') : ''}-${parseInt(String(selectedProposal.duration), 10)}`
+                                                    })
+                                                });
+                                            }
+                                            // Auto message to guest only (rendered on guest side; cast side will ignore target !== 'cast' messages)
+                                            await sendMessage({
+                                                chat_id: chatId,
+                                                sender_guest_id: user.id,
+                                                message: JSON.stringify({
+                                                    type: 'system',
+                                                    target: 'guest',
+                                                    text: '合流の仮予約が確定しました。合流後にキャストがタイマーを押下し、合流スタートとなります。そこからは自動課金となりますので、解散をご希望になる場合はキャスト側に解散の旨、お伝えください。'
+                                                })
+                                            });
+                                            // Auto message to cast only (cast side will render; guest side will ignore target !== 'guest')
+                                            await sendMessage({
+                                                chat_id: chatId,
+                                                sender_guest_id: user.id,
+                                                message: JSON.stringify({
+                                                    type: 'system',
+                                                    target: 'cast',
+                                                    text: '合流の仮予約が確定しました。合流直前にタイマーの押下を必ず行ってください。推し忘れが起きた場合、売上対象にならない可能性がありますので、ご注意ください。'
+                                                })
+                                            });
+                                        } catch (_) {}
+
                                         // The onReservationUpdate callback in useSessionManagement will automatically
                                         // update both reservationId and guestReservations, so no manual refresh needed here
 
@@ -1056,7 +1169,33 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             </button>
                             <button
                                 className="w-full sm:w-auto px-4 py-2 bg-gray-400 text-white rounded font-bold"
-                                onClick={() => {
+                                onClick={async () => {
+                                    try {
+                                        // Send rejection notice to cast only
+                                        if (user?.id) {
+                                            await sendMessage({
+                                                chat_id: chatId,
+                                                sender_guest_id: user.id,
+                                                message: JSON.stringify({
+                                                    type: 'system',
+                                                    target: 'cast',
+                                                    text: 'スケジュール提案は却下されました。別日や別時間帯で再調整をお願いします。'
+                                                })
+                                            });
+                                            // Persist rejection marker so both sides can reflect denied state
+                                            if (proposalMsgId) {
+                                                await sendMessage({
+                                                    chat_id: chatId,
+                                                    sender_guest_id: user.id,
+                                                    message: JSON.stringify({
+                                                        type: 'proposal_reject',
+                                                        proposalMsgId: proposalMsgId
+                                                    })
+                                                });
+                                                setDeniedProposals(prev => prev.includes(proposalMsgId!) ? prev : [...prev, proposalMsgId!]);
+                                            }
+                                        }
+                                    } catch (_) {}
                                     setShowProposalModal(false);
                                     setSelectedProposal(null);
                                     setProposalMsgId(null);

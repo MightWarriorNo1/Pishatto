@@ -14,7 +14,6 @@ export function useChatMessages(
     
     const handleNewMessage = (e: { message: any }) => {
       const newMessage = e.message;
-      console.log('useChatMessages: Received new message:', newMessage);
       
       // Update React Query cache for chat messages
       queryClient.setQueryData(
@@ -44,24 +43,11 @@ export function useGroupMessages(
   useEffect(() => {
     if (!groupId) return;
     
-    console.log(`useGroupMessages: Setting up listener for group.${groupId}`);
     
     const channel: any = echo.channel(`group.${groupId}`);
     
-    // Add connection status logging (guard methods which may not exist)
-    if (typeof channel.subscribed === 'function') {
-      channel.subscribed(() => {
-        console.log(`useGroupMessages: Successfully subscribed to group.${groupId}`);
-      });
-    }
-    if (typeof channel.error === 'function') {
-      channel.error((error: any) => {
-        console.error(`useGroupMessages: Error on group.${groupId} channel:`, error);
-      });
-    }
     
     const handleEvent = (e: { message: any }) => {
-      console.log(`useGroupMessages: Received GroupMessageSent event for group.${groupId}:`, e);
       if (e && e.message) {
         // Update React Query cache for group messages if applicable
         // This would need to be implemented based on your group message structure
@@ -76,7 +62,6 @@ export function useGroupMessages(
     channel.listen(".GroupMessageSent", handleEvent);
     
     return () => {
-      console.log(`useGroupMessages: Cleaning up listener for group.${groupId}`);
       try { channel.stopListening("GroupMessageSent"); } catch {}
       try { channel.stopListening(".GroupMessageSent"); } catch {}
       try {
@@ -100,7 +85,6 @@ export function useReservationUpdates(
     
     const handleReservationUpdate = (e: { reservation: any }) => {
       const updatedReservation = e.reservation;
-      console.log('useReservationUpdates: Received reservation update:', updatedReservation);
       
       // Update React Query cache for reservations
       // This would need to be implemented based on your reservation query structure
@@ -126,7 +110,6 @@ export function useNotifications(
     
     const handleNotification = (e: { notification: any }) => {
       const notification = e.notification;
-      console.log('useNotifications: Received notification:', notification);
       
       // Update React Query cache for notifications
       queryClient.setQueryData(
@@ -246,7 +229,6 @@ export function useTweets(onNewTweet?: (tweet: any) => void) {
     
     const handleNewTweet = (e: { tweet: any }) => {
       const newTweet = e.tweet;
-      console.log('useTweets: Received new tweet:', newTweet);
       
       // Update React Query cache immediately for instant UI updates
       queryClient.setQueryData(queryKeys.tweets.all(), (oldData: any) => {
@@ -286,7 +268,6 @@ export function useTweets(onNewTweet?: (tweet: any) => void) {
     // Handle tweet updates (likes, content changes, etc.)
     channel.listen("TweetUpdated", (e: { tweet: any }) => {
       const updatedTweet = e.tweet;
-      console.log('useTweets: Received tweet update:', updatedTweet);
       
       // Update all tweet caches with the updated tweet
       queryClient.setQueryData(queryKeys.tweets.all(), (oldData: any) => {
@@ -325,7 +306,6 @@ export function useTweets(onNewTweet?: (tweet: any) => void) {
     // Handle tweet deletions
     channel.listen("TweetDeleted", (e: { tweetId: number }) => {
       const deletedTweetId = e.tweetId;
-      console.log('useTweets: Received tweet deletion:', deletedTweetId);
       
       // Remove from all tweet caches
       queryClient.setQueryData(queryKeys.tweets.all(), (oldData: any) => {
@@ -395,7 +375,6 @@ export function useTweetNotifications(
     // Listen for new tweets that should trigger notifications
     channel.listen("TweetCreated", (e: { tweet: any }) => {
       const newTweet = e.tweet;
-      console.log('useTweetNotifications: New tweet notification for user:', userId, 'tweet:', newTweet);
       
       // Only trigger notification if it's not the user's own tweet
       const isOwnTweet = (userType === 'guest' && newTweet.guest?.id === userId) ||
@@ -523,7 +502,6 @@ export function useCastReservations(
     
     const handleNewReservation = (e: { reservation: any }) => {
       const newReservation = e.reservation;
-      console.log('useCastReservations: New reservation received:', newReservation);
       
       // Update React Query cache for all reservations (since cast dashboard shows all available reservations)
       queryClient.setQueryData(
@@ -544,7 +522,6 @@ export function useCastReservations(
     
     const handleReservationUpdate = (e: { reservation: any }) => {
       const updatedReservation = e.reservation;
-      console.log('useCastReservations: Reservation updated:', updatedReservation);
       
       // Update React Query cache for all reservations
       queryClient.setQueryData(
@@ -562,7 +539,6 @@ export function useCastReservations(
       }
     };
     
-    console.log(`useCastReservations: Listening for ReservationCreated and ReservationUpdated events on cast.${castId} and global casts channel`);
     castChannel.listen("ReservationCreated", handleNewReservation);
     castChannel.listen(".ReservationCreated", handleNewReservation);
     castChannel.listen("ReservationUpdated", handleReservationUpdate);
@@ -607,7 +583,7 @@ export function useCastApplications(
     
     const handleNewApplication = (e: { application: any }) => {
       const newApplication = e.application;
-      console.log('useCastApplications: New application received:', newApplication);
+      
       
       // Update React Query cache for cast applications
       queryClient.setQueryData(
@@ -625,7 +601,6 @@ export function useCastApplications(
     
     const handleApplicationUpdate = (e: { application: any }) => {
       const updatedApplication = e.application;
-      console.log('useCastApplications: Application updated:', updatedApplication);
       
       // Update React Query cache for cast applications
       queryClient.setQueryData(
@@ -660,36 +635,21 @@ export function useGuestChatsRealtime(
 ) {
   useEffect(() => {
     if (!guestId) {
-      console.log('useGuestChatsRealtime: No guestId provided, skipping setup');
       return;
     }
     
-    console.log(`useGuestChatsRealtime: Setting up real-time listener for guest ${guestId}`);
     
     const channel = echo.channel(`guest.${guestId}`);
-    
-    // Add connection status logging
-    if (typeof channel.subscribed === 'function') {
-      channel.subscribed(() => {
-        console.log(`useGuestChatsRealtime: Successfully subscribed to guest.${guestId}`);
-      });
-    } else {
-      console.log(`useGuestChatsRealtime: Channel subscription method not available for guest.${guestId}`);
-    }
-    
+
     if (typeof channel.error === 'function') {
       channel.error((error: any) => {
         console.error(`useGuestChatsRealtime: Error on guest.${guestId} channel:`, error);
       });
     }
     
-    // Test if channel is available
-    console.log(`useGuestChatsRealtime: Channel object:`, channel);
-    console.log(`useGuestChatsRealtime: Channel name: guest.${guestId}`);
     
     const handleChatUpdate = (e: { chat: any }) => {
       const updatedChat = e.chat;
-      console.log('useGuestChatsRealtime: Chat updated:', updatedChat);
       
       // Update React Query cache for guest chats - this will trigger UI updates
       queryClient.setQueryData(
@@ -721,8 +681,6 @@ export function useGuestChatsRealtime(
     
     const handleNewChat = (e: { chat: any }) => {
       const newChat = e.chat;
-      console.log('useGuestChatsRealtime: New chat created:', newChat);
-      console.log('useGuestChatsRealtime: Event data:', e);
       
       // Update React Query cache for guest chats - this will trigger UI updates
       queryClient.setQueryData(
@@ -756,7 +714,6 @@ export function useGuestChatsRealtime(
 
     const handleChatListUpdate = (e: { chat: any }) => {
       const updatedChat = e.chat;
-      console.log('useGuestChatsRealtime: Chat list updated:', updatedChat);
       
       // Update React Query cache for guest chats - this will trigger UI updates
       queryClient.setQueryData(
@@ -792,30 +749,26 @@ export function useGuestChatsRealtime(
         onChatUpdate(updatedChat);
       }
     };
-
-    console.log(`useGuestChatsRealtime: Setting up listeners for .ChatUpdated, .ChatCreated, and .ChatListUpdated on guest.${guestId}`);
+  
     
     try {
       channel.listen(".ChatUpdated", handleChatUpdate);
       channel.listen(".ChatCreated", handleNewChat);
       channel.listen(".ChatListUpdated", handleChatListUpdate);
-      console.log(`useGuestChatsRealtime: Successfully set up listeners for guest.${guestId}`);
     } catch (error) {
       console.error(`useGuestChatsRealtime: Error setting up listeners for guest.${guestId}:`, error);
     }
     
     return () => {
-      console.log(`useGuestChatsRealtime: Cleaning up listeners for guest.${guestId}`);
       try {
         channel.stopListening(".ChatUpdated");
         channel.stopListening(".ChatCreated");
-        channel.stopListening(".ChatListUpdated");
-        console.log(`useGuestChatsRealtime: Successfully cleaned up listeners for guest.${guestId}`);
+        channel.stopListening(".ChatListUpdated");  
       } catch (err) {
         console.error('Error cleaning up channel listeners:', err);
       }
     };
-  }, [guestId, onChatUpdate]);
+  }, [guestId, onChatUpdate]);  
 }
 
 // Real-time cast chat updates (new chats or updates)
@@ -826,25 +779,13 @@ export function useCastChatsRealtime(
   useEffect(() => {
     if (!castId) return;
     
-    console.log(`useCastChatsRealtime: Setting up real-time listener for cast ${castId}`);
+    
     
     const channel = echo.channel(`cast.${castId}`);
     
-    // Add connection status logging
-    if (typeof channel.subscribed === 'function') {
-      channel.subscribed(() => {
-        console.log(`useCastChatsRealtime: Successfully subscribed to cast.${castId}`);
-      });
-    }
-    if (typeof channel.error === 'function') {
-      channel.error((error: any) => {
-        console.error(`useCastChatsRealtime: Error on cast.${castId} channel:`, error);
-      });
-    }
 
     const handleNewChat = (e: { chat: any }) => {
       const newChat = e.chat;
-      console.log('useCastChatsRealtime: New chat received:', newChat);
       
       // Update React Query cache for cast chats - this will trigger UI updates
       queryClient.setQueryData(
@@ -876,7 +817,6 @@ export function useCastChatsRealtime(
 
     const handleChatUpdated = (e: { chat: any }) => {
       const updatedChat = e.chat;
-      console.log('useCastChatsRealtime: Chat updated:', updatedChat);
       
       // Update React Query cache for cast chats - this will trigger UI updates
       queryClient.setQueryData(
@@ -904,7 +844,6 @@ export function useCastChatsRealtime(
 
     const handleChatListUpdate = (e: { chat: any }) => {
       const updatedChat = e.chat;
-      console.log('useCastChatsRealtime: Chat list updated:', updatedChat);
       
       // Update React Query cache for cast chats - this will trigger UI updates
       queryClient.setQueryData(
@@ -939,7 +878,6 @@ export function useCastChatsRealtime(
       onChatEvent?.(updatedChat);
     };
 
-    console.log(`useCastChatsRealtime: Listening for .ChatCreated, .ChatUpdated, and .ChatListUpdated events on cast.${castId}`);
     channel.listen(".ChatCreated", handleNewChat);
     channel.listen(".ChatUpdated", handleChatUpdated);
     channel.listen(".ChatListUpdated", handleChatListUpdate);

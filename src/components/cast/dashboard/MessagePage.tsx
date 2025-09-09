@@ -92,9 +92,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     // Proposal modal state
     const [showProposalModal, setShowProposalModal] = useState(false);
     const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+    const [selectedProposalMsgId, setSelectedProposalMsgId] = useState<number | null>(null);
 
     // Local state to track accepted proposals for immediate UI feedback
     const [acceptedProposals, setAcceptedProposals] = useState<Set<string>>(new Set());
+    const [deniedProposalMsgIds, setDeniedProposalMsgIds] = useState<Set<number>>(new Set());
 
     // New state to track clicked proposals - persisted in localStorage
     const [clickedProposals, setClickedProposals] = useState<Set<string>>(new Set());
@@ -207,33 +209,46 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         }
     });
 
-    // Real-time updates using the existing hook
-    useRealtimeChatMessages(Number(message.id), (msg: any) => {
-        // Invalidate React Query cache to trigger refetch
-        // This ensures real-time updates are reflected in the UI
-        queryClient.invalidateQueries({
-            queryKey: queryKeys.cast.chatMessages(Number(message.id), castId)
-        });
-
-        // Check if this message might be related to proposal updates
-        let shouldRefreshReservations = false;
-        try {
-            const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
-            if (parsed && parsed.type === 'proposal') {
-                shouldRefreshReservations = true;
-            }
-            // Also check for system messages about proposal acceptance
-            if (msg.message && typeof msg.message === 'string') {
-                if (msg.message.includes('承認') || msg.message.includes('accepted') || 
-                    msg.message.includes('承認済み') || msg.message.includes('accepted')) {
-                    shouldRefreshReservations = true;
+    // Build accepted proposal set from DB marker messages
+    const acceptedFromDb = useMemo(() => {
+        const set = new Set<string>();
+        (messages || []).forEach((msg: any) => {
+            try {
+                const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                if (parsed && parsed.type === 'proposal_accept' && parsed.proposalKey) {
+                    set.add(String(parsed.proposalKey));
                 }
-            }
-        } catch (e) {
-            // Not a proposal message
+            } catch (_) {}
+        });
+        return set;
+    }, [messages]);
+
+    // Merge DB-derived acceptance into local state so it persists after refresh
+    useEffect(() => {
+        if (acceptedFromDb.size === 0) return;
+        setAcceptedProposals(prev => {
+            const merged = new Set(prev);
+            acceptedFromDb.forEach(k => merged.add(k));
+            return merged;
+        });
+    }, [acceptedFromDb]);
+
+    // Real-time updates using the existing hook
+    useRealtimeChatMessages(Number(message.id), (incoming: any) => {
+        // Lightweight guard: if we already have this message ID locally, skip redundant refetch
+        const exists = (messages || []).some((m: any) => String(m.id) === String(incoming.id));
+        if (!exists) {
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.cast.chatMessages(Number(message.id), castId)
+            });
         }
 
-        // If this message is related to proposals, refresh guest reservations
+        let shouldRefreshReservations = false;
+        try {
+            const parsed = typeof incoming.message === 'string' ? JSON.parse(incoming.message) : null;
+            if (parsed && parsed.type === 'proposal') shouldRefreshReservations = true;
+            if (parsed && (parsed.type === 'proposal_accept' || parsed.type === 'proposal_reject')) shouldRefreshReservations = true;
+        } catch (_) {}
         if (shouldRefreshReservations && chatInfo?.guest?.id) {
             queryClient.invalidateQueries({
                 queryKey: queryKeys.cast.guestReservations(chatInfo.guest.id)
@@ -442,19 +457,56 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         }
     }, [imagePreview, attachedFile, showFile, showCamera]);
 
+    // Deduplicate messages (sometimes realtime + refetch can transiently duplicate entries until refresh)
+    const dedupedMessages = useMemo(() => {
+        const seen = new Set<string>();
+        const result: any[] = [];
+        (messages || []).forEach((m: any) => {
+            const key = String(m?.id ?? `${m?.sender_cast_id || ''}-${m?.sender_guest_id || ''}-${m?.created_at || ''}-${m?.message || ''}`);
+            if (!seen.has(key)) {
+                seen.add(key);
+                result.push(m);
+            }
+        });
+        return result;
+    }, [messages]);
+
     // Auto scroll to bottom on new messages
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [dedupedMessages]);
 
     // Ensure messages are displayed from old to new
     const sortedMessages = useMemo(() => {
-        return [...(messages || [])].sort((a: any, b: any) => {
+        return [...(dedupedMessages || [])].sort((a: any, b: any) => {
             const aTime = a?.created_at ? new Date(a.created_at).getTime() : 0;
             const bTime = b?.created_at ? new Date(b.created_at).getTime() : 0;
             return aTime - bTime;
         });
-    }, [messages]);
+    }, [dedupedMessages]);
+
+    // Build denied set from DB markers so state persists on refresh
+    const deniedFromDb = useMemo(() => {
+        const ids = new Set<number>();
+        (dedupedMessages || []).forEach((m: any) => {
+            try {
+                const parsed = typeof m.message === 'string' ? JSON.parse(m.message) : null;
+                if (parsed && parsed.type === 'proposal_reject' && typeof parsed.proposalMsgId === 'number') {
+                    ids.add(Number(parsed.proposalMsgId));
+                }
+            } catch (_) {}
+        });
+        return ids;
+    }, [dedupedMessages]);
+
+    useEffect(() => {
+        if (deniedFromDb.size === 0) return;
+        setDeniedProposalMsgIds(prev => {
+            const merged = new Set(prev);
+            deniedFromDb.forEach(id => merged.add(id));
+            return merged;
+        });
+    }, [deniedFromDb]);
 
     // Close popovers/modals with Escape
     useEffect(() => {
@@ -479,9 +531,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     // Normalize proposal key to be stable across sessions/refreshes
     const makeProposalKey = (date: any, duration: any): string => {
         if (!date || !duration) return '';
-        const normalizedDate = dayjs(date).format('YYYY-MM-DD');
+        // Use full datetime precision to avoid collisions on same-day proposals
+        const normalizedDateTime = dayjs(date).format('YYYY-MM-DD HH:mm');
         const normalizedDuration = parseInt(String(duration), 10);
-        return `${normalizedDate}-${normalizedDuration}`;
+        return `${normalizedDateTime}-${normalizedDuration}`;
     };
 
     const handleImageButtonClick = () => {
@@ -938,8 +991,6 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         }
     };
 
-
-
     // Helper function to get reservation details
     const getReservationDetails = async (reservationId: number) => {
         try {
@@ -1103,7 +1154,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                 </div>
             </div>
 
-            {/* Fixed Timer - Always visible under header */}
+            {/* Fixed Timer - Only visible when chat has reservation_id */}
+            {chatInfo?.reservation_id && (
             <div className="fixed left-0 right-0 top-16 mx-auto w-full max-w-md z-20 px-4 py-2 bg-primary border-b border-secondary">
                 <div className="p-4 bg-gradient-to-r from-green-900 to-blue-900 rounded-lg border border-green-400">
                     <div className="flex items-center justify-between mb-2">
@@ -1215,11 +1267,12 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     </div>
                 </div>
             </div>
+            )}
 
             <div
                 className="overflow-y-auto px-4 pt-4 scrollbar-hidden"
                 style={{
-                    marginTop: '13rem',
+                    marginTop: chatInfo?.reservation_id ? '13rem' : '4rem',
                     height: `calc(100vh - 8rem - ${inputBarHeight}px)`,
                     paddingBottom: '4rem'
                 }}
@@ -1748,17 +1801,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         // Create a non-null proposal reference for use in the JSX
                         const currentProposal = { ...proposal, type: proposal.type || 'proposal' };
 
-                        // Check if proposal is accepted by multiple methods:
-                        // 1. Local accepted proposals state (immediate UI feedback)
-                        // 2. Matching reservation in guestReservations (backend data)
+                        // Only rely on explicit local acceptance to avoid false positives
                         const proposalKey = makeProposalKey(currentProposal.date, currentProposal.duration);
-                        const isAcceptedLocally = acceptedProposals.has(proposalKey);
-                        const isAcceptedByReservation = guestReservations.some((res: any) => {
-                            const proposalDate = dayjs(currentProposal?.date);
-                            const reservationDate = dayjs(res.scheduled_at);
-                            return res.guest_id === chatInfo?.guest?.id && reservationDate.isSame(proposalDate, 'day');
-                        });
-                        const isAccepted = isAcceptedLocally || isAcceptedByReservation;
+                        const isAccepted = acceptedProposals.has(proposalKey);
+                        const isDenied = deniedProposalMsgIds.has(Number(msg.id));
                         
                         // Check if proposal has been clicked by cast member
                         const isClicked = clickedProposals.has(proposalKey);
@@ -1787,16 +1833,17 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                 )}
                                 <div className={`${isSentByCast ? 'flex justify-end' : 'flex justify-start'} mb-4`}>
                                     <div
-                                        className={`${isClicked ? 'bg-blue-600 shadow-lg shadow-blue-500/30' : isSentByCast ? 'bg-orange-500' : 'bg-orange-500'} text-white rounded-lg px-4 py-3 max-w-[85%] md:max-w-[70%] text-sm shadow-md relative transition-all duration-300 `}
-                                        onClick={!isAccepted && !isSentByCast ? () => {
-                                            handleProposalClick(currentProposal, msg.id);
-                                        } : undefined}
+                                        className={`${isClicked ? 'bg-blue-600 shadow-lg shadow-blue-500/30' : 'bg-orange-500'} text-white rounded-lg px-4 py-3 max-w-[85%] md:max-w-[70%] text-sm shadow-md relative transition-all duration-300 `}
+                                        onClick={() => {
+                                            // Non-clickable for cast-sent proposals; guest can open modal
+                                            if (isSentByCast) return;
+                                            setSelectedProposal(currentProposal);
+                                            setSelectedProposalMsgId(Number(msg.id));
+                                            setShowProposalModal(true);
+                                        }}
+                                        style={isSentByCast ? { cursor: 'default' } : { cursor: 'pointer' }}
                                     >
-                                        {isClicked && (
-                                            <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
-                                                <span className="text-white text-xs">✓</span>
-                                            </div>
-                                        )}
+                                        {/* Do not show clicked indicator on proposal tap */}
                                         <div>日程：{currentProposal.date ? new Date(currentProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
                                         <div>人数：{currentProposal.people?.replace(/名$/, '')}人</div>
                                         <div>時間：{currentProposal.duration}</div>
@@ -1805,9 +1852,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         {isAccepted && (
                                             <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">承認済み</span>
                                         )}
-                                        {isClicked && !isAccepted && (
-                                            <span className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded animate-pulse">確認済み</span>
+                                        {!isAccepted && isDenied && (
+                                            <span className="absolute top-2 right-2 bg-gray-600 text-white text-xs px-2 py-1 rounded">却下</span>
                                         )}
+                                        {/* Hide clicked badge; only show accepted status */}
                                     </div>
 
 
@@ -1896,6 +1944,27 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     const senderAvatar = msg?.guest?.avatar || msg?.cast?.avatar;
                     const senderName = msg?.guest?.nickname || msg?.cast?.nickname || 'ゲスト/キャスト';
 
+                    {
+                        // Pre-filter internal markers and guest-only system messages so we don't render empty rows
+                        let hide = false;
+                        let displayText: string | null = null;
+                        try {
+                            const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                            if (parsed && (parsed.type === 'proposal_accept' || parsed.type === 'proposal_reject')) {
+                                hide = true;
+                            } else if (parsed && parsed.type === 'system') {
+                                if (parsed.target !== 'cast') {
+                                    hide = true;
+                                } else {
+                                    displayText = parsed.text || parsed.content || '';
+                                }
+                            }
+                        } catch (_) {}
+                        if (hide) return null;
+                        if (displayText !== null) {
+                            msg = { ...msg, message: displayText };
+                        }
+                    }
 
                     return (
                         <React.Fragment key={msg.id || idx}>
@@ -1924,6 +1993,13 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             <span>{senderName}</span>
                                         </div>
                                     )}
+                                    {(() => {
+                                        try {
+                                            const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                                            if (parsed && parsed.type === 'proposal_accept') return null;
+                                            if (parsed && parsed.type === 'system' && parsed.target === 'guest') return null;
+                                        } catch (_) {}
+                                        return (
                                     <div className={`${isSent ? 'w-full bg-secondary text-white rounded-lg px-4 py-2' : 'w-full bg-white text-black rounded-lg px-4 py-2'} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
                                         {/* Gift display */}
                                         {msg.gift_id && msg.gift && (
@@ -1952,13 +2028,22 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 />
                                             );
                                         })()}
-                                        {msg.message}
+                                        {(() => {
+                                            try {
+                                                const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                                                if (parsed && parsed.type === 'system' && parsed.target === 'cast') {
+                                                    return parsed.text || parsed.content || '';
+                                                }
+                                            } catch (_) {}
+                                            return msg.message;
+                                        })()}
                                         {msg.isOptimistic && !msg.gift_id && (
                                             <div className="text-xs text-yellow-300 mt-1">送信中...</div>
                                         )}
                                     </div>
+                                        );
+                                    })()}
                                     <div className={`text-xs text-gray-400 mt-1 ${isSent ? 'text-right' : 'text-left'}`}>
-                                        {/* {msg.created_at ? dayjs(msg.created_at).format('YYYY.MM.DD HH:mm:ss') : ''} */}
                                         {formatTime(msg.created_at)}
                                     </div>
                                 </div>
@@ -2251,9 +2336,47 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             return newSet;
                                         });
 
+                                        // Persist acceptance marker and send role-targeted auto messages
+                                        try {
+                                            if (selectedProposalMsgId) {
+                                                await sendMessageMutation.mutateAsync({
+                                                    chat_id: Number(message.id),
+                                                    sender_cast_id: castId,
+                                                    message: JSON.stringify({
+                                                        type: 'proposal_accept',
+                                                        proposalMsgId: selectedProposalMsgId,
+                                                        proposalKey: proposalKey
+                                                    })
+                                                });
+                                            }
+                                            // Guest-facing auto message
+                                            await sendMessageMutation.mutateAsync({
+                                                chat_id: Number(message.id),
+                                                sender_cast_id: castId,
+                                                message: JSON.stringify({
+                                                    type: 'system',
+                                                    target: 'guest',
+                                                    text: '合流の仮予約が確定しました。合流後にキャストがタイマーを押下し、合流スタートとなります。そこからは自動課金となりますので、解散をご希望になる場合はキャスト側に解散の旨、お伝えください。'
+                                                })
+                                            });
+                                            // Cast-facing auto message
+                                            await sendMessageMutation.mutateAsync({
+                                                chat_id: Number(message.id),
+                                                sender_cast_id: castId,
+                                                message: JSON.stringify({
+                                                    type: 'system',
+                                                    target: 'cast',
+                                                    text: '合流の仮予約が確定しました。合流直前にタイマーの押下を必ず行ってください。推し忘れが起きた場合、売上対象にならない可能性がありますので、ご注意ください。'
+                                                })
+                                            });
+                                        } catch (e) {
+                                            console.error('Failed to send acceptance system messages:', e);
+                                        }
+
                                         // Close modal and reset state
                                         setShowProposalModal(false);
                                         setSelectedProposal(null);
+                                        setSelectedProposalMsgId(null);
                                     } catch (e: any) {
                                         console.error('Error accepting proposal:', e);
                                     }
@@ -2261,9 +2384,35 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                             >承認</button>
                             <button
                                 className="w-full sm:w-auto px-4 py-2 bg-gray-400 text-white rounded font-bold"
-                                onClick={() => {
-                                    setShowProposalModal(false);
-                                    setSelectedProposal(null);
+                                onClick={async () => {
+                                    try {
+                                        // Send rejection notice to guest only and persist marker
+                                        await sendMessageMutation.mutateAsync({
+                                            chat_id: Number(message.id),
+                                            sender_cast_id: castId,
+                                            message: JSON.stringify({
+                                                type: 'system',
+                                                target: 'guest',
+                                                text: 'スケジュール提案は却下されました。別日や別時間帯で再調整をお願いします。'
+                                            })
+                                        });
+                                        if (selectedProposalMsgId) {
+                                            await sendMessageMutation.mutateAsync({
+                                                chat_id: Number(message.id),
+                                                sender_cast_id: castId,
+                                                message: JSON.stringify({
+                                                    type: 'proposal_reject',
+                                                    proposalMsgId: selectedProposalMsgId
+                                                })
+                                            });
+                                        }
+                                    } catch (e) {
+                                        console.error('Failed to send rejection system messages:', e);
+                                    } finally {
+                                        setShowProposalModal(false);
+                                        setSelectedProposal(null);
+                                        setSelectedProposalMsgId(null);
+                                    }
                                 }}
                             >キャンセル</button>
                         </div>

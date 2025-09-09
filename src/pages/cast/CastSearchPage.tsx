@@ -1,7 +1,7 @@
 /*eslint-disable */
 import React, { useEffect, useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Heart, SlidersHorizontal, Bell, ChevronLeft, MessageSquare, X } from 'lucide-react';
+import { Heart, SlidersHorizontal, Bell, ChevronLeft, MessageSquare, X, Users } from 'lucide-react';
 import { RepeatGuest, GuestProfile } from '../../services/api';
 import { 
   useRepeatGuests, 
@@ -714,7 +714,9 @@ const RepeatGuestsModal: React.FC<RepeatGuestsModalProps> = ({ isOpen, onClose, 
                 <div className="flex items-center justify-between px-6 py-4 border-b-2 border-secondary bg-gradient-to-r from-primary to-secondary">
                     <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm font-bold">👥</span>
+                            <span className="text-white text-sm font-bold">
+                                <Users size={20} />
+                            </span>
                         </div>
                         <h2 className="text-xl font-bold text-white">リピートゲスト一覧</h2>
                     </div>
@@ -737,7 +739,7 @@ const RepeatGuestsModal: React.FC<RepeatGuestsModalProps> = ({ isOpen, onClose, 
                 </div>
 
                 {/* Enhanced Guest Grid */}
-                <div className="p-6 overflow-y-auto max-h-[60vh]">
+                <div className="p-6 overflow-y-auto scrollbar-hidden max-h-[60vh]">
                     {guests.length === 0 ? (
                         <div className="text-center py-12">
                             <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">

@@ -24,6 +24,8 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
   userId,
 }) => {
   const { user } = useUser();
+  const YEN_PER_POINT = 12;
+  const yenAmount = amount * YEN_PER_POINT;
   const [loading, setLoading] = useState(false);
   const [cardData, setCardData] = useState<CardData>({
     number: '',
@@ -68,7 +70,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
       const paymentResult = await purchasePoints(
         user.id,
         userType,
-        amount,
+        yenAmount,
         undefined, // No token needed when using registered card
         'card'
       );
@@ -138,7 +140,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
       // Process payment using direct charge approach
       const paymentResult = await PayJPService.processPaymentDirect(
         tokenResult.token!,
-        amount,
+        yenAmount,
         'jpy',
         user.id,
         userType
@@ -392,7 +394,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
           {/* Amount Display */}
           <div className="bg-secondary rounded-lg p-4 text-center">
             <p className="text-white text-sm">支払い金額</p>
-            <p className="text-white text-2xl font-bold">¥{amount.toLocaleString()}</p>
+            <p className="text-white text-2xl font-bold">¥{yenAmount.toLocaleString()}</p>
           </div>
 
           {/* Buttons */}
@@ -511,7 +513,7 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
         {/* Amount Display */}
         <div className="bg-secondary rounded-lg p-4 text-center">
           <p className="text-white text-sm">支払い金額</p>
-          <p className="text-white text-2xl font-bold">¥{amount.toLocaleString()}</p>
+          <p className="text-white text-2xl font-bold">¥{yenAmount.toLocaleString()}</p>
         </div>
 
         {/* Buttons */}

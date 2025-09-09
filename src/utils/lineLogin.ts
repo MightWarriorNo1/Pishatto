@@ -123,40 +123,142 @@ export const openLineApp = (userType: 'guest' | 'cast'): Promise<boolean> => {
 };
 
 /**
- * Main LINE login handler with iOS-specific logic
+ * Generate a secure state parameter for OAuth
+ */
+const generateState = (): string => {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+};
+
+/**
+ * Store state in sessionStorage for validation
+ */
+const storeState = (state: string, userType: 'guest' | 'cast'): void => {
+  sessionStorage.setItem('line_oauth_state', state);
+  sessionStorage.setItem('line_oauth_user_type', userType);
+  sessionStorage.setItem('line_oauth_timestamp', Date.now().toString());
+};
+
+/**
+ * Validate state parameter on callback
+ */
+export const validateState = (receivedState: string, userType: 'guest' | 'cast'): boolean => {
+  const storedState = sessionStorage.getItem('line_oauth_state');
+  const storedUserType = sessionStorage.getItem('line_oauth_user_type');
+  const storedTimestamp = sessionStorage.getItem('line_oauth_timestamp');
+  
+  // Check if state exists and matches
+  if (!storedState || storedState !== receivedState) {
+    console.error('State mismatch - possible CSRF attack');
+    return false;
+  }
+  
+  // Check if user type matches
+  if (!storedUserType || storedUserType !== userType) {
+    console.error('User type mismatch');
+    return false;
+  }
+  
+  // Check if state is not too old (5 minutes)
+  if (storedTimestamp) {
+    const age = Date.now() - parseInt(storedTimestamp);
+    if (age > 5 * 60 * 1000) { // 5 minutes
+      console.error('State too old');
+      return false;
+    }
+  }
+  
+  // Clean up stored state
+  sessionStorage.removeItem('line_oauth_state');
+  sessionStorage.removeItem('line_oauth_user_type');
+  sessionStorage.removeItem('line_oauth_timestamp');
+  
+  return true;
+};
+
+/**
+ * Retry LINE login with disable_auto_login=true (for when auto-login fails)
+ */
+export const retryLineLoginWithDisabledAutoLogin = (userType: 'guest' | 'cast'): void => {
+  try {
+    // Generate secure state parameter
+    const state = generateState();
+    storeState(state, userType);
+    
+    const redirectUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/redirect?user_type=${userType}`;
+    
+    // Always use disable_auto_login=true for retry
+    const lineAuthUrl = new URL('https://access.line.me/oauth2/v2.1/authorize');
+    lineAuthUrl.searchParams.set('disable_auto_login', 'true');
+    lineAuthUrl.searchParams.set('response_type', 'code');
+    lineAuthUrl.searchParams.set('client_id', process.env.REACT_APP_LINE_CLIENT_ID || '');
+    lineAuthUrl.searchParams.set('redirect_uri', redirectUrl);
+    lineAuthUrl.searchParams.set('state', state);
+    lineAuthUrl.searchParams.set('scope', 'profile openid');
+    
+    // Generate nonce for additional security
+    const nonce = generateState();
+    lineAuthUrl.searchParams.set('nonce', nonce);
+    sessionStorage.setItem('line_oauth_nonce', nonce);
+    
+    console.log('Retrying LINE login with disable_auto_login=true');
+    window.location.href = lineAuthUrl.toString();
+  } catch (error: any) {
+    console.error('LINE retry login error:', error);
+  }
+};
+
+/**
+ * Main LINE login handler with iOS-specific logic following LINE's official recommendations
  */
 export const handleLineLogin = async (options: LineLoginOptions): Promise<void> => {
   const { userType, onError } = options;
   
   try {
+    // Generate secure state parameter
+    const state = generateState();
+    storeState(state, userType);
+    
     const redirectUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/redirect?user_type=${userType}`;
     
     if (isIOSSafari()) {
-      // For iOS Safari, try to detect and open LINE app
-      console.log('iOS Safari detected, attempting LINE app detection...');
+      // For iOS Safari, use disable_auto_login=true as recommended by LINE
+      console.log('iOS Safari detected, using disable_auto_login=true for stable authentication');
       
-      // First, try to detect if LINE app is installed
-      const isLineInstalled = await detectLineApp();
-      console.log('LINE app detection result:', isLineInstalled);
+      // Build LINE OAuth URL with disable_auto_login parameter
+      const lineAuthUrl = new URL('https://access.line.me/oauth2/v2.1/authorize');
+      lineAuthUrl.searchParams.set('disable_auto_login', 'true');
+      lineAuthUrl.searchParams.set('response_type', 'code');
+      lineAuthUrl.searchParams.set('client_id', process.env.REACT_APP_LINE_CLIENT_ID || '');
+      lineAuthUrl.searchParams.set('redirect_uri', redirectUrl);
+      lineAuthUrl.searchParams.set('state', state);
+      lineAuthUrl.searchParams.set('scope', 'profile openid');
       
-      if (isLineInstalled) {
-        // Try to open LINE app
-        const appOpened = await openLineApp(userType);
-        console.log('LINE app open attempt result:', appOpened);
-        
-        if (appOpened) {
-          console.log('LINE app opened successfully');
-          return;
-        }
-      }
+      // Generate nonce for additional security
+      const nonce = generateState();
+      lineAuthUrl.searchParams.set('nonce', nonce);
+      sessionStorage.setItem('line_oauth_nonce', nonce);
       
-      // If LINE app detection/opening failed, show user instructions
-      console.log('LINE app not available, showing fallback instructions');
-      showLineAppInstructions(userType);
+      console.log('Redirecting to LINE OAuth with disable_auto_login=true');
+      window.location.href = lineAuthUrl.toString();
     } else {
-      // For non-iOS or non-Safari browsers, use standard redirect
-      console.log('Non-iOS browser detected, using standard redirect');
-      window.location.href = redirectUrl;
+      // For non-iOS browsers, use standard redirect (with auto-login enabled)
+      console.log('Non-iOS browser detected, using standard redirect with auto-login');
+      
+      const lineAuthUrl = new URL('https://access.line.me/oauth2/v2.1/authorize');
+      lineAuthUrl.searchParams.set('response_type', 'code');
+      lineAuthUrl.searchParams.set('client_id', process.env.REACT_APP_LINE_CLIENT_ID || '');
+      lineAuthUrl.searchParams.set('redirect_uri', redirectUrl);
+      lineAuthUrl.searchParams.set('state', state);
+      lineAuthUrl.searchParams.set('scope', 'profile openid');
+      
+      // Generate nonce for additional security
+      const nonce = generateState();
+      lineAuthUrl.searchParams.set('nonce', nonce);
+      sessionStorage.setItem('line_oauth_nonce', nonce);
+      
+      window.location.href = lineAuthUrl.toString();
     }
   } catch (error: any) {
     console.error('LINE login error:', error);
@@ -252,7 +354,7 @@ LINEアプリがインストールされていない場合は、App StoreからL
   `;
   
   const instructionTitle = document.createElement('h4');
-  instructionTitle.textContent = '📱 LINEアプリがインストール済みの場合';
+  instructionTitle.textContent = '📱 自動ログインが失敗した場合の対処法';
   instructionTitle.style.cssText = `
     font-weight: 600;
     color: #1e40af;
@@ -305,9 +407,9 @@ LINEアプリがインストールされていない場合は、App StoreからL
     cursor: pointer;
   `;
   
-  const webLoginButton = document.createElement('button');
-  webLoginButton.textContent = 'Webでログイン';
-  webLoginButton.style.cssText = `
+  const retryButton = document.createElement('button');
+  retryButton.textContent = '再試行';
+  retryButton.style.cssText = `
     flex: 1;
     background: #10b981;
     color: white;
@@ -325,17 +427,16 @@ LINEアプリがインストールされていない場合は、App StoreからL
     }
   };
   
-  webLoginButton.onclick = () => {
+  retryButton.onclick = () => {
     if (document.body.contains(modal)) {
       document.body.removeChild(modal);
     }
-    // Fallback to web login
-    const redirectUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:8000/api'}/line/redirect?user_type=${userType}`;
-    window.location.href = redirectUrl;
+    // Retry with disable_auto_login=true
+    retryLineLoginWithDisabledAutoLogin(userType);
   };
   
   buttonContainer.appendChild(closeButton);
-  buttonContainer.appendChild(webLoginButton);
+  buttonContainer.appendChild(retryButton);
   
   content.appendChild(icon);
   content.appendChild(title);

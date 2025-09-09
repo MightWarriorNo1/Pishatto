@@ -44,11 +44,12 @@ const ReceiptConfirmationPage: React.FC<ReceiptConfirmationPageProps> = ({
     setError(null);
 
     try {
-      // Convert points to yen for guest receipts at 1.2 JPY per point
+      // Convert points to yen for guest receipts using 1 point = 12 yen
       // Ensure a positive base amount for receipt purposes
       const rawAmount = Math.abs(Number(transactionData.amount) || 0);
+      const YEN_PER_POINT = 12;
       const amountForReceipt = userType === 'guest'
-        ? Math.round(rawAmount * 1.2)
+        ? Math.round(rawAmount * YEN_PER_POINT)
         : rawAmount;
 
       const newReceipt = await createReceipt({

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../../contexts/UserContext';
 import { useCast } from '../../../contexts/CastContext';
 import Spinner from '../../ui/Spinner';
-import { handleLineLogin } from '../../../utils/lineLogin';
+import { handleLineLogin, validateState } from '../../../utils/lineLogin';
 
 interface LineLoginProps {
     userType?: 'guest' | 'cast';
@@ -43,6 +43,13 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
     const handleLineCallback = async (code: string, state?: string) => {
         try {
             console.log('LineLogin: Starting LINE callback handling...', { code, state, userType });
+            
+            // Validate state parameter first
+            if (state && !validateState(state, userType)) {
+                console.error('LineLogin: State validation failed');
+                setError('認証エラーが発生しました。もう一度お試しください。');
+                return;
+            }
             
             // Use web route for callback to maintain session
             const params = new URLSearchParams({ code });
@@ -137,6 +144,15 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                 }
             } else {
                 console.error('LineLogin: Authentication failed:', data.message);
+                
+                // Check if this is an auto-login failure
+                if (data.message && data.message.includes('ログインできませんでした')) {
+                    // Show the official LINE error message with retry option
+                    setError('自動ログインに失敗しました。もう一度お試しください。');
+                    // Could also show the instruction modal here
+                    return;
+                }
+                
                 throw new Error(data.message || 'Line authentication failed');
             }
         } catch (err: any) {

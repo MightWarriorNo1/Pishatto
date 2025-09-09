@@ -1,6 +1,6 @@
 /*eslint-disable */
 import { ChevronLeft, Lock } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { uploadIdentity, getGuestProfileById } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import Spinner from '../ui/Spinner';
@@ -29,6 +29,7 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
     const [verificationStatus, setVerificationStatus] = useState<'pending' | 'success' | 'failed' | null>(null);
     const [verificationImage,setVerificationImage] = useState<string | null>(null);
     const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     // Upload image to backend and get URL or success
     const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,6 +57,14 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
         } finally {
             setAvatarUploading(false);
         }
+    };
+    
+    const handleStartClick = () => {
+        if (!selectedFile) {
+            fileInputRef.current?.click();
+            return;
+        }
+        handleSubmit();
     };
     
     const getIdentityVerificationStatus = async () => {
@@ -101,7 +110,6 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
         );
     }
 
-    console.log("USER", user);
     return (
         <div className="max-w-md mx-auto min-h-screen bg-gradient-br-to from-primary via-primary to-secondary overflow-y-auto pb-8">
             {/* Top bar */}
@@ -131,23 +139,20 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
             <div className="text-center font-bold text-lg mb-">登録可能な本人確認書類</div>
             <div className="flex justify-center gap-8 mb-6">
                 <div className="flex flex-col items-center">
-                    {/* License icon */}
-                    <svg width="64" height="40" viewBox="0 0 64 40" fill="none"><rect x="2" y="2" width="60" height="36" rx="4" fill="#fff" stroke="#bbb" strokeWidth="2" /><rect x="8" y="8" width="30" height="6" rx="2" fill="#ffe066" /><rect x="8" y="18" width="20" height="4" rx="2" fill="#ccc" /><rect x="40" y="8" width="12" height="12" rx="3" fill="#b3e5fc" /></svg>
+                    <img src="/assets/identity/driver.jpeg" alt="license" className="w-16 h-16" />
                     <span className="text-xs mt-1">免許証</span>
                 </div>
                 <div className="flex flex-col items-center">
-                    {/* Passport icon */}
-                    <svg width="64" height="40" viewBox="0 0 64 40" fill="none"><rect x="8" y="4" width="20" height="32" rx="4" fill="#e53935" /><rect x="36" y="4" width="20" height="32" rx="4" fill="#3949ab" /></svg>
+                    <img src="/assets/identity/passport.jpeg" alt="passport" className="w-16 h-16" />
                     <span className="text-xs mt-1">パスポート</span>
                 </div>
                 <div className="flex flex-col items-center">
-                    {/* MyNumber icon */}
-                    <svg width="64" height="40" viewBox="0 0 64 40" fill="none"><rect x="2" y="2" width="60" height="36" rx="4" fill="#fff" stroke="#bbb" strokeWidth="2" /><rect x="8" y="8" width="30" height="6" rx="2" fill="#b3e5fc" /><rect x="8" y="18" width="20" height="4" rx="2" fill="#ccc" /><rect x="40" y="8" width="12" height="12" rx="3" fill="#ffe066" /></svg>
+                    <img src="/assets/identity/my-number.jpeg" alt="my-number" className="w-16 h-16" />
                     <span className="text-xs mt-1">マイナンバー</span>
                 </div>
             </div>
-            {/* Image upload and preview - show for failed, pending, or null status */}
-            {(verificationStatus === 'failed' || verificationStatus === 'pending' || verificationStatus === null) && (
+            {/* Image preview - show only after selecting image, or when pending with existing image */}
+            {(((selectedFile || previewUrl) as unknown as boolean) || (verificationStatus === 'pending' && verificationImage)) && (
                 <div className="flex flex-col items-center mb-4">
                     <div className="relative">
                         <img
@@ -165,19 +170,18 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                             </div>
                         )}
                     </div>
-                    <label className="text-white mb-2 cursor-pointer">
-                        IDカードの画像をアップロード
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleAvatarChange}
-                            disabled={avatarUploading || submitted}
-                        />
-                    </label>
                     {error && <div className="text-red-500 text-xs mb-2">{error}</div>}
                 </div>
             )}
+            {/* Hidden file input - always present so the button can trigger it */}
+            <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                ref={fileInputRef}
+                onChange={handleAvatarChange}
+                disabled={avatarUploading || submitted}
+            />
             {/* Info box */}
             <div className="mx-4 border border-secondary rounded-xl bg-primary px-4 mb-4 flex flex-col items-center">
                 <Lock className="text-white mb-2" />
@@ -190,8 +194,8 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                 {(verificationStatus === 'failed' || verificationStatus === null) && (
                     <button
                         className="w-full bg-primary text-white py-3 rounded-lg font-bold text-lg disabled:opacity-50 flex items-center justify-center"
-                        onClick={handleSubmit}
-                        disabled={!selectedFile || avatarUploading || submitted}
+                        onClick={handleStartClick}
+                        disabled={avatarUploading || submitted}
                     >
                         {avatarUploading ? (
                             <>
@@ -199,7 +203,7 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                                 <span className="ml-2">アップロード中...</span>
                             </>
                         ) : (
-                            '本人認証をはじめる'
+                            selectedFile ? 'IDカード画像提出' : '本人認証をはじめる'
                         )}
                     </button>
                 )}
