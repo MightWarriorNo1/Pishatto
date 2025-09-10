@@ -244,7 +244,9 @@ const CastDetail: React.FC = () => {
                 document.body.appendChild(textArea);
                 textArea.select();
                 document.execCommand('copy');
-                document.body.removeChild(textArea);
+                if (document.body.contains(textArea)) {
+                    document.body.removeChild(textArea);
+                }
                 
                 setToastMessage('URLをクリップボードにコピーしました。');
                 setToastType('success');

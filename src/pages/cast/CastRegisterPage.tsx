@@ -53,7 +53,9 @@ const CastRegisterPage: React.FC = () => {
         document.head.appendChild(style);
         
         return () => {
-            document.head.removeChild(style);
+            if (document.head.contains(style)) {
+                document.head.removeChild(style);
+            }
         };
     }, []);
 

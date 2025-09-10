@@ -484,10 +484,18 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                         
                                         {message.gift && (
                                             <div className="bg-yellow-500 text-black rounded p-2 mb-2">
-                                                🎁 {message.gift.name}
+                                                <div className="flex items-center">
+                                                    <span className="text-2xl mr-2">🎁</span>
+                                                    <span className="font-bold">{message.gift.name}</span>
+                                                </div>
                                                 <div className="text-xs mt-1 text-center">
                                                     {Number(message.gift.points).toLocaleString()}P
                                                 </div>
+                                                {message.gift.description && (
+                                                    <div className="text-xs mt-2 text-center text-gray-700">
+                                                        {message.gift.description}
+                                                    </div>
+                                                )}
                                             </div>
                                             
                                         )}

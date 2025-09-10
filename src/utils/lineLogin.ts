@@ -39,7 +39,7 @@ export const detectLineApp = (): Promise<boolean> => {
     let resolved = false;
     
     const cleanup = () => {
-      if (iframe.parentNode) {
+      if (iframe.parentNode && document.body.contains(iframe)) {
         document.body.removeChild(iframe);
       }
     };

@@ -99,7 +99,9 @@ const copyToClipboardFallback = (text: string): boolean => {
     textArea.select();
     
     const successful = document.execCommand('copy');
-    document.body.removeChild(textArea);
+    if (document.body.contains(textArea)) {
+        document.body.removeChild(textArea);
+    }
     
     console.log('execCommand result:', successful);
     return successful;

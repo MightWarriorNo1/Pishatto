@@ -2003,14 +2003,21 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     <div className={`${isSent ? 'w-full bg-secondary text-white rounded-lg px-4 py-2' : 'w-full bg-white text-black rounded-lg px-4 py-2'} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
                                         {/* Gift display */}
                                         {msg.gift_id && msg.gift && (
-                                            <div className="flex items-center mb-1">
-                                                <span className="text-3xl mr-2">
-                                                    {msg.gift.icon}
-                                                </span>
-                                                <span className="font-bold">{msg.gift.name}</span>
-                                                <span className="ml-2 text-xs text-primary font-bold">{msg.gift.points?.toLocaleString()}P</span>
-                                                {msg.isOptimistic && (
-                                                    <span className="ml-2 text-xs text-yellow-300">送信中...</span>
+                                            <div className="mb-1">
+                                                <div className="flex items-center">
+                                                    <span className="text-3xl mr-2">
+                                                        {msg.gift.icon}
+                                                    </span>
+                                                    <span className="font-bold">{msg.gift.name}</span>
+                                                    <span className="ml-2 text-xs text-primary font-bold">{msg.gift.points?.toLocaleString()}P</span>
+                                                    {msg.isOptimistic && (
+                                                        <span className="ml-2 text-xs text-yellow-300">送信中...</span>
+                                                    )}
+                                                </div>
+                                                {msg.gift.description && (
+                                                    <div className="text-xs text-gray-300 mt-1 ml-11">
+                                                        {msg.gift.description}
+                                                    </div>
                                                 )}
                                             </div>
                                         )}

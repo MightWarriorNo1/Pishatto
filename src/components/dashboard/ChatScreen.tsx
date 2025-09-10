@@ -766,11 +766,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                     const giftObj = msg.gift_id ? (msg.gift || (Array.isArray(gifts) ? gifts.find((g: any) => g.id === msg.gift_id) : null)) : null;
                                                     if (!giftObj) return null;
                                                     return (
-                                                        <div className="flex items-center mb-1">
-                                                            <span className="text-3xl mr-2">{giftObj.icon || '🎁'}</span>
-                                                            <span className="font-bold">{giftObj.name || 'ギフト'}</span>
-                                                            <span className="ml-2 text-xs text-primary font-bold">{typeof giftObj.points === 'number' ? giftObj.points.toLocaleString() : Number(giftObj.points || 0).toLocaleString()}P</span>
-                                                            {msg.isOptimistic && (<span className="ml-2 text-xs text-yellow-300">送信中...</span>)}
+                                                        <div className="mb-1">
+                                                            <div className="flex items-center">
+                                                                <span className="text-3xl mr-2">{giftObj.icon || '🎁'}</span>
+                                                                <span className="font-bold">{giftObj.name || 'ギフト'}</span>
+                                                                <span className="ml-2 text-xs text-primary font-bold">{typeof giftObj.points === 'number' ? giftObj.points.toLocaleString() : Number(giftObj.points || 0).toLocaleString()}P</span>
+                                                                {msg.isOptimistic && (<span className="ml-2 text-xs text-yellow-300">送信中...</span>)}
+                                                            </div>
+                                                            {giftObj.description && (
+                                                                <div className="text-xs text-gray-300 mt-1 ml-11">
+                                                                    {giftObj.description}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     );
                                                 })()}
