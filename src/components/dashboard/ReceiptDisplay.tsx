@@ -91,7 +91,7 @@ const ReceiptDisplay: React.FC<ReceiptDisplayProps> = ({ receipt, onBack }) => {
             <div className="flex-1 text-right">
               <div className="text-xs text-gray-700">
                 <div className="font-bold mb-1">{receipt.company_name}</div>
-                <div>〒106-0032</div>
+                <div>〒107-0052</div>
                 <div>東京都港区六本木4丁目8-7</div>
                 <div>六本木三河台ビル</div>
                 <div>{receipt.company_phone}</div>

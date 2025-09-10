@@ -152,10 +152,10 @@ const PrivacyPolicy: React.FC = () => {
           <h2 className="text-lg font-semibold">15. お問い合わせ</h2>
           <p>開示等のお申出、ご意見、ご質問、苦情のお申出その他個人情報の取扱いに関するお問い合わせは、下記の窓口まで電話又はEmailにてお願い致します。</p>
           <address className="not-italic">
-〒106-0032<br />
-東京都港区六本木3-7-1ザ六本木クラブ東京<br />
+〒107-0052<br />
+東京都港区赤坂9-4-1<br />
 株式会社GeNEEメディカルケア. 事務局<br />
-E-mail: <a className="underline" href="mailto:soumu@gn-solutions.jp">soumu@gn-solutions.jp</a>
+E-mail: <a className="underline" href="mailto:info@presidents.jp">info@presidents.jp</a>
           </address>
         </div>
 

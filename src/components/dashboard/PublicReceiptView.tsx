@@ -250,7 +250,7 @@ const PublicReceiptView: React.FC = () => {
                   </div>
                 </div>
                 <div class="company-name">株式会社Pishatto</div>
-                <div class="company-detail">〒106-0032</div>
+                <div class="company-detail">〒107-0052</div>
                 <div class="company-detail">東京都港区六本木4丁目8-7</div>
                 <div class="company-detail">六本木三河台ビル</div>
                 
@@ -365,7 +365,7 @@ const PublicReceiptView: React.FC = () => {
             </div>
              <div className="text-sm text-gray-700">
                <div className="font-bold">株式会社Pishatto</div>
-               <div>〒106-0032</div>
+               <div>〒107-0052</div>
                <div>東京都港区六本木4丁目8-7</div>
                <div>六本木三河台ビル</div>
              </div>
