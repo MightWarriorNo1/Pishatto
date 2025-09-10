@@ -1,4 +1,5 @@
 import React from 'react';
+import { ChevronLeft } from 'lucide-react';
 
 type LegalLayoutProps = {
   title: string;
@@ -18,7 +19,10 @@ const LegalLayout: React.FC<LegalLayoutProps> = ({ title, children }) => {
             className="text-white/80 hover:text-white text-sm underline"
             aria-label="戻る"
           >
-            ← 戻る
+            <div className='flex flex-row items-center'>
+              <ChevronLeft /> 戻る
+            </div>
+            
           </button>
         </div>
       </div>
