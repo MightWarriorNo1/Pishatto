@@ -5,7 +5,7 @@ const PrivacyPolicy: React.FC = () => {
   return (
     <LegalLayout title="プライバシーポリシー">
       <section className="space-y-8">
-        <p>株式会社ジーン / GeNEE Corp.（以下「当社」といいます。）は、個人情報保護の重要性について認識し、個人情報の保護に関する法律（以下「個人情報保護法」といいます。）を遵守すると共に、以下のプライバシーポリシー（以下「本プライバシーポリシー」といいます。）に従い、適切な取扱い及び保護に努めます。なお、本プライバシーポリシーにおいて別段の定めがない限り、本プライバシーポリシーにおける用語の定義は、個人情報保護法の定めに従います。</p>
+        <p>株式会社GeNEEメディカルケア.（以下「当社」といいます。）は、個人情報保護の重要性について認識し、個人情報の保護に関する法律（以下「個人情報保護法」といいます。）を遵守すると共に、以下のプライバシーポリシー（以下「本プライバシーポリシー」といいます。）に従い、適切な取扱い及び保護に努めます。なお、本プライバシーポリシーにおいて別段の定めがない限り、本プライバシーポリシーにおける用語の定義は、個人情報保護法の定めに従います。</p>
 
         <div>
           <h2 className="text-lg font-semibold">1. 個人情報の定義</h2>
@@ -154,7 +154,7 @@ const PrivacyPolicy: React.FC = () => {
           <address className="not-italic">
 〒106-0032<br />
 東京都港区六本木3-7-1ザ六本木クラブ東京<br />
-株式会社ジーン / GeNEE Corp. 事務局<br />
+株式会社GeNEEメディカルケア. 事務局<br />
 E-mail: <a className="underline" href="mailto:soumu@gn-solutions.jp">soumu@gn-solutions.jp</a>
           </address>
         </div>

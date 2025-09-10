@@ -10,7 +10,7 @@ const TermsOfSale: React.FC = () => {
             <tbody>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">事業者</th>
-                <td className="p-3 text-white/90">株式会社ジーン / GeNEE Corp.</td>
+                <td className="p-3 text-white/90">株式会社GeNEEメディカルケア.</td>
               </tr>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">業種</th>
