@@ -167,17 +167,38 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                     }
                 }
                 
+                // Check if this is a generic Line authentication failure for cast users
+                if (data.message && data.message.includes('Line authentication failed') && userType === 'cast') {
+                    // For cast users, redirect to login options page with error message
+                    navigate('/cast/login', { 
+                        replace: true,
+                        state: { 
+                            error: 'LINE認証に失敗しました。電話番号でログインしてください。'
+                        }
+                    });
+                    return;
+                }
+                
                 throw new Error(data.message || 'Line authentication failed');
             }
         } catch (err: any) {
             console.error('LineLogin: Error in callback handling:', err);
             const errorMessage = err.message || 'Line callback failed';
+            
+            // For cast users, redirect to login options page with error message instead of showing error
+            if (userType === 'cast') {
+                navigate('/cast/login', { 
+                    replace: true,
+                    state: { 
+                        error: 'LINE認証に失敗しました。電話番号でログインしてください。'
+                    }
+                });
+                return;
+            }
+            
+            // For guest users, show the error normally
             setError(errorMessage);
             onError?.(errorMessage);
-            // For cast, redirect to cast/login on failure
-            if (userType === 'cast') {
-                navigate('/cast/login', { replace: true });
-            }
         }
     };
 

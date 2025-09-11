@@ -15,12 +15,18 @@ const CastLoginOptions: React.FC<CastLoginOptionsProps> = ({ onNext }) => {
     const userType = 'cast';
     const location = useLocation();
 
-    // Check for error message from navigation state
+    // Check for error message from navigation state or URL query params
     useEffect(() => {
         if (location.state?.error) {
             setError(location.state.error);
+        } else if (location.search) {
+            const urlParams = new URLSearchParams(location.search);
+            const errorParam = urlParams.get('error');
+            if (errorParam) {
+                setError(decodeURIComponent(errorParam));
+            }
         }
-    }, [location.state]);
+    }, [location.state, location.search]);
 
     const handleLineLoginClick = () => {
         setIsLoading(true);
