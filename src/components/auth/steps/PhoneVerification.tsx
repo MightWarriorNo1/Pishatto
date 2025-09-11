@@ -279,7 +279,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
             <div className="text-sm text-white mb-4">送信された6桁の認証コードを入力してください。</div>
             {/* Verification Code Input */}
             <div
-              className="flex justify-between space-x-2 mb-4"
+              className="flex justify-center gap-1 sm:gap-2 mb-4"
               role="group"
               aria-label="6桁の認証コード入力"
             >
@@ -297,7 +297,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
                   onKeyDown={(e) => handleCodeKeyDown(index, e)}
                   onFocus={(e) => e.currentTarget.select()}
                   ref={(el) => (inputsRef.current[index] = el)}
-                  className="w-[45px] h-[45px] text-center text-lg border border-white/20 rounded-md bg-primary text-white focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/60"
+                  className="w-10 h-10 sm:w-[45px] sm:h-[45px] text-center text-base sm:text-lg border border-white/20 rounded-md bg-primary text-white focus:outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/60 flex-shrink-0"
                   disabled={loading}
                 />
               ))}

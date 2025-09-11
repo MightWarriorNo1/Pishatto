@@ -22,11 +22,10 @@ const InterestTags: React.FC<InterestTagsProps> = ({
   const [selectedTags, setSelectedTags] = useState<GuestInterest[]>(formData.interests || []);
 
   const categories: { [key: string]: string[] } = {
-    '飲み方': ['わいわい', 'しっとり', 'パリピ'],
-    '趣味': ['海好き', 'ゴルフ', 'カラオケ', 'アニメ', '漫画'],
-    '映画鑑賞': [],
-    'アクティビティ': ['トレーニング', '麻雀', '旅行', '温泉', 'BBQ'],
-    '音楽': ['ゲーム']
+    'キャストタイプ': ['学生', '童顔', '綺麗系', 'ギャル', '清楚', 'スレンダー', 'グラマー', 'ハーフ', '小柄', 'プロ歓迎', '最近入会'],
+    'お疲れ箇所': ['ふくらはぎ', '太もも', '足の裏', '肩', '腕', '背中'],
+    '会話': ['多め', '普通', '少なめ', '無し'],
+    'オイルの香り': ['無香料', 'イランイラン', '柑橘系', 'ラベンダー']
   };
 
   const handleTagSelect = (category: string, tag: string) => {
@@ -62,7 +61,7 @@ const InterestTags: React.FC<InterestTagsProps> = ({
       {/* Main Content */}
       <div className="flex-1 px-4">
         <div className="mb-6">
-          <h2 className="text-base text-white">あなたにマッチするキャストを探すために、趣味や好みのタグを設定してください。</h2>
+          <h2 className="text-base text-white">あなたにマッチするキャストを探すために、希望するキャストの特徴や好みを設定してください。</h2>
           <p className="text-xs text-white mt-1">※あとから変更可能</p>
         </div>
 

@@ -183,13 +183,13 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                 disabled={avatarUploading || submitted}
             />
             {/* Info box */}
-            <div className="mx-4 border border-secondary rounded-xl bg-primary px-4 mb-4 flex flex-col items-center">
+            <div className="mx-4 border border-secondary rounded-xl bg-primary p-4 mb-4 flex flex-col items-center">
                 <Lock className="text-white mb-2" />
                 <div className="font-bold mb-1 text-white">お客様情報は厳重に管理しています</div>
                 <div className="text-xs text-white text-center">提出いただいた証明書の画像は本人確認のみに使用し、<br />他の目的には一切使用しません。</div>
             </div>
             {/* Start button and status messages */}
-            <div className="px-4">
+            <div className="px-4 mb-28">
                 {/* Show button for failed status or null status (initial state) */}
                 {(verificationStatus === 'failed' || verificationStatus === null) && (
                     <button

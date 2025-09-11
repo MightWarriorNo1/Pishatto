@@ -88,7 +88,7 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
 
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-32">
             {/* Top bar */}
             <div className="flex flex-row justify-between items-center px-4 pt-4 pb-4 border-b border-secondary">
                 <button onClick={onBack} className="mr-2 text-2xl text-white cursor-pointer hover:text-secondary" aria-label="戻る">
