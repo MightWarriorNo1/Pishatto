@@ -1,5 +1,6 @@
 /* eslint-disable */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import CastPhoneNumberInput from './CastPhoneNumberInput';
 import { handleLineLogin } from '../../../utils/lineLogin';
 
@@ -12,6 +13,14 @@ const CastLoginOptions: React.FC<CastLoginOptionsProps> = ({ onNext }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const userType = 'cast';
+    const location = useLocation();
+
+    // Check for error message from navigation state
+    useEffect(() => {
+        if (location.state?.error) {
+            setError(location.state.error);
+        }
+    }, [location.state]);
 
     const handleLineLoginClick = () => {
         setIsLoading(true);
@@ -40,6 +49,12 @@ const CastLoginOptions: React.FC<CastLoginOptionsProps> = ({ onNext }) => {
                         <h1 className="text-xl font-semibold text-white">はじめましょう</h1>
                         <p className="text-sm text-secondary">かんたん・安全・無料。女性のためのやさしい設計です。</p>
                     </div>
+
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-500 text-sm text-center">
+                            {error}
+                        </div>
+                    )}
 
                     <div className="space-y-3">
                         <button

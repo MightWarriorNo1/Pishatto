@@ -153,6 +153,20 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                     return;
                 }
                 
+                // Check if this is the specific cast account not found error
+                if (data.message && data.message.includes('Cast account not found for this LINE ID')) {
+                    // For cast users, redirect to login options page with error message
+                    if (userType === 'cast') {
+                        navigate('/cast/login', { 
+                            replace: true,
+                            state: { 
+                                error: 'このLINEアカウントに紐づくキャストアカウントが見つかりません。電話番号でログインしてください。'
+                            }
+                        });
+                        return;
+                    }
+                }
+                
                 throw new Error(data.message || 'Line authentication failed');
             }
         } catch (err: any) {
