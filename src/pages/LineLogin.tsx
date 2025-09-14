@@ -1,15 +1,40 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import LineLogin from '../components/auth/steps/LineLogin';
 
 const GuestLineLogin: React.FC = () => {
+    const navigate = useNavigate();
+
     const handleLineSuccess = (user: any) => {
         console.log('Guest Line login successful:', user);
-        // Additional guest-specific logic can be added here
+        
+        // Check if user came from cast registration
+        const hasCastFormData = sessionStorage.getItem('cast_register_form_data');
+        if (hasCastFormData && user?.line_data?.line_id) {
+            // Store the LINE ID for cast registration
+            sessionStorage.setItem('cast_line_id', user.line_data.line_id);
+            // Navigate back to cast register page
+            navigate('/cast/register');
+            return;
+        }
+        
+        // Default guest flow - navigate to dashboard
+        navigate('/dashboard');
     };
 
     const handleLineError = (error: string) => {
         console.error('Guest Line login error:', error);
-        // Handle guest-specific errors
+        
+        // Check if user came from cast registration
+        const hasCastFormData = sessionStorage.getItem('cast_register_form_data');
+        if (hasCastFormData) {
+            // Navigate back to cast register page even on error
+            navigate('/cast/register');
+            return;
+        }
+        
+        // Default error handling for guest flow
+        console.error('Guest Line login error:', error);
     };
 
     return (

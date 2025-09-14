@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { Image, LockKeyhole, Plus, CirclePlus, X, CircleUser } from 'lucide-react';
+import { Image, LockKeyhole, Plus, CirclePlus, X, CircleUser, Phone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Spinner from '../../components/ui/Spinner';
 import { API_ENDPOINTS } from '../../config/api';
+import { handleLineLogin } from '../../utils/lineLogin';
 
 // Add CSS animation for smooth modal rise
 const modalStyles = `
@@ -31,8 +33,10 @@ interface SelectedImage {
 }
 
 const CastRegisterPage: React.FC = () => {
+    const navigate = useNavigate();
     const [showWarningModal, setShowWarningModal] = useState(false);
-    const [lineURL,setLineURL]=useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [lineId, setLineId] = useState('');
     const [loading] = useState(true);
     const [selectedImages, setSelectedImages] = useState<{
         front: SelectedImage | null;
@@ -57,6 +61,52 @@ const CastRegisterPage: React.FC = () => {
                 document.head.removeChild(style);
             }
         };
+    }, []);
+
+    // Restore form data when returning from LINE login
+    React.useEffect(() => {
+        const savedFormData = sessionStorage.getItem('cast_register_form_data');
+        const savedLineId = sessionStorage.getItem('cast_line_id');
+        
+        if (savedFormData) {
+            try {
+                const formData = JSON.parse(savedFormData);
+                setPhoneNumber(formData.phoneNumber || '');
+                
+                // Restore selected images (preview only, not the actual files)
+                if (formData.selectedImages) {
+                    setSelectedImages(prev => ({
+                        ...prev,
+                        front: formData.selectedImages.front ? {
+                            id: formData.selectedImages.front.id,
+                            preview: formData.selectedImages.front.preview,
+                            file: prev.front?.file || new File([], '') // Keep existing file or create empty
+                        } : null,
+                        profile: formData.selectedImages.profile ? {
+                            id: formData.selectedImages.profile.id,
+                            preview: formData.selectedImages.profile.preview,
+                            file: prev.profile?.file || new File([], '')
+                        } : null,
+                        fullBody: formData.selectedImages.fullBody ? {
+                            id: formData.selectedImages.fullBody.id,
+                            preview: formData.selectedImages.fullBody.preview,
+                            file: prev.fullBody?.file || new File([], '')
+                        } : null,
+                    }));
+                }
+                
+                // Clear the saved data
+                sessionStorage.removeItem('cast_register_form_data');
+            } catch (error) {
+                console.error('Error restoring form data:', error);
+            }
+        }
+        
+        // Set LINE ID if available
+        if (savedLineId) {
+            setLineId(savedLineId);
+            sessionStorage.removeItem('cast_line_id');
+        }
     }, []);
 
     const handlePlusClick = (imageType: 'front' | 'profile' | 'fullBody') => {
@@ -98,14 +148,38 @@ const CastRegisterPage: React.FC = () => {
         setActiveImageType(null);
     };
 
-    const isSubmitEnabled = selectedImages.front && selectedImages.profile && selectedImages.fullBody && lineURL.trim();
+    const handleLineLoginClick = () => {
+        // Store the current form data in sessionStorage to restore after LINE login
+        const formData = {
+            phoneNumber,
+            selectedImages: {
+                front: selectedImages.front ? { id: selectedImages.front.id, preview: selectedImages.front.preview } : null,
+                profile: selectedImages.profile ? { id: selectedImages.profile.id, preview: selectedImages.profile.preview } : null,
+                fullBody: selectedImages.fullBody ? { id: selectedImages.fullBody.id, preview: selectedImages.fullBody.preview } : null,
+            }
+        };
+        sessionStorage.setItem('cast_register_form_data', JSON.stringify(formData));
+        
+        // Directly trigger LINE OAuth flow
+        handleLineLogin({
+            userType: 'guest', // Use guest type for LINE OAuth
+            castRegistration: true, // Flag for cast registration
+            onError: (error: string) => {
+                console.error('LINE login error:', error);
+                // Stay on the same page on error
+            }
+        });
+    };
+
+    const isSubmitEnabled = selectedImages.front && selectedImages.profile && selectedImages.fullBody && phoneNumber.trim() && lineId.trim();
 
     const handleSubmit = async () => {
         if (!isSubmitEnabled) return;
 
         try {
             const formData = new FormData();
-            formData.append('line_url', lineURL);
+            formData.append('phone_number', phoneNumber);
+            formData.append('line_id', lineId);
             formData.append('front_image', selectedImages.front!.file);
             formData.append('profile_image', selectedImages.profile!.file);
             formData.append('full_body_image', selectedImages.fullBody!.file);
@@ -123,7 +197,8 @@ const CastRegisterPage: React.FC = () => {
                     profile: null,
                     fullBody: null
                 });
-                setLineURL('');
+                setPhoneNumber('');
+                setLineId('');
             } else {
                 const errorData = await response.json();
                 alert('申請の送信に失敗しました: ' + (errorData.message || 'エラーが発生しました'));
@@ -181,19 +256,51 @@ const CastRegisterPage: React.FC = () => {
                 </div>
 
                 <div className="px-4 py-4">
-                    <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><CircleUser size={20} />
-                    入力LINEアカウント URL</h3>
+                    <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><Phone size={20} />
+                    電話番号を入力してください</h3>
                     <div className="relative">
                     <input
-                        type="text"
-                        placeholder="LINEアカウントのURLを入力してください。"
-                        value={lineURL}
-                        onChange={(e) => setLineURL(e.target.value)}
+                        type="tel"
+                        placeholder="電話番号を入力してください"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400 transition-all pr-10 shadow"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/70 pointer-events-none">
-                    <CircleUser size='18' />
+                    <Phone size='18' />
                     </span>
+                    </div>
+                </div>
+
+                <div className="px-4 py-4">
+                    <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><CircleUser size={20} />
+                    LINEアカウント連携</h3>
+                    <div className="space-y-3">
+                        {lineId ? (
+                            <div className="bg-green-100 border border-green-300 rounded-lg p-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <CircleUser className="w-5 h-5 text-green-600" />
+                                        <span className="text-green-800 font-medium">LINEアカウント連携済み</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setLineId('')}
+                                        className="text-green-600 hover:text-green-800 text-sm underline"
+                                    >
+                                        変更
+                                    </button>
+                                </div>
+                                <p className="text-green-700 text-sm mt-1">LINE ID: {lineId}</p>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={handleLineLoginClick}
+                                className="w-full py-3 px-4 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2"
+                            >
+                                <CircleUser size={20} />
+                                LINEでログイン
+                            </button>
+                        )}
                     </div>
                 </div>
                 {/* Photo upload boxes */}
@@ -278,33 +385,45 @@ const CastRegisterPage: React.FC = () => {
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 mb-6">
-                            <div className="flex flex-col items-center">
-                                <div className="relative w-full aspect-square rounded-lg overflow-hidden">
-                                    <img src='/assets/avatar/female.png' alt="warning" className="w-full h-full object-cover" />
-                                    <div className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                                        <X className="w-2.5 h-2.5 text-white" />
+                        <div className="grid grid-cols-3 gap-3 mb-6">
+                            <div className="flex flex-col items-center space-y-2">
+                                <div className="relative w-20 h-20 rounded-xl overflow-hidden shadow-lg border-2 border-red-200">
+                                    <img 
+                                        src='/assets/avatar/female.png' 
+                                        alt="NG例: 顔が写っていない" 
+                                        className="w-full h-full object-cover grayscale opacity-70" 
+                                    />
+                                    <div className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-md">
+                                        <X className="w-4 h-4 text-white" />
                                     </div>
                                 </div>
-                                <span className="text-xs text-white mt-2 text-center">顔が写っていない</span>
+                                <span className="text-xs text-white text-center font-medium leading-tight px-1">顔が写っていない</span>
                             </div>
-                            <div className="flex flex-col items-center">
-                                <div className="relative w-full aspect-square rounded-lg overflow-hidden">
-                                    <img src='/assets/avatar/female.png' alt="warning" className="w-full h-full object-cover" />
-                                    <div className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                                        <X className="w-2.5 h-2.5 text-white" />
+                            <div className="flex flex-col items-center space-y-2">
+                                <div className="relative w-20 h-20 rounded-xl overflow-hidden shadow-lg border-2 border-red-200">
+                                    <img 
+                                        src='/assets/avatar/female.png' 
+                                        alt="NG例: 加工しすぎ" 
+                                        className="w-full h-full object-cover grayscale opacity-70" 
+                                    />
+                                    <div className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-md">
+                                        <X className="w-4 h-4 text-white" />
                                     </div>
                                 </div>
-                                <span className="text-xs text-white mt-2 text-center">加工しすぎ</span>
+                                <span className="text-xs text-white text-center font-medium leading-tight px-1">加工しすぎ</span>
                             </div>
-                            <div className="flex flex-col items-center">
-                                <div className="relative w-full aspect-square rounded-lg overflow-hidden">
-                                    <img src='/assets/avatar/female.png' alt="warning" className="w-full h-full object-cover" />
-                                    <div className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
-                                        <X className="w-2.5 h-2.5 text-white" />
+                            <div className="flex flex-col items-center space-y-2">
+                                <div className="relative w-20 h-20 rounded-xl overflow-hidden shadow-lg border-2 border-red-200">
+                                    <img 
+                                        src='/assets/avatar/female.png' 
+                                        alt="NG例: 画質が粗い" 
+                                        className="w-full h-full object-cover grayscale opacity-70" 
+                                    />
+                                    <div className="absolute top-1 right-1 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center shadow-md">
+                                        <X className="w-4 h-4 text-white" />
                                     </div>
                                 </div>
-                                <span className="text-xs text-white mt-2 text-center">画質が粗い</span>
+                                <span className="text-xs text-white text-center font-medium leading-tight px-1">画質が粗い</span>
                             </div>
                         </div>
 

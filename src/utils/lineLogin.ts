@@ -7,6 +7,7 @@ interface LineLoginOptions {
   userType: 'guest' | 'cast';
   onSuccess?: () => void;
   onError?: (error: string) => void;
+  castRegistration?: boolean;
 }
 
 /**
@@ -169,7 +170,7 @@ export const retryLineLoginWithDisabledAutoLogin = (userType: 'guest' | 'cast'):
  * Main LINE login handler with iOS-specific logic following LINE's official recommendations
  */
 export const handleLineLogin = async (options: LineLoginOptions): Promise<void> => {
-  const { userType, onError } = options;
+  const { userType, onError, castRegistration = false } = options;
   
   try {
     // Generate secure state parameter (for local validation/UI)
@@ -179,6 +180,9 @@ export const handleLineLogin = async (options: LineLoginOptions): Promise<void> 
     const apiBase = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
     const redirectTo = new URL(`${apiBase}/line/redirect`);
     redirectTo.searchParams.set('user_type', userType);
+    if (castRegistration) {
+      redirectTo.searchParams.set('cast_registration', 'true');
+    }
     if (isIOSSafari()) {
       redirectTo.searchParams.set('disable_auto_login', 'true');
     }
