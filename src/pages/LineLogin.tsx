@@ -11,14 +11,16 @@ const GuestLineLogin: React.FC = () => {
             hasLineData: !!user?.line_data,
             lineDataKeys: user?.line_data ? Object.keys(user.line_data) : [],
             hasLineId: !!user?.line_id,
-            userType: user?.user_type
+            userType: user?.user_type,
+            success: user?.success
         });
         
         // Check if user came from cast registration
         const hasCastFormData = sessionStorage.getItem('cast_register_form_data');
         console.log('LINE login success - hasCastFormData:', !!hasCastFormData, 'user:', user);
         
-        if (hasCastFormData) {
+        if (hasCastFormData || user?.user_type === 'cast_registration') {
+            console.log('Processing cast registration flow...');
             // For cast registration, check multiple possible LINE ID locations
             const lineId = user?.line_data?.line_id || user?.line_id || user?.lineId;
             console.log('Extracted LINE ID:', lineId, 'from user:', user);
@@ -43,6 +45,7 @@ const GuestLineLogin: React.FC = () => {
         }
         
         // Default guest flow - navigate to dashboard
+        console.log('Navigating to guest dashboard...');
         navigate('/dashboard');
     };
 

@@ -124,6 +124,13 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                     }, 300); // Increased delay for cast users to ensure context stability
                 } else if (data.user_type === 'cast_registration') {
                     console.log('LineLogin: Processing cast registration...', data);
+                    console.log('Cast registration data structure:', {
+                        success: data.success,
+                        user_type: data.user_type,
+                        hasLineData: !!data.line_data,
+                        lineId: data.line_data?.line_id,
+                        message: data.message
+                    });
                     // Handle cast registration - pass the data as-is since backend returns correct structure
                     onSuccess?.(data);
                 } else if (data.user_type === 'new') {
