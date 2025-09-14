@@ -832,6 +832,7 @@ export const deductPoints = async (guest_id: number, amount: number) => {
 
 export const fetchAllGifts = async () => {
   const response = await api.get('/gifts');
+  console.log("Response", response);
   return response.data.gifts;
 };
 
@@ -956,9 +957,7 @@ export const likeTweet = async (tweet_id: number, guest_id?: number, cast_id?: n
 };
 
 export const getTweetLikeCount = async (tweet_id: number) => {
-  console.log("GETTING TWEET LIKE COUNT", tweet_id);
   const response = await api.get(`/tweets/${tweet_id}/like-count`);
-  console.log("RESPONSE", response.data);
   return response.data.count;
 };
 

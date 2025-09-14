@@ -64,6 +64,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
     try {
       // Send SMS verification code via Twilio
       const response = await sendSmsVerificationCode(phoneNumber);
+      console.log("Response", response);
       if (response.success) {
         updateFormData({ phoneNumber });
         setStep('code');

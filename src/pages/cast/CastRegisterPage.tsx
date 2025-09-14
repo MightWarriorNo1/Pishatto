@@ -182,7 +182,7 @@ const CastRegisterPage: React.FC = () => {
 
                 <div className="px-4 py-4">
                     <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><CircleUser size={20} />
-                    入力 ライン アカウント URL</h3>
+                    入力LINEアカウント URL</h3>
                     <div className="relative">
                     <input
                         type="text"

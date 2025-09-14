@@ -347,7 +347,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     // No need for frontend simulation
 
     useEffect(() => {
-        fetchAllGifts().then(setGifts);
+        fetchAllGifts()
+            .then((gifts) => {
+                setGifts(gifts);
+                console.log("Gifts", gifts);
+            })
+            .catch((error) => {
+                console.error("Failed to fetch gifts", error);
+            });
     }, []);
 
     // Auto scroll to bottom on new messages
