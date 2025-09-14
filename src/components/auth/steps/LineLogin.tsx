@@ -26,6 +26,7 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
         try {
             await handleLineLogin({
                 userType,
+                useCastCallback: false, // Explicitly set to false for regular login
                 onError: (errorMessage) => {
                     setError(errorMessage);
                     onError?.(errorMessage);

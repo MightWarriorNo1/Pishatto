@@ -18,6 +18,7 @@ const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
 
     handleLineLogin({
       userType,
+      useCastCallback: false, // Explicitly set to false for regular login
       onError: (errorMessage: string) => {
         setError(errorMessage);
       }

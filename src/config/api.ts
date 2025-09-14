@@ -6,7 +6,7 @@
 // API Base URL - Update this value based on your environment
 export const API_CONFIG = {
   // Production API URL
-  PRODUCTION_URL: 'http://162.43.44.71:8000',
+  PRODUCTION_URL: 'https://admin.pishatto.com',
   
   // Development API URL (fallback)
   DEVELOPMENT_URL: 'http://localhost:8000',
@@ -45,6 +45,10 @@ export const API_ENDPOINTS = {
   CAST_REGISTER: `${API_CONFIG.API_BASE_URL}/cast/register`,
   CAST_LOGIN: `${API_CONFIG.API_BASE_URL}/cast/login`,
   CAST_APPLICATION_SUBMIT: `${API_CONFIG.API_BASE_URL}/cast-applications/submit`,
+  CAST_UPLOAD_IMAGES: `${API_CONFIG.API_BASE_URL}/cast/upload-images`,
+  CAST_UPLOAD_SINGLE_IMAGE: `${API_CONFIG.API_BASE_URL}/cast/upload-single-image`,
+  CAST_GET_IMAGES: `${API_CONFIG.API_BASE_URL}/cast/images`,
+  CAST_CLEANUP_IMAGES: `${API_CONFIG.API_BASE_URL}/cast/images`,
   SMS_SEND_CODE: `${API_CONFIG.API_BASE_URL}/sms/send-code`,
   SMS_VERIFY_CODE: `${API_CONFIG.API_BASE_URL}/sms/verify-code`,
   CHATS: `${API_CONFIG.API_BASE_URL}/chats`,

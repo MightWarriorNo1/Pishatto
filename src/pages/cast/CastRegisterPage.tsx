@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Spinner from '../../components/ui/Spinner';
 import { API_ENDPOINTS } from '../../config/api';
 import { handleLineLogin } from '../../utils/lineLogin';
+import { getCsrfToken, refreshCsrfToken } from '../../utils/csrf';
 
 // Add CSS animation for smooth modal rise
 const modalStyles = `
@@ -30,6 +31,8 @@ interface SelectedImage {
   id: string;
   file: File;
   preview: string;
+  serverUrl?: string;
+  sessionId?: string;
 }
 
 const CastRegisterPage: React.FC = () => {
@@ -37,7 +40,11 @@ const CastRegisterPage: React.FC = () => {
     const [showWarningModal, setShowWarningModal] = useState(false);
     const [phoneNumber, setPhoneNumber] = useState('');
     const [lineId, setLineId] = useState('');
+    const [lineName, setLineName] = useState('');
     const [loading] = useState(true);
+    const [uploadSessionId, setUploadSessionId] = useState<string | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedImages, setSelectedImages] = useState<{
         front: SelectedImage | null;
         profile: SelectedImage | null;
@@ -63,18 +70,53 @@ const CastRegisterPage: React.FC = () => {
         };
     }, []);
 
-    // Restore form data when returning from LINE login
+    // Check for LINE callback data and restore form data
     React.useEffect(() => {
+        // Check URL parameters for LINE callback data
+        const urlParams = new URLSearchParams(window.location.search);
+        const lineIdFromUrl = urlParams.get('line_id');
+        const lineNameFromUrl = urlParams.get('line_name');
+        const lineEmailFromUrl = urlParams.get('line_email');
+        const lineAvatarFromUrl = urlParams.get('line_avatar');
+        
+        if (lineIdFromUrl) {
+            setLineId(lineIdFromUrl);
+            if (lineNameFromUrl) {
+                setLineName(lineNameFromUrl);
+            }
+            
+            // Store LINE data in sessionStorage for persistence
+            sessionStorage.setItem('cast_line_data', JSON.stringify({
+                line_id: lineIdFromUrl,
+                line_name: lineNameFromUrl,
+                line_email: lineEmailFromUrl,
+                line_avatar: lineAvatarFromUrl
+            }));
+            
+            // Clean up URL parameters
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+
+    // Restore form data when returning from LINE login
         const savedFormData = sessionStorage.getItem('cast_register_form_data');
-        const savedLineId = sessionStorage.getItem('cast_line_id');
+        const savedLineData = sessionStorage.getItem('cast_line_data');
         
         if (savedFormData) {
             try {
                 const formData = JSON.parse(savedFormData);
                 setPhoneNumber(formData.phoneNumber || '');
                 
-                // Restore selected images (preview only, not the actual files)
-                if (formData.selectedImages) {
+                // Restore upload session ID if available
+                if (formData.uploadSessionId) {
+                    setUploadSessionId(formData.uploadSessionId);
+                }
+                
+                // Restore selected images from server if session ID is available
+                if (formData.uploadSessionId) {
+                    loadImagesFromServer(formData.uploadSessionId);
+                } else if (formData.selectedImages) {
+                    // Fallback to local preview only
                     setSelectedImages(prev => ({
                         ...prev,
                         front: formData.selectedImages.front ? {
@@ -102,12 +144,43 @@ const CastRegisterPage: React.FC = () => {
             }
         }
         
-        // Set LINE ID if available
-        if (savedLineId) {
-            setLineId(savedLineId);
-            sessionStorage.removeItem('cast_line_id');
+        // Restore LINE data from sessionStorage
+        if (savedLineData) {
+            try {
+                const lineData = JSON.parse(savedLineData);
+                setLineId(lineData.line_id || '');
+                setLineName(lineData.line_name || '');
+            } catch (error) {
+                console.error('Error restoring LINE data:', error);
+            }
         }
     }, []);
+
+    // Cleanup function to remove temporary images when component unmounts
+    React.useEffect(() => {
+        return () => {
+            if (uploadSessionId) {
+                // Clean up temporary images on server
+                getCsrfToken().then(csrfToken => {
+                    fetch(API_ENDPOINTS.CAST_CLEANUP_IMAGES, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'include',
+                        body: JSON.stringify({ session_id: uploadSessionId })
+                    }).catch(error => {
+                        console.error('Error cleaning up images:', error);
+                    });
+                }).catch(error => {
+                    console.error('Error getting CSRF token for cleanup:', error);
+                });
+            }
+        };
+    }, [uploadSessionId]);
 
     const handlePlusClick = (imageType: 'front' | 'profile' | 'fullBody') => {
         setActiveImageType(imageType);
@@ -118,23 +191,182 @@ const CastRegisterPage: React.FC = () => {
         fileInputRef.current?.click();
     };
 
-    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const loadImagesFromServer = async (sessionId: string) => {
+        try {
+            // Get CSRF token
+            const csrfToken = await getCsrfToken();
+            
+            const response = await fetch(`${API_ENDPOINTS.CAST_GET_IMAGES}?session_id=${sessionId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'include',
+            });
+            
+            const result = await response.json();
+            console.log('Images loaded from server:', result);
+            
+            if (result.success && result.images) {
+                const images: { front: SelectedImage | null; profile: SelectedImage | null; fullBody: SelectedImage | null } = {
+                    front: null,
+                    profile: null,
+                    fullBody: null
+                };
+                
+                // Convert server URLs to image objects
+                Object.entries(result.images).forEach(([type, url]) => {
+                    // Map backend type names to frontend type names
+                    const frontendType = type === 'full_body' ? 'fullBody' : type;
+                    if (frontendType === 'front' || frontendType === 'profile' || frontendType === 'fullBody') {
+                        console.log(`Setting ${frontendType} image URL:`, url);
+                        images[frontendType] = {
+                            id: `${frontendType}-${Date.now()}`,
+                            file: new File([], ''), // Empty file since we're loading from server
+                            preview: url as string,
+                            serverUrl: url as string,
+                            sessionId: sessionId
+                        };
+                    }
+                });
+                
+                setSelectedImages(images);
+            }
+        } catch (error) {
+            console.error('Error loading images from server:', error);
+        }
+    };
+
+    const uploadImageToServer = async (file: File, type: 'front' | 'profile' | 'fullBody'): Promise<{ success: boolean; serverUrl?: string; sessionId?: string; error?: string }> => {
+        try {
+            setIsUploading(true);
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('type', type);
+            if (uploadSessionId) {
+                formData.append('session_id', uploadSessionId);
+            }
+            
+            console.log('Uploading image:', {
+                fileName: file.name,
+                fileType: file.type,
+                fileSize: file.size,
+                type: type,
+                sessionId: uploadSessionId
+            });
+
+            // Get CSRF token
+            const csrfToken = await getCsrfToken();
+            if (!csrfToken) {
+                throw new Error('CSRF token not found. Please refresh the page and try again.');
+            }
+
+            let response = await fetch(API_ENDPOINTS.CAST_UPLOAD_SINGLE_IMAGE, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                credentials: 'include',
+                body: formData,
+            });
+
+            // If we get a 419 error, try to refresh the CSRF token and retry
+            if (response.status === 419) {
+                console.log('CSRF token expired, refreshing...');
+                const newToken = await refreshCsrfToken();
+                if (newToken) {
+                    // Retry with new token
+                    response = await fetch(API_ENDPOINTS.CAST_UPLOAD_SINGLE_IMAGE, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            ...(newToken && { 'X-CSRF-TOKEN': newToken }),
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        credentials: 'include',
+                        body: formData,
+                    });
+                }
+            }
+
+            const result = await response.json();
+            console.log('Image upload result:', result);
+            
+            if (result.success) {
+                // Store the session ID for future uploads
+                if (result.session_id && !uploadSessionId) {
+                    setUploadSessionId(result.session_id);
+                }
+                return {
+                    success: true,
+                    serverUrl: result.image_url,
+                    sessionId: result.session_id
+                };
+            } else {
+                return {
+                    success: false,
+                    error: result.message || 'Upload failed'
+                };
+            }
+        } catch (error) {
+            console.error('Image upload error:', error);
+            return {
+                success: false,
+                error: 'Upload failed: ' + (error as Error).message
+            };
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (files && files.length > 0 && activeImageType) {
             const file = files[0];
             const preview = URL.createObjectURL(file);
             
-            setSelectedImages(prev => ({
-                ...prev,
-                [activeImageType]: {
+            // Create the image object first
+            const newImage: SelectedImage = {
                     id: `${activeImageType}-${Date.now()}`,
                     file,
                     preview
-                }
+            };
+            
+            // Update state immediately for UI feedback
+            setSelectedImages(prev => ({
+                ...prev,
+                [activeImageType]: newImage
             }));
             
             setShowWarningModal(false);
             setActiveImageType(null);
+            
+            // Upload to server
+            const uploadResult = await uploadImageToServer(file, activeImageType);
+            
+            if (uploadResult.success) {
+                // Update the image with server URL and session ID
+                setSelectedImages(prev => ({
+                    ...prev,
+                    [activeImageType]: {
+                        ...prev[activeImageType]!,
+                        serverUrl: uploadResult.serverUrl,
+                        sessionId: uploadResult.sessionId
+                    }
+                }));
+            } else {
+                // Show error and remove the image
+                alert(`画像のアップロードに失敗しました: ${uploadResult.error}`);
+                setSelectedImages(prev => ({
+                    ...prev,
+                    [activeImageType]: null
+                }));
+            }
             
             // Reset file input
             if (fileInputRef.current) {
@@ -152,18 +384,35 @@ const CastRegisterPage: React.FC = () => {
         // Store the current form data in sessionStorage to restore after LINE login
         const formData = {
             phoneNumber,
+            uploadSessionId, // Store the upload session ID
             selectedImages: {
-                front: selectedImages.front ? { id: selectedImages.front.id, preview: selectedImages.front.preview } : null,
-                profile: selectedImages.profile ? { id: selectedImages.profile.id, preview: selectedImages.profile.preview } : null,
-                fullBody: selectedImages.fullBody ? { id: selectedImages.fullBody.id, preview: selectedImages.fullBody.preview } : null,
+                front: selectedImages.front ? { 
+                    id: selectedImages.front.id, 
+                    preview: selectedImages.front.preview,
+                    serverUrl: selectedImages.front.serverUrl,
+                    sessionId: selectedImages.front.sessionId
+                } : null,
+                profile: selectedImages.profile ? { 
+                    id: selectedImages.profile.id, 
+                    preview: selectedImages.profile.preview,
+                    serverUrl: selectedImages.profile.serverUrl,
+                    sessionId: selectedImages.profile.sessionId
+                } : null,
+                fullBody: selectedImages.fullBody ? { 
+                    id: selectedImages.fullBody.id, 
+                    preview: selectedImages.fullBody.preview,
+                    serverUrl: selectedImages.fullBody.serverUrl,
+                    sessionId: selectedImages.fullBody.sessionId
+                } : null,
             }
         };
         sessionStorage.setItem('cast_register_form_data', JSON.stringify(formData));
         
-        // Directly trigger LINE OAuth flow
+        // Directly trigger LINE OAuth flow with cast-specific callback
         handleLineLogin({
             userType: 'guest', // Use guest type for LINE OAuth
             castRegistration: true, // Flag for cast registration
+            useCastCallback: true, // Use cast-specific callback
             onError: (error: string) => {
                 console.error('LINE login error:', error);
                 // Stay on the same page on error
@@ -174,15 +423,40 @@ const CastRegisterPage: React.FC = () => {
     const isSubmitEnabled = selectedImages.front && selectedImages.profile && selectedImages.fullBody && phoneNumber.trim() && lineId.trim();
 
     const handleSubmit = async () => {
-        if (!isSubmitEnabled) return;
+        if (!isSubmitEnabled || isSubmitting) return;
 
         try {
+            setIsSubmitting(true);
             const formData = new FormData();
             formData.append('phone_number', phoneNumber);
             formData.append('line_id', lineId);
-            formData.append('front_image', selectedImages.front!.file);
-            formData.append('profile_image', selectedImages.profile!.file);
-            formData.append('full_body_image', selectedImages.fullBody!.file);
+            if (lineName) {
+                formData.append('line_name', lineName);
+            }
+            
+            // Use server URLs if available, otherwise fall back to files
+            if (selectedImages.front?.serverUrl) {
+                formData.append('front_image_url', selectedImages.front.serverUrl);
+            } else if (selectedImages.front?.file) {
+                formData.append('front_image', selectedImages.front.file);
+            }
+            
+            if (selectedImages.profile?.serverUrl) {
+                formData.append('profile_image_url', selectedImages.profile.serverUrl);
+            } else if (selectedImages.profile?.file) {
+                formData.append('profile_image', selectedImages.profile.file);
+            }
+            
+            if (selectedImages.fullBody?.serverUrl) {
+                formData.append('full_body_image_url', selectedImages.fullBody.serverUrl);
+            } else if (selectedImages.fullBody?.file) {
+                formData.append('full_body_image', selectedImages.fullBody.file);
+            }
+            
+            // Add upload session ID if available
+            if (uploadSessionId) {
+                formData.append('upload_session_id', uploadSessionId);
+            }
 
             const response = await fetch(API_ENDPOINTS.CAST_APPLICATION_SUBMIT, {
                 method: 'POST',
@@ -199,6 +473,8 @@ const CastRegisterPage: React.FC = () => {
                 });
                 setPhoneNumber('');
                 setLineId('');
+                setLineName('');
+                sessionStorage.removeItem('cast_line_data');
             } else {
                 const errorData = await response.json();
                 alert('申請の送信に失敗しました: ' + (errorData.message || 'エラーが発生しました'));
@@ -206,6 +482,8 @@ const CastRegisterPage: React.FC = () => {
         } catch (error) {
             console.error('Error submitting application:', error);
             alert('申請の送信に失敗しました。もう一度お試しください。');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -228,6 +506,11 @@ const CastRegisterPage: React.FC = () => {
                             <div className="absolute inset-0 bg-black bg-opacity-20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                                 <Plus className="w-6 h-6 text-white" />
                             </div>
+                            {isUploading && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                                </div>
+                            )}
                         </>
                     ) : (
                         <Plus className="w-6 h-6 text-gray-400" />
@@ -261,6 +544,7 @@ const CastRegisterPage: React.FC = () => {
                     <div className="relative">
                     <input
                         type="tel"
+                          maxLength={10}
                         placeholder="電話番号を入力してください"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
@@ -270,6 +554,7 @@ const CastRegisterPage: React.FC = () => {
                     <Phone size='18' />
                     </span>
                     </div>
+                    <div className="text-xs text-red-300 mt-6">※ログインに電話番号が必要になります。必ず正しい電話番号をご入力ください。</div>
                 </div>
 
                 <div className="px-4 py-4">
@@ -284,13 +569,21 @@ const CastRegisterPage: React.FC = () => {
                                         <span className="text-green-800 font-medium">LINEアカウント連携済み</span>
                                     </div>
                                     <button
-                                        onClick={() => setLineId('')}
+                                        onClick={() => {
+                                            setLineId('');
+                                            setLineName('');
+                                            sessionStorage.removeItem('cast_line_data');
+                                        }}
                                         className="text-green-600 hover:text-green-800 text-sm underline"
                                     >
                                         変更
                                     </button>
                                 </div>
-                                <p className="text-green-700 text-sm mt-1">LINE ID: {lineId}</p>
+                                <p className="text-green-700 text-sm mt-1">
+                                    {lineName && `名前: ${lineName}`}
+                                    <br />
+                                    LINE ID: {lineId}
+                                </p>
                             </div>
                         ) : (
                             <button
@@ -302,6 +595,7 @@ const CastRegisterPage: React.FC = () => {
                             </button>
                         )}
                     </div>
+                    <div className="text-xs text-red-300 mt-6">※LINEアカウントを連携は必要になります。</div>
                 </div>
                 {/* Photo upload boxes */}
                 <div className="grid grid-cols-3 gap-4 px-4 py-6">
@@ -341,14 +635,21 @@ const CastRegisterPage: React.FC = () => {
             <div className="px-4 py-6">
                 <button
                     className={`w-full py-4 rounded-lg font-bold text-lg ${
-                        isSubmitEnabled 
+                        isSubmitEnabled && !isSubmitting
                             ? 'bg-orange-500 text-white hover:bg-orange-600' 
                             : 'bg-gray-400 text-gray-200 cursor-not-allowed'
                     }`}
-                    onClick={isSubmitEnabled ? handleSubmit : undefined}
-                    disabled={!isSubmitEnabled}
+                    onClick={isSubmitEnabled && !isSubmitting ? handleSubmit : undefined}
+                    disabled={!isSubmitEnabled || isSubmitting}
                 >
-                    写真を提出する
+                    {isSubmitting ? (
+                        <div className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-2"></div>
+                            送信中...
+                        </div>
+                    ) : (
+                        '写真を提出する'
+                    )}
                 </button>
             </div>
 

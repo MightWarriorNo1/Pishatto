@@ -25,7 +25,7 @@ export async function getCsrfToken(): Promise<string | null> {
     // If still no token, fetch it from the server
     if (!csrfToken) {
         try {
-            console.log('Fetching CSRF token from server...');
+            console.log('Fetching CSRF token from server...', CSRF_ENDPOINT);
             const tokenResponse = await fetch(CSRF_ENDPOINT, {
                 method: 'GET',
                 credentials: 'include',
@@ -35,12 +35,16 @@ export async function getCsrfToken(): Promise<string | null> {
                 }
             });
             
+            console.log('CSRF token response status:', tokenResponse.status);
+            
             if (tokenResponse.ok) {
                 const tokenData = await tokenResponse.json();
+                console.log('CSRF token response data:', tokenData);
                 csrfToken = tokenData.token;
-                console.log('CSRF token fetched successfully');
+                console.log('CSRF token fetched successfully:', csrfToken);
             } else {
-                console.error('Failed to fetch CSRF token:', tokenResponse.status);
+                const errorText = await tokenResponse.text();
+                console.error('Failed to fetch CSRF token:', tokenResponse.status, errorText);
             }
         } catch (error) {
             console.error('Error fetching CSRF token:', error);
