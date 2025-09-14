@@ -122,6 +122,10 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                             setError('キャストデータの取得に失敗しました。もう一度お試しください。');
                         }
                     }, 300); // Increased delay for cast users to ensure context stability
+                } else if (data.user_type === 'cast_registration') {
+                    console.log('LineLogin: Processing cast registration...');
+                    // Handle cast registration - just pass the data to parent component
+                    onSuccess?.(data);
                 } else if (data.user_type === 'new') {
                     console.log('LineLogin: Processing new user registration...');
                     // Handle new user registration for guest only
