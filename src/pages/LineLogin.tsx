@@ -19,6 +19,11 @@ const GuestLineLogin: React.FC = () => {
                 // Navigate back to cast register page
                 navigate('/cast/register');
                 return;
+            } else {
+                console.error('No LINE ID found in response:', user);
+                // Still navigate back to cast register page even without LINE ID
+                navigate('/cast/register');
+                return;
             }
         }
         
