@@ -66,6 +66,18 @@ const CastRegisterPage: React.FC = () => {
 
     // Restore form data when returning from LINE login
     React.useEffect(() => {
+        // Check URL parameters for LINE ID (in case of redirect with query params)
+        const urlParams = new URLSearchParams(window.location.search);
+        const lineIdFromUrl = urlParams.get('line_id');
+        if (lineIdFromUrl) {
+            console.log('Found LINE ID in URL parameters:', lineIdFromUrl);
+            setLineId(lineIdFromUrl);
+            setIsLoadingLineId(false);
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return;
+        }
+
         const savedFormData = sessionStorage.getItem('cast_register_form_data');
         const savedLineId = sessionStorage.getItem('cast_line_id');
         
@@ -183,6 +195,7 @@ const CastRegisterPage: React.FC = () => {
     };
 
     const handleLineLoginClick = () => {
+        console.log('Starting LINE login process...');
         // Set loading state
         setIsLoadingLineId(true);
         
@@ -196,6 +209,7 @@ const CastRegisterPage: React.FC = () => {
             }
         };
         sessionStorage.setItem('cast_register_form_data', JSON.stringify(formData));
+        console.log('Stored form data in sessionStorage:', formData);
         
         // Directly trigger LINE OAuth flow
         handleLineLogin({

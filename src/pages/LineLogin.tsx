@@ -19,9 +19,12 @@ const GuestLineLogin: React.FC = () => {
         console.log('LINE login success - hasCastFormData:', !!hasCastFormData, 'user:', user);
         
         if (hasCastFormData) {
-            // For cast registration, check both possible LINE ID locations
-            const lineId = user?.line_data?.line_id || user?.line_id;
+            // For cast registration, check multiple possible LINE ID locations
+            const lineId = user?.line_data?.line_id || user?.line_id || user?.lineId;
             console.log('Extracted LINE ID:', lineId, 'from user:', user);
+            console.log('Checking user.line_data:', user?.line_data);
+            console.log('Checking user.line_id:', user?.line_id);
+            console.log('Checking user.lineId:', user?.lineId);
             
             if (lineId) {
                 // Store the LINE ID for cast registration
@@ -32,6 +35,7 @@ const GuestLineLogin: React.FC = () => {
                 return;
             } else {
                 console.error('No LINE ID found in response:', user);
+                console.error('Available keys in user object:', Object.keys(user || {}));
                 // Still navigate back to cast register page even without LINE ID
                 navigate('/cast/register');
                 return;
