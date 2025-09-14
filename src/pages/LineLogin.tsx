@@ -7,6 +7,12 @@ const GuestLineLogin: React.FC = () => {
 
     const handleLineSuccess = (user: any) => {
         console.log('Guest Line login successful:', user);
+        console.log('User structure:', {
+            hasLineData: !!user?.line_data,
+            lineDataKeys: user?.line_data ? Object.keys(user.line_data) : [],
+            hasLineId: !!user?.line_id,
+            userType: user?.user_type
+        });
         
         // Check if user came from cast registration
         const hasCastFormData = sessionStorage.getItem('cast_register_form_data');

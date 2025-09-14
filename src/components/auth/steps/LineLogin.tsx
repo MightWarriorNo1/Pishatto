@@ -123,9 +123,14 @@ const LineLogin: React.FC<LineLoginProps> = ({ userType = 'guest', onSuccess, on
                         }
                     }, 300); // Increased delay for cast users to ensure context stability
                 } else if (data.user_type === 'cast_registration') {
-                    console.log('LineLogin: Processing cast registration...');
-                    // Handle cast registration - just pass the data to parent component
-                    onSuccess?.(data);
+                    console.log('LineLogin: Processing cast registration...', data);
+                    // Handle cast registration - transform data to match expected structure
+                    const transformedData = {
+                        line_data: data.line_data,
+                        line_id: data.line_data?.line_id,
+                        user_type: data.user_type
+                    };
+                    onSuccess?.(transformedData);
                 } else if (data.user_type === 'new') {
                     console.log('LineLogin: Processing new user registration...');
                     // Handle new user registration for guest only

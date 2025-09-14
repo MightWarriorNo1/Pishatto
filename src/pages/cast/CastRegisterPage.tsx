@@ -119,7 +119,26 @@ const CastRegisterPage: React.FC = () => {
                 setIsLoadingLineId(false);
                 sessionStorage.removeItem('cast_line_id');
             } else {
-                setIsLoadingLineId(false);
+                // Check for LINE ID in other possible locations
+                const lineData = sessionStorage.getItem('lineData');
+                if (lineData) {
+                    try {
+                        const parsedLineData = JSON.parse(lineData);
+                        if (parsedLineData?.line_id) {
+                            console.log('Found LINE ID in lineData:', parsedLineData.line_id);
+                            setLineId(parsedLineData.line_id);
+                            setIsLoadingLineId(false);
+                            sessionStorage.removeItem('lineData');
+                        } else {
+                            setIsLoadingLineId(false);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing lineData:', error);
+                        setIsLoadingLineId(false);
+                    }
+                } else {
+                    setIsLoadingLineId(false);
+                }
             }
         }
     }, []);
