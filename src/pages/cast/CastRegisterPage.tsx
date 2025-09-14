@@ -38,7 +38,6 @@ const CastRegisterPage: React.FC = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [lineId, setLineId] = useState('');
     const [loading] = useState(true);
-    const [isLoadingLineId, setIsLoadingLineId] = useState(false);
     const [selectedImages, setSelectedImages] = useState<{
         front: SelectedImage | null;
         profile: SelectedImage | null;
@@ -66,18 +65,6 @@ const CastRegisterPage: React.FC = () => {
 
     // Restore form data when returning from LINE login
     React.useEffect(() => {
-        // Check URL parameters for LINE ID (in case of redirect with query params)
-        const urlParams = new URLSearchParams(window.location.search);
-        const lineIdFromUrl = urlParams.get('line_id');
-        if (lineIdFromUrl) {
-            console.log('Found LINE ID in URL parameters:', lineIdFromUrl);
-            setLineId(lineIdFromUrl);
-            setIsLoadingLineId(false);
-            // Clean up URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-            return;
-        }
-
         const savedFormData = sessionStorage.getItem('cast_register_form_data');
         const savedLineId = sessionStorage.getItem('cast_line_id');
         
@@ -117,41 +104,8 @@ const CastRegisterPage: React.FC = () => {
         
         // Set LINE ID if available
         if (savedLineId) {
-            console.log('Setting LINE ID from sessionStorage:', savedLineId);
             setLineId(savedLineId);
-            setIsLoadingLineId(false);
             sessionStorage.removeItem('cast_line_id');
-        } else {
-            console.log('No LINE ID found in sessionStorage');
-            // Check if we're returning from LINE login (no form data but might have LINE ID)
-            const hasLineId = sessionStorage.getItem('cast_line_id');
-            if (hasLineId) {
-                console.log('Found LINE ID in sessionStorage:', hasLineId);
-                setLineId(hasLineId);
-                setIsLoadingLineId(false);
-                sessionStorage.removeItem('cast_line_id');
-            } else {
-                // Check for LINE ID in other possible locations
-                const lineData = sessionStorage.getItem('lineData');
-                if (lineData) {
-                    try {
-                        const parsedLineData = JSON.parse(lineData);
-                        if (parsedLineData?.line_id) {
-                            console.log('Found LINE ID in lineData:', parsedLineData.line_id);
-                            setLineId(parsedLineData.line_id);
-                            setIsLoadingLineId(false);
-                            sessionStorage.removeItem('lineData');
-                        } else {
-                            setIsLoadingLineId(false);
-                        }
-                    } catch (error) {
-                        console.error('Error parsing lineData:', error);
-                        setIsLoadingLineId(false);
-                    }
-                } else {
-                    setIsLoadingLineId(false);
-                }
-            }
         }
     }, []);
 
@@ -195,10 +149,6 @@ const CastRegisterPage: React.FC = () => {
     };
 
     const handleLineLoginClick = () => {
-        console.log('Starting LINE login process...');
-        // Set loading state
-        setIsLoadingLineId(true);
-        
         // Store the current form data in sessionStorage to restore after LINE login
         const formData = {
             phoneNumber,
@@ -209,7 +159,6 @@ const CastRegisterPage: React.FC = () => {
             }
         };
         sessionStorage.setItem('cast_register_form_data', JSON.stringify(formData));
-        console.log('Stored form data in sessionStorage:', formData);
         
         // Directly trigger LINE OAuth flow
         handleLineLogin({
@@ -217,7 +166,6 @@ const CastRegisterPage: React.FC = () => {
             castRegistration: true, // Flag for cast registration
             onError: (error: string) => {
                 console.error('LINE login error:', error);
-                setIsLoadingLineId(false);
                 // Stay on the same page on error
             }
         });
@@ -343,13 +291,6 @@ const CastRegisterPage: React.FC = () => {
                                     </button>
                                 </div>
                                 <p className="text-green-700 text-sm mt-1">LINE ID: {lineId}</p>
-                            </div>
-                        ) : isLoadingLineId ? (
-                            <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
-                                <div className="flex items-center gap-2">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                                    <span className="text-blue-800 font-medium">LINE認証中...</span>
-                                </div>
                             </div>
                         ) : (
                             <button
