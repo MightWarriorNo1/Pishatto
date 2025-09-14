@@ -10,12 +10,17 @@ const GuestLineLogin: React.FC = () => {
         
         // Check if user came from cast registration
         const hasCastFormData = sessionStorage.getItem('cast_register_form_data');
+        console.log('LINE login success - hasCastFormData:', !!hasCastFormData, 'user:', user);
+        
         if (hasCastFormData) {
             // For cast registration, check both possible LINE ID locations
             const lineId = user?.line_data?.line_id || user?.line_id;
+            console.log('Extracted LINE ID:', lineId, 'from user:', user);
+            
             if (lineId) {
                 // Store the LINE ID for cast registration
                 sessionStorage.setItem('cast_line_id', lineId);
+                console.log('Stored LINE ID in sessionStorage:', lineId);
                 // Navigate back to cast register page
                 navigate('/cast/register');
                 return;

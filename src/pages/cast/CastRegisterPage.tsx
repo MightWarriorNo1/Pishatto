@@ -38,6 +38,7 @@ const CastRegisterPage: React.FC = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [lineId, setLineId] = useState('');
     const [loading] = useState(true);
+    const [isLoadingLineId, setIsLoadingLineId] = useState(false);
     const [selectedImages, setSelectedImages] = useState<{
         front: SelectedImage | null;
         profile: SelectedImage | null;
@@ -104,8 +105,22 @@ const CastRegisterPage: React.FC = () => {
         
         // Set LINE ID if available
         if (savedLineId) {
+            console.log('Setting LINE ID from sessionStorage:', savedLineId);
             setLineId(savedLineId);
+            setIsLoadingLineId(false);
             sessionStorage.removeItem('cast_line_id');
+        } else {
+            console.log('No LINE ID found in sessionStorage');
+            // Check if we're returning from LINE login (no form data but might have LINE ID)
+            const hasLineId = sessionStorage.getItem('cast_line_id');
+            if (hasLineId) {
+                console.log('Found LINE ID in sessionStorage:', hasLineId);
+                setLineId(hasLineId);
+                setIsLoadingLineId(false);
+                sessionStorage.removeItem('cast_line_id');
+            } else {
+                setIsLoadingLineId(false);
+            }
         }
     }, []);
 
@@ -149,6 +164,9 @@ const CastRegisterPage: React.FC = () => {
     };
 
     const handleLineLoginClick = () => {
+        // Set loading state
+        setIsLoadingLineId(true);
+        
         // Store the current form data in sessionStorage to restore after LINE login
         const formData = {
             phoneNumber,
@@ -166,6 +184,7 @@ const CastRegisterPage: React.FC = () => {
             castRegistration: true, // Flag for cast registration
             onError: (error: string) => {
                 console.error('LINE login error:', error);
+                setIsLoadingLineId(false);
                 // Stay on the same page on error
             }
         });
@@ -291,6 +310,13 @@ const CastRegisterPage: React.FC = () => {
                                     </button>
                                 </div>
                                 <p className="text-green-700 text-sm mt-1">LINE ID: {lineId}</p>
+                            </div>
+                        ) : isLoadingLineId ? (
+                            <div className="bg-blue-100 border border-blue-300 rounded-lg p-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                                    <span className="text-blue-800 font-medium">LINE認証中...</span>
+                                </div>
                             </div>
                         ) : (
                             <button
