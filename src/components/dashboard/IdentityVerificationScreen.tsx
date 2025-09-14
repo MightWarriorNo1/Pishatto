@@ -151,8 +151,8 @@ const IdentityVerificationScreen: React.FC<{ onBack: () => void }> = ({ onBack }
                     <span className="text-xs mt-1">マイナンバー</span>
                 </div>
             </div>
-            {/* Image preview - show only after selecting image, or when pending with existing image */}
-            {(((selectedFile || previewUrl) as unknown as boolean) || (verificationStatus === 'pending' && verificationImage)) && (
+            {/* Image preview - show only after selecting image, but hide when pending */}
+            {(((selectedFile || previewUrl) as unknown as boolean) || (verificationStatus === 'success' && verificationImage)) && verificationStatus !== 'pending' && (
                 <div className="flex flex-col items-center mb-4">
                     <div className="relative">
                         <img
