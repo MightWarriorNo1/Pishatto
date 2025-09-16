@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
+import LandingPage from './pages/LandingPage';
 import RoleSelectPage from './pages/RoleSelectPage';
 import RegisterSteps from './components/auth/RegisterSteps';
 import CastLoginOptions from './components/cast/auth/CastLoginOptions';
@@ -46,7 +47,8 @@ const App: React.FC = () => {
               <FaviconManager />
                 <Router>
                   <Routes>
-                    <Route path="/" element={<RoleSelectPage />} />
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/role-select" element={<RoleSelectPage />} />
                     <Route path="/legal/terms" element={<TermsOfService />} />
                     <Route path="/legal/privacy" element={<PrivacyPolicy />} />
                     <Route path="/legal/specified-commercial" element={<TermsOfSale />} />
