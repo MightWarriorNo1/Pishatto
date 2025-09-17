@@ -182,65 +182,114 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Section 3 - Quality Assurance */}
-      <section className="py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-br from-primary via-primary/95 to-secondary/90 relative overflow-hidden">
+      <section className="bg-gradient-to-br from-primary via-primary/95 to-secondary/90 relative overflow-hidden">
         {/* Background decorative elements - Hidden on mobile for performance */}
         <div className="absolute inset-0 hidden sm:block">
           <div className="absolute top-10 right-10 w-64 h-64 bg-white/5 rounded-full blur-3xl"></div>
           <div className="absolute bottom-10 left-10 w-48 h-48 bg-secondary/10 rounded-full blur-3xl"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 md:gap-16 items-center">
-            <div className="space-y-6 sm:space-y-8">
-              <div className="space-y-4 sm:space-y-6">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white leading-tight">
-                  審査通過したキャストは容姿、作法、実技ともに洗練されています
-                </h2>
-                <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-200 leading-relaxed">
-                  審査通過率は10%と狭き門となっています。
-                </p>
+        <div className="relative min-h-[500px] sm:min-h-[600px] md:min-h-[700px] lg:min-h-[600px]">
+          {/* Background Image - Full height, 50% width, no padding */}
+          <div className="absolute right-0 top-0 w-1/2 h-full hidden lg:block">
+            <div 
+              className="w-full h-full bg-cover bg-center bg-no-repeat"
+              style={{
+                backgroundImage: 'url("/audition.webp")'
+              }}
+            ></div>
+            {/* Overlay for better text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+            
+            {/* Content overlay on image */}
+            <div className="absolute inset-0 flex items-center justify-center p-8">
+              <div className="text-center space-y-6">
+                <div className="relative">
+                  <div className="text-6xl xl:text-7xl font-bold text-white mb-4 animate-pulse drop-shadow-2xl">10%</div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 xl:w-8 xl:h-8 bg-secondary/80 rounded-full animate-ping drop-shadow-lg"></div>
+                  <div className="absolute -bottom-2 -left-2 w-4 h-4 xl:w-6 xl:h-6 bg-white/80 rounded-full animate-bounce drop-shadow-lg"></div>
+                </div>
+                <p className="text-xl xl:text-2xl text-white font-semibold drop-shadow-lg">審査通過率</p>
+                <div className="w-20 xl:w-24 h-1 bg-gradient-to-r from-white to-secondary mx-auto rounded-full drop-shadow-lg"></div>
               </div>
-              
-              <div className="space-y-4 sm:space-y-6">
-                <div className="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition-all duration-300 border border-white/10 hover:border-secondary/50">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-secondary to-secondary/80 rounded-full flex items-center justify-center group-hover:animate-pulse flex-shrink-0">
-                    <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                  </div>
-                  <span className="text-base sm:text-lg md:text-xl text-white font-semibold group-hover:text-secondary transition-colors">容姿の審査</span>
+            </div>
+          </div>
+          
+          {/* Content - Left side on desktop, full width on mobile with proper padding */}
+          <div className="lg:w-1/2 h-full flex items-center">
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20 lg:py-24">
+              <div className="space-y-6 sm:space-y-8">
+                <div className="space-y-4 sm:space-y-6">
+                  <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white leading-tight">
+                    審査通過したキャストは容姿、作法、実技ともに洗練されています
+                  </h2>
+                  <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-200 leading-relaxed">
+                    審査通過率は10%と狭き門となっています。
+                  </p>
                 </div>
                 
-                <div className="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition-all duration-300 border border-white/10 hover:border-secondary/50">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-secondary to-secondary/80 rounded-full flex items-center justify-center group-hover:animate-bounce flex-shrink-0">
-                    <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition-all duration-300 border border-white/10 hover:border-secondary/50">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-secondary to-secondary/80 rounded-full flex items-center justify-center group-hover:animate-pulse flex-shrink-0">
+                      <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    </div>
+                    <span className="text-base sm:text-lg md:text-xl text-white font-semibold group-hover:text-secondary transition-colors">容姿の審査</span>
                   </div>
-                  <span className="text-base sm:text-lg md:text-xl text-white font-semibold group-hover:text-secondary transition-colors">作法の審査</span>
-                </div>
-                
-                <div className="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition-all duration-300 border border-white/10 hover:border-secondary/50">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-secondary to-secondary/80 rounded-full flex items-center justify-center group-hover:animate-spin flex-shrink-0">
-                    <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                  
+                  <div className="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition-all duration-300 border border-white/10 hover:border-secondary/50">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-secondary to-secondary/80 rounded-full flex items-center justify-center group-hover:animate-bounce flex-shrink-0">
+                      <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    </div>
+                    <span className="text-base sm:text-lg md:text-xl text-white font-semibold group-hover:text-secondary transition-colors">作法の審査</span>
                   </div>
-                  <span className="text-base sm:text-lg md:text-xl text-white font-semibold group-hover:text-secondary transition-colors">実技の審査</span>
+                  
+                  <div className="group flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-white/5 hover:bg-white/10 transition-all duration-300 border border-white/10 hover:border-secondary/50">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-secondary to-secondary/80 rounded-full flex items-center justify-center group-hover:animate-spin flex-shrink-0">
+                      <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    </div>
+                    <span className="text-base sm:text-lg md:text-xl text-white font-semibold group-hover:text-secondary transition-colors">実技の審査</span>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <div className="relative mt-8 lg:mt-0">
-              <div className="bg-gradient-to-br from-white/10 to-secondary/20 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-12 border border-white/20 backdrop-blur-sm shadow-2xl">
-                <div className="text-center space-y-4 sm:space-y-6">
-                  <div className="relative">
-                    <div className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-bold text-secondary mb-2 sm:mb-4 animate-pulse">10%</div>
-                    <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-4 h-4 sm:w-6 sm:h-6 md:w-8 md:h-8 bg-secondary/30 rounded-full animate-ping"></div>
-                    <div className="absolute -bottom-1 -left-1 sm:-bottom-2 sm:-left-2 w-3 h-3 sm:w-4 sm:h-4 md:w-6 md:h-6 bg-white/20 rounded-full animate-bounce"></div>
+          </div>
+          
+          {/* Mobile: Show image as a card below content */}
+          <div className="lg:hidden">
+            <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 md:pb-20">
+             
+              {/* Mobile image card */}
+              <div className="mt-8">
+                <div className="relative w-full h-64 sm:h-80 rounded-2xl overflow-hidden">
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+                    style={{
+                      backgroundImage: 'url("/audition.webp")'
+                    }}
+                  ></div>
+                  
+                  {/* Overlay for better text readability */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                  
+                  {/* Content overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center p-6">
+                    <div className="text-center space-y-4">
+                      <div className="relative">
+                        <div className="text-4xl sm:text-5xl font-bold text-white mb-2 animate-pulse drop-shadow-2xl">10%</div>
+                        <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-6 sm:h-6 bg-secondary/80 rounded-full animate-ping drop-shadow-lg"></div>
+                        <div className="absolute -bottom-1 -left-1 w-3 h-3 sm:w-4 sm:h-4 bg-white/80 rounded-full animate-bounce drop-shadow-lg"></div>
+                      </div>
+                      <p className="text-lg sm:text-xl text-white font-semibold drop-shadow-lg">審査通過率</p>
+                      <div className="w-16 sm:w-20 h-1 bg-gradient-to-r from-white to-secondary mx-auto rounded-full drop-shadow-lg"></div>
+                    </div>
                   </div>
-                  <p className="text-lg sm:text-xl md:text-2xl text-white font-semibold">審査通過率</p>
-                  <div className="w-16 sm:w-20 md:w-24 h-1 bg-gradient-to-r from-white to-secondary mx-auto rounded-full"></div>
+                  
+                  {/* Mobile badge */}
+                  <div className="absolute top-4 right-4 bg-secondary/90 text-white px-3 py-1 rounded-full text-sm font-semibold backdrop-blur-sm">
+                    Premium Quality
+                  </div>
                 </div>
               </div>
-              
-              {/* Floating elements around the card - Hidden on mobile */}
-              <div className="hidden sm:block absolute -top-4 -right-4 w-8 h-8 bg-secondary/20 rounded-full animate-bounce" style={{animationDelay: '1s'}}></div>
-              <div className="hidden sm:block absolute -bottom-4 -left-4 w-6 h-6 bg-white/20 rounded-full animate-pulse" style={{animationDelay: '2s'}}></div>
             </div>
           </div>
         </div>
@@ -626,15 +675,15 @@ const LandingPage: React.FC = () => {
                 <div className="space-y-2 sm:space-y-3">
                   <div className="flex justify-between items-center p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/5">
                     <span className="text-gray-200 font-semibold text-sm sm:text-base">プレミアムキャスト</span>
-                    <span className="text-secondary font-bold text-sm sm:text-base">30分●円</span>
+                    <span className="text-secondary font-bold text-sm sm:text-base">30分/12,000pt</span>
                   </div>
                   <div className="flex justify-between items-center p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/5">
                     <span className="text-gray-200 font-semibold text-sm sm:text-base">VIPキャスト</span>
-                    <span className="text-secondary font-bold text-sm sm:text-base">30分●円</span>
+                    <span className="text-secondary font-bold text-sm sm:text-base">30分/15,000pt</span>
                   </div>
                   <div className="flex justify-between items-center p-2 sm:p-3 rounded-lg sm:rounded-xl bg-white/5">
                     <span className="text-gray-200 font-semibold text-sm sm:text-base">ロイヤルVIPキャスト</span>
-                    <span className="text-secondary font-bold text-sm sm:text-base">30分●円</span>
+                    <span className="text-secondary font-bold text-sm sm:text-base">30分/18,000pt</span>
                   </div>
                 </div>
               </div>
