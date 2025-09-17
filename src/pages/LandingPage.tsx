@@ -39,9 +39,12 @@ const LandingPage: React.FC = () => {
       <section className="relative min-h-screen bg-gradient-to-br from-primary via-primary/90 to-secondary text-white overflow-hidden">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 bg-black/30"></div>
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{
-          backgroundImage: 'url("/hero.webp")'
-        }}></div>
+        <div
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat bg-pos-x-[minus-650px]"
+          style={{
+            backgroundImage: 'url("/hero.webp")',
+          }}
+        ></div>
         
         {/* Animated Background Elements - Hidden on mobile for performance */}
         <div className="absolute inset-0 hidden sm:block">
@@ -445,12 +448,12 @@ const LandingPage: React.FC = () => {
                 ビジネス利用でも安心してご利用いただけます
               </p>
               
-              <div className="mt-8 sm:mt-12 inline-flex flex-col sm:flex-row items-center gap-2 sm:gap-4 bg-gradient-to-r from-primary/20 to-secondary/20 px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-full border border-secondary/30">
+              <div className="mt-8 sm:mt-12 inline-flex flex-row items-center gap-2 sm:gap-4 bg-gradient-to-r from-primary/20 to-secondary/20 px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-full border border-secondary/30">
                 <div className="flex items-center gap-2 sm:gap-4">
                   <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-secondary" />
                   <span className="text-sm sm:text-base md:text-lg text-white font-semibold">法人利用対応</span>
                 </div>
-                <div className="hidden sm:block w-1 h-6 bg-secondary/50"></div>
+                <div className="w-1 h-6 bg-secondary/50"></div>
                 <span className="text-sm sm:text-base md:text-lg text-white font-semibold">経費精算可能</span>
               </div>
             </div>
@@ -522,8 +525,8 @@ const LandingPage: React.FC = () => {
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-secondary/30 to-secondary/20 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8 group-hover:animate-pulse">
                 <Star className="w-8 h-8 sm:w-10 sm:h-10 text-secondary" />
               </div>
-              <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 text-white group-hover:text-secondary transition-colors">プレミアム</h3>
-              <p className="text-gray-300 text-sm sm:text-base md:text-lg">特別な称号</p>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 text-white group-hover:text-secondary transition-colors">ゴールド</h3>
+              <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">ゲストの上級称号の一つです。<br />継続的なピシャットアプリの利用に加えて、キャストからの評価が高い称号の一つとなります。ゴールド以上の称号取得者には運営からの特典が届くかもしれません。</p>
               <div className="mt-4 sm:mt-6 w-12 sm:w-16 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full"></div>
             </div>
             
@@ -531,8 +534,8 @@ const LandingPage: React.FC = () => {
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-secondary/30 to-secondary/20 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8 group-hover:animate-bounce">
                 <Crown className="w-8 h-8 sm:w-10 sm:h-10 text-secondary" />
               </div>
-              <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 text-white group-hover:text-secondary transition-colors">VIP</h3>
-              <p className="text-gray-300 text-sm sm:text-base md:text-lg">上級称号</p>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 text-white group-hover:text-secondary transition-colors">プラチナ</h3>
+              <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">ブラックに次ぐ最上級のゲスト称号となります。称号取得者は全会員の0.1%と稀有な存在です。キャストから見て注目を集める称号となります。</p>
               <div className="mt-4 sm:mt-6 w-12 sm:w-16 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full"></div>
             </div>
             
@@ -540,8 +543,8 @@ const LandingPage: React.FC = () => {
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-secondary/30 to-secondary/20 rounded-full flex items-center justify-center mx-auto mb-6 sm:mb-8 group-hover:animate-spin">
                 <Award className="w-8 h-8 sm:w-10 sm:h-10 text-secondary" />
               </div>
-              <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 text-white group-hover:text-secondary transition-colors">ロイヤルVIP</h3>
-              <p className="text-gray-300 text-sm sm:text-base md:text-lg">最高級称号</p>
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 text-white group-hover:text-secondary transition-colors">ブラック</h3>
+              <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">ゲスト最上級の称号となります。称号取得者は全会員の0.01%とかなりの希少性を持っています。キャストから見て最も注目を受ける称号となります。</p>
               <div className="mt-4 sm:mt-6 w-12 sm:w-16 h-1 bg-gradient-to-r from-primary to-secondary mx-auto rounded-full"></div>
             </div>
           </div>
