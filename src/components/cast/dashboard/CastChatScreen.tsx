@@ -340,17 +340,23 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                     style={{ fontSize: '16px', height: '40px' }}
                     rows={1}
                 />
-                <div className="flex flex-col gap-1">
-                    <span className={`cursor-pointer ${isNotificationEnabled('messages') ? 'text-white hover:text-secondary' : 'text-gray-500'}`}>
-                        <Image size={20} />
-                    </span>
-                    <button
-                        onClick={handleSend}
-                        disabled={sending || !input.trim() || !isNotificationEnabled('messages')}
-                        className={`px-3 py-1 rounded-lg text-xs disabled:opacity-50 ${isNotificationEnabled('messages') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-gray-300'}`}
-                    >
-                        <Send className="w-3 h-3" />
-                    </button>
+                <div className="flex gap-1">
+                    {/* Show image button only when no text is input */}
+                    {!input.trim() && (
+                        <span className={`cursor-pointer ${isNotificationEnabled('messages') ? 'text-white hover:text-secondary' : 'text-gray-500'}`}>
+                            <Image size={20} />
+                        </span>
+                    )}
+                    {/* Show send button only when text is input */}
+                    {input.trim() && (
+                        <button
+                            onClick={handleSend}
+                            disabled={sending || !isNotificationEnabled('messages')}
+                            className={`px-3 py-1 rounded-lg text-xs disabled:opacity-50 ${isNotificationEnabled('messages') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-gray-300'}`}
+                        >
+                            <Send className="w-3 h-3" />
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

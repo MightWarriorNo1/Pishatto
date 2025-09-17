@@ -899,41 +899,49 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         style={{ fontSize: '16px', height: '40px' }}
                         rows={1}
                     />
-                    <div className="flex flex-col gap-1">
-                        <span 
-                            className={`cursor-pointer ${
-                                isNotificationEnabled('messages') ? 'text-white hover:text-secondary' : 'text-gray-500'
-                            }`} 
-                            onClick={isNotificationEnabled('messages') ? handleImageButtonClick : undefined}
-                        >
-                            <Image size={20} />
-                        </span>
-                        <button 
-                            className={`${
-                                user && user.points && user.points > 0 && isNotificationEnabled('messages') 
-                                    ? 'text-white hover:text-secondary' 
-                                    : 'text-gray-500'
-                            }`} 
-                            onClick={() => setShowGiftModal(true)}
-                            disabled={!user || !user.points || user.points <= 0 || !isNotificationEnabled('messages')}
-                        >
-                            <Gift size={20} />
-                        </button>
-                        <button
-                            onClick={handleSend}
-                            disabled={sending || (!input.trim() && !attachedFile) || !isNotificationEnabled('messages')}
-                            className={`px-3 py-1 rounded-lg text-xs disabled:opacity-50 ${
-                                isNotificationEnabled('messages') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-gray-300'
-                            }`}
-                        >
-                            {sending ? (
-                                <div className="flex items-center">
-                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                                </div>
-                            ) : (
-                                <Send className="w-3 h-3" />
-                            )}
-                        </button>
+                    <div className="flex gap-1">
+                        {/* Show image and gift buttons only when no text is input */}
+                        {!input.trim() && (
+                            <>
+                                <span 
+                                    className={`cursor-pointer ${
+                                        isNotificationEnabled('messages') ? 'text-white hover:text-secondary' : 'text-gray-500'
+                                    }`} 
+                                    onClick={isNotificationEnabled('messages') ? handleImageButtonClick : undefined}
+                                >
+                                    <Image size={24} />
+                                </span>
+                                <button 
+                                    className={`${
+                                        user && user.points && user.points > 0 && isNotificationEnabled('messages') 
+                                            ? 'text-white hover:text-secondary' 
+                                            : 'text-gray-500'
+                                    }`} 
+                                    onClick={() => setShowGiftModal(true)}
+                                    disabled={!user || !user.points || user.points <= 0 || !isNotificationEnabled('messages')}
+                                >
+                                    <Gift size={24} />
+                                </button>
+                            </>
+                        )}
+                        {/* Show send button only when text is input */}
+                        {input.trim() && (
+                            <button
+                                onClick={handleSend}
+                                disabled={sending || !isNotificationEnabled('messages')}
+                                className={`p-3 rounded-lg text-xs disabled:opacity-50 ${
+                                    isNotificationEnabled('messages') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-gray-300'
+                                }`}
+                            >
+                                {sending ? (
+                                    <div className="flex items-center">
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                    </div>
+                                ) : (
+                                    <Send className="w-6 h-6" />
+                                )}
+                            </button>
+                        )}
                     </div>
                     <input
                         type="file"
