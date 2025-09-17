@@ -77,6 +77,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     const [showFile, setShowFile] = useState(false);
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [inputBarHeight, setInputBarHeight] = useState<number>(0);
 
     // Helper function to get localStorage key for sessions
@@ -2092,44 +2093,115 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     <span className="text-white cursor-pointer flex-shrink-0" onClick={() => setMessageProposal(true)}>
                         <Calendar size={30} />
                     </span>
-                    <input
-                        type="text"
-                        className="flex-1 min-w-0 px-4 py-2 rounded-full border border-secondary text-sm bg-primary text-white"
+                    <textarea
+                        ref={textareaRef}
+                        className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-secondary text-base resize-none min-h-[40px] max-h-[120px] bg-primary text-white placeholder-gray-300"
                         placeholder="メッセージを入力..."
                         value={newMessage}
-                        onChange={e => setNewMessage(e.target.value)}
+                        onChange={(e) => {
+                            setNewMessage(e.target.value);
+                            
+                            // Auto-resize textarea
+                            if (textareaRef.current) {
+                                textareaRef.current.style.height = '40px';
+                                const scrollHeight = textareaRef.current.scrollHeight;
+                                const maxHeight = 120; // max-h-[120px] = 120px
+                                textareaRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+                            }
+                        }}
                         onKeyDown={async (e) => {
-                            if (e.key === 'Enter' && (newMessage.trim() || attachedFile) && !sendMessageMutation.isPending) {
-                                try {
-                                    if (!castId) return;
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                if ((newMessage.trim() || attachedFile) && !sendMessageMutation.isPending) {
+                                    try {
+                                        if (!castId) return;
 
-                                    // Store values before clearing
-                                    const messageText = newMessage.trim();
-                                    const imageFile = attachedFile;
+                                        // Store values before clearing
+                                        const messageText = newMessage.trim();
+                                        const imageFile = attachedFile;
 
-                                    // Clear input immediately for optimistic UI
-                                    setNewMessage('');
-                                    setAttachedFile(null);
-                                    setImagePreview(null);
+                                        // Clear input immediately for optimistic UI
+                                        setNewMessage('');
+                                        setAttachedFile(null);
+                                        setImagePreview(null);
+                                        
+                                        // Reset textarea height
+                                        if (textareaRef.current) {
+                                            textareaRef.current.style.height = '40px';
+                                        }
 
-                                    const payload: any = {
-                                        chat_id: Number(message.id),
-                                        sender_cast_id: castId,
-                                    };
-                                    if (messageText) payload.message = messageText;
-                                    if (imageFile) payload.image = imageFile;
+                                        const payload: any = {
+                                            chat_id: Number(message.id),
+                                            sender_cast_id: castId,
+                                        };
+                                        if (messageText) payload.message = messageText;
+                                        if (imageFile) payload.image = imageFile;
 
-                                    await sendMessageMutation.mutateAsync(payload);
-                                } catch (error) {
-                                    console.error('Failed to send message:', error);
+                                        await sendMessageMutation.mutateAsync(payload);
+                                    } catch (error) {
+                                        console.error('Failed to send message:', error);
+                                    }
                                 }
                             }
                         }}
+                        style={{ fontSize: '16px', height: '40px' }}
+                        rows={1}
                     />
+                    <div className="flex gap-1">
+                        {/* Show image button only when no text is input */}
+                        {!newMessage.trim() && (
+                            <span className="text-white cursor-pointer flex-shrink-0" onClick={handleImageButtonClick}>
+                                <Image size={24} />
+                            </span>
+                        )}
+                        {/* Show send button only when text is input */}
+                        {newMessage.trim() && (
+                            <button
+                                onClick={async () => {
+                                    if ((newMessage.trim() || attachedFile) && !sendMessageMutation.isPending) {
+                                        try {
+                                            if (!castId) return;
 
-                    <span className="text-white cursor-pointer flex-shrink-0" onClick={handleImageButtonClick}>
-                        <Image size={30} />
-                    </span>
+                                            // Store values before clearing
+                                            const messageText = newMessage.trim();
+                                            const imageFile = attachedFile;
+
+                                            // Clear input immediately for optimistic UI
+                                            setNewMessage('');
+                                            setAttachedFile(null);
+                                            setImagePreview(null);
+                                            
+                                            // Reset textarea height
+                                            if (textareaRef.current) {
+                                                textareaRef.current.style.height = '40px';
+                                            }
+
+                                            const payload: any = {
+                                                chat_id: Number(message.id),
+                                                sender_cast_id: castId,
+                                            };
+                                            if (messageText) payload.message = messageText;
+                                            if (imageFile) payload.image = imageFile;
+
+                                            await sendMessageMutation.mutateAsync(payload);
+                                        } catch (error) {
+                                            console.error('Failed to send message:', error);
+                                        }
+                                    }
+                                }}
+                                disabled={sendMessageMutation.isPending}
+                                className="p-3 rounded-lg text-xs disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600"
+                            >
+                                {sendMessageMutation.isPending ? (
+                                    <div className="flex items-center">
+                                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                    </div>
+                                ) : (
+                                    <Send className="w-6 h-6" />
+                                )}
+                            </button>
+                        )}
+                    </div>
                     <input
                         type="file"
                         accept="image/*"
@@ -2144,49 +2216,6 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         style={{ display: 'none' }}
                         onChange={handleImageChange}
                     />
-                    
-                    <button
-                        onClick={async () => {
-                            if ((newMessage.trim() || attachedFile) && !sendMessageMutation.isPending) {
-                                try {
-                                    if (!castId) return;
-
-                                    // Store values before clearing
-                                    const messageText = newMessage.trim();
-                                    const imageFile = attachedFile;
-
-                                    // Clear input immediately for optimistic UI
-                                    setNewMessage('');
-                                    setAttachedFile(null);
-                                    setImagePreview(null);
-
-                                    const payload: any = {
-                                        chat_id: Number(message.id),
-                                        sender_cast_id: castId,
-                                    };
-                                    if (messageText) payload.message = messageText;
-                                    if (imageFile) payload.image = imageFile;
-
-                                    await sendMessageMutation.mutateAsync(payload);
-                                } catch (error) {
-                                    console.error('Failed to send message:', error);
-                                }
-                            }
-                        }}
-                        disabled={(!newMessage.trim() && !attachedFile) || sendMessageMutation.isPending}
-                        className={`flex-shrink-0 px-6 py-2 rounded-full text-sm font-medium disabled:opacity-50 transition-colors ${(newMessage.trim() || attachedFile) && !sendMessageMutation.isPending
-                            ? 'bg-blue-500 text-white hover:bg-blue-600'
-                            : 'bg-blue-500 text-gray-300 cursor-not-allowed'
-                            }`}
-                    >
-                        {sendMessageMutation.isPending ? (
-                            <div className="flex items-center">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
-                            </div>
-                        ) : (
-                            <Send className="w-4 h-4" />
-                        )}
-                    </button>
                     {/* Popover absolutely inside input bar */}
                     {showFile && (
                         <div

@@ -544,7 +544,7 @@ const CastRegisterPage: React.FC = () => {
                     <div className="relative">
                     <input
                         type="tel"
-                          maxLength={10}
+                          maxLength={12}
                         placeholder="電話番号を入力してください"
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}

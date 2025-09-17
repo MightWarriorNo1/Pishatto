@@ -82,6 +82,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
     const [groupInfo, setGroupInfo] = useState<any>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textInputRef = useRef<HTMLInputElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     // Mention and target cast for gifts
     const [mentionOpen, setMentionOpen] = useState(false);
@@ -552,36 +553,49 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                         <Calendar className="w-5 h-5" />
                     </button> */}
                     
-                    <button
-                        ref={attachBtnRef}
-                        onClick={() => setShowFile(!showFile)}
-                        className="text-white p-2"
-                    >
-                        <FolderClosed className="w-5 h-5" />
-                    </button>
-                    
-                    <button
-                        onClick={() => {
-                            if (!selectedCastTarget) {
-                                setSendError('まず @ で贈る相手（キャスト）を選択してください');
-                                return;
-                            }
-                            setShowGiftModal(!showGiftModal);
-                        }}
-                        className="text-white p-2"
-                    >
-                        <Gift className="w-5 h-5" />
-                    </button>
+                    {/* Show file and gift buttons only when no text is input */}
+                    {!input.trim() && (
+                        <>
+                            <button
+                                ref={attachBtnRef}
+                                onClick={() => setShowFile(!showFile)}
+                                className="text-white p-2"
+                            >
+                                <FolderClosed className="w-5 h-5" />
+                            </button>
+                            
+                            <button
+                                onClick={() => {
+                                    if (!selectedCastTarget) {
+                                        setSendError('まず @ で贈る相手（キャスト）を選択してください');
+                                        return;
+                                    }
+                                    setShowGiftModal(!showGiftModal);
+                                }}
+                                className="text-white p-2"
+                            >
+                                <Gift className="w-5 h-5" />
+                            </button>
+                        </>
+                    )}
                     
                     <div className="flex-1 relative">
-                        <input
-                            type="text"
-                            ref={textInputRef}
+                        <textarea
+                            ref={textareaRef}
                             value={input}
                             onChange={(e) => {
                                 const val = e.target.value;
                                 setInput(val);
-                                const cursor = (e.target as HTMLInputElement).selectionStart ?? val.length;
+                                
+                                // Auto-resize textarea
+                                if (textareaRef.current) {
+                                    textareaRef.current.style.height = '40px';
+                                    const scrollHeight = textareaRef.current.scrollHeight;
+                                    const maxHeight = 120; // max-h-[120px] = 120px
+                                    textareaRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+                                }
+                                
+                                const cursor = (e.target as HTMLTextAreaElement).selectionStart ?? val.length;
                                 const beforeCaret = val.slice(0, cursor);
                                 const match = beforeCaret.match(/(^|\s)@(\S*)$/);
                                 if (match) {
@@ -599,12 +613,14 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                 }
                             }}
                             placeholder={isNotificationEnabled('messages') ? "メッセージを入力..." : "メッセージ通知が無効です"}
-                            className={`w-full px-3 py-2 rounded-full border border-secondary text-sm ${
+                            className={`w-full px-3 py-2 rounded-lg border border-secondary text-base resize-none min-h-[40px] max-h-[120px] ${
                                 isNotificationEnabled('messages') 
-                                    ? 'bg-primary text-white' 
-                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                    ? 'bg-primary text-white placeholder-gray-300' 
+                                    : 'bg-gray-600 text-gray-400 cursor-not-allowed placeholder-gray-500'
                             }`}
                             disabled={sending || !isNotificationEnabled('messages')}
+                            style={{ fontSize: '16px', height: '40px' }}
+                            rows={1}
                         />
                         
                         {/* Mention dropdown */}
@@ -624,7 +640,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                                 setMentionOpen(false);
                                                 setMentionQuery('');
                                                 setSelectedCastTarget({ id: cast.id, nickname: cast.nickname });
-                                                setTimeout(() => textInputRef.current?.focus(), 0);
+                                                setTimeout(() => textareaRef.current?.focus(), 0);
                                             }}
                                         >
                                             <img src={getFirstAvatarUrl(cast.avatar)} alt="avatar" className="w-6 h-6 rounded-full mr-2" />
@@ -657,24 +673,22 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                         )}
                     </div>
                     
-                    <button
-                        onClick={handleSend}
-                        disabled={sending || (!input.trim() && !attachedFile && !showGiftModal) || !isNotificationEnabled('messages')}
-                        className={`px-4 py-2 rounded-full text-sm disabled:opacity-50 ${
-                            isNotificationEnabled('messages') 
-                                ? 'bg-blue-500 text-white hover:bg-blue-600' 
-                                : 'bg-gray-500 text-gray-300'
-                        }`}
-                    >
-                        {sending ? (
-                            <div className="flex items-center">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
-                                <span>送信中...</span>
-                            </div>
-                        ) : (
-                            <Send className="w-4 h-4" />
-                        )}
-                    </button>
+                    {/* Show send button only when text is input */}
+                    {input.trim() && (
+                        <button
+                            onClick={handleSend}
+                            disabled={sending || !isNotificationEnabled('messages')}
+                            className="p-3 rounded-lg text-xs disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600"
+                        >
+                            {sending ? (
+                                <div className="flex items-center">
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                </div>
+                            ) : (
+                                <Send className="w-6 h-6" />
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 {/* Hidden file inputs for uploads */}

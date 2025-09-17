@@ -74,6 +74,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     const [groupInfo, setGroupInfo] = useState<any>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const attachBtnRef = useRef<HTMLButtonElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     
     // Session management state
@@ -931,19 +932,32 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                 )}
                 
                 <div className="flex items-center space-x-2">
-                    <button
-                        ref={attachBtnRef}
-                        onClick={() => setShowFile(!showFile)}
-                        className="text-white p-2"
-                    >
-                        <FolderClosed className="w-5 h-5" />
-                    </button>
+                    {/* Show file button only when no text is input */}
+                    {!input.trim() && (
+                        <button
+                            ref={attachBtnRef}
+                            onClick={() => setShowFile(!showFile)}
+                            className="text-white p-2"
+                        >
+                            <FolderClosed className="w-5 h-5" />
+                        </button>
+                    )}
                     
                     <div className="flex-1 relative">
-                        <input
-                            type="text"
+                        <textarea
+                            ref={textareaRef}
                             value={input}
-                            onChange={(e) => setInput(e.target.value)}
+                            onChange={(e) => {
+                                setInput(e.target.value);
+                                
+                                // Auto-resize textarea
+                                if (textareaRef.current) {
+                                    textareaRef.current.style.height = '40px';
+                                    const scrollHeight = textareaRef.current.scrollHeight;
+                                    const maxHeight = 120; // max-h-[120px] = 120px
+                                    textareaRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
+                                }
+                            }}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && !e.shiftKey) {
                                     e.preventDefault();
@@ -951,8 +965,10 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                                 }
                             }}
                             placeholder="メッセージを入力..."
-                            className="w-full px-3 py-2 rounded-full border border-secondary bg-primary text-white text-sm"
+                            className="w-full px-3 py-2 rounded-lg border border-secondary bg-primary text-white text-base resize-none min-h-[40px] max-h-[120px] placeholder-gray-300"
                             disabled={sending}
+                            style={{ fontSize: '16px', height: '40px' }}
+                            rows={1}
                         />
                         
                         {imagePreview && (
@@ -975,15 +991,22 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         )}
                     </div>
                     
-
-                    
-                    <button
-                        onClick={handleSend}
-                        disabled={sending || (!input.trim() && !attachedFile && !showGiftModal)}
-                        className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm disabled:opacity-50"
-                    >
-                        {sending ? <Send className="w-4 h-4" /> : <Send className="w-4 h-4" />}
-                </button>
+                    {/* Show send button only when text is input */}
+                    {input.trim() && (
+                        <button
+                            onClick={handleSend}
+                            disabled={sending}
+                            className="p-3 rounded-lg text-xs disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-600"
+                        >
+                            {sending ? (
+                                <div className="flex items-center">
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                </div>
+                            ) : (
+                                <Send className="w-6 h-6" />
+                            )}
+                        </button>
+                    )}
                 </div>
 
                 {showFile && (
