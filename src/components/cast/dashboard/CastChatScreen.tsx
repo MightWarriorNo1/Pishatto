@@ -43,6 +43,7 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
     const [selectedProposal, setSelectedProposal] = useState<any>(null);
     const [proposalMsgId, setProposalMsgId] = useState<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const userTz = dayjs.tz.guess();
     const formatTime = (timestamp: string) => dayjs.utc(timestamp).tz(userTz).format('YYYY-MM-DD HH:mm');
@@ -133,10 +134,26 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
             const realMsg = await sendMessage(payload);
             setMessages(prev => [...prev, realMsg]);
             setInput('');
+            // Reset textarea height
+            if (textareaRef.current) {
+                textareaRef.current.style.height = '40px';
+            }
         } catch (e) {
             // noop minimal handling
         } finally {
             setSending(false);
+        }
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setInput(e.target.value);
+        
+        // Auto-resize textarea
+        if (textareaRef.current) {
+            textareaRef.current.style.height = '40px';
+            const scrollHeight = textareaRef.current.scrollHeight;
+            const maxHeight = 120; // max-h-[120px] = 120px
+            textareaRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
         }
     };
 
@@ -306,27 +323,35 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
             )}
 
             {/* Input */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t border-secondary flex items-center px-4 py-2 z-20">
-                <input
-                    type="text"
-                    className={`flex-1 px-4 py-2 rounded-full border border-secondary text-base mr-2 ${isNotificationEnabled('messages') ? 'bg-primary text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t border-secondary flex items-center px-3 py-2 z-20">
+                <textarea
+                    ref={textareaRef}
+                    className={`flex-1 px-3 py-2 rounded-lg border border-secondary text-base mr-2 resize-none min-h-[40px] max-h-[120px] ${isNotificationEnabled('messages') ? 'bg-primary text-white placeholder-gray-300' : 'bg-gray-600 text-gray-400 cursor-not-allowed placeholder-gray-500'}`}
                     placeholder={isNotificationEnabled('messages') ? 'メッセージを入力...' : 'メッセージ通知が無効です'}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={async (e) => { if (e.key === 'Enter') await handleSend(); }}
+                    onChange={handleInputChange}
+                    onKeyDown={async (e) => { 
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            await handleSend();
+                        }
+                    }}
                     disabled={!isNotificationEnabled('messages')}
-                    style={{ fontSize: '16px' }}
+                    style={{ fontSize: '16px', height: '40px' }}
+                    rows={1}
                 />
-                <span className={`cursor-pointer ${isNotificationEnabled('messages') ? 'text-white' : 'text-gray-500'}`}>
-                    <Image size={30} />
-                </span>
-                <button
-                    onClick={handleSend}
-                    disabled={sending || !input.trim() || !isNotificationEnabled('messages')}
-                    className={`ml-2 px-6 py-2 rounded-full text-sm disabled:opacity-50 ${isNotificationEnabled('messages') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-gray-300'}`}
-                >
-                    <Send className="w-4 h-4" />
-                </button>
+                <div className="flex flex-col gap-1">
+                    <span className={`cursor-pointer ${isNotificationEnabled('messages') ? 'text-white hover:text-secondary' : 'text-gray-500'}`}>
+                        <Image size={20} />
+                    </span>
+                    <button
+                        onClick={handleSend}
+                        disabled={sending || !input.trim() || !isNotificationEnabled('messages')}
+                        className={`px-3 py-1 rounded-lg text-xs disabled:opacity-50 ${isNotificationEnabled('messages') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-gray-300'}`}
+                    >
+                        <Send className="w-3 h-3" />
+                    </button>
+                </div>
             </div>
         </div>
     );

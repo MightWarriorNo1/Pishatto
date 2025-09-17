@@ -100,6 +100,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
 
     const [showCalendarPage, setShowCalendarPage] = useState(false);
     const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     
     // Matching confirmation state
 
@@ -521,6 +522,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             setAttachedFile(null);
             setImagePreview(null);
             
+            // Reset textarea height
+            if (textareaRef.current) {
+                textareaRef.current.style.height = '40px';
+            }
+            
             try {
                 const payload: any = {
                     chat_id: chatId,
@@ -546,6 +552,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             } finally {
                 setSending(false);
             }
+        }
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setInput(e.target.value);
+        
+        // Auto-resize textarea
+        if (textareaRef.current) {
+            textareaRef.current.style.height = '40px';
+            const scrollHeight = textareaRef.current.scrollHeight;
+            const maxHeight = 120; // max-h-[120px] = 120px
+            textareaRef.current.style.height = Math.min(scrollHeight, maxHeight) + 'px';
         }
     };
 
@@ -854,39 +872,69 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 <div className="flex items-center w-full relative gap-2 flex-wrap" ref={inputBarRef}>
                     <button 
                         className={`${
-                            isNotificationEnabled('messages') ? 'text-white' : 'text-gray-500'
+                            isNotificationEnabled('messages') ? 'text-white hover:text-secondary' : 'text-gray-500'
                         } flex-shrink-0`} 
                         onClick={() => setShowCalendarPage(true)}
                         disabled={!isNotificationEnabled('messages')}
                     >
-                        <Calendar size={30} />
+                        <Calendar size={20} />
                     </button>
-                    <input
-                        type="text"
-                        className={`flex-1 min-w-0 px-4 py-2 rounded-full border border-secondary text-base ${
+                    <textarea
+                        ref={textareaRef}
+                        className={`flex-1 min-w-0 px-3 py-2 rounded-lg border border-secondary text-base resize-none min-h-[40px] max-h-[120px] ${
                             isNotificationEnabled('messages') 
-                                ? 'bg-primary text-white' 
-                                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                ? 'bg-primary text-white placeholder-gray-300' 
+                                : 'bg-gray-600 text-gray-400 cursor-not-allowed placeholder-gray-500'
                         }`}
                         placeholder={isNotificationEnabled('messages') ? "メッセージを入力..." : "メッセージ通知が無効です"}
                         value={input}
-                        onChange={e => setInput(e.target.value)}
+                        onChange={handleInputChange}
                         onKeyDown={async (e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
                                 await handleSend();
                             }
                         }}
                         disabled={!isNotificationEnabled('messages')}
-                        style={{ fontSize: '16px' }}
+                        style={{ fontSize: '16px', height: '40px' }}
+                        rows={1}
                     />
-                    <span 
-                        className={`cursor-pointer flex-shrink-0 ${
-                            isNotificationEnabled('messages') ? 'text-white' : 'text-gray-500'
-                        }`} 
-                        onClick={isNotificationEnabled('messages') ? handleImageButtonClick : undefined}
-                    >
-                        <Image size={30} />
-                    </span>
+                    <div className="flex flex-col gap-1">
+                        <span 
+                            className={`cursor-pointer ${
+                                isNotificationEnabled('messages') ? 'text-white hover:text-secondary' : 'text-gray-500'
+                            }`} 
+                            onClick={isNotificationEnabled('messages') ? handleImageButtonClick : undefined}
+                        >
+                            <Image size={20} />
+                        </span>
+                        <button 
+                            className={`${
+                                user && user.points && user.points > 0 && isNotificationEnabled('messages') 
+                                    ? 'text-white hover:text-secondary' 
+                                    : 'text-gray-500'
+                            }`} 
+                            onClick={() => setShowGiftModal(true)}
+                            disabled={!user || !user.points || user.points <= 0 || !isNotificationEnabled('messages')}
+                        >
+                            <Gift size={20} />
+                        </button>
+                        <button
+                            onClick={handleSend}
+                            disabled={sending || (!input.trim() && !attachedFile) || !isNotificationEnabled('messages')}
+                            className={`px-3 py-1 rounded-lg text-xs disabled:opacity-50 ${
+                                isNotificationEnabled('messages') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-gray-300'
+                            }`}
+                        >
+                            {sending ? (
+                                <div className="flex items-center">
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                </div>
+                            ) : (
+                                <Send className="w-3 h-3" />
+                            )}
+                        </button>
+                    </div>
                     <input
                         type="file"
                         accept="image/*"
@@ -903,32 +951,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         onChange={handleImageChange}
                         disabled={!isNotificationEnabled('messages')}
                     />
-                    <button 
-                        className={`${
-                            user && user.points && user.points > 0 && isNotificationEnabled('messages') 
-                                ? 'text-white' 
-                                : 'text-gray-500'
-                        } flex-shrink-0`} 
-                        onClick={() => setShowGiftModal(true)}
-                        disabled={!user || !user.points || user.points <= 0 || !isNotificationEnabled('messages')}
-                    >
-                        <Gift size={30} />
-                    </button>
-                    <button
-                        onClick={handleSend}
-                        disabled={sending || (!input.trim() && !attachedFile) || !isNotificationEnabled('messages')}
-                        className={`flex-shrink-0 px-6 py-2 rounded-full text-sm disabled:opacity-50 ${
-                            isNotificationEnabled('messages') ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-500 text-gray-300'
-                        }`}
-                    >
-                        {sending ? (
-                            <div className="flex items-center">
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
-                            </div>
-                        ) : (
-                            <Send className="w-4 h-4" />
-                        )}
-                    </button>
                     {/* Popover absolutely inside input bar */}
                     {showFile && (
                         <div
