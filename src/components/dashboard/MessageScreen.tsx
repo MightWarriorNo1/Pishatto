@@ -635,7 +635,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                 </div>
             )} */}
             {/* Tabs */}
-            <div className="flex items-center px-4 pt-16">
+            <div className="flex items-center px-4 pt-24">
                 <button
                     className={`px-4 py-1 rounded-full font-bold text-sm mr-2 flex items-center gap-2 ${selectedTab === 'all' ? 'bg-secondary text-white' : 'bg-primary text-white border border-secondary'}`}
                     onClick={() => setSelectedTab('all')}

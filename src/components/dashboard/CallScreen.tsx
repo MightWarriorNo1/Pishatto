@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Clock, Flag, UserRound, HelpCircleIcon, MapPin, Users, CalendarArrowUp, ChevronRight, Minus, Plus, X, Calendar, CheckCircle } from 'lucide-react';
 import StepRequirementScreen from './StepRequirementScreen';
-import { createFreeCall, createFreeCallReservation, fetchRanking, getGuestChats, getCastCountsByLocation, getCastList } from '../../services/api';
+import { createFreeCall, createFreeCallReservation, fetchRanking, getGuestChats, getCastCountsByLocation, getCastList, getPaymentInfo, getGuestProfileById } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import { locationService } from '../../services/locationService';
 import MyOrderPage from './MyOrderPage';
@@ -1749,6 +1749,46 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     const [showAreaModal, setShowAreaModal] = useState(false);
     const [showMyOrder, setShowMyOrder] = useState(false);
     const [showStepRequirement, setShowStepRequirement] = useState(false);
+    // Setup/verification states for showing top banner conditionally
+    const { user, refreshUser } = useUser();
+    const [hasRegisteredCard, setHasRegisteredCard] = useState<boolean | null>(null);
+    const [verificationStatus, setVerificationStatus] = useState<'pending' | 'success' | 'failed' | null>(null);
+    const [isSetupLoading, setIsSetupLoading] = useState<boolean>(false);
+
+    const refreshSetupStatuses = async () => {
+        if (!user?.id) return;
+        setIsSetupLoading(true);
+        try {
+            const paymentInfo = await getPaymentInfo('guest', user.id);
+            setHasRegisteredCard(!!paymentInfo?.card_count);
+        } catch (e) {
+            setHasRegisteredCard(false);
+        }
+        try {
+            const res = await getGuestProfileById(user.id);
+            setVerificationStatus(res.identity_verification_completed ?? null);
+        } catch (e) {
+            // keep previous
+        } finally {
+            setIsSetupLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (user?.id) {
+            refreshSetupStatuses();
+        }
+    }, [user?.id]);
+
+    useEffect(() => {
+        const onVis = () => {
+            if (!document.hidden && user?.id) {
+                refreshSetupStatuses();
+            }
+        };
+        document.addEventListener('visibilitychange', onVis);
+        return () => document.removeEventListener('visibilitychange', onVis);
+    }, [user?.id]);
     const [selectedLocation, setSelectedLocation] = useState<string>('');
     const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null);
 
@@ -1766,7 +1806,6 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     const [reservationId, setReservationId] = useState<number>(0);
     const [chatId, setChatId] = useState<number>(0);
 
-    const { user, refreshUser } = useUser();
     const [showAvailableCastsModal, setShowAvailableCastsModal] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
 
@@ -2018,7 +2057,16 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
         />
     );
 
-    if (showStepRequirement) return <StepRequirementScreen onBack={() => setShowStepRequirement(false)} />;
+    if (showStepRequirement) return <StepRequirementScreen onBack={() => { setShowStepRequirement(false); setTimeout(refreshSetupStatuses, 0); }} />;
+
+    // Show loading state until verification and card statuses are loaded
+    if (user?.id && isSetupLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-primary via-primary to-secondary flex items-center justify-center">
+                <Spinner />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-20">
@@ -2033,23 +2081,25 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                 </div>
             </div>
 
-            {/* Enhanced Warning Banner */}
-            <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 flex items-center justify-between shadow-lg pt-20">
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-                    <span className="text-sm font-semibold">ご利用準備が完了していません</span>
+            {/* Enhanced Warning Banner - show only if setup incomplete */}
+            {!(hasRegisteredCard && verificationStatus === 'success') && (
+                <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 flex items-center justify-between shadow-lg pt-20">
+                    <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+                        <span className="text-sm font-semibold">ご利用準備が完了していません</span>
+                    </div>
+                    <button
+                        onClick={() => setShowStepRequirement(true)}
+                        className="flex items-center gap-1 hover:bg-white/20 rounded-full p-2 transition-all duration-200"
+                    >
+                        <span className="text-xs">設定</span>
+                        <ChevronRight size={16} />
+                    </button>
                 </div>
-                <button
-                    onClick={() => setShowStepRequirement(true)}
-                    className="flex items-center gap-1 hover:bg-white/20 rounded-full p-2 transition-all duration-200"
-                >
-                    <span className="text-xs">設定</span>
-                    <ChevronRight size={16} />
-                </button>
-            </div>
+            )}
 
             {/* Enhanced Area Selection */}
-            <div className="bg-gradient-to-r from-primary to-blue-900 px-4 py-4 flex flex-col gap-3 border-b border-white/10 shadow-lg">
+            <div className={`bg-gradient-to-r from-primary to-blue-900 px-4 pb-4 ${hasRegisteredCard && verificationStatus === 'success' ? 'pt-24' : 'pt-4'} flex flex-col gap-3 border-b border-white/10 shadow-lg`}>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <MapPin className="text-secondary" size={20} />

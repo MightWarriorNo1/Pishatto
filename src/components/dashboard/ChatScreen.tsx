@@ -798,11 +798,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                                 <span className="ml-2 text-xs text-primary font-bold">{typeof giftObj.points === 'number' ? giftObj.points.toLocaleString() : Number(giftObj.points || 0).toLocaleString()}P</span>
                                                                 {msg.isOptimistic && (<span className="ml-2 text-xs text-yellow-300">送信中...</span>)}
                                                             </div>
-                                                            {giftObj.description && (
+                                                            {/* {giftObj.description && (
                                                                 <div className="text-xs text-gray-300 mt-1 ml-11">
                                                                     {giftObj.description}
                                                                 </div>
-                                                            )}
+                                                            )} */}
                                                         </div>
                                                     );
                                                 })()}
@@ -1049,7 +1049,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             <span className="text-5xl mb-2">{selectedGift.icon}</span>
                             <span className="text-lg font-bold text-white mb-1">{selectedGift.name || selectedGift.label}</span>
                             <span className="text-yellow-300 font-bold mb-2">{Number(selectedGift.points).toLocaleString()}P</span>
-                            <span className="text-white text-sm whitespace-pre-line mb-2" style={{maxWidth: 320, textAlign: 'center'}}>{selectedGift.description || '説明はありません'}</span>
+                            {/* <span className="text-white text-sm whitespace-pre-line mb-2" style={{maxWidth: 320, textAlign: 'center'}}>{selectedGift.description || '説明はありません'}</span> */}
                         </div>
                         <div className="flex gap-4">
                             <button

@@ -52,7 +52,7 @@ const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideL
   };
 
   return (
-    <div className="bg-white/10 rounded-lg shadow p-4 mb-4 border border-secondary">
+    <div className="bg-white/10 rounded-lg shadow p-4 mb-8 border border-secondary">
       <h2 className="font-bold text-lg mb-2 text-white">最高満足度</h2>
       {loading && !hideLoading ? (
         <Spinner />

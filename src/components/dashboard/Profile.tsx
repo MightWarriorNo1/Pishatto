@@ -295,7 +295,9 @@ const Profile: React.FC = () => {
                         <User className="w-6 h-6 text-white" />
                     </span>
                     <span className="flex-1 text-white">本人認証</span>
-                    <span className="bg-orange-500 text-white text-xs rounded px-2 py-1 mr-2">本人確認書類をご登録ください</span>
+                    {user?.identity_verification_completed !== 'success' && (
+                        <span className="bg-orange-500 text-white text-xs rounded px-2 py-1 mr-2">本人確認書類をご登録ください</span>
+                    )}
                     <span className="text-white">
                         <ChevronRight />
                     </span>

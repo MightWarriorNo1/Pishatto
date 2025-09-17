@@ -77,7 +77,7 @@ const NewCastSection: React.FC<NewCastSectionProps> = ({ hideLoading = false }) 
 
   return (
     <div>
-      <h2 className="font-bold text-lg mb-2 text-white">新着キャスト</h2>
+      <h2 className="font-bold text-lg mb-2 mt-2 text-white">新着キャスト</h2>
       <div className="bg-white/10 rounded-lg shadow p-4 mb-4 border border-secondary">
         
         {loading && !hideLoading ? (

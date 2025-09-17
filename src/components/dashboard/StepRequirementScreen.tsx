@@ -48,6 +48,7 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
     useEffect(() => {
         if (user?.id) {
             checkRegisteredCards();
+            getIdentityVerificationStatus();
         } else {
             setLoading(false);
         }
@@ -58,6 +59,7 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         const handleVisibilityChange = () => {
             if (!document.hidden && user?.id) {
                 checkRegisteredCards();
+                getIdentityVerificationStatus();
             }
         };
 
@@ -84,7 +86,7 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
         userType="guest"
         userId={user?.id}
     />;
-    if (showIdentityVerification) return <IdentityVerificationScreen onBack={() => setShowIdentityVerification(false)} />;
+    if (showIdentityVerification) return <IdentityVerificationScreen onBack={() => { setShowIdentityVerification(false); getIdentityVerificationStatus(); }} />;
 
 
     return (
@@ -112,7 +114,7 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                 {/* Progress */}
                 {(() => {
                     const isCardDone = !!hasRegisteredCard;
-                    const isIdentityDone = user?.identity_verification_completed === 'success';
+                    const isIdentityDone = verificationStatus === 'success';
                     const completedCount = (1) + (isCardDone ? 1 : 0) + (isIdentityDone ? 1 : 0);
                     const progressPercent = Math.round((completedCount / 3) * 100);
                     return (
@@ -213,7 +215,7 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                                 <>
                                     <Loader2 size={14} className="animate-spin" /> 確認中
                                 </>
-                            ) : user?.identity_verification_completed === 'success' ? (
+                            ) : verificationStatus === 'success' ? (
                                 <>
                                     <CheckCircle2 size={14} /> 完了
                                 </>
@@ -229,12 +231,12 @@ const StepRequirementScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => 
                             <span className="ml-2">
                                 {loading ? (
                                     <span className="inline-flex items-center gap-1 text-gray-100"><Loader2 size={16} className="animate-spin" /> 確認中...</span>
-                                ) : user?.identity_verification_completed === 'success' ? '認証済み' : '未認証'}
+                                ) : verificationStatus === 'success' ? '認証済み' : '未認証'}
                             </span>
                         </div>
                     </div>
                 </div>
-                {!loading && user?.identity_verification_completed !== 'success' && (
+                {!loading && verificationStatus !== 'success' && (
                     <div
                         className="bg-secondary hover:bg-pink-400 border-t-0 rounded-b-xl text-center text-white font-bold py-2 cursor-pointer border border-secondary"
                         onClick={() => setShowIdentityVerification(true)}

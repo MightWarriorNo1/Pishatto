@@ -63,7 +63,7 @@ const FavoritesSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = f
 
   return (
     <div className="bg-primary rounded-lg shadow p-4 mb-4">
-      <h2 className="font-bold text-lg mb-2 text-white">お気に入り</h2>
+      <h2 className="font-bold text-lg mb-2 mt-2 text-white">お気に入り</h2>
       {favorites.map((profile: CastProfile) => (
         <div key={profile.id} className="bg-white/10 rounded-lg shadow p-3 border border-secondary mb-2">
           <div className="flex space-x-4 items-center">

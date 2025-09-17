@@ -492,11 +492,11 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                                 <div className="text-xs mt-1 text-center">
                                                     {Number(message.gift.points).toLocaleString()}P
                                                 </div>
-                                                {message.gift.description && (
+                                                {/* {message.gift.description && (
                                                     <div className="text-xs mt-2 text-center text-gray-700">
                                                         {message.gift.description}
                                                     </div>
-                                                )}
+                                                )} */}
                                             </div>
                                             
                                         )}
@@ -962,7 +962,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                             <span className="text-5xl mb-2">{selectedGift.icon}</span>
                             <span className="text-lg font-bold text-white mb-1">{selectedGift.name}</span>
                             <span className="text-yellow-300 font-bold mb-2">{Number(selectedGift.points).toLocaleString()}P</span>
-                            <span className="text-white text-sm whitespace-pre-line mb-2" style={{maxWidth: 320, textAlign: 'center'}}>{selectedGift.description || '説明はありません'}</span>
+                            {/* <span className="text-white text-sm whitespace-pre-line mb-2" style={{maxWidth: 320, textAlign: 'center'}}>{selectedGift.description || '説明はありません'}</span> */}
                         </div>
                         <div className="flex gap-4">
                             <button

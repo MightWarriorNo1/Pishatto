@@ -73,7 +73,7 @@ const FootprintsSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
   }
 
   return (
-    <div className="bg-primary rounded-lg shadow p-4 mb-4">
+    <div className="rounded-lg shadow p-4 py-8 mb-4">
       <h2 className="font-bold text-lg mb-2 text-white">足あと（あなたのプロフィールを見たキャスト）</h2>
       {footprints.map((item: FootprintItem) => (
         <div key={item.id} className="bg-white/10 rounded-lg shadow p-3 border border-secondary mb-2">

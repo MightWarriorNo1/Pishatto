@@ -2015,11 +2015,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                         <span className="ml-2 text-xs text-yellow-300">送信中...</span>
                                                     )}
                                                 </div>
-                                                {msg.gift.description && (
+                                                {/* {msg.gift.description && (
                                                     <div className="text-xs text-gray-300 mt-1 ml-11">
                                                         {msg.gift.description}
                                                     </div>
-                                                )}
+                                                )} */}
                                             </div>
                                         )}
                                         {(() => {

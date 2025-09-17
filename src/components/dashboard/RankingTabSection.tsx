@@ -82,9 +82,9 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
   return (
     <div className="flex flex-col bg-gradient-to-b from-primary/10 via-primary to-secondary min-h-[calc(100vh-10rem)] relative">
       <div className="px-4 pt-4">
-        <div className="flex">
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            className={`flex-1 py-3 text-sm font-medium border-b-2 ${userType === 'cast'
+            className={`flex-1 py-3 text-sm sm:text-base font-medium border-b-2 ${userType === 'cast'
               ? 'border-secondary text-white'
               : 'border-transparent text-white'
               }`}
@@ -93,7 +93,7 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
             キャスト
           </button>
           <button
-            className={`flex-1 py-3 text-sm font-medium border-b-2 ${userType === 'guest'
+            className={`flex-1 py-3 text-sm sm:text-base font-medium border-b-2 ${userType === 'guest'
               ? 'border-secondary text-white'
               : 'border-transparent text-white'
               }`}
@@ -102,11 +102,11 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
             ゲスト
           </button>
           <button
-            className="flex items-center space-x-1 px-3 py-1.5 border rounded-md border-secondary text-white"
+            className="shrink-0 flex items-center space-x-1 px-3 py-1.5 border rounded-md border-secondary text-white"
             onClick={() => setIsAreaDropdownOpen(!isAreaDropdownOpen)}
           >
-            <span className="text-sm">{selectedArea}</span>
-            <span className="text-xs">▼</span>
+            <span className="text-sm sm:text-base">{selectedArea}</span>
+            <span className="text-xs sm:text-sm">▼</span>
           </button>
 
           {/* Area Dropdown */}
@@ -155,7 +155,7 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
         <div className="flex items-center justify-between w-full">
           <div className="flex space-x-1 w-full overflow-x-auto">
             <button
-              className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === 'gift'
+              className={`px-4 py-1.5 rounded-full text-xs sm:text-sm ${selectedCategory === 'gift'
                 ? 'bg-secondary text-white'
                 : 'border border-gray-700 text-white'
                 }`}
@@ -164,7 +164,7 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
               ギフト
             </button>
             <button
-              className={`px-4 py-1.5 rounded-full text-sm ${selectedCategory === 'reservation'
+              className={`px-4 py-1.5 rounded-full text-xs sm:text-sm ${selectedCategory === 'reservation'
                 ? 'bg-secondary text-white'
                 : 'border border-gray-700 text-white'
                 }`}
@@ -178,7 +178,7 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
 
       {/* Time Period Row */}
       <div className="px-4 mt-4 mx-auto w-full">
-        <div className="flex w-full text-sm">
+        <div className="flex w-full text-xs sm:text-sm">
           <button
             className={`flex-1 py-2 ${timePeriod === 'current'
               ? 'text-white border-b border-secondary'
@@ -227,8 +227,8 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
         </div>
       </div>
 
-      {/* Empty State */}
-      <div className="flex-1 flex-col items-center justify-center min-w-[360px]">
+      {/* Content */}
+      <div className="flex-1 flex-col items-center justify-center w-full">
         {loading && !hideLoading ? (
           <div className="flex justify-center items-center py-8">
             <Spinner />
@@ -239,8 +239,8 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
           <div className="w-full">
             {ranking.map((item, idx) => (
               <div key={item.id || item.user_id} className="flex items-center p-2 border-b border-secondary">
-                <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-white text-base font-bold mr-2">{idx + 1}</div>
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-400 border-2 border-secondary mr-2 cursor-pointer" onClick={() => handleProfileClick(item)}>
+                <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-white text-sm sm:text-base font-bold mr-2">{idx + 1}</div>
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-400 border-2 border-secondary mr-2 cursor-pointer" onClick={() => handleProfileClick(item)}>
                   <img
                     src={getFirstAvatarUrl(item.avatar)}
                     alt={item.name || item.nickname || ''}
@@ -248,9 +248,9 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
                   />
                 </div>
                 <div className="flex-1">
-                  <div className="text-white font-bold">{item.name || item.nickname || ''}</div>
+                  <div className="text-white font-bold text-sm sm:text-base">{item.name || item.nickname || ''}</div>
                   {item.points !== undefined && (
-                    <div className="text-xs text-white mt-1">ポイント: {formatAmount(item.points)}</div>
+                    <div className="text-[10px] sm:text-xs text-white mt-1">ポイント: {formatAmount(item.points)}</div>
                   )}
                 </div>
               </div>

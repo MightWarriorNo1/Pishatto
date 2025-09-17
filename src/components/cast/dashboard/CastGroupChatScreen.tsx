@@ -865,11 +865,11 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                                                     <span className="text-2xl mr-2">🎁</span>
                                                     <span className="font-bold">{message.gift.name}</span>
                                                 </div>
-                                                {message.gift.description && (
+                                                {/* {message.gift.description && (
                                                     <div className="text-xs mt-2 text-center text-gray-700">
                                                         {message.gift.description}
                                                     </div>
-                                                )}
+                                                )} */}
                                             </div>
                                         )}
                                         

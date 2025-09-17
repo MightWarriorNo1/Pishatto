@@ -486,13 +486,18 @@ const MessageProposalPage: React.FC<{
                                         <Calendar size={16} className="text-primary" />
                                         日付
                                     </label>
-                                    <input
-                                        type="date"
-                                        className="w-full border-2 border-gray-200 rounded-xl p-4 text-base text-gray-900 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 hover:border-gray-300"
-                                        value={tempDate}
-                                        onChange={(e) => setTempDate(e.target.value)}
-                                        min={new Date().toISOString().slice(0, 10)}
-                                    />
+                                    <div className="relative">
+                                        <input
+                                            type="date"
+                                            className="w-full border-2 border-gray-200 rounded-xl p-4 text-base text-transparent caret-transparent focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 hover:border-gray-300"
+                                            value={tempDate}
+                                            onChange={(e) => setTempDate(e.target.value)}
+                                            min={new Date().toISOString().slice(0, 10)}
+                                        />
+                                        <div className="pointer-events-none absolute inset-0 flex items-center px-4 text-base text-gray-900">
+                                            {tempDate ? formatJPDate(new Date(tempDate)) : ''}
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 {/* Time Selection */}

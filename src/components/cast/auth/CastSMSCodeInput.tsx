@@ -111,15 +111,17 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
     return (
         <div className="max-w-md mx-auto bg-gradient-to-b from-primary via-primary/80 to-secondary b   flex items-center justify-center px-4">
             <div className="w-full min-h-screen p-6 pb-28">
-                <div className="flex items-center justify-center relative h-14 border-b border-rose-200">
-                    <button onClick={onBack} className="absolute left-2 text-white hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300 rounded-full p-2" aria-label="戻る">
+                <div className="relative">
+                    <button onClick={onBack} className="text-white hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300 rounded-full p-2" aria-label="戻る">
                         <ChevronLeft className="w-6 h-6" />
                     </button>
-                    <span className="text-base font-medium text-white">SMS認証コードの入力</span>
+                    <div className="flex items-center justify-center relative h-14 border-b border-rose-200">
+                        <span className="text-base font-medium text-white">SMS認証コードの入力</span>
+                    </div>
                 </div>
 
                 <div className="pt-6 space-y-5">
-                    <div className="flex justify-between space-x-2">
+                    <div className="grid grid-cols-6 gap-2 sm:gap-3">
                         {code.map((digit, index) => (
                             <input
                                 key={index}
@@ -132,7 +134,7 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
                                 onChange={(e) => handleCodeChange(index, e.target.value.replace(/\D/g, ''))}
                                 onPaste={handlePaste}
                                 onKeyDown={(e) => handleKeyDown(e, index)}
-                                className="w-[46px] h-[52px] text-center text-lg border border-rose-200 rounded-xl bg-white text-primary focus:outline-none focus:ring-2 focus:ring-rose-300"
+                                className="w-full h-12 sm:h-14 md:h-16 text-center text-base sm:text-lg md:text-xl border border-rose-200 rounded-xl bg-white text-primary focus:outline-none focus:ring-2 focus:ring-rose-300"
                                 aria-label={`認証コード ${index + 1} 桁目`}
                             />
                         ))}
