@@ -1049,7 +1049,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             <span className="text-5xl mb-2">{selectedGift.icon}</span>
                             <span className="text-lg font-bold text-white mb-1">{selectedGift.name || selectedGift.label}</span>
                             <span className="text-yellow-300 font-bold mb-2">{Number(selectedGift.points).toLocaleString()}P</span>
-                            {/* <span className="text-white text-sm whitespace-pre-line mb-2" style={{maxWidth: 320, textAlign: 'center'}}>{selectedGift.description || '説明はありません'}</span> */}
+                            {selectedGift.description && (
+                                <span className="text-white text-sm whitespace-pre-line mb-2 text-center px-4" style={{maxWidth: 320}}>{selectedGift.description}</span>
+                            )}
                         </div>
                         <div className="flex gap-4">
                             <button
