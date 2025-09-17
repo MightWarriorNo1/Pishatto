@@ -47,8 +47,8 @@ const App: React.FC = () => {
               <FaviconManager />
                 <Router>
                   <Routes>
-                    <Route path="/" element={<LandingPage />} />
-                    <Route path="/role-select" element={<RoleSelectPage />} />
+                    <Route path="/welcome" element={<LandingPage />} />
+                    <Route path="/" element={<RoleSelectPage />} />
                     <Route path="/legal/terms" element={<TermsOfService />} />
                     <Route path="/legal/privacy" element={<PrivacyPolicy />} />
                     <Route path="/legal/specified-commercial" element={<TermsOfSale />} />
