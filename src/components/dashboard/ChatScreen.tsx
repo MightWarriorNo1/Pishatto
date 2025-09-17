@@ -863,7 +863,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     </button>
                     <input
                         type="text"
-                        className={`flex-1 min-w-0 px-4 py-2 rounded-full border border-secondary text-sm ${
+                        className={`flex-1 min-w-0 px-4 py-2 rounded-full border border-secondary text-base ${
                             isNotificationEnabled('messages') 
                                 ? 'bg-primary text-white' 
                                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
@@ -877,6 +877,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             }
                         }}
                         disabled={!isNotificationEnabled('messages')}
+                        style={{ fontSize: '16px' }}
                     />
                     <span 
                         className={`cursor-pointer flex-shrink-0 ${

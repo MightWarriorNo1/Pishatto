@@ -309,12 +309,13 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
             <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-primary border-t border-secondary flex items-center px-4 py-2 z-20">
                 <input
                     type="text"
-                    className={`flex-1 px-4 py-2 rounded-full border border-secondary text-sm mr-2 ${isNotificationEnabled('messages') ? 'bg-primary text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
+                    className={`flex-1 px-4 py-2 rounded-full border border-secondary text-base mr-2 ${isNotificationEnabled('messages') ? 'bg-primary text-white' : 'bg-gray-600 text-gray-400 cursor-not-allowed'}`}
                     placeholder={isNotificationEnabled('messages') ? 'メッセージを入力...' : 'メッセージ通知が無効です'}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={async (e) => { if (e.key === 'Enter') await handleSend(); }}
                     disabled={!isNotificationEnabled('messages')}
+                    style={{ fontSize: '16px' }}
                 />
                 <span className={`cursor-pointer ${isNotificationEnabled('messages') ? 'text-white' : 'text-gray-500'}`}>
                     <Image size={30} />
