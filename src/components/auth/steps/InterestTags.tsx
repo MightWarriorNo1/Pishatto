@@ -22,10 +22,9 @@ const InterestTags: React.FC<InterestTagsProps> = ({
   const [selectedTags, setSelectedTags] = useState<GuestInterest[]>(formData.interests || []);
 
   const categories: { [key: string]: string[] } = {
-    'キャストタイプ': ['学生', '童顔', '綺麗系', 'ギャル', '清楚', 'スレンダー', 'グラマー', 'ハーフ', '小柄', 'プロ歓迎', '最近入会'],
-    'お疲れ箇所': ['ふくらはぎ', '太もも', '足の裏', '肩', '腕', '背中'],
-    '会話': ['多め', '普通', '少なめ', '無し'],
-    'オイルの香り': ['無香料', 'イランイラン', '柑橘系', 'ラベンダー']
+    'アロマの香り': ['無香料', '柑橘系', 'ラベンダー'],
+    '会話量': ['多', '普', '少', 'なし'],
+    '音楽': ['あり', 'なし']
   };
 
   const handleTagSelect = (category: string, tag: string) => {

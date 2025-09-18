@@ -61,8 +61,8 @@ const LandingPage: React.FC = () => {
         </div>
 
         {/* Main Content */}
-        <div className="relative min-h-screen flex items-center justify-center px-4 py-16 z-10">
-          <div className="max-w-4xl mx-auto text-center">
+        <div className="relative min-h-screen flex items-center justify-center px-4 py-16 z-10 ">
+          <div className="max-w-4xl mx-auto text-center mt-28">
             {/* Animated Logo/Brand */}
             <div className="mb-6 sm:mb-8 animate-fade-in-up">
               <div className="inline-block relative">
