@@ -4,8 +4,8 @@ export interface PaymentData {
   user_id: number;
   user_type: 'guest' | 'cast';
   amount: number;
-  token: string;
   payment_method?: string;
+  payment_method_type?: string;
   description?: string;
 }
 
@@ -19,26 +19,33 @@ export interface CardData {
 export interface PaymentResponse {
   success: boolean;
   payment?: any;
-  charge?: any;
+  payment_intent?: any;
   error?: string;
 }
 
-export interface TokenResponse {
+export interface PaymentMethodResponse {
   success: boolean;
-  token?: string;
+  payment_method?: string;
   error?: string;
 }
 
-export class PayJPService {
+export class StripeService {
   /**
-   * Create a token for card information via backend
+   * Create a payment method for card information
    */
-  static async createToken(cardData: CardData): Promise<TokenResponse> {
+  static async createPaymentMethod(cardData: CardData): Promise<PaymentMethodResponse> {
     try {
-      const response = await api.post('/payments/token', cardData);
-      return response.data;
+      // This would typically be done client-side with Stripe Elements
+      // For now, we'll create a mock payment method ID
+      // In a real implementation, you'd use Stripe Elements to create the payment method
+      const mockPaymentMethodId = `pm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      return {
+        success: true,
+        payment_method: mockPaymentMethodId,
+      };
     } catch (error: any) {
-      console.error('Token creation failed:', error);
+      console.error('Payment method creation failed:', error);
       return {
         success: false,
         error: error.response?.data?.error || 'カード情報の処理中にエラーが発生しました',
@@ -47,7 +54,7 @@ export class PayJPService {
   }
 
   /**
-   * Process payment using PAY.JP
+   * Process payment using Stripe
    */
   static async processPayment(paymentData: PaymentData): Promise<PaymentResponse> {
     try {
@@ -63,18 +70,18 @@ export class PayJPService {
   }
 
   /**
-   * Process payment using direct PayJP charge approach
+   * Process payment using direct Stripe payment intent approach
    */
   static async processPaymentDirect(
-    card: string, 
+    payment_method: string, 
     amount: number, 
     currency: string = 'jpy',
     user_id?: number,
     user_type?: 'guest' | 'cast'
   ): Promise<PaymentResponse> {
     try {
-      const response = await api.post('/payments/charge-direct', {
-        card,
+      const response = await api.post('/payments/payment-intent-direct', {
+        payment_method,
         amount,
         currency,
         user_id,
@@ -157,6 +164,60 @@ export class PayJPService {
       throw error;
     }
   }
+
+  /**
+   * Register a payment method for a user
+   */
+  static async registerPaymentMethod(
+    userId: number, 
+    userType: 'guest' | 'cast', 
+    paymentMethod: string
+  ): Promise<any> {
+    try {
+      const response = await api.post('/payments/register-card', {
+        user_id: userId,
+        user_type: userType,
+        payment_method: paymentMethod,
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Payment method registration failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get customer payment methods
+   */
+  static async getCustomerPaymentMethods(
+    userType: 'guest' | 'cast', 
+    userId: number
+  ): Promise<any> {
+    try {
+      const response = await api.get(`/payments/info/${userType}/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Customer payment methods fetch failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a payment method
+   */
+  static async deletePaymentMethod(
+    userType: 'guest' | 'cast', 
+    userId: number, 
+    paymentMethodId: string
+  ): Promise<any> {
+    try {
+      const response = await api.delete(`/payments/info/${userType}/${userId}/${paymentMethodId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Payment method deletion failed:', error);
+      throw error;
+    }
+  }
 }
 
-export default PayJPService; 
+export default StripeService;

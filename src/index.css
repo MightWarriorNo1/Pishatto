@@ -20,7 +20,7 @@ code {
     monospace;
 }
 
-#payjp_checkout_box input{
+#stripe_checkout_box input{
   padding: 10px!important;
   background-color: #BE3144!important;
   background-image: none!important;

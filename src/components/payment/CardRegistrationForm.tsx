@@ -2,16 +2,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import { registerCard } from '../../services/api';
+import StripeService from '../../services/stripe';
 
 interface CardRegistrationFormProps {
-  onSuccess?: (token?: string) => void;
+  onSuccess?: (paymentMethod?: string) => void;
   onCancel?: () => void;
   userType?: 'guest' | 'cast';
   userId?: number;
 }
 
 // Simple global instance
-let payjpInstance: any = null;
+let stripeInstance: any = null;
 
 const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
   onSuccess,
@@ -28,27 +29,27 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
   const cardElement = useRef<any>(null);
   const cardContainer = useRef<HTMLDivElement>(null);
 
-  const PAYJP_PUBLIC_KEY = process.env.REACT_APP_PAYJP_PUBLIC_KEY || 'pk_test_ccb8e3a59692761578d1b83b';
+  const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY || 'pk_test_...';
 
   useEffect(() => {
     const init = async () => {
       // Load script if needed
-      if (!(window as any).Payjp) {
+      if (!(window as any).Stripe) {
         const script = document.createElement('script');
-        script.src = 'https://js.pay.jp/v2/pay.js';
+        script.src = 'https://js.stripe.com/v3/';
         await new Promise((resolve) => {
           script.onload = resolve;
           document.head.appendChild(script);
         });
       }
 
-      // Create PayJP instance only once
-      if (!payjpInstance) {
-        payjpInstance = (window as any).Payjp(PAYJP_PUBLIC_KEY);
+      // Create Stripe instance only once
+      if (!stripeInstance) {
+        stripeInstance = (window as any).Stripe(STRIPE_PUBLIC_KEY);
       }
 
       // Create card element
-      const elements = payjpInstance.elements();
+      const elements = stripeInstance.elements();
       cardElement.current = elements.create('card', {
         style: {
           base: { fontSize: '16px', color: '#ffffff', backgroundColor: 'transparent' },
@@ -79,18 +80,21 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
     setError(null);
 
     try {
-      const result = await payjpInstance.createToken(cardElement.current);
+      const { paymentMethod, error } = await stripeInstance.createPaymentMethod({
+        type: 'card',
+        card: cardElement.current,
+      });
       
-      if (result.error) {
-        setError(result.error.message);
+      if (error) {
+        setError(error.message);
         return;
       }
 
       try {
-        const response = await registerCard(currentUserId, userType, result.id);
+        const response = await registerCard(currentUserId, userType, paymentMethod.id);
         if (response.success) {
           setSuccess('カード情報を安全に登録しました');
-          setTimeout(() => onSuccess?.(result.id), 1500);
+          setTimeout(() => onSuccess?.(paymentMethod.id), 1500);
         } else {
           setError(response.error || 'カード登録中にエラーが発生しました');
         }

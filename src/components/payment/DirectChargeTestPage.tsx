@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useUser } from '../../contexts/UserContext';
-import { createChargeDirect, debugPayJPResponse } from '../../services/api';
+import { createPaymentIntentDirect, debugStripeResponse } from '../../services/api';
 
 const DirectChargeTestPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
   const { user } = useUser();
-  const [card, setCard] = useState('tok_76e202b409f3da51a0706605ac81');
+  const [paymentMethod, setPaymentMethod] = useState('pm_1234567890abcdef');
   const [amount, setAmount] = useState(3500);
   const [currency, setCurrency] = useState('jpy');
   const [tenant, setTenant] = useState('');
@@ -21,19 +21,18 @@ const DirectChargeTestPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
     setResult(null);
 
     try {
-      const response = await createChargeDirect(
-        card,
+      const response = await createPaymentIntentDirect(
+        paymentMethod,
         amount,
         currency,
-        tenant || undefined,
         includeUserInfo ? user?.id : undefined,
         includeUserInfo ? 'guest' : undefined
       );
 
       if (response.success) {
-        setResult(response.charge);
+        setResult(response.payment_intent);
       } else {
-        setError(response.error || 'Charge creation failed');
+        setError(response.error || 'Payment intent creation failed');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
@@ -48,7 +47,7 @@ const DirectChargeTestPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
     setDebugResult(null);
 
     try {
-      const response = await debugPayJPResponse(card, amount);
+      const response = await debugStripeResponse(paymentMethod, amount);
 
       if (response.success) {
         setDebugResult(response.debug);
@@ -68,21 +67,21 @@ const DirectChargeTestPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
         {onBack && (
           <button onClick={onBack} className="mr-2 text-2xl text-white">&#60;</button>
         )}
-        <span className="text-lg font-bold flex-1 text-center text-white">Direct Charge Test</span>
+        <span className="text-lg font-bold flex-1 text-center text-white">Direct Payment Intent Test</span>
       </div>
 
       <div className="p-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-white text-sm font-bold mb-2">
-              Card Token
+              Payment Method ID
             </label>
             <input
               type="text"
-              value={card}
-              onChange={(e) => setCard(e.target.value)}
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
               className="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white"
-              placeholder="tok_xxx"
+              placeholder="pm_xxx"
               required
             />
           </div>
@@ -114,18 +113,6 @@ const DirectChargeTestPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
             </select>
           </div>
 
-          <div>
-            <label className="block text-white text-sm font-bold mb-2">
-              Tenant (optional, for PAY.JP Platform)
-            </label>
-            <input
-              type="text"
-              value={tenant}
-              onChange={(e) => setTenant(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-600 rounded-lg bg-gray-800 text-white"
-              placeholder="ten_xxx"
-            />
-          </div>
 
           <div className="flex items-center">
             <input
@@ -145,7 +132,7 @@ const DirectChargeTestPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
             disabled={loading}
             className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition disabled:opacity-50"
           >
-            {loading ? 'Creating Charge...' : 'Create Charge'}
+            {loading ? 'Creating Payment Intent...' : 'Create Payment Intent'}
           </button>
 
           <button
@@ -166,7 +153,7 @@ const DirectChargeTestPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
 
         {result && (
           <div className="mt-4 p-4 bg-green-900 border border-green-700 rounded-lg">
-            <h3 className="text-green-200 font-bold mb-2">Charge Created Successfully!</h3>
+            <h3 className="text-green-200 font-bold mb-2">Payment Intent Created Successfully!</h3>
             {result.points_added && (
               <div className="text-green-200 mb-2">
                 <p>Points Added: {result.points_added}</p>
@@ -192,16 +179,16 @@ const DirectChargeTestPage: React.FC<{ onBack?: () => void }> = ({ onBack }) => 
           <h3 className="text-blue-200 font-bold mb-2">Example Usage:</h3>
           <pre className="text-blue-200 text-xs overflow-auto">
 {`// Backend (PHP)
-\\Payjp\\Charge::create([
-    'card' => 'tok_76e202b409f3da51a0706605ac81',
+\\Stripe\\PaymentIntent::create([
+    'payment_method' => 'pm_1234567890abcdef',
     'amount' => 3500,
     'currency' => 'jpy',
-    // 'tenant' => 'ten_xxx' // PAY.JP Platformでは必須
+    'confirm' => true
 ]);
 
 // Frontend (TypeScript)
-const result = await createChargeDirect(
-  'tok_76e202b409f3da51a0706605ac81',
+const result = await createPaymentIntentDirect(
+  'pm_1234567890abcdef',
   3500,
   'jpy'
 );`}

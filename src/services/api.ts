@@ -530,40 +530,38 @@ export const getAdminNews = async (userType: 'guest' | 'cast', userId?: number):
   return response.data.news;
 };
 
-export const createChargeDirect = async (
-  card: string, 
+export const createPaymentIntentDirect = async (
+  payment_method: string, 
   amount: number, 
   currency: string = 'jpy', 
-  tenant?: string,
   user_id?: number,
   user_type?: 'guest' | 'cast'
 ) => {
   const payload: any = {
-    card,
+    payment_method,
     amount,
     currency,
   };
   
-  if (tenant) payload.tenant = tenant;
   if (user_id) payload.user_id = user_id;
   if (user_type) payload.user_type = user_type;
   
-  const response = await api.post('/payments/charge-direct', payload);
+  const response = await api.post('/payments/payment-intent-direct', payload);
   return response.data;
 };
 
-export const debugPayJPResponse = async (card: string, amount: number) => {
+export const debugStripeResponse = async (payment_method: string, amount: number) => {
   const response = await api.post('/payments/debug-response', {
-    card,
+    payment_method,
     amount,
   });
   return response.data;
 };
 
-export const purchasePoints = async (user_id: number, user_type: 'guest' | 'cast', amount: number, token?: string, payment_method?: string) => {
+export const purchasePoints = async (user_id: number, user_type: 'guest' | 'cast', amount: number, payment_method?: string, payment_method_type?: string) => {
   const payload: any = { user_id, user_type, amount };
-  if (token && token.trim() !== '') payload.token = token;
   if (payment_method) payload.payment_method = payment_method;
+  if (payment_method_type) payload.payment_method_type = payment_method_type;
   const response = await api.post('/payments/purchase', payload);
   return response.data;
 };
@@ -634,8 +632,8 @@ export const registerPaymentInfo = async (user_id: number, user_type: 'guest' | 
   return response.data;
 };
 
-export const registerCard = async (user_id: number, user_type: 'guest' | 'cast', token: string) => {
-  const response = await api.post('/payments/register-card', { user_id, user_type, token });
+export const registerCard = async (user_id: number, user_type: 'guest' | 'cast', payment_method: string) => {
+  const response = await api.post('/payments/register-card', { user_id, user_type, payment_method });
   return response.data;
 };
 
@@ -1109,7 +1107,7 @@ export const getCastImmediatePaymentData = async (castId: number) => {
 
 export const processCastImmediatePayment = async (castId: number, data: {
   amount: number;
-  payjp_token: string;
+  payment_method: string;
 }) => {
   const response = await api.post(`/casts/${castId}/immediate-payment`, data);
   return response.data;

@@ -22,7 +22,7 @@ interface CastProfile {
     avatar?: string;
     points?: number;
     grade?: string;
-    payjp_customer_id?: string;
+    stripe_customer_id?: string;
 }
 
 interface CastPointsData {
@@ -84,7 +84,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
         if (!castProfile) return;
 
         // Check if cast has registered payment method
-        if (castProfile.payjp_customer_id) {
+        if (castProfile.stripe_customer_id) {
             // Cast has registered card, process immediate payment directly
             if (!paymentData || paymentData.immediate_points <= 0) {
                 setError('即時支払いに利用できるポイントはありません。');
@@ -97,7 +97,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
 
                 await processCastImmediatePayment(castId, {
                     amount: paymentData.immediate_points,
-                    payjp_token: castProfile.payjp_customer_id // Use existing customer ID
+                    payment_method: castProfile.stripe_customer_id // Use existing customer ID
                 });
 
                 setPaymentSuccess(true);
@@ -126,16 +126,16 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
             setProcessingPayment(true);
             setError(null);
 
-            // Process immediate payment with the new card token
+            // Process immediate payment with the new payment method
             await processCastImmediatePayment(castId, {
                 amount: paymentData.immediate_points,
-                payjp_token: token
+                payment_method: token
             });
 
             setPaymentSuccess(true);
             setShowCardForm(false);
 
-            // Refresh payment data to get updated profile with payjp_customer_id
+            // Refresh payment data to get updated profile with stripe_customer_id
             setTimeout(() => {
                 fetchAllData();
                 setPaymentSuccess(false);
@@ -268,7 +268,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
                             <div className="text-gray-300 text-sm">キャストID: {castProfile.id}</div>
                         </div>
                         <div className="text-right">
-                            {castProfile.payjp_customer_id ? (
+                            {castProfile.stripe_customer_id ? (
                                 <div className="bg-gradient-to-r from-green-500 to-green-600 text-white text-xs rounded-full px-3 py-1.5 font-medium shadow-sm">
                                     カード登録済み
                                 </div>
@@ -351,7 +351,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
                                 処理中...
                             </div>
                         ) : (
-                            castProfile.payjp_customer_id ? 'すぐ入金申請' : '銀行口座登録'
+                            castProfile.stripe_customer_id ? 'すぐ入金申請' : '銀行口座登録'
                         )}
                     </button>
                 )}

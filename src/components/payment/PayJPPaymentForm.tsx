@@ -1,12 +1,12 @@
 /*eslint-disable */
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../../contexts/UserContext';
-import PayJPService, { CardData, PaymentData } from '../../services/payjp';
+import StripeService, { CardData, PaymentData } from '../../services/stripe';
 import { purchasePoints, getPaymentInfo } from '../../services/api';
 import CardRegistrationForm from './CardRegistrationForm';
 import { ChevronLeft } from 'lucide-react';
 
-interface PayJPPaymentFormProps {
+interface StripePaymentFormProps {
   amount: number;
   onSuccess?: (payment: any) => void;
   onError?: (error: string) => void;
@@ -15,7 +15,7 @@ interface PayJPPaymentFormProps {
   userId?: number;
 }
 
-const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
+const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   amount,
   onSuccess,
   onError,
@@ -129,17 +129,17 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
     setLoading(true);
 
     try {
-      // Create token
-      const tokenResult = await PayJPService.createToken(cardData);
+      // Create payment method
+      const tokenResult = await StripeService.createPaymentMethod(cardData);
       
       if (!tokenResult.success) {
         onError?.(tokenResult.error || 'カード情報の処理中にエラーが発生しました');
         return;
       }
 
-      // Process payment using direct charge approach
-      const paymentResult = await PayJPService.processPaymentDirect(
-        tokenResult.token!,
+      // Process payment using direct payment intent approach
+      const paymentResult = await StripeService.processPaymentDirect(
+        tokenResult.payment_method!,
         yenAmount,
         'jpy',
         user.id,
@@ -541,10 +541,10 @@ const PayJPPaymentForm: React.FC<PayJPPaymentFormProps> = ({
       {/* Security Notice */}
       <div className="mt-4 text-xs text-gray-400 text-center">
         <p>🔒 お客様のカード情報は安全に暗号化されて処理されます</p>
-        <p>決済はPAY.JPによって安全に処理されます</p>
+        <p>決済はStripeによって安全に処理されます</p>
       </div>
     </div>
   );
 };
 
-export default PayJPPaymentForm; 
+export default StripePaymentForm; 

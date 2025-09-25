@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
-import PayJPPaymentForm from '../payment/PayJPPaymentForm';
+import StripePaymentForm from '../payment/PayJPPaymentForm';
 import { ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { getPaymentInfo } from '../../services/api';
 import Spinner from '../ui/Spinner';
@@ -117,7 +117,7 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             <span className="text-lg font-bold flex-1 text-center text-white">決済</span>
           </div>
           <div className="p-6">
-            <PayJPPaymentForm
+            <StripePaymentForm
               amount={selectedAmount}
               onSuccess={handlePaymentSuccess}
               onError={handlePaymentError}
