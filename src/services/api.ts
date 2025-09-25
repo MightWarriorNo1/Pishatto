@@ -639,7 +639,7 @@ export const registerCard = async (user_id: number, user_type: 'guest' | 'cast',
 
 export const getPaymentInfo = async (user_type: 'guest' | 'cast', user_id: number) => {
   const response = await api.get(`/payments/info/${user_type}/${user_id}`);
-  return response.data.payment_info;
+  return response.data;
 };
 
 export const deletePaymentInfo = async (user_type: 'guest' | 'cast', user_id: number, card_id: string) => {

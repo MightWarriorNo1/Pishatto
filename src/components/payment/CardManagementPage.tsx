@@ -46,8 +46,24 @@ const CardManagementPage: React.FC<CardManagementPageProps> = ({
 
     try {
       const paymentInfo = await getPaymentInfo(userType, currentUserId);
-      if (paymentInfo.success && paymentInfo.cards) {
-        setCards(paymentInfo.cards);
+      if (paymentInfo?.success && Array.isArray(paymentInfo.cards)) {
+        const mappedCards: Card[] = paymentInfo.cards
+          .map((pm: any) => {
+            const card = pm?.card || {};
+            const id = pm?.id || card?.id;
+            if (!id) {
+              return null;
+            }
+            return {
+              id,
+              brand: card?.brand || pm?.brand || '',
+              last4: card?.last4 || pm?.last4 || '',
+              exp_month: card?.exp_month || pm?.exp_month || 0,
+              exp_year: card?.exp_year || pm?.exp_year || 0,
+            } as Card;
+          })
+          .filter(Boolean) as Card[];
+        setCards(mappedCards);
       } else {
         setCards([]);
       }
@@ -82,7 +98,8 @@ const CardManagementPage: React.FC<CardManagementPageProps> = ({
   };
 
   const getCardBrandIcon = (brand: string) => {
-    switch (brand.toLowerCase()) {
+    const b = (brand || '').toLowerCase();
+    switch (b) {
       case 'visa':
         return '💳';
       case 'mastercard':
@@ -106,7 +123,6 @@ const CardManagementPage: React.FC<CardManagementPageProps> = ({
           >
             ← 戻る
           </button>
-          <h2 className="text-xl font-bold text-white">カード追加</h2>
         </div>
         <CardRegistrationForm
           onSuccess={handleCardRegistered}
@@ -173,10 +189,10 @@ const CardManagementPage: React.FC<CardManagementPageProps> = ({
                 </div>
                 <div>
                   <div className="text-white font-semibold">
-                    {card.brand.toUpperCase()} •••• {card.last4}
+                    {(card.brand || 'CARD').toUpperCase()} •••• {card.last4 || '----'}
                   </div>
                   <div className="text-gray-300 text-sm">
-                    有効期限: {card.exp_month.toString().padStart(2, '0')}/{card.exp_year}
+                    有効期限: {(card.exp_month ? String(card.exp_month).padStart(2, '0') : '--')}/{card.exp_year || '----'}
                   </div>
                 </div>
               </div>
