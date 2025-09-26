@@ -94,13 +94,54 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     const [showProposalModal, setShowProposalModal] = useState(false);
     const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
     const [selectedProposalMsgId, setSelectedProposalMsgId] = useState<number | null>(null);
+    const [proposalModalLoading, setProposalModalLoading] = useState(false);
 
     // Local state to track accepted proposals for immediate UI feedback
-    const [acceptedProposals, setAcceptedProposals] = useState<Set<string>>(new Set());
+    const [acceptedProposals, setAcceptedProposals] = useState<Set<string>>(() => {
+        if (!message.id) return new Set();
+        
+        const acceptedProposalsKey = getAcceptedProposalsStorageKey(Number(message.id));
+        const savedAcceptedProposals = localStorage.getItem(acceptedProposalsKey);
+        if (savedAcceptedProposals) {
+            try {
+                const parsed = JSON.parse(savedAcceptedProposals);
+                console.log('Accepted proposals initialized from localStorage:', {
+                    chatId: message.id,
+                    storageKey: acceptedProposalsKey,
+                    loadedProposals: parsed
+                });
+                return new Set(parsed);
+            } catch (error) {
+                console.error('Failed to parse accepted proposals from localStorage during init:', error);
+                return new Set();
+            }
+        }
+        return new Set();
+    });
     const [deniedProposalMsgIds, setDeniedProposalMsgIds] = useState<Set<number>>(new Set());
 
     // New state to track clicked proposals - persisted in localStorage
-    const [clickedProposals, setClickedProposals] = useState<Set<string>>(new Set());
+    const [clickedProposals, setClickedProposals] = useState<Set<string>>(() => {
+        if (!message.id) return new Set();
+        
+        const clickedProposalsKey = getClickedProposalsStorageKey(Number(message.id));
+        const savedClickedProposals = localStorage.getItem(clickedProposalsKey);
+        if (savedClickedProposals) {
+            try {
+                const parsed = JSON.parse(savedClickedProposals);
+                console.log('Clicked proposals initialized from localStorage:', {
+                    chatId: message.id,
+                    storageKey: clickedProposalsKey,
+                    loadedProposals: parsed
+                });
+                return new Set(parsed);
+            } catch (error) {
+                console.error('Failed to parse clicked proposals from localStorage during init:', error);
+                return new Set();
+            }
+        }
+        return new Set();
+    });
 
     // New state to track button usage - persisted in localStorage
     const [buttonUsage, setButtonUsage] = useState<{
@@ -359,29 +400,6 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     useEffect(() => {
         // Force a refetch on mount or when switching chats
         refetchMessages?.();
-        // Load accepted proposals from localStorage when switching chats
-        const acceptedProposalsKey = getAcceptedProposalsStorageKey(Number(message.id));
-        const savedAcceptedProposals = localStorage.getItem(acceptedProposalsKey);
-        if (savedAcceptedProposals) {
-            try {
-                const parsed = JSON.parse(savedAcceptedProposals);
-                setAcceptedProposals(new Set(parsed));
-                console.log('Accepted proposals loaded from localStorage:', {
-                    chatId: message.id,
-                    storageKey: acceptedProposalsKey,
-                    loadedProposals: parsed
-                });
-            } catch (error) {
-                console.error('Failed to parse accepted proposals from localStorage:', error);
-                setAcceptedProposals(new Set());
-            }
-        } else {
-            setAcceptedProposals(new Set());
-            console.log('No accepted proposals found in localStorage, using defaults:', {
-                chatId: message.id,
-                storageKey: acceptedProposalsKey
-            });
-        }
         // Load button usage state from localStorage when switching chats
         const storageKey = getButtonUsageStorageKey(Number(message.id));
         const saved = localStorage.getItem(storageKey);
@@ -412,33 +430,36 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             });
         }
 
-        // Load clicked proposals state from localStorage when switching chats
-        const clickedProposalsKey = getClickedProposalsStorageKey(Number(message.id));
-        const savedClickedProposals = localStorage.getItem(clickedProposalsKey);
-        if (savedClickedProposals) {
-            try {
-                const parsed = JSON.parse(savedClickedProposals);
-                setClickedProposals(new Set(parsed));
-                console.log('Clicked proposals loaded from localStorage:', {
-                    chatId: message.id,
-                    storageKey: clickedProposalsKey,
-                    loadedProposals: parsed
-                });
-            } catch (error) {
-                console.error('Failed to parse clicked proposals from localStorage:', error);
-                setClickedProposals(new Set());
-            }
-        } else {
-            setClickedProposals(new Set());
-            console.log('No clicked proposals found in localStorage, using defaults:', {
-                chatId: message.id,
-                storageKey: clickedProposalsKey
-            });
-        }
-
         // Don't clear proposal sessions here - they will be restored from localStorage
         // setProposalSessions(new Map());
     }, [refetchMessages, message.id]);
+
+
+    // Auto-mark accepted proposals as clicked to prevent re-clicking after refresh
+    useEffect(() => {
+        if (messages && acceptedProposals.size > 0) {
+            (messages as any[]).forEach((msg: any) => {
+                try {
+                    const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                    if (parsed && parsed.type === 'proposal') {
+                        const proposalKey = makeProposalKey(parsed.date, parsed.duration);
+                        const isAccepted = acceptedProposals.has(proposalKey);
+                        const isClicked = clickedProposals.has(proposalKey);
+                        
+                        if (isAccepted && !isClicked) {
+                            setClickedProposals(prev => {
+                                const newSet = new Set(prev);
+                                newSet.add(proposalKey);
+                                return newSet;
+                            });
+                        }
+                    }
+                } catch (e) {
+                    // Ignore parsing errors
+                }
+            });
+        }
+    }, [messages, acceptedProposals, clickedProposals]);
 
     // Measure input bar height (including dynamic content) and update on resize/state changes
     useEffect(() => {
@@ -613,7 +634,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             console.log('Clicked proposals saved to localStorage:', {
                 chatId: message.id,
                 storageKey,
-                clickedProposals: Array.from(clickedProposals)
+                clickedProposals: Array.from(clickedProposals),
+                timestamp: new Date().toISOString()
             });
         }
     }, [clickedProposals, message.id]);
@@ -1810,17 +1832,19 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         // Check if proposal has been clicked by cast member
                         const isClicked = clickedProposals.has(proposalKey);
                         
+                        // Debug logging
+                        console.log('Proposal render check:', {
+                            proposalKey,
+                            isClicked,
+                            clickedProposals: Array.from(clickedProposals),
+                            chatId: message.id
+                        });
+                        
                         // Check if this proposal was sent by the current cast member
                         const isSentByCast = castId && String(msg.sender_cast_id) === String(castId);
                         
                         // Auto-mark accepted proposals as clicked to prevent re-clicking after refresh
-                        if (isAccepted && !isClicked) {
-                            setClickedProposals(prev => {
-                                const newSet = new Set(prev);
-                                newSet.add(proposalKey);
-                                return newSet;
-                            });
-                        }
+                        // This is now handled in a useEffect to avoid render-time side effects
 
                         return (
                             <React.Fragment key={msg.id || `p-${idx}`}>
@@ -1838,11 +1862,21 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         onClick={() => {
                                             // Non-clickable for cast-sent proposals; guest can open modal
                                             if (isSentByCast) return;
+                                            // Prevent re-clicking already clicked proposals
+                                            if (isClicked) return;
+                                            
+                                            // Mark proposal as clicked
+                                            setClickedProposals(prev => {
+                                                const newSet = new Set(prev);
+                                                newSet.add(proposalKey);
+                                                return newSet;
+                                            });
+                                            
                                             setSelectedProposal(currentProposal);
                                             setSelectedProposalMsgId(Number(msg.id));
                                             setShowProposalModal(true);
                                         }}
-                                        style={isSentByCast ? { cursor: 'default' } : { cursor: 'pointer' }}
+                                        style={isSentByCast || isClicked ? { cursor: 'default' } : { cursor: 'pointer' }}
                                     >
                                         {/* Do not show clicked indicator on proposal tap */}
                                         <div>日程：{currentProposal.date ? new Date(currentProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
@@ -2321,8 +2355,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         {sessionError && <div className="text-red-500 mb-2">{sessionError}</div>}
                         <div className="flex gap-4 w-full flex-col sm:flex-row">
                             <button
-                                className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
-                                disabled={sessionLoading}
+                                className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={sessionLoading || proposalModalLoading}
                                 onClick={async () => {
                                     if (!selectedProposal || !chatInfo?.guest?.id || !selectedProposal.date) {
                                         console.error('Missing required data for proposal acceptance');
@@ -2330,6 +2364,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         return;
                                     }
 
+                                    setProposalModalLoading(true);
                                     try {
                                         // Prepare proposal data for acceptance
                                         const duration = parseInt(selectedProposal.duration?.toString() || '0', 10);
@@ -2409,18 +2444,27 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             console.error('Failed to send acceptance system messages:', e);
                                         }
 
+                                    } catch (e: any) {
+                                        console.error('Error accepting proposal:', e);
+                                    } finally {
                                         // Close modal and reset state
+                                        setProposalModalLoading(false);
                                         setShowProposalModal(false);
                                         setSelectedProposal(null);
                                         setSelectedProposalMsgId(null);
-                                    } catch (e: any) {
-                                        console.error('Error accepting proposal:', e);
                                     }
                                 }}
-                            >承認</button>
+                            >{proposalModalLoading ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></div>
+                                    処理中...
+                                </>
+                            ) : '承認'}</button>
                             <button
-                                className="w-full sm:w-auto px-4 py-2 bg-gray-400 text-white rounded font-bold"
+                                className="w-full sm:w-auto px-4 py-2 bg-gray-400 text-white rounded font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={proposalModalLoading}
                                 onClick={async () => {
+                                    setProposalModalLoading(true);
                                     try {
                                         // Send rejection notice to guest only and persist marker
                                         await sendMessageMutation.mutateAsync({
@@ -2445,12 +2489,18 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     } catch (e) {
                                         console.error('Failed to send rejection system messages:', e);
                                     } finally {
+                                        setProposalModalLoading(false);
                                         setShowProposalModal(false);
                                         setSelectedProposal(null);
                                         setSelectedProposalMsgId(null);
                                     }
                                 }}
-                            >キャンセル</button>
+                            >{proposalModalLoading ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></div>
+                                    処理中...
+                                </>
+                            ) : 'キャンセル'}</button>
                         </div>
                     </div>
                 </div>

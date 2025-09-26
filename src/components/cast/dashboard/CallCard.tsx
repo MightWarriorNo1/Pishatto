@@ -118,6 +118,12 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
                         <div className="flex items-center justify-between">
                             <div className="font-mono text-green-400 text-sm">経過: {diff(now, scheduled)}</div>
                         </div>
+                        {/* Show exceeded time warning for pishatto calls */}
+                        {type === 'Pishatto' && now > plannedEnd && (
+                            <div className="text-xs text-red-400 font-bold">
+                                時間超過中 - 追加料金が発生しています
+                            </div>
+                        )}
                     </>;
                 }
                 if (state === 'after' && scheduled && plannedEnd) {

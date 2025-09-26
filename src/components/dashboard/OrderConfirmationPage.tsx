@@ -33,6 +33,7 @@ function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime, currentDu
   const [customHours, setCustomHours] = useState(1);
 
   const timeOptions = [
+    { label: '5分', value: '5分後' },
     { label: '1時間', value: '1時間後' },
     { label: '2時間', value: '2時間後' },
     { label: '3時間', value: '3時間後' },
@@ -172,7 +173,13 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
     if (durationLabel.includes('以上')) {
       return 4;
     }
-    const parsed = parseInt(durationLabel.replace('時間', ''));
+    // Handle minute-based labels like "5分"
+    if (durationLabel.includes('分')) {
+      const minutes = parseInt(durationLabel.replace('分', ''));
+      const hrs = minutes / 60;
+      return Number.isNaN(hrs) ? 1 : hrs;
+    }
+    const parsed = parseFloat(durationLabel.replace('時間', ''));
     return Number.isNaN(parsed) ? 1 : parsed;
   };
 
@@ -182,6 +189,13 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   // Helper to compute scheduled Date from the current confirmedTime value
   const getScheduledDateFromConfirmedTime = (timeLabel: string): Date => {
     const now = new Date();
+    // For testing, if user selected minute-based option like "5分後"
+    if (timeLabel.includes('分後')) {
+      const minutes = parseInt(timeLabel.replace('分後', '')); 
+      const m = Number.isNaN(minutes) ? 30 : minutes; 
+      return new Date(now.getTime() + m * 60 * 1000);
+    }
+    // Default: 30 minutes later for 1時間後 etc. (keeps previous UX)
     return new Date(now.getTime() + 30 * 60 * 1000);
   };
 
@@ -193,7 +207,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   };
 
   const computeTotalPoints = (gp: number, hrs: number, timeLabel: string): number => {
-    const base = gp * hrs * 60 / 30; // points per 30min
+    const base = gp * (hrs * 60) / 30; // points per 30min (hrs can be fractional)
     const scheduled = getScheduledDateFromConfirmedTime(timeLabel);
     const nightFee = isNightHour(scheduled) ? NIGHT_FEE_PER_HOUR * hrs : 0;
     return base + nightFee;
@@ -295,8 +309,8 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
       durationValue = `${hours}時間`;
     } else if (newTime.includes('分後')) {
       const minutes = parseInt(newTime.replace('分後', ''));
-      const hours = Math.ceil(minutes / 60);
-      durationValue = `${hours}時間`;
+      // Preserve minute granularity for testing (e.g., 5分)
+      durationValue = `${minutes}分`;
     } else {
       // Default to 1 hour if format is not recognized
       durationValue = '1時間';
