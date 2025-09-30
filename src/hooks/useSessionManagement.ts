@@ -121,13 +121,25 @@ export const useSessionManagement = ({
 
         try {
             // Use cast-specific stop reservation endpoint
-            const updatedReservation = await stopReservation(reservationId, castId);
+			const updatedReservation = await stopReservation(reservationId, castId);
+
+			// Persist started_at and ended_at explicitly to reservation
+			const endTime = new Date();
+			const startTimeToUse = sessionState.startTime || new Date();
+			try {
+				await updateReservation(reservationId, {
+					started_at: startTimeToUse.toISOString(),
+					ended_at: endTime.toISOString(),
+				});
+			} catch (persistErr) {
+				console.error('Failed to persist started_at/ended_at on dissolve:', persistErr);
+			}
 
             // Update local state
-            setSessionState(prev => ({
+			setSessionState(prev => ({
                 ...prev,
-                isActive: false,
-                endTime: new Date()
+				isActive: false,
+				endTime: endTime
             }));
 
             onSessionEnd?.();

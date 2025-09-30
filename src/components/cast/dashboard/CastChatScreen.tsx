@@ -293,9 +293,14 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                                 disabled={sessionLoading}
                                 onClick={async () => {
                                     try {
+                                        // Use actual reservation duration if available, otherwise use proposal duration or default
+                                        const actualDuration = reservationData?.duration ? 
+                                            Math.round(reservationData.duration * 60) : 
+                                            (selectedProposal.duration ? parseInt(selectedProposal.duration as string, 10) : 120);
+                                        
                                         const proposalData = {
                                             date: selectedProposal.date,
-                                            duration: selectedProposal.duration ? parseInt(selectedProposal.duration as string, 10) : 120,
+                                            duration: actualDuration,
                                             totalPoints: selectedProposal.totalPoints,
                                             guestId: selectedProposal.guestId,
                                             castId: castId

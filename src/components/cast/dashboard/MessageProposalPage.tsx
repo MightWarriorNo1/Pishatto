@@ -35,7 +35,7 @@ const parseDuration = (val: string) => {
         const match = val.match(/([\d.]+)分/);
         if (match) return parseFloat(match[1]);
     }
-    return 60; // default 1 hour
+    return 60; // default 1 hour (fallback only)
 };
 
 const calcPoints = (duration: string, castGradePoints: number) => {
@@ -79,7 +79,7 @@ const MessageProposalPage: React.FC<{
     const navigate = useNavigate();
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
-    const [duration, setDuration] = useState('2時間');
+    const [duration, setDuration] = useState('2時間'); // Will be updated based on reservation
     const [guestData, setGuestData] = useState<GuestData | null>(null);
     const [castData, setCastData] = useState<any>(null);
     const [castGradePoints, setCastGradePoints] = useState<number>(9000); // Default to 9000 if not available
@@ -127,8 +127,21 @@ const MessageProposalPage: React.FC<{
                     
                     // Set duration based on reservation
                     if (reservation.duration) {
-                        const hours = Math.floor(reservation.duration);
-                        setDuration(`${hours}時間`);
+                        const durationHours = reservation.duration;
+                        if (durationHours < 1) {
+                            // For durations less than 1 hour, show in minutes
+                            const minutes = Math.round(durationHours * 60);
+                            setDuration(`${minutes}分`);
+                        } else {
+                            // For durations 1 hour or more, show in hours
+                            const hours = Math.floor(durationHours);
+                            const remainingMinutes = Math.round((durationHours - hours) * 60);
+                            if (remainingMinutes > 0) {
+                                setDuration(`${hours}時間${remainingMinutes}分`);
+                            } else {
+                                setDuration(`${hours}時間`);
+                            }
+                        }
                     }
                 }
 

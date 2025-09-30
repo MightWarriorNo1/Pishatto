@@ -816,12 +816,24 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         setShowProposalModal(true);
     };
 
-    const exitProposalSession = async (proposal: Proposal) => {
-        const proposalKey = makeProposalKey(proposal.date, proposal.duration);
-        const session = proposalSessions.get(proposalKey);
+    const exitProposalSession = async (proposal?: Proposal) => {
+        // Determine the session key either from provided proposal or the first active session
+        const proposalKey = proposal
+            ? makeProposalKey(proposal.date, proposal.duration)
+            : (() => {
+                let activeKey: string | null = null;
+                proposalSessions.forEach((s, k) => { if (!activeKey && s.isActive) activeKey = k; });
+                return activeKey;
+            })();
 
+        if (!proposalKey) {
+            console.error('No active session found to exit');
+            return;
+        }
+
+        const session = proposalSessions.get(proposalKey);
         if (!session) {
-            console.error('No session found for proposal');
+            console.error('No session found for key', proposalKey);
             return;
         }
 
@@ -832,12 +844,13 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             }
 
             // Update the reservation status to cancelled/exited
-            if (session.reservationId) {
-                await updateReservation(session.reservationId, {
-                    ended_at: new Date().toISOString(),
-                    // Add a status field if your API supports it
-                });
-            }
+			if (session.reservationId) {
+				await updateReservation(session.reservationId, {
+					started_at: session.startTime ? session.startTime.toISOString() : new Date().toISOString(),
+					ended_at: new Date().toISOString(),
+					// Add a status field if your API supports it
+				});
+			}
 
             // Update local session to inactive instead of removing it
             setProposalSessions(prev => {
@@ -890,37 +903,35 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
 
     // Auto-stop sessions when they reach their duration limit
-    useEffect(() => {
-        const checkAndStopSessions = () => {
-            console.log('Auto-stop check running, current sessions:', Array.from(proposalSessions.entries()));
-            proposalSessions.forEach((session, key) => {
-                if (session.isActive && session.startTime) {
-                    const elapsed = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
-                    // Extract duration from session key (last part after the last dash)
-                    const sessionKeyParts = key.split('-');
-                    const durationInSeconds = Number(sessionKeyParts[sessionKeyParts.length - 1]) * 60;
+    // useEffect(() => {
+    //     const checkAndStopSessions = () => {
+    //         console.log('Auto-stop check running, current sessions:', Array.from(proposalSessions.entries()));
+    //         proposalSessions.forEach((session, key) => {
+    //             if (session.isActive && session.startTime) {
+    //                 const elapsed = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
+    //                 const sessionKeyParts = key.split('-');
+    //                 const durationInSeconds = Number(sessionKeyParts[sessionKeyParts.length - 1]) * 60;
 
-                    console.log('Session check:', { key, elapsed, durationInSeconds, willStop: elapsed >= durationInSeconds });
+    //                 console.log('Session check:', { key, elapsed, durationInSeconds, willStop: elapsed >= durationInSeconds });
 
-                    if (elapsed >= durationInSeconds) {
-                        console.log('Auto-stopping session:', key);
-                        // Auto-stop the session - reconstruct the proposal date properly
-                        const duration = sessionKeyParts[sessionKeyParts.length - 1];
-                        const datePart = sessionKeyParts.slice(0, -1).join('-');
-                        const proposal = {
-                            date: datePart,
-                            duration: duration
-                        };
-                        exitProposalSession(proposal as Proposal);
-                    }
-                }
-            });
-        };
+    //                 if (elapsed >= durationInSeconds) {
+    //                     console.log('Auto-stopping session:', key);
+    //                     const duration = sessionKeyParts[sessionKeyParts.length - 1];
+    //                     const datePart = sessionKeyParts.slice(0, -1).join('-');
+    //                     const proposal = {
+    //                         date: datePart,
+    //                         duration: duration
+    //                     };
+    //                     exitProposalSession(proposal as Proposal);
+    //                 }
+    //             }
+    //         });
+    //     };
 
-        // Check every 30 seconds instead of on every proposalSessions change
-        const interval = setInterval(checkAndStopSessions, 30000);
-        return () => clearInterval(interval);
-    }, [proposalSessions]);
+    //     // Check every 30 seconds instead of on every proposalSessions change
+    //     const interval = setInterval(checkAndStopSessions, 30000);
+    //     return () => clearInterval(interval);
+    // }, [proposalSessions]);
 
     // Format elapsed time for display
     const formatElapsedTime = (seconds: number): string => {
@@ -1119,7 +1130,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     };
 
     // Simplified session start function that works without database reservations
-    const startSimpleSession = (proposal: Proposal) => {
+    const startSimpleSession = async (proposal: Proposal) => {
         const proposalKey = makeProposalKey(proposal.date, proposal.duration);
         console.log('Starting simple session for proposal:', proposal);
         console.log('Current proposalSessions before:', Array.from(proposalSessions.entries()));
@@ -1130,13 +1141,22 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                 isActive: true,
                 startTime: new Date(),
                 elapsedTime: 0,
-                reservationId: null
+                reservationId: chatInfo?.reservation_id ?? null
             };
             newMap.set(proposalKey, newSession);
             console.log('Simple session created:', { proposalKey, newSession });
             console.log('New proposalSessions after:', Array.from(newMap.entries()));
             return newMap;
         });
+
+        // If there is an associated reservation for this chat, mark it started in backend
+        try {
+            if (chatInfo?.reservation_id && castId) {
+                await startReservation(chatInfo.reservation_id, castId);
+            }
+        } catch (e) {
+            console.warn('Failed to start reservation on session start (continuing locally):', e);
+        }
     };
 
     if (messageProposal) return <MessageProposalPage
@@ -1213,7 +1233,25 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         {(!buttonUsage.meetUpUsed) && (
                             <button
                                 onClick={() => {
-                                    const testProposal: any = { type: 'proposal', date: new Date().toISOString().split('T')[0], duration: 60 };
+                                    // Find the matching reservation to get the actual duration
+                                    const today = new Date().toISOString().split('T')[0];
+                                    const matchingReservation = guestReservations.find((res: any) => {
+                                        if (!res.scheduled_at || !chatInfo?.guest?.id) return false;
+                                        const proposalDate = dayjs(today);
+                                        const reservationDate = dayjs(res.scheduled_at);
+                                        return res.guest_id === chatInfo.guest.id &&
+                                            reservationDate.isSame(proposalDate, 'day');
+                                    });
+                                    
+                                    // Use actual reservation duration or default to 60 minutes
+                                    const duration = matchingReservation?.duration ? 
+                                        Math.round(matchingReservation.duration * 60) : 60;
+                                    
+                                    const testProposal: any = { 
+                                        type: 'proposal', 
+                                        date: today, 
+                                        duration: duration 
+                                    };
                                     startSimpleSession(testProposal);
                                     setButtonUsage(prev => ({ ...prev, meetUpUsed: true }));
                                 }}
@@ -1227,6 +1265,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         {(!buttonUsage.dismissUsed) && (
                             <button
                                 onClick={async () => {
+                                    await exitProposalSession();
+                                    console.log('All sessions processed. Updating state...');
+                                    setProposalSessions(new Map());
+                                    console.log('Updated proposalSessions:', Array.from(new Map().entries()));
                                     const newMap = new Map(proposalSessions);
                                     const activeSessions = Array.from(newMap.entries()).filter(([_, s]) => s.isActive);
                                     if (activeSessions.length === 0) return;
@@ -1427,10 +1469,24 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                             <button
                                 onClick={() => {
                                     // Create a test proposal and start session
+                                    // Find the matching reservation to get the actual duration
+                                    const today = new Date().toISOString().split('T')[0];
+                                    const matchingReservation = guestReservations.find((res: any) => {
+                                        if (!res.scheduled_at || !chatInfo?.guest?.id) return false;
+                                        const proposalDate = dayjs(today);
+                                        const reservationDate = dayjs(res.scheduled_at);
+                                        return res.guest_id === chatInfo.guest.id &&
+                                            reservationDate.isSame(proposalDate, 'day');
+                                    });
+                                    
+                                    // Use actual reservation duration or default to 60 minutes
+                                    const duration = matchingReservation?.duration ? 
+                                        Math.round(matchingReservation.duration * 60) : 60;
+                                    
                                     const testProposal = {
                                         type: 'proposal',
-                                        date: new Date().toISOString().split('T')[0], // Use just the date part
-                                        duration: 60
+                                        date: today,
+                                        duration: duration
                                     };
                                     startSimpleSession(testProposal);
                                     // Mark button as used
@@ -1723,6 +1779,34 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 refundPercentage: ((pendingAmount - totalPoints) / pendingAmount * 100).toFixed(2) + '%'
                                             });
 
+                                            // Ensure backend stops reservation to compute exceeded time based on reservation duration
+                                            try {
+                                                if (session.isActive && castId && session.reservationId) {
+                                                    await stopReservation(session.reservationId, castId);
+                                                }
+                                            } catch (e: any) {
+                                                const msg = e?.response?.data?.message || e?.message || '';
+                                                if (typeof msg === 'string' && msg.includes('Reservation not started')) {
+                                                    console.warn('stopReservation skipped: reservation not started');
+                                                } else {
+                                                    console.warn('stopReservation failed (continuing to completeSession):', e);
+                                                }
+                                            }
+
+                                            // Persist started_at and ended_at on the reservation explicitly
+                                            try {
+                                                if (session.reservationId) {
+                                                    const endTimeNow = new Date();
+                                                    const startTimeToUse = session.startTime || new Date();
+                                                    await updateReservation(session.reservationId, {
+                                                        started_at: startTimeToUse.toISOString(),
+                                                        ended_at: endTimeNow.toISOString(),
+                                                    });
+                                                }
+                                            } catch (persistErr) {
+                                                console.warn('Failed to persist started_at/ended_at on dissolve:', persistErr);
+                                            }
+
                                             // API call to handle point transactions
                                             console.log('Calling completeSession API with:', {
                                                 chat_id: Number(message.id),
@@ -1745,6 +1829,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 guest_points: guestPoints,
                                                 session_key: key
                                             });
+
+                                            console.log("RESULT", result);
 
                                             // Update local session with calculated points
                                             newMap.set(key, {
