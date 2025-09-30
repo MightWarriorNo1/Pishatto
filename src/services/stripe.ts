@@ -35,14 +35,17 @@ export class StripeService {
    */
   static async createPaymentMethod(cardData: CardData): Promise<PaymentMethodResponse> {
     try {
-      // This would typically be done client-side with Stripe Elements
-      // For now, we'll create a mock payment method ID
-      // In a real implementation, you'd use Stripe Elements to create the payment method
-      const mockPaymentMethodId = `pm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      // Create payment method on the backend
+      const response = await api.post('/payments/create-payment-method', {
+        number: cardData.number,
+        exp_month: cardData.exp_month,
+        exp_year: cardData.exp_year,
+        cvc: cardData.cvc,
+      });
       
       return {
         success: true,
-        payment_method: mockPaymentMethodId,
+        payment_method: response.data.payment_method_id,
       };
     } catch (error: any) {
       console.error('Payment method creation failed:', error);
@@ -87,12 +90,41 @@ export class StripeService {
         user_id,
         user_type,
       });
-      return response.data;
+      
+      const data = response.data;
+      
+      // If payment requires 3DS authentication, handle it
+      if (data.requires_action && data.client_secret) {
+        return await this.handle3DSAuthentication(data.client_secret, data.payment_intent);
+      }
+      
+      return data;
     } catch (error: any) {
       console.error('Direct payment processing failed:', error);
       return {
         success: false,
         error: error.response?.data?.error || '決済処理中にエラーが発生しました',
+      };
+    }
+  }
+
+  /**
+   * Handle 3DS authentication
+   */
+  static async handle3DSAuthentication(client_secret: string, payment_intent: any): Promise<PaymentResponse> {
+    try {
+      // For now, we'll complete the payment intent on the backend
+      // In a real implementation, you'd use Stripe.js to handle 3DS
+      const response = await api.post('/payments/complete-payment-intent', {
+        payment_intent_id: payment_intent.id,
+      });
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('3DS authentication failed:', error);
+      return {
+        success: false,
+        error: error.response?.data?.error || '3D Secure認証中にエラーが発生しました',
       };
     }
   }
