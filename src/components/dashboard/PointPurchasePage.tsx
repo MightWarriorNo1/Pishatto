@@ -159,6 +159,11 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             </div>
             <div className="text-4xl font-extrabold text-primary mb-1 drop-shadow">{user?.points?.toLocaleString() ?? 0}P</div>
             <div className="text-xs text-gray-500">ポイントの有効期限は購入から180日です</div>
+            {hasRegisteredCard && (
+              <div className="mt-2 px-3 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                💳 自動支払い設定済み - ポイント不足時に自動でカードから支払われます
+              </div>
+            )}
           </div>
         )}
       </div>
