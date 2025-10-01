@@ -22,7 +22,7 @@ import CastConciergeDetailPage from './CastConciergeDetailPage';
 import CastGroupChatScreen from './CastGroupChatScreen';
 import Spinner from '../../ui/Spinner';
 import { useSessionManagement } from '../../../hooks/useSessionManagement';
-import { startReservation, stopReservation, updateReservation, getChatById, completeSession, getCastGrade, getCastProfileById, getReservationById } from '../../../services/api';
+import { startReservation, stopReservation, updateReservation, getChatById, completeSession, completeReservation, getCastGrade, getCastProfileById, getReservationById, getGuestProfileById } from '../../../services/api';
 import { useStartReservation } from '../../../hooks/useQueries';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -876,9 +876,12 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         }
     };
 
+    // Timer ref for manual control
+    const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
     // Timer effect for proposal sessions
     useEffect(() => {
-        const interval = setInterval(() => {
+        timerIntervalRef.current = setInterval(() => {
             setProposalSessions(prev => {
                 const newMap = new Map(prev);
                 let hasChanges = false;
@@ -897,7 +900,12 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             });
         }, 1000);
 
-        return () => clearInterval(interval);
+        return () => {
+            if (timerIntervalRef.current) {
+                clearInterval(timerIntervalRef.current);
+                timerIntervalRef.current = null;
+            }
+        };
     }, []);
 
 
@@ -1214,17 +1222,76 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                             );
                         })()}
                     </div>
-                    <div className="flex items-center justify-between">
-                        <span className="text-white text-xs">経過時間</span>
-                        <div className="text-2xl font-mono font-bold text-green-400">
-                            {(() => {
-                                let displayTime = '00:00';
-                                proposalSessions.forEach((session) => {
-                                    if (session.isActive) displayTime = formatElapsedTime(session.elapsedTime);
-                                    else if (!session.isActive && session.elapsedTime > 0) displayTime = formatElapsedTime(session.elapsedTime);
-                                });
-                                return displayTime;
-                            })()}
+                    <div className="grid grid-cols-3 gap-3">
+                        <div className="flex flex-col items-center">
+                            <span className="text-white text-xs mb-1">予約時間</span>
+                            <div className="text-lg font-mono font-bold text-blue-400">
+                                {(() => {
+                                    // Find the matching reservation to get the duration
+                                    const today = new Date().toISOString().split('T')[0];
+                                    const matchingReservation = guestReservations.find((res: any) => {
+                                        if (!res.scheduled_at || !chatInfo?.guest?.id) return false;
+                                        const proposalDate = dayjs(today);
+                                        const reservationDate = dayjs(res.scheduled_at);
+                                        return res.guest_id === chatInfo.guest.id &&
+                                            reservationDate.isSame(proposalDate, 'day');
+                                    });
+                                    
+                                    // Use actual reservation duration or default to 1 hour
+                                    // Convert hours to seconds for formatElapsedTime
+                                    const durationInHours = matchingReservation?.duration || 1;
+                                    const durationInSeconds = Math.round(durationInHours * 3600);
+                                    
+                                    return formatElapsedTime(durationInSeconds);
+                                })()}
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-white text-xs mb-1">経過時間</span>
+                            <div className="text-lg font-mono font-bold text-green-400">
+                                {(() => {
+                                    let displayTime = '00:00';
+                                    proposalSessions.forEach((session) => {
+                                        if (session.isActive) displayTime = formatElapsedTime(session.elapsedTime);
+                                        else if (!session.isActive && session.elapsedTime > 0) displayTime = formatElapsedTime(session.elapsedTime);
+                                    });
+                                    return displayTime;
+                                })()}
+                            </div>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-white text-xs mb-1">延長時間</span>
+                            <div className="text-lg font-mono font-bold text-red-400">
+                                {(() => {
+                                    // Find the matching reservation to get the duration
+                                    const today = new Date().toISOString().split('T')[0];
+                                    const matchingReservation = guestReservations.find((res: any) => {
+                                        if (!res.scheduled_at || !chatInfo?.guest?.id) return false;
+                                        const proposalDate = dayjs(today);
+                                        const reservationDate = dayjs(res.scheduled_at);
+                                        return res.guest_id === chatInfo.guest.id &&
+                                            reservationDate.isSame(proposalDate, 'day');
+                                    });
+                                    
+                                    // Use actual reservation duration or default to 1 hour
+                                    // Convert hours to seconds for proper comparison
+                                    const durationInHours = matchingReservation?.duration || 1;
+                                    const reservationDurationInSeconds = Math.round(durationInHours * 3600);
+                                    
+                                    // Calculate overtime (exceeded minutes only)
+                                    let overtime = 0;
+                                    proposalSessions.forEach((session) => {
+                                        if (session.isActive || session.elapsedTime > 0) {
+                                            const elapsed = session.elapsedTime; // This is already in seconds
+                                            if (elapsed > reservationDurationInSeconds) {
+                                                overtime = elapsed - reservationDurationInSeconds;
+                                            }
+                                        }
+                                    });
+                                    
+                                    return overtime > 0 ? `+${formatElapsedTime(overtime)}` : '00:00';
+                                })()}
+                            </div>
                         </div>
                     </div>
 
@@ -1265,6 +1332,12 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         {(!buttonUsage.dismissUsed) && (
                             <button
                                 onClick={async () => {
+                                    // Stop timer immediately to prevent further updates
+                                    if (timerIntervalRef.current) {
+                                        clearInterval(timerIntervalRef.current);
+                                        timerIntervalRef.current = null;
+                                    }
+                                    
                                     await exitProposalSession();
                                     console.log('All sessions processed. Updating state...');
                                     setProposalSessions(new Map());
@@ -1273,7 +1346,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     const activeSessions = Array.from(newMap.entries()).filter(([_, s]) => s.isActive);
                                     if (activeSessions.length === 0) return;
                                     for (const [key, session] of activeSessions) {
-                                        const finalElapsedTime = Math.floor((Date.now() - (session.startTime as Date).getTime()) / 1000);
+                                        // Use the timer's current elapsed time instead of calculating from Date.now()
+                                        const finalElapsedTime = session.elapsedTime || 0;
                                         let totalPoints = 0, castPoints = 0, guestPoints = 0, pendingAmount = 0;
                                         try {
                                             const parts = key.split('-');
@@ -1298,11 +1372,39 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             const castProfile = await getCastProfileById(castId);
                                             if (!castProfile || typeof castProfile.cast.grade_points !== 'number') throw new Error('Invalid cast grade');
                                             const pointsPerMinute = castProfile.cast.grade_points / 30;
-                                            totalPoints = Math.max(1, Math.floor(pointsPerMinute * (finalElapsedTime / 60)));
-                                            if (totalPoints > pendingAmount) totalPoints = pendingAmount;
+                                            // Match backend calculation: use decimal minutes then convert to int
+                                            const elapsedMinutes = finalElapsedTime / 60;
+                                            totalPoints = Math.max(1, Math.floor(pointsPerMinute * elapsedMinutes));
+                                            
+                                            // Calculate exceeded points and shortfall
+                                            // Fetch the guest's current points BEFORE completing the reservation
+                                            const guestProfile = await getGuestProfileById(chatInfo.guest.id);
+                                            const guestAvailablePoints = guestProfile.points || 0;
+                                            
+                                            // Exceeded points = total points - reserved points
+                                            const exceededPoints = Math.max(0, totalPoints - pendingAmount);
+                                            
+                                            // Shortfall for payment = total points - guest available points
+                                            const shortfallPoints = Math.max(0, totalPoints - guestAvailablePoints);
+                                            
+                                            // Cast gets the total points earned
                                             castPoints = totalPoints;
+                                            
+                                            // Guest gets refund for unused points (if any)
                                             guestPoints = Math.max(0, pendingAmount - totalPoints);
                                             if (!chatInfo?.guest?.id) throw new Error('Missing guest');
+                                            
+                                            // Update reservation with actual start/end times before completing
+                                            if (matchingReservation && matchingReservation.id > 0) {
+                                                await updateReservation(matchingReservation.id, {
+                                                    started_at: session.startTime?.toISOString() || new Date().toISOString(),
+                                                    ended_at: new Date().toISOString()
+                                                });
+                                                
+                                                // Complete reservation with proper backend logic
+                                                await completeReservation(matchingReservation.id, {});
+                                            } else {
+                                                // Fallback to completeSession for test sessions
                                             await completeSession({
                                                 chat_id: Number(message.id),
                                                 cast_id: castId,
@@ -1313,10 +1415,27 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 guest_points: guestPoints,
                                                 session_key: key
                                             });
+                                            }
+
+                                            // Concierge message is now handled by the backend
+                                            console.log('Session completed - concierge message will be sent by backend');
+
                                             newMap.set(key, { ...session, isActive: false, startTime: null, elapsedTime: finalElapsedTime, totalPoints, castPoints, guestPoints });
                                         } catch (e) {
                                             const fallback = Math.max(1, Math.ceil(finalElapsedTime / 60));
-                                            totalPoints = fallback; castPoints = fallback; guestPoints = Math.max(0, pendingAmount - fallback);
+                                            totalPoints = fallback; 
+                                            castPoints = fallback; 
+                                            guestPoints = Math.max(0, pendingAmount - fallback);
+                                            
+                                            // Calculate exceeded points for fallback based on guest's available points
+                                            const guestProfile = await getGuestProfileById(chatInfo.guest.id);
+                                            const guestAvailablePoints = guestProfile.points || 0;
+                                            const exceededPoints = Math.max(0, totalPoints - pendingAmount);
+                                            const shortfallPoints = Math.max(0, totalPoints - guestAvailablePoints);
+                                            
+                                            // Concierge message is now handled by the backend
+                                            console.log('Session completed (fallback) - concierge message will be sent by backend');
+                                            
                                             newMap.set(key, { ...session, isActive: false, startTime: null, elapsedTime: finalElapsedTime, totalPoints, castPoints, guestPoints });
                                         }
                                     }
@@ -1537,8 +1656,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     // Process sessions sequentially using for...of loop
                                     for (const [key, session] of activeSessions) {
 
-                                        // Calculate final elapsed time
-                                        const finalElapsedTime = Math.floor((Date.now() - session.startTime!.getTime()) / 1000);
+                                        // Use the timer's current elapsed time instead of calculating from Date.now()
+                                        const finalElapsedTime = session.elapsedTime || 0;
                                         console.log('Final elapsed time:', finalElapsedTime, 'seconds');
 
                                         // Declare variables outside try block for access in catch block
@@ -1703,9 +1822,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             const castGradePoints = castProfile.cast.grade_points;
 
                                             // Calculate points based on cast grade: grade_points/30 * elapsed_time
+                                            // Match backend calculation: use decimal minutes then convert to int
                                             const pointsPerMinute = castGradePoints / 30;
-                                            const minutesElapsed = finalElapsedTime / 60;
-                                            totalPoints = Math.floor(pointsPerMinute * minutesElapsed);
+                                            const elapsedMinutes = finalElapsedTime / 60;
+                                            totalPoints = Math.floor(pointsPerMinute * elapsedMinutes);
 
                                             // Ensure minimum points
                                             if (totalPoints < 1) {
@@ -1716,7 +1836,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 pendingAmount,
                                                 castGradePoints,
                                                 pointsPerMinute,
-                                                minutesElapsed,
+                                                elapsedMinutes,
                                                 finalElapsedTime,
                                                 totalPoints
                                             });
@@ -1728,13 +1848,21 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             // This represents the refund for unused time
                                             guestPoints = Math.max(0, pendingAmount - totalPoints);
 
+                                            // Calculate exceeded points and shortfall for payment
+                                            const exceededPoints = Math.max(0, totalPoints - pendingAmount);
+                                            const guestProfile = await getGuestProfileById(chatInfo.guest.id);
+                                            const guestAvailablePoints = guestProfile.points || 0;
+                                            const shortfallPoints = Math.max(0, totalPoints - guestAvailablePoints);
+
                                             // Debug: Log the guest points calculation
                                             console.log('Guest points calculation:', {
                                                 pendingAmount,
                                                 totalPoints,
                                                 calculatedGuestPoints: pendingAmount - totalPoints,
                                                 finalGuestPoints: guestPoints,
-                                                refundPercentage: ((pendingAmount - totalPoints) / pendingAmount * 100).toFixed(2) + '%'
+                                                refundPercentage: ((pendingAmount - totalPoints) / pendingAmount * 100).toFixed(2) + '%',
+                                                exceededPoints,
+                                                shortfallPoints
                                             });
 
                                             // Validate required data
@@ -1819,7 +1947,13 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 session_key: key
                                             });
 
-                                            const result = await completeSession({
+                                            let result;
+                                            if (matchingReservation && matchingReservation.id > 0) {
+                                                // Complete reservation with proper backend logic
+                                                result = await completeReservation(matchingReservation.id, {});
+                                            } else {
+                                                // Fallback to completeSession for test sessions
+                                                result = await completeSession({
                                                 chat_id: Number(message.id),
                                                 cast_id: castId,
                                                 guest_id: chatInfo.guest.id,
@@ -1829,8 +1963,12 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 guest_points: guestPoints,
                                                 session_key: key
                                             });
+                                            }
 
                                             console.log("RESULT", result);
+
+                                            // Concierge message is now handled by the backend
+                                            console.log('Session completed (main handler) - concierge message will be sent by backend');
 
                                             // Update local session with calculated points
                                             newMap.set(key, {
@@ -1852,6 +1990,15 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 castPoints = fallbackPoints;
                                                 guestPoints = Math.max(0, pendingAmount - fallbackPoints);
                                             }
+
+                                            // Calculate exceeded points and shortfall for fallback
+                                            const exceededPoints = Math.max(0, totalPoints - pendingAmount);
+                                            const guestProfile = await getGuestProfileById(chatInfo.guest.id);
+                                            const guestAvailablePoints = guestProfile.points || 0;
+                                            const shortfallPoints = Math.max(0, totalPoints - guestAvailablePoints);
+
+                                            // Concierge message is now handled by the backend
+                                            console.log('Session completed (second handler) - concierge message will be sent by backend');
 
                                             // Update local session even if API fails
                                             newMap.set(key, {

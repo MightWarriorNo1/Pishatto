@@ -196,7 +196,7 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
                                                     ? 'bg-primary text-white border border-secondary' 
                                                     : 'bg-secondary text-white'
                                             }`}>
-                                                <div className="text-sm">{msg.text}</div>
+                                                <div className="text-sm whitespace-pre-wrap break-words">{msg.text}</div>
                                                 <div className="text-xs text-gray-400 mt-1">{msg.timestamp}</div>
                                             </div>
                                         </div>

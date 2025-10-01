@@ -33,6 +33,7 @@ function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime, currentDu
   const [customHours, setCustomHours] = useState(1);
 
   const timeOptions = [
+    { label: '1分', value: '1分後' },
     { label: '5分', value: '5分後' },
     { label: '1時間', value: '1時間後' },
     { label: '2時間', value: '2時間後' },

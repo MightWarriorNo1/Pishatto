@@ -1184,6 +1184,22 @@ export const sendConciergeMessage = async (userId: number, userType: 'guest' | '
   }
 };
 
+export const sendSystemConciergeMessage = async (userId: number, userType: 'guest' | 'cast', message: string, messageType: string = 'system', category: string = 'system_notification') => {
+  try {
+    const response = await api.post('/concierge/system-message', {
+      user_id: userId,
+      user_type: userType,
+      message: message,
+      message_type: messageType,
+      category: category
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error sending system concierge message:', error);
+    throw error;
+  }
+};
+
 export const markConciergeAsRead = async (userId: number, userType: 'guest' | 'cast') => {
   try {
     const response = await api.post('/concierge/mark-read', {
