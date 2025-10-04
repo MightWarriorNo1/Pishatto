@@ -11,6 +11,7 @@ import { locationService } from '../../services/locationService';
 import MyOrderPage from './MyOrderPage';
 import OrderConfirmationPage from './OrderConfirmationPage';
 import OrderCompletionPage from './OrderCompletionPage';
+import InsufficientPointsModal from './InsufficientPointsModal';
 import Spinner from '../ui/Spinner';
 
 import React from 'react'; // Added for React.useEffect
@@ -442,7 +443,7 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
                 </div>
             </div>
             {/* Next button sticky */}
-            <div className="bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-16 z-20">
+            <div className="max-w-md mx-auto px-4 pt-8 pb-24">
                 <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition-all shadow-lg" onClick={onNext}>次に進む</button>
             </div>
             <CustomTimeModal
@@ -544,7 +545,7 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
                     ))}
                 </div>
             </div>
-            <div className="px-4 mt-8 pb-36">
+            <div className="px-4 mt-8">
                 <div className="font-bold mb-6 text-white">オイルの香り</div>
                 <div className="flex flex-wrap gap-2">
                     {oilScentOptions.map(opt => (
@@ -557,7 +558,7 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
                 </div>
             </div>
             {/* Next button sticky */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-28 to-secondary z-20">
+            <div className="max-w-md mx-auto px-4 pt-8 pb-24">
                 <button className="w-full bg-secondary text-white py-3 rounded-lg font-bold text-lg hover:bg-red-700 transition-all shadow-lg" onClick={onNext}>次に進む</button>
             </div>
         </div>
@@ -609,7 +610,7 @@ function OrderAddressScreen({ onBack, onNext, reservationName, setReservationNam
                     ※キャストが伺う先は、ご自宅かホテルのみになります。飲食店等ではご利用できませんので、ご留意ください。
                 </p>
             </div>
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pb-28 to-secondary z-20">
+            <div className="max-w-md mx-auto px-4 pt-8 pb-24">
                 <button
                     className={`w-full text-white py-3 rounded-lg font-bold text-lg transition-all shadow-lg ${canProceed ? 'bg-secondary hover:bg-red-700' : 'bg-gray-500 cursor-not-allowed opacity-60'}`}
                     onClick={onNext}
@@ -1321,6 +1322,7 @@ function OrderFinalConfirmationScreen({
     customDurationHours,
     reservationName,
     meetingLocation,
+    onShowInsufficientPointsModal,
 }: {
     onBack: () => void;
     onConfirmed: () => void;
@@ -1335,7 +1337,9 @@ function OrderFinalConfirmationScreen({
     customDurationHours: number | null;
     reservationName: string;
     meetingLocation: string;
+    onShowInsufficientPointsModal: () => void;
 }) {
+    const [showInsufficientPointsModal, setShowInsufficientPointsModal] = useState(false);
     const { user, refreshUser } = useUser();
     const navigate = useNavigate();
     const [reservationMessage, setReservationMessage] = useState<string | null>(null);
@@ -1575,7 +1579,7 @@ function OrderFinalConfirmationScreen({
                 </div>
             </div>
             {/* Confirm button sticky */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto px-4 pt-24 pb-28 z-20">
+            <div className="max-w-md mx-auto px-4 pt-8 pb-8">
                 <button
                     className={`w-full py-3 rounded-lg font-bold text-lg transition shadow-lg ${hasEnoughPoints
                         ? 'bg-secondary text-white hover:bg-red-700'
@@ -1589,6 +1593,12 @@ function OrderFinalConfirmationScreen({
                 {!hasEnoughPoints && (
                     <div className="text-red-400 text-center mt-2 text-sm">
                         ポイントが不足しているため、予約ができません。
+                        <button
+                            className="underline text-blue-500 hover:text-blue-600"
+                            onClick={() => setShowInsufficientPointsModal(true)}
+                        >
+                            簡単ポイント購入
+                        </button>
                     </div>
                 )}
                 {reservationMessage && (
@@ -1604,6 +1614,26 @@ function OrderFinalConfirmationScreen({
                 isOpen={showReservationModal}
                 onClose={() => setShowReservationModal(false)}
                 onNavigateToMessage={handleNavigateToMessage}
+            />
+
+            {/* Insufficient Points Modal */}
+            <InsufficientPointsModal
+                isOpen={showInsufficientPointsModal}
+                onClose={() => setShowInsufficientPointsModal(false)}
+                requiredPoints={(() => {
+                    // Calculate total cost for the modal
+                    const durationHours = customDurationHours || (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', '')));
+                    const baseCost = 18000 * counts[0] * durationHours * 60 / 30 +
+                        15000 * counts[1] * durationHours * 60 / 30 +
+                        12000 * counts[2] * durationHours * 60 / 30;
+                    const nightTimeFee = 0; // Simplified for modal - could add night time logic if needed
+                    return baseCost + nightTimeFee;
+                })()}
+                onPointsPurchased={() => {
+                    setShowInsufficientPointsModal(false);
+                    // Refresh user data to get updated points
+                    refreshUser();
+                }}
             />
         </div>
     );
@@ -1749,6 +1779,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     const [showAreaModal, setShowAreaModal] = useState(false);
     const [showMyOrder, setShowMyOrder] = useState(false);
     const [showStepRequirement, setShowStepRequirement] = useState(false);
+    const [showInsufficientPointsModal, setShowInsufficientPointsModal] = useState(false);
     // Setup/verification states for showing top banner conditionally
     const { user, refreshUser } = useUser();
     const [hasRegisteredCard, setHasRegisteredCard] = useState<boolean | null>(null);
@@ -1995,6 +2026,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             customDurationHours={customDurationHours}
             reservationName={reservationName}
             meetingLocation={meetingLocation}
+            onShowInsufficientPointsModal={() => {}}
         />
     );
     if (page === 'freeCall') return (
@@ -2292,6 +2324,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                 casts={appliedCasts}
                 onCastClick={handleCastClick}
             />
+
         </div>
     );
 };
@@ -2313,8 +2346,9 @@ function AreaSelectModal({ isOpen, onClose, onSelect, locations, loading }: {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="bg-gradient-to-b from-primary to-blue-900 border border-white/20 rounded-3xl p-8 w-96 max-w-[90%] h-96 overflow-y-auto scrollbar-hidden shadow-2xl">
-                <div className="flex items-center justify-between mb-6">
+            <div className="bg-gradient-to-b from-primary to-blue-900 border border-white/20 rounded-3xl w-96 max-w-[90%] h-[70%] shadow-2xl flex flex-col">
+                {/* Fixed Header */}
+                <div className="flex items-center justify-between p-8 pb-6">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-b from-secondary to-red-500 rounded-full flex items-center justify-center">
                             <MapPin className="text-white w-5 h-5" />
@@ -2332,7 +2366,8 @@ function AreaSelectModal({ isOpen, onClose, onSelect, locations, loading }: {
                     </button>
                 </div>
 
-                <div className="mb-8">
+                {/* Scrollable Areas Options */}
+                <div className="flex-1 px-8 overflow-y-auto scrollbar-hidden">
                     <label className="block text-white mb-4 font-semibold">エリア</label>
                     {loading ? (
                         <div className="flex items-center justify-center py-10">
@@ -2367,23 +2402,26 @@ function AreaSelectModal({ isOpen, onClose, onSelect, locations, loading }: {
                     )}
                 </div>
 
-                <div className="flex gap-3">
-                    <button
-                        onClick={onClose}
-                        className="flex-1 py-4 border border-white/20 text-white rounded-2xl hover:bg-white/10 transition-all duration-200 font-semibold"
-                    >
-                        キャンセル
-                    </button>
-                    <button
-                        onClick={() => { onSelect(area); onClose(); }}
-                        disabled={loading || !area}
-                        className={`flex-1 py-4 rounded-2xl transition-all duration-200 font-semibold shadow-lg ${loading || !area
-                            ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-secondary to-red-500 text-white hover:from-red-500 hover:to-red-600'
-                        }`}
-                    >
-                        決定
-                    </button>
+                {/* Fixed Footer */}
+                <div className="p-8 pt-6">
+                    <div className="flex gap-3">
+                        <button
+                            onClick={onClose}
+                            className="flex-1 py-4 border border-white/20 text-white rounded-2xl hover:bg-white/10 transition-all duration-200 font-semibold"
+                        >
+                            キャンセル
+                        </button>
+                        <button
+                            onClick={() => { onSelect(area); onClose(); }}
+                            disabled={loading || !area}
+                            className={`flex-1 py-4 rounded-2xl transition-all duration-200 font-semibold shadow-lg ${loading || !area
+                                ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-secondary to-red-500 text-white hover:from-red-500 hover:to-red-600'
+                            }`}
+                        >
+                            決定
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

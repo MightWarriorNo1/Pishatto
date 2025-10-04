@@ -119,7 +119,7 @@ const CardManagementPage: React.FC<CardManagementPageProps> = ({
         <div className="flex items-center mb-4">
           <button
             onClick={() => setShowCardForm(false)}
-            className="text-white hover:text-gray-300 mr-2"
+            className="text-white hover:text-gray-300 ml-4 mt-4"
           >
             ← 戻る
           </button>
@@ -135,7 +135,7 @@ const CardManagementPage: React.FC<CardManagementPageProps> = ({
   }
 
   return (
-    <div className="max-w-md mx-auto bg-primary p-6 rounded-lg">
+    <div className="max-w-md mx-auto bg-transparent p-6 rounded-lg">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white">登録済みカード</h2>
         {onBack && (

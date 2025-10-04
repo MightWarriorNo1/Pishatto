@@ -647,6 +647,16 @@ export const deletePaymentInfo = async (user_type: 'guest' | 'cast', user_id: nu
   return response.data;
 };
 
+export const processAutomaticPayment = async (data: {
+  guest_id: number;
+  required_points: number;
+  reservation_id?: number;
+  description?: string;
+}) => {
+  const response = await api.post('/payments/automatic', data);
+  return response.data;
+};
+
 export const requestPayout = async (cast_id: number, amount: number) => {
   const response = await api.post('/payouts/request', { cast_id, amount });
   return response.data.payout;
