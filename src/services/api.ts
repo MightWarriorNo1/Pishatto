@@ -303,6 +303,7 @@ export const createFreeCall = async (data: {
 export const createFreeCallReservation = async (data: {
   guest_id: number;
   scheduled_at: string;
+  timezone?: string;
   location?: string;
   address?: string;
   name?: string;

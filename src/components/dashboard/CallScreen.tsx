@@ -1417,6 +1417,7 @@ function OrderFinalConfirmationScreen({
             const response = await createFreeCallReservation({
                 guest_id: user.id,
                 scheduled_at: scheduledTime.toISOString(),
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, // Send user's timezone
                 // Store combined as shown in frontend
                 location: selectedArea,
                 address: meetingLocation,
@@ -1893,6 +1894,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             const requestData = {
                 guest_id: user.id,
                 scheduled_at: scheduledTime.toISOString(),
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, // Send user's timezone
                 // Store combined as shown in frontend
                 location: selectedArea,
                 duration: hours,
