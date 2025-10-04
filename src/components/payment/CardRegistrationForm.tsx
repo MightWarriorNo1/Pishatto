@@ -52,7 +52,7 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
       const elements = stripeInstance.elements();
       cardElement.current = elements.create('card', {
         style: {
-          base: { fontSize: '16px', color: '#ffffff', backgroundColor: 'transparent' },
+          base: { fontSize: '12px', color: '#ffffff', backgroundColor: 'transparent' },
           invalid: { color: '#fa755a' }
         }
       });
@@ -122,7 +122,7 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
           <div
             id="card-element"
             ref={cardContainer}
-            className="w-full px-3 py-2 border rounded-lg bg-primary text-white border-secondary"
+            className="w-full px-3 py-2 min-h-8 border rounded-lg bg-primary text-white border-secondary"
           />
           {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
         </div>
