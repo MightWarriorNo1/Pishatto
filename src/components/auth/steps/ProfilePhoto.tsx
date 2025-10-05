@@ -25,6 +25,7 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
   const [showCamera, setShowCamera] = useState(false);
   const [cameraError, setCameraError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const libraryInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
@@ -145,18 +146,18 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
             <button
               className="w-full py-4 px-4 flex items-center space-x-3 text-left border-b border-secondary text-white"
               onClick={() => {
-                fileInputRef.current?.click();
+                libraryInputRef.current?.click();
               }}
             >
               <span className="text-xl">📷</span>
-              <span>写真ライブラリ/ファイル選択</span>
+              <span>写真ライブラリから選択</span>
             </button>
             <button
               className="w-full py-4 px-4 flex items-center space-x-3 text-left border-b border-secondary text-white"
               onClick={handleOpenCamera}
             >
               <span className="text-xl">📸</span>
-              <span>写真またはビデオを撮る</span>
+              <span>カメラで撮影</span>
             </button>
             <button
               className="w-full py-4 px-4 flex items-center space-x-3 text-left text-white"
@@ -173,7 +174,13 @@ const ProfilePhoto: React.FC<ProfilePhotoProps> = ({
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        <input
+          ref={libraryInputRef}
+          type="file"
+          accept="image/*"
           onChange={handleFileSelect}
           className="hidden"
         />
