@@ -1299,7 +1299,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     <div className="flex space-x-2 mt-3">
                         {(!buttonUsage.meetUpUsed) && (
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     // Find the matching reservation to get the actual duration
                                     const today = new Date().toISOString().split('T')[0];
                                     const matchingReservation = guestReservations.find((res: any) => {
@@ -1321,6 +1321,32 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     };
                                     startSimpleSession(testProposal);
                                     setButtonUsage(prev => ({ ...prev, meetUpUsed: true }));
+                                    
+                                    // Send join message to chat (both guest and cast)
+                                    try {
+                                        // Message for guest
+                                        await sendMessageMutation.mutateAsync({
+                                            chat_id: Number(message.id),
+                                            sender_cast_id: castId,
+                                            message: JSON.stringify({
+                                                type: 'system',
+                                                target: 'guest',
+                                                text: 'キャストが合流しました。これから一緒に時間を過ごしましょう！'
+                                            })
+                                        });
+                                        // Message for cast
+                                        await sendMessageMutation.mutateAsync({
+                                            chat_id: Number(message.id),
+                                            sender_cast_id: castId,
+                                            message: JSON.stringify({
+                                                type: 'system',
+                                                target: 'cast',
+                                                text: '合流しました。ゲストとの時間を開始します。'
+                                            })
+                                        });
+                                    } catch (error) {
+                                        console.error('Failed to send join message:', error);
+                                    }
                                 }}
                                 disabled={(() => { let active = false; proposalSessions.forEach(s => { if (s.isActive) active = true; }); return active; })()}
                                 className={`flex-1 px-4 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-50 ${(() => { let active = false; proposalSessions.forEach(s => { if (s.isActive) active = true; }); return active ? 'bg-gray-400 text-white' : 'bg-green-500 hover:bg-green-600 text-white'; })()}`}
@@ -1441,6 +1467,76 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     }
                                     setProposalSessions(newMap);
                                     setButtonUsage(prev => ({ ...prev, dismissUsed: true }));
+                                    
+                                    // Calculate session summary for messages
+                                    const sessionSummary = Array.from(newMap.entries())
+                                        .filter(([_, session]) => !session.isActive && session.elapsedTime > 0)
+                                        .map(([key, session]) => {
+                                            const durationMinutes = Math.floor(session.elapsedTime / 60);
+                                            const durationSeconds = session.elapsedTime % 60;
+                                            const formattedDuration = `${durationMinutes}:${durationSeconds.toString().padStart(2, '0')}`;
+                                            return {
+                                                duration: formattedDuration,
+                                                totalPoints: session.totalPoints || 0,
+                                                castPoints: session.castPoints || 0,
+                                                guestPoints: session.guestPoints || 0
+                                            };
+                                        });
+                                    
+                                    // Get reservation details from the first active session
+                                    let reservationInfo = null;
+                                    if (activeSessions.length > 0) {
+                                        const [key, session] = activeSessions[0];
+                                        const parts = key.split('-');
+                                        const datePart = parts.length >= 4 ? parts.slice(0, -1).join('-') : parts[0];
+                                        const matchingReservation = guestReservations.find((res: any) => {
+                                            if (!res.scheduled_at || !chatInfo?.guest?.id) return false;
+                                            return res.guest_id === chatInfo.guest.id && dayjs(res.scheduled_at).isSame(dayjs(datePart), 'day');
+                                        });
+                                        
+                                        if (matchingReservation) {
+                                            reservationInfo = {
+                                                id: matchingReservation.id,
+                                                scheduledAt: matchingReservation.scheduled_at,
+                                                totalPoints: matchingReservation.total_points || 0
+                                            };
+                                        }
+                                    }
+                                    
+                                    // Send dismiss message to chat (both guest and cast)
+                                    try {
+                                        // Message for guest
+                                        const guestMessage = sessionSummary.length > 0 
+                                            ? `キャストが解散しました。お疲れ様でした！\n\n📊 セッション詳細:\n⏱️ 利用時間: ${sessionSummary[0].duration}\n💰 獲得ポイント: ${sessionSummary[0].totalPoints}pt\n${reservationInfo ? `📅 予約ID: ${reservationInfo.id}` : ''}`
+                                            : 'キャストが解散しました。お疲れ様でした！';
+                                        
+                                        await sendMessageMutation.mutateAsync({
+                                            chat_id: Number(message.id),
+                                            sender_cast_id: castId,
+                                            message: JSON.stringify({
+                                                type: 'system',
+                                                target: 'guest',
+                                                text: guestMessage
+                                            })
+                                        });
+                                        
+                                        // Message for cast
+                                        const castMessage = sessionSummary.length > 0
+                                            ? `解散しました。お疲れ様でした！\n\n📊 セッション詳細:\n⏱️ 利用時間: ${sessionSummary[0].duration}\n💰 獲得ポイント: ${sessionSummary[0].totalPoints}pt (キャスト: ${sessionSummary[0].castPoints}pt, ゲスト: ${sessionSummary[0].guestPoints}pt)\n${reservationInfo ? `📅 予約ID: ${reservationInfo.id}` : ''}`
+                                            : '解散しました。お疲れ様でした！';
+                                        
+                                        await sendMessageMutation.mutateAsync({
+                                            chat_id: Number(message.id),
+                                            sender_cast_id: castId,
+                                            message: JSON.stringify({
+                                                type: 'system',
+                                                target: 'cast',
+                                                text: castMessage
+                                            })
+                                        });
+                                    } catch (error) {
+                                        console.error('Failed to send dismiss message:', error);
+                                    }
                                 }}
                                 disabled={(() => { let active = false; proposalSessions.forEach(s => { if (s.isActive) active = true; }); return !active; })()}
                                 className={`flex-1 px-4 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-50 ${(() => { let active = false; proposalSessions.forEach(s => { if (s.isActive) active = true; }); return active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-400 text-white'; })()}`}
@@ -1586,7 +1682,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     <div className="flex space-x-2">
                         {!buttonUsage.meetUpUsed && (
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     // Create a test proposal and start session
                                     // Find the matching reservation to get the actual duration
                                     const today = new Date().toISOString().split('T')[0];
@@ -1610,6 +1706,32 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     startSimpleSession(testProposal);
                                     // Mark button as used
                                     setButtonUsage(prev => ({ ...prev, meetUpUsed: true }));
+                                    
+                                    // Send join message to chat (both guest and cast)
+                                    try {
+                                        // Message for guest
+                                        await sendMessageMutation.mutateAsync({
+                                            chat_id: Number(message.id),
+                                            sender_cast_id: castId,
+                                            message: JSON.stringify({
+                                                type: 'system',
+                                                target: 'guest',
+                                                text: 'キャストが合流しました。これから一緒に時間を過ごしましょう！'
+                                            })
+                                        });
+                                        // Message for cast
+                                        await sendMessageMutation.mutateAsync({
+                                            chat_id: Number(message.id),
+                                            sender_cast_id: castId,
+                                            message: JSON.stringify({
+                                                type: 'system',
+                                                target: 'cast',
+                                                text: '合流しました。ゲストとの時間を開始します。'
+                                            })
+                                        });
+                                    } catch (error) {
+                                        console.error('Failed to send join message:', error);
+                                    }
                                 }}
                                 disabled={(() => {
                                     let hasActiveSession = false;
@@ -2016,6 +2138,76 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     console.log('All sessions processed. Updating state...');
                                     setProposalSessions(newMap);
                                     console.log('Updated proposalSessions:', Array.from(newMap.entries()));
+                                    
+                                    // Calculate session summary for messages
+                                    const sessionSummary = Array.from(newMap.entries())
+                                        .filter(([_, session]) => !session.isActive && session.elapsedTime > 0)
+                                        .map(([key, session]) => {
+                                            const durationMinutes = Math.floor(session.elapsedTime / 60);
+                                            const durationSeconds = session.elapsedTime % 60;
+                                            const formattedDuration = `${durationMinutes}:${durationSeconds.toString().padStart(2, '0')}`;
+                                            return {
+                                                duration: formattedDuration,
+                                                totalPoints: session.totalPoints || 0,
+                                                castPoints: session.castPoints || 0,
+                                                guestPoints: session.guestPoints || 0
+                                            };
+                                        });
+                                    
+                                    // Get reservation details from the first active session
+                                    let reservationInfo = null;
+                                    if (activeSessions.length > 0) {
+                                        const [key, session] = activeSessions[0];
+                                        const parts = key.split('-');
+                                        const datePart = parts.length >= 4 ? parts.slice(0, -1).join('-') : parts[0];
+                                        const matchingReservation = guestReservations.find((res: any) => {
+                                            if (!res.scheduled_at || !chatInfo?.guest?.id) return false;
+                                            return res.guest_id === chatInfo.guest.id && dayjs(res.scheduled_at).isSame(dayjs(datePart), 'day');
+                                        });
+                                        
+                                        if (matchingReservation) {
+                                            reservationInfo = {
+                                                id: matchingReservation.id,
+                                                scheduledAt: matchingReservation.scheduled_at,
+                                                totalPoints: matchingReservation.total_points || 0
+                                            };
+                                        }
+                                    }
+                                    
+                                    // Send dismiss message to chat (both guest and cast)
+                                    try {
+                                        // Message for guest
+                                        const guestMessage = sessionSummary.length > 0 
+                                            ? `キャストが解散しました。お疲れ様でした！\n\n📊 セッション詳細:\n⏱️ 利用時間: ${sessionSummary[0].duration}\n💰 獲得ポイント: ${sessionSummary[0].totalPoints}pt\n${reservationInfo ? `📅 予約ID: ${reservationInfo.id}` : ''}`
+                                            : 'キャストが解散しました。お疲れ様でした！';
+                                        
+                                        await sendMessageMutation.mutateAsync({
+                                            chat_id: Number(message.id),
+                                            sender_cast_id: castId,
+                                            message: JSON.stringify({
+                                                type: 'system',
+                                                target: 'guest',
+                                                text: guestMessage
+                                            })
+                                        });
+                                        
+                                        // Message for cast
+                                        const castMessage = sessionSummary.length > 0
+                                            ? `解散しました。お疲れ様でした！\n\n📊 セッション詳細:\n⏱️ 利用時間: ${sessionSummary[0].duration}\n💰 獲得ポイント: ${sessionSummary[0].totalPoints}pt (キャスト: ${sessionSummary[0].castPoints}pt, ゲスト: ${sessionSummary[0].guestPoints}pt)\n${reservationInfo ? `📅 予約ID: ${reservationInfo.id}` : ''}`
+                                            : '解散しました。お疲れ様でした！';
+                                        
+                                        await sendMessageMutation.mutateAsync({
+                                            chat_id: Number(message.id),
+                                            sender_cast_id: castId,
+                                            message: JSON.stringify({
+                                                type: 'system',
+                                                target: 'cast',
+                                                text: castMessage
+                                            })
+                                        });
+                                    } catch (error) {
+                                        console.error('Failed to send dismiss message:', error);
+                                    }
                                 }}
                                 disabled={(() => {
                                     let hasActiveSession = false;
