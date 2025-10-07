@@ -724,6 +724,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         isLoading={sessionLoading}
                         className="w-full"
                         dissolveButtonUsed={dissolveButtonUsed}
+                        currentUserId={castId ?? undefined}
                         sessionSummary={sessionSummary}
                     />
                 </div>

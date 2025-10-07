@@ -27,6 +27,7 @@ interface SessionTimerProps {
     isLoading?: boolean;
     className?: string;
     dissolveButtonUsed?: boolean;
+    currentUserId?: number;
     sessionSummary?: {
         elapsedTime: number;
         castEarnings: Array<{
@@ -47,6 +48,7 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
     isLoading = false,
     className = '',
     dissolveButtonUsed = false,
+    currentUserId,
     sessionSummary = null
 }) => {
     const formatTime = (seconds: number): string => {
@@ -139,8 +141,10 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
                     </div>
                     
                     <div className="space-y-2">
-                        <h4 className="text-white font-semibold text-center text-sm">キャスト報酬</h4>
-                        {sessionSummary.castEarnings.map((cast) => (
+                        <h4 className="text-white font-semibold text-center text-sm">あなたの報酬</h4>
+                        {sessionSummary.castEarnings
+                            .filter((cast) => currentUserId ? cast.castId === currentUserId : true)
+                            .map((cast) => (
                             <div key={cast.castId} className="flex items-center justify-between bg-green-700 rounded-lg p-2">
                                 <div className="flex items-center space-x-2">
                                     <img
