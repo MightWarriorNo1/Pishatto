@@ -51,8 +51,9 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
       // Create card element
       const elements = stripeInstance.elements();
       cardElement.current = elements.create('card', {
+        hidePostalCode: true,
         style: {
-          base: { fontSize: '12px', color: '#ffffff', backgroundColor: 'transparent' },
+          base: { fontSize: '16px', color: '#ffffff', backgroundColor: 'transparent' },
           invalid: { color: '#fa755a' }
         }
       });
