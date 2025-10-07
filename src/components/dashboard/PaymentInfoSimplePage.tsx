@@ -2,7 +2,7 @@
 import React, { useState , useEffect } from 'react';
 import { ChevronLeft, CreditCard } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
-import { getPaymentInfo } from '../../services/api';
+import { getPaymentInfo, deletePaymentInfo } from '../../services/api';
 import Spinner from '../ui/Spinner';
 import PaymentInfoRegisterPage from './PaymentInfoRegisterPage';
 
@@ -10,9 +10,18 @@ interface PaymentInfoSimplePageProps {
     onBack: () => void;
 }
 
+interface Card {
+    id: string;
+    brand: string;
+    last4: string;
+    exp_month: number;
+    exp_year: number;
+}
+
 const PaymentInfoSimplePage: React.FC<PaymentInfoSimplePageProps> = ({ onBack }) => {
     const { user } = useUser();
     const [paymentInfo, setPaymentInfo] = useState<any>(null);
+    const [cards, setCards] = useState<Card[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [showCardRegistration, setShowCardRegistration] = useState<boolean>(false);
 
@@ -25,6 +34,29 @@ const PaymentInfoSimplePage: React.FC<PaymentInfoSimplePageProps> = ({ onBack })
             console.log("Has registered cards:", paymentInfo?.has_registered_cards);
             console.log("Success:", paymentInfo?.success);
             setPaymentInfo(paymentInfo);
+            
+            // Extract cards from payment info
+            if (paymentInfo?.success && Array.isArray(paymentInfo.cards)) {
+                const mappedCards: Card[] = paymentInfo.cards
+                    .map((pm: any) => {
+                        const card = pm?.card || {};
+                        const id = pm?.id || card?.id;
+                        if (!id) {
+                            return null;
+                        }
+                        return {
+                            id,
+                            brand: card?.brand || pm?.brand || '',
+                            last4: card?.last4 || pm?.last4 || '',
+                            exp_month: card?.exp_month || pm?.exp_month || 0,
+                            exp_year: card?.exp_year || pm?.exp_year || 0,
+                        } as Card;
+                    })
+                    .filter(Boolean) as Card[];
+                setCards(mappedCards);
+            } else {
+                setCards([]);
+            }
         } catch (error) {
             console.error("Error fetching payment info:", error);
         } finally {
@@ -42,6 +74,37 @@ const PaymentInfoSimplePage: React.FC<PaymentInfoSimplePageProps> = ({ onBack })
         setShowCardRegistration(false);
         // Refresh payment info after card registration
         getPaymentInfoData();
+    };
+
+    const handleDeleteCard = async (cardId: string) => {
+        if (!user?.id) return;
+
+        if (!window.confirm('このカードを削除しますか？')) {
+            return;
+        }
+
+        try {
+            await deletePaymentInfo('guest', user.id, cardId);
+            await getPaymentInfoData(); // Reload cards after deletion
+        } catch (error) {
+            console.error('Failed to delete card:', error);
+        }
+    };
+
+    const getCardBrandIcon = (brand: string) => {
+        const b = (brand || '').toLowerCase();
+        switch (b) {
+            case 'visa':
+                return '💳';
+            case 'mastercard':
+                return '💳';
+            case 'jcb':
+                return '💳';
+            case 'amex':
+                return '💳';
+            default:
+                return '💳';
+        }
     };
 
     // Show card registration page if user wants to register a card
@@ -95,10 +158,55 @@ const PaymentInfoSimplePage: React.FC<PaymentInfoSimplePageProps> = ({ onBack })
                     </button>
                 </div>
             ) : (
-                <div className="px-4 py-4 text-xs text-white">
-                    ※上記でご選択いただいているカードで決済エラーとなる場合、自動的に他に登録いただいているカードで決済が行われる仕様となっております。<br />
-                    カード情報を削除する際は、削除したいカードを左へスワイプしていただければ幸いです。<br /><br />
-                    ※カードに名義の記載がない場合は、ご本人様の氏名を入力してください。
+                <div className="px-4 py-4">
+                    {/* Display registered cards */}
+                    {cards.length > 0 && (
+                        <div className="mb-6">
+                            <h3 className="text-lg font-bold text-white mb-4">登録済みカード</h3>
+                            <div className="space-y-3">
+                                {cards.map((card) => (
+                                    <div
+                                        key={card.id}
+                                        className="bg-secondary rounded-lg p-4 flex items-center justify-between"
+                                    >
+                                        <div className="flex items-center">
+                                            <div className="text-2xl mr-3">
+                                                {getCardBrandIcon(card.brand)}
+                                            </div>
+                                            <div>
+                                                <div className="text-white font-semibold">
+                                                    {(card.brand || 'CARD').toUpperCase()} •••• {card.last4 || '----'}
+                                                </div>
+                                                <div className="text-gray-300 text-sm">
+                                                    有効期限: {(card.exp_month ? String(card.exp_month).padStart(2, '0') : '--')}/{card.exp_year || '----'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => handleDeleteCard(card.id)}
+                                            className="text-red-400 hover:text-red-300 text-sm"
+                                        >
+                                            削除
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                            
+                            <button
+                                onClick={() => setShowCardRegistration(true)}
+                                className="w-full mt-4 px-4 py-3 border border-secondary text-white rounded-lg hover:bg-secondary transition-colors"
+                            >
+                                + カードを追加
+                            </button>
+                        </div>
+                    )}
+                    
+                    {/* Information text */}
+                    <div className="text-xs text-white">
+                        ※上記でご選択いただいているカードで決済エラーとなる場合、自動的に他に登録いただいているカードで決済が行われる仕様となっております。<br />
+                        カード情報を削除する際は、削除したいカードを左へスワイプしていただければ幸いです。<br /><br />
+                        ※カードに名義の記載がない場合は、ご本人様の氏名を入力してください。
+                    </div>
                 </div>
             )}
         </div>
