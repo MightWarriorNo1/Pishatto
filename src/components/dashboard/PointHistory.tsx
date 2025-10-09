@@ -272,7 +272,7 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
                               {`${transaction.amount > 0 ? '+' : ''}${transaction.amount.toLocaleString()}P`}
                             </div>
                             <div className="text-xs text-gray-300 mt-1">
-                              ¥{stripeCost.toLocaleString()}
+                              {stripeCost.toLocaleString()}
                             </div>
                           </div>
                         );
