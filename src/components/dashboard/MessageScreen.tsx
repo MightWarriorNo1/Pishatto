@@ -5,7 +5,7 @@ import GroupChatScreen from './GroupChatScreen';
 import ConciergeChat from '../ConciergeChat';
 import ConciergeDetailPage from '../../pages/ConciergeDetailPage';
 import { getNotifications, markNotificationRead, getCastProfileById, markChatMessagesRead } from '../../services/api';
-import { useGuestChats, useGuestFavorites, useFavoriteChat, useUnfavoriteChat } from '../../hooks/useQueries';
+import { useGuestChats, useGuestChatFavorites, useFavoriteChat, useUnfavoriteChat } from '../../hooks/useQueries';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useNotifications, useGuestChatsRealtime, useUnreadMessageCount, useGroupChatsRealtime } from '../../hooks/useRealtime';
@@ -41,8 +41,8 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
 
     // React Query hooks
     const { data: chats = [], isLoading } = useGuestChats(userId);
-    const { data: favoritesData } = useGuestFavorites(user?.id || 0);
-    const favoritedChatIds = useMemo(() => new Set<number>((favoritesData?.chats || []).map((chat: any) => chat.id)), [favoritesData?.chats]);
+    const { data: chatFavoritesData } = useGuestChatFavorites(user?.id || 0);
+    const favoritedChatIds = useMemo(() => new Set<number>((chatFavoritesData?.chats || []).map((chat: any) => chat.id)), [chatFavoritesData?.chats]);
     
     // Mutation hooks
     const favoriteChatMutation = useFavoriteChat();
@@ -307,9 +307,9 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
             
             console.log('MessageScreen: Favorite toggled for chat:', e.chat_id, 'Favorited:', e.is_favorited);
             
-            // Update React Query cache for favorites
+            // Update React Query cache for chat favorites
             queryClient.setQueryData(
-                queryKeys.guest.favorites(userId),
+                queryKeys.guest.chatFavorites(userId),
                 (oldData: any) => {
                     if (!oldData) return oldData;
                     

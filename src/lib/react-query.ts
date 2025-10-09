@@ -20,6 +20,7 @@ export const queryKeys = {
     chats: (guestId: number) => ['guest', 'chats', guestId] as const,
     notifications: (guestId: number) => ['guest', 'notifications', guestId] as const,
     favorites: (guestId: number) => ['guest', 'favorites', guestId] as const,
+    chatFavorites: (guestId: number) => ['guest', 'chatFavorites', guestId] as const,
     footprints: (guestId: number) => ['guest', 'footprints', guestId] as const,
   },
   cast: {

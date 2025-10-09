@@ -264,19 +264,19 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
                         return `-${Math.abs(transaction.amount).toLocaleString()}P`;
                       }
                       // For buy transactions, show points and Stripe cost
-                      if (transaction.type === 'buy') {
-                        const stripeCost = Math.round(transaction.amount * 1.2 * 1.1); // Points * 1.2 (yen per point) * 1.1 (consumption tax)
-                        return (
-                          <div className="text-right">
-                            <div className="text-white">
-                              {`${transaction.amount > 0 ? '+' : ''}${transaction.amount.toLocaleString()}P`}
-                            </div>
-                            <div className="text-xs text-gray-300 mt-1">
-                              {stripeCost.toLocaleString()}
-                            </div>
-                          </div>
-                        );
-                      }
+                      // if (transaction.type === 'buy') {
+                      //   const stripeCost = Math.round(transaction.amount * 1.2 * 1.1); // Points * 1.2 (yen per point) * 1.1 (consumption tax)
+                      //   return (
+                      //     <div className="text-right">
+                      //       <div className="text-white">
+                      //         {`${transaction.amount > 0 ? '+' : ''}${transaction.amount.toLocaleString()}P`}
+                      //       </div>
+                      //       <div className="text-xs text-gray-300 mt-1">
+                      //         {stripeCost.toLocaleString()}
+                      //       </div>
+                      //     </div>
+                      //   );
+                      // }
                       // For other transactions, show with + or - based on amount
                       return `${transaction.amount > 0 ? '+' : ''}${transaction.amount.toLocaleString()}P`;
                     })()}

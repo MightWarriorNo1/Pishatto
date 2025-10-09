@@ -1019,7 +1019,7 @@ export const unfavoriteChat = async (guest_id: number, chat_id: number) => {
 };
 
 export const getFavoriteChats = async (guestId: number) => {
-  const response = await api.get(`/chats/favorites/${guestId}`);
+  const response = await api.get(`/chats-guest/favorites/${guestId}`);
   return response.data;
 };
 

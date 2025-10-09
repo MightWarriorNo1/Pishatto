@@ -6,6 +6,7 @@ import {
   getGuestChats,
   getNotifications,
   getFavorites,
+  getFavoriteChats,
   getFootprints,
   getCastList,
   getAllSatisfactionCasts,
@@ -79,13 +80,23 @@ export const useGuestNotifications = (guestId: number) => {
   });
 };
 
-// Guest Favorites Query
+// Guest Favorites Query (for cast favorites)
 export const useGuestFavorites = (guestId: number) => {
   return useQuery({
     queryKey: queryKeys.guest.favorites(guestId),
     queryFn: () => getFavorites(guestId),
     enabled: !!guestId,
     staleTime: 30 * 1000, // 30 seconds - favorites can change
+  });
+};
+
+// Guest Chat Favorites Query
+export const useGuestChatFavorites = (guestId: number) => {
+  return useQuery({
+    queryKey: queryKeys.guest.chatFavorites(guestId),
+    queryFn: () => getFavoriteChats(guestId),
+    enabled: !!guestId,
+    staleTime: 30 * 1000, // 30 seconds - chat favorites can change
   });
 };
 
@@ -284,9 +295,9 @@ export const useFavoriteChat = () => {
     mutationFn: ({ userId, chatId }: { userId: number; chatId: number }) => 
       favoriteChat(userId, chatId),
     onSuccess: (_, variables) => {
-      // Invalidate favorites for the user
+      // Invalidate chat favorites for the user
       queryClient.invalidateQueries({ 
-        queryKey: queryKeys.guest.favorites(variables.userId) 
+        queryKey: queryKeys.guest.chatFavorites(variables.userId) 
       });
     },
   });
@@ -300,9 +311,9 @@ export const useUnfavoriteChat = () => {
     mutationFn: ({ userId, chatId }: { userId: number; chatId: number }) => 
       unfavoriteChat(userId, chatId),
     onSuccess: (_, variables) => {
-      // Invalidate favorites for the user
+      // Invalidate chat favorites for the user
       queryClient.invalidateQueries({ 
-        queryKey: queryKeys.guest.favorites(variables.userId) 
+        queryKey: queryKeys.guest.chatFavorites(variables.userId) 
       });
     },
   });
