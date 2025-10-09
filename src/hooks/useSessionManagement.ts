@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { createReservation, updateReservation, startReservation, stopReservation } from '../services/api';
+import { createReservation, updateReservation, startReservation, stopReservation, getCastSessionStatus } from '../services/api';
 
 interface SessionState {
     isActive: boolean;
@@ -83,10 +83,10 @@ export const useSessionManagement = ({
 
         try {
             // Use cast-specific start reservation endpoint
-            const updatedReservation = await startReservation(reservationId, castId);
-            console.log('Reservation updated after start:', updatedReservation);
+            const response = await startReservation(reservationId, castId);
+            console.log('Reservation updated after start:', response);
 
-            // Update local state
+            // Update local state based on cast session
             setSessionState({
                 isActive: true,
                 startTime: new Date(),
@@ -95,7 +95,7 @@ export const useSessionManagement = ({
             });
 
             onSessionStart?.();
-            onReservationUpdate?.(updatedReservation);
+            onReservationUpdate?.(response);
         } catch (err: any) {
             console.error('Error starting session:', err);
             setError(err.message || 'セッション開始に失敗しました');
@@ -228,10 +228,55 @@ export const useSessionManagement = ({
         setError(null);
     }, []);
 
+    // Check cast session status
+    const checkCastSessionStatus = useCallback(async () => {
+        if (!reservationId || !castId) return;
+        
+        try {
+            const sessionStatus = await getCastSessionStatus(reservationId, castId);
+            console.log('Cast session status:', sessionStatus);
+            
+            if (sessionStatus.status === 'active' && sessionStatus.started_at) {
+                const startTime = new Date(sessionStatus.started_at);
+                const elapsedTime = sessionStatus.elapsed_time || Math.floor((Date.now() - startTime.getTime()) / 1000);
+                
+                setSessionState({
+                    isActive: true,
+                    startTime: startTime,
+                    endTime: null,
+                    elapsedTime: elapsedTime
+                });
+            } else if (sessionStatus.status === 'completed') {
+                setSessionState({
+                    isActive: false,
+                    startTime: sessionStatus.started_at ? new Date(sessionStatus.started_at) : null,
+                    endTime: sessionStatus.ended_at ? new Date(sessionStatus.ended_at) : null,
+                    elapsedTime: sessionStatus.elapsed_time || 0
+                });
+            } else {
+                setSessionState({
+                    isActive: false,
+                    startTime: null,
+                    endTime: null,
+                    elapsedTime: 0
+                });
+            }
+        } catch (err) {
+            console.error('Error checking cast session status:', err);
+        }
+    }, [reservationId, castId]);
+
     // Initialize session from reservation data
-    const initializeSession = useCallback((reservation: any) => {
+    const initializeSession = useCallback(async (reservation: any) => {
         console.log('Initializing session with reservation:', reservation);
         
+        // For group calls (free type), check individual cast session status
+        if (reservation && reservation.type === 'free' && castId) {
+            await checkCastSessionStatus();
+            return;
+        }
+        
+        // For individual calls (Pishatto type), use reservation timestamps
         if (reservation && reservation.started_at && !reservation.ended_at) {
             // Session is active - calculate elapsed time
             const startTime = new Date(reservation.started_at);
@@ -264,7 +309,7 @@ export const useSessionManagement = ({
                 elapsedTime: 0
             });
         }
-    }, []);
+    }, [checkCastSessionStatus, castId]);
 
     return {
         sessionState,
@@ -275,7 +320,8 @@ export const useSessionManagement = ({
         handleDissolve,
         acceptProposal,
         resetSession,
-        initializeSession
+        initializeSession,
+        checkCastSessionStatus
     };
 };
 

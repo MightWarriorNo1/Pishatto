@@ -748,6 +748,20 @@ export const stopReservation = async (reservation_id: number, cast_id: number) =
   return response.data;
 };
 
+export const getCastSessionStatus = async (reservation_id: number, cast_id: number) => {
+  const response = await api.get('/reservation/cast-session-status', {
+    params: { reservation_id, cast_id }
+  });
+  return response.data;
+};
+
+export const getReservationCastSessions = async (reservation_id: number) => {
+  const response = await api.get('/reservation/cast-sessions', {
+    params: { reservation_id }
+  });
+  return response.data;
+};
+
 export const getPointTransactions = async (userType: 'guest' | 'cast', userId: number) => {
   const response = await api.get(`/point-transactions/${userType}/${userId}`);
   return response.data;

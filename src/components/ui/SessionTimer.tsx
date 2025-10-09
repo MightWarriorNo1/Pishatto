@@ -38,6 +38,11 @@ interface SessionTimerProps {
             category: string;
         }>;
     } | null;
+    reservationData?: {
+        duration?: number; // Duration in hours
+        started_at?: string;
+        ended_at?: string;
+    } | null;
 }
 
 const SessionTimer: React.FC<SessionTimerProps> = ({
@@ -49,7 +54,8 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
     className = '',
     dissolveButtonUsed = false,
     currentUserId,
-    sessionSummary = null
+    sessionSummary = null,
+    reservationData = null
 }) => {
     const formatTime = (seconds: number): string => {
         const hours = Math.floor(seconds / 3600);
@@ -60,6 +66,19 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
             return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
         return `${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    // Calculate reserved time (duration in seconds)
+    const getReservedTime = (): number => {
+        if (!reservationData?.duration) return 3600; // Default 1 hour
+        return Math.round(reservationData.duration * 3600); // Convert hours to seconds
+    };
+
+    // Calculate extension time (elapsed time - reserved time)
+    const getExtensionTime = (): number => {
+        const reservedTime = getReservedTime();
+        const currentElapsed = elapsedTime;
+        return Math.max(0, currentElapsed - reservedTime);
     };
 
     return (
@@ -76,12 +95,25 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
                 </div>
             </div>
             
-            <div className="text-center mb-4">
-                <div className="text-3xl font-mono font-bold">
-                    {formatTime(elapsedTime)}
+            {/* Time Display Grid */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="flex flex-col items-center">
+                    <span className="text-white text-xs mb-1">予約時間</span>
+                    <div className="text-lg font-mono font-bold text-blue-400">
+                        {formatTime(getReservedTime())}
+                    </div>
                 </div>
-                <div className="text-sm text-gray-200 mt-1">
-                    {isActive ? '経過時間' : '待機中'}
+                <div className="flex flex-col items-center">
+                    <span className="text-white text-xs mb-1">経過時間</span>
+                    <div className="text-lg font-mono font-bold text-green-400">
+                        {formatTime(elapsedTime)}
+                    </div>
+                </div>
+                <div className="flex flex-col items-center">
+                    <span className="text-white text-xs mb-1">延長時間</span>
+                    <div className="text-lg font-mono font-bold text-red-400">
+                        {getExtensionTime() > 0 ? `+${formatTime(getExtensionTime())}` : '00:00'}
+                    </div>
                 </div>
             </div>
             

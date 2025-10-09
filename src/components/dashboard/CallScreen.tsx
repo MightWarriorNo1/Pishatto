@@ -61,7 +61,7 @@ const classOptions = [
 ];
 
 const timeOptions = ['30分後', '60分後', '90分後', 'それ以外'];
-const durationOptions = ['1時間', '2時間', '3時間', '4時間以上'];
+const durationOptions = ['1分', '1時間', '2時間', '3時間', '4時間以上'];
 
 const ageOptions = [
     '20代前半', '20代後半', '30代前半', '30代後半'
@@ -1377,7 +1377,7 @@ function OrderFinalConfirmationScreen({
     const nightTimeFeePerHour = 4000; // Fixed 4000P per hour for night time
 
     // Calculate total cost using customDurationHours if present
-    const durationHours = customDurationHours || (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', '')));
+    const durationHours = customDurationHours || (selectedDuration.includes('以上') ? 4 : selectedDuration === '1分' ? 1/60 : Number(selectedDuration.replace('時間', '')));
     const baseCost = 18000 * counts[0] * durationHours * 60 / 30 +
         15000 * counts[1] * durationHours * 60 / 30 +
         12000 * counts[2] * durationHours * 60 / 30;
@@ -1623,7 +1623,7 @@ function OrderFinalConfirmationScreen({
                 onClose={() => setShowInsufficientPointsModal(false)}
                 requiredPoints={(() => {
                     // Calculate total cost for the modal
-                    const durationHours = customDurationHours || (selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', '')));
+                    const durationHours = customDurationHours || (selectedDuration.includes('以上') ? 4 : selectedDuration === '1分' ? 1/60 : Number(selectedDuration.replace('時間', '')));
                     const baseCost = 18000 * counts[0] * durationHours * 60 / 30 +
                         15000 * counts[1] * durationHours * 60 / 30 +
                         12000 * counts[2] * durationHours * 60 / 30;
@@ -1889,7 +1889,7 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                 scheduledTime = new Date(now.getTime() + minutes * 60 * 1000);
             }
 
-            const hours = selectedDuration.includes('以上') ? 4 : Number(selectedDuration.replace('時間', ''));
+            const hours = selectedDuration.includes('以上') ? 4 : selectedDuration === '1分' ? 1/60 : Number(selectedDuration.replace('時間', ''));
 
             const requestData = {
                 guest_id: user.id,

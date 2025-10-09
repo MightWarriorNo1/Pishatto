@@ -104,7 +104,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
         isLoading: sessionLoading,
         error: sessionError,
         formatElapsedTime,
-        handleMeet,
+        handleMeet: originalHandleMeet,
         handleDissolve: originalHandleDissolve,
         acceptProposal: sessionAcceptProposal,
         resetSession,
@@ -128,6 +128,52 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             }
         }
     });
+
+    // Custom meet handler that sends session start message
+    const handleMeetWithMessage = async () => {
+        try {
+            // Call original meet handler
+            await originalHandleMeet();
+            
+            // Send session start message to the chat
+            try {
+                console.log('Attempting to send session start message...', {
+                    group_id: reservationData?.group_id,
+                    groupId: groupId,
+                    reservationData: reservationData
+                });
+                
+                const sessionStartMessage = {
+                    group_id: reservationData?.group_id || groupId, // Fallback to groupId if group_id not available
+                    message: 'セッションが開始されました。',
+                    sender_cast_id: castId || user?.id
+                };
+                
+                console.log('Sending session start message:', sessionStartMessage);
+                const messageResponse = await sendGroupMessage(sessionStartMessage);
+                console.log('Session start message sent successfully:', messageResponse);
+            } catch (messageError) {
+                console.error('Failed to send session start message:', messageError);
+                // Try alternative message sending if the first attempt fails
+                try {
+                    const fallbackMessage = {
+                        group_id: groupId,
+                        message: 'セッションが開始されました。',
+                        sender_cast_id: castId || user?.id
+                    };
+                    console.log('Trying fallback start message:', fallbackMessage);
+                    await sendGroupMessage(fallbackMessage);
+                    console.log('Fallback session start message sent successfully');
+                } catch (fallbackError) {
+                    console.error('Fallback start message also failed:', fallbackError);
+                }
+            }
+        } catch (error) {
+            console.error('Error in custom meet handler:', error);
+            // Still call original handler even if message sending fails
+            await originalHandleMeet();
+        }
+    };
 
     // Custom dissolve handler that calculates cast earnings
     const handleDissolve = async () => {
@@ -201,39 +247,53 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                 }
             }
             
-            // Create point transfer transactions per cast using computed earnings
+            // NOTE: Point transfer transactions are now handled by the backend
+            // when stopReservation is called. The backend calculates earnings
+            // based on actual session time and creates the appropriate transactions.
+            
+            // Call backend to stop reservation and get actual earnings
+            const result = await originalHandleDissolve();
+            
+            // Send session end message to the chat
             try {
-                const guestIdForSettlement = reservationData.guest_id;
-                const reservationIdForSettlement = reservationData.id;
-
-                if (guestIdForSettlement && reservationIdForSettlement) {
-                    const transfers = castEarnings
-                        .filter(e => e.points && e.points > 0)
-                        .map(e => createPointTransaction({
-                            user_type: 'cast',
-                            user_id: e.castId,
-                            amount: e.points,
-                            type: 'transfer',
-                            reservation_id: reservationIdForSettlement,
-                            description: `Free group call settlement - ${reservationIdForSettlement}`
-                        }));
-
-                    if (transfers.length > 0) {
-                        await Promise.allSettled(transfers);
-                    }
+                console.log('Attempting to send session end message...', {
+                    group_id: reservationData.group_id,
+                    groupId: groupId,
+                    reservationData: reservationData
+                });
+                
+                const sessionEndMessage = {
+                    group_id: reservationData.group_id || groupId, // Fallback to groupId if group_id not available
+                    message: `セッションが終了しました。経過時間: ${Math.floor(elapsedTime / 60)}分${elapsedTime % 60}秒`,
+                    sender_cast_id: castId || user?.id
+                };
+                
+                console.log('Sending session end message:', sessionEndMessage);
+                const messageResponse = await sendGroupMessage(sessionEndMessage);
+                console.log('Session end message sent successfully:', messageResponse);
+            } catch (messageError) {
+                console.error('Failed to send session end message:', messageError);
+                // Try alternative message sending if the first attempt fails
+                try {
+                    const fallbackMessage = {
+                        group_id: groupId,
+                        message: `セッションが終了しました。経過時間: ${Math.floor(elapsedTime / 60)}分${elapsedTime % 60}秒`,
+                        sender_cast_id: castId || user?.id
+                    };
+                    console.log('Trying fallback message:', fallbackMessage);
+                    await sendGroupMessage(fallbackMessage);
+                    console.log('Fallback session end message sent successfully');
+                } catch (fallbackError) {
+                    console.error('Fallback message also failed:', fallbackError);
                 }
-            } catch (settleErr) {
-                console.error('Failed to create transfer transactions for group settlement:', settleErr);
             }
-
-            // Set session summary
+            
+            // Set session summary with backend data if available
+            // Otherwise fall back to frontend calculations for display only
             setSessionSummary({
                 elapsedTime,
                 castEarnings
             });
-            
-            // Call original dissolve handler
-            await originalHandleDissolve();
             
         } catch (error) {
             console.error('Error in custom dissolve handler:', error);
@@ -719,13 +779,14 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                     <SessionTimer
                         isActive={sessionState.isActive}
                         elapsedTime={sessionState.elapsedTime}
-                        onMeet={handleMeet}
+                        onMeet={handleMeetWithMessage}
                         onDissolve={dissolveButtonUsed ? undefined : handleDissolve}
                         isLoading={sessionLoading}
                         className="w-full"
                         dissolveButtonUsed={dissolveButtonUsed}
                         currentUserId={castId ?? undefined}
                         sessionSummary={sessionSummary}
+                        reservationData={reservationData}
                     />
                 </div>
             )}

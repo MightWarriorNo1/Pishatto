@@ -100,7 +100,7 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
   const getTransactionType = (transaction: PointTransactionData) => {
     switch (transaction.type) {
       case 'buy':
-        return 'オートチャージ';
+        return 'ポイント購入';
       case 'transfer':
         return 'ポイント送付';
       case 'convert':
@@ -263,6 +263,20 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
                       if (transaction.type === 'gift' || transaction.type==='pending') {
                         return `-${Math.abs(transaction.amount).toLocaleString()}P`;
                       }
+                      // For buy transactions, show points and Stripe cost
+                      if (transaction.type === 'buy') {
+                        const stripeCost = Math.round(transaction.amount * 1.2 * 1.1); // Points * 1.2 (yen per point) * 1.1 (consumption tax)
+                        return (
+                          <div className="text-right">
+                            <div className="text-white">
+                              {`${transaction.amount > 0 ? '+' : ''}${transaction.amount.toLocaleString()}P`}
+                            </div>
+                            <div className="text-xs text-gray-300 mt-1">
+                              ¥{stripeCost.toLocaleString()}
+                            </div>
+                          </div>
+                        );
+                      }
                       // For other transactions, show with + or - based on amount
                       return `${transaction.amount > 0 ? '+' : ''}${transaction.amount.toLocaleString()}P`;
                     })()}
@@ -270,8 +284,8 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
                 </div>
                 
                 
-                {(transaction.type==='pending' || transaction.type==='gift') && (
-                  <div className="py-3 text-center border-b border-white">
+                {transaction.type === 'buy' && (
+                  <div className="py-4 text-center border-b border-white bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-lg mx-2 mb-2">
                     {(() => {
                       // Compute tx key for this row
                       const d = new Date(transaction.created_at);
@@ -285,16 +299,36 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
                       if (userType === 'guest' && issuedAt) {
                         const idate = new Date(issuedAt);
                         const issuedText = `${idate.getFullYear()}年${String(idate.getMonth()+1).padStart(2,'0')}月${String(idate.getDate()).padStart(2,'0')}日発行済`;
-                        return <span className="text-white text-sm">日付{issuedText}</span>;
+                        return (
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-center gap-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span className="text-green-400 text-sm font-medium">領収書発行済み</span>
+                            </div>
+                            <div className="text-white text-xs opacity-80">{issuedText}</div>
+                          </div>
+                        );
                       }
                       return (
-                        <button 
-                          className="text-white text-sm hover:text-secondary disabled:opacity-50 disabled:cursor-not-allowed"
-                          onClick={() => handleReceiptClick(transaction)}
-                          disabled={userType === 'guest' && Boolean(issuedByTransactionKey[key])}
-                        >
-                          領収書を発行する
-                        </button>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                            <span className="text-blue-400 text-sm font-medium">領収書発行可能</span>
+                          </div>
+                          <button 
+                            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 mx-auto"
+                            onClick={() => handleReceiptClick(transaction)}
+                            disabled={userType === 'guest' && Boolean(issuedByTransactionKey[key])}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            領収書を発行する
+                          </button>
+                          <div className="text-white text-xs opacity-70">
+                            ポイント購入の領収書を発行できます
+                          </div>
+                        </div>
                       );
                     })()}
                   </div>
