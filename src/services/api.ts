@@ -855,7 +855,6 @@ export const deductPoints = async (guest_id: number, amount: number) => {
 
 export const fetchAllGifts = async () => {
   const response = await api.get('/gifts');
-  console.log("Response", response);
   return response.data.gifts;
 };
 

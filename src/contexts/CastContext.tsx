@@ -149,12 +149,9 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
 
   const checkLineAuthentication = async () => {
     try {
-      console.log('CastContext: Checking Line authentication...');
       const lineAuthResult = await checkLineAuthCast();
-      console.log('CastContext: Line auth result:', lineAuthResult);
       
       if (lineAuthResult.success && lineAuthResult.authenticated && lineAuthResult.user_type === 'cast') {
-        console.log('CastContext: Line authentication successful for cast:', lineAuthResult.user);
         setCastWrapper(lineAuthResult.user);
         setCastId(lineAuthResult.user.id);
         return true;
@@ -169,12 +166,10 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   const checkExistingAuth = async () => {
     try {
       setLoading(true);
-      console.log('CastContext: Starting authentication check...', { isSettingCastExternally });
       
       
       // If we're currently setting cast data externally, skip the auth check
       if (isSettingCastExternally) {
-        console.log('CastContext: Skipping auth check - cast data being set externally');
         setLoading(false);
         return;
       }
@@ -183,21 +178,17 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
       let lineAuthSuccess = false;
       if (!skipLineAuth) {
         lineAuthSuccess = await checkLineAuthentication();
-        console.log('CastContext: Line auth check result:', { lineAuthSuccess, currentCast: cast });
       } else {
         console.log('CastContext: Skipping LINE authentication check due to logout flag');
       }
       
       // If Line auth didn't set a cast, check regular cast auth
       if (!cast && !lineAuthSuccess) {
-        console.log('CastContext: No Line auth and no cast, checking regular cast auth...');
         const authResult = await checkCastAuth();
         if (authResult.authenticated && authResult.cast) {
-          console.log('CastContext: Regular cast auth successful:', authResult.cast);
           setCastWrapper(authResult.cast);
           setCastId(authResult.cast.id);
         } else {
-          console.log('CastContext: No regular cast auth found');
           // No existing authentication, check if we have cast data in localStorage
           const storedCastData = localStorage.getItem('castData');
           const storedCastId = localStorage.getItem('castId');
@@ -209,11 +200,9 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
               
               const { cast: freshCastData } = await getCastProfileById(castIdNumber);
               if (freshCastData) {
-                console.log('CastContext: Stored cast data is still valid:', freshCastData);
                 setCastWrapper(freshCastData);
                 setCastId(freshCastData.id);
               } else {
-                console.log('CastContext: Stored cast data is no longer valid, clearing...');
                 setCastWrapper(null);
                 setCastId(null);
               }
@@ -264,11 +253,6 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
     checkExistingAuth();
     
   }, []);
-
-  // Monitor external cast setting flag
-  useEffect(() => {
-    console.log('CastContext: External cast setting flag changed:', isSettingCastExternally);
-  }, [isSettingCastExternally]);
 
   return (
     <CastContext.Provider value={{ 

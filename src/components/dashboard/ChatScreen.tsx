@@ -365,7 +365,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         fetchAllGifts()
             .then((gifts) => {
                 setGifts(gifts);
-                console.log("Gifts", gifts);
             })
             .catch((error) => {
                 console.error("Failed to fetch gifts", error);

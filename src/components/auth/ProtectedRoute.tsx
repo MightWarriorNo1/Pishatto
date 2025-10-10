@@ -94,7 +94,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Keep rendering children if already authenticated to avoid unmounting UI during transient refreshes
   const isAuthenticated = userType === 'guest' ? !!user : !!cast;
   if ((userLoading || castLoading || isCheckingLine) && !isAuthenticated) {
-    console.log(`ProtectedRoute: Showing loading spinner for ${userType}`, { userLoading, castLoading, isCheckingLine, isSettingCastExternally });
     return (
       <div className="min-h-screen max-w-md mx-auto flex items-center justify-center bg-gradient-to-b from-primary via-gray-800 to-secondary">
         <div className="text-center">
