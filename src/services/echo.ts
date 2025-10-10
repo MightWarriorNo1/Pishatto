@@ -23,6 +23,7 @@ const echo = new Echo({
   // Add WebSocket specific configuration
   wsHost: REVERB_HOST,
   wsPort: REVERB_PORT,
+  wsPath: "/ws",
   wssPort: REVERB_PORT,
 });
 
