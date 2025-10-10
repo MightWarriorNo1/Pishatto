@@ -10,8 +10,15 @@ const REVERB_PORT = Number(
   process.env.REACT_APP_REVERB_PORT ||
   (REVERB_SCHEME === "wss" ? "443" : "8080")
 );
-
 const forceTLS = REVERB_SCHEME === "wss";
+
+console.log("REVERB_KEY", REVERB_KEY);
+console.log("REVERB_HOST", REVERB_HOST);
+console.log("REVERB_SCHEME", REVERB_SCHEME);
+console.log("REVERB_PORT", REVERB_PORT);
+console.log("forceTLS", forceTLS);
+
+
 
 const echo = new Echo({
   broadcaster: "pusher",
@@ -29,13 +36,7 @@ const echo = new Echo({
   disableStats: true,
 });
 
-console.log("Echo configuration:", {
-  key: REVERB_KEY,
-  host: REVERB_HOST,
-  port: REVERB_PORT,
-  scheme: REVERB_SCHEME,
-  forceTLS: forceTLS,
-});
+console.log("Echo configuration:", echo.options);
 
 // Add connection event listeners for debugging
 const pusherConnector = echo.connector as any;
