@@ -15,15 +15,35 @@ export function useChatMessages(
     const handleNewMessage = (e: { message: any }) => {
       const newMessage = e.message;
       
-      // Update React Query cache for chat messages
-      queryClient.setQueryData(
-        queryKeys.cast.chatMessages(Number(chatId), newMessage.sender_cast_id || 0),
-        (oldData: any) => {
-          if (!oldData) return [newMessage];
-          return [...oldData, newMessage];
-        }
-      );
+      console.log('useChatMessages: Received new message:', newMessage);
       
+      // Update React Query cache for chat messages - handle both guest and cast scenarios
+      // For guest users, we need to update the guest chat messages cache
+      if (newMessage.sender_guest_id) {
+        console.log('useChatMessages: Updating guest chat cache for guest:', newMessage.sender_guest_id);
+        // This is a guest message, update guest chat cache
+        queryClient.setQueryData(
+          queryKeys.guest.chatMessages(Number(chatId), newMessage.sender_guest_id),
+          (oldData: any) => {
+            if (!oldData) return [newMessage];
+            return [...oldData, newMessage];
+          }
+        );
+      }
+      
+      // For cast users, update cast chat cache
+      if (newMessage.sender_cast_id) {
+        console.log('useChatMessages: Updating cast chat cache for cast:', newMessage.sender_cast_id);
+        queryClient.setQueryData(
+          queryKeys.cast.chatMessages(Number(chatId), newMessage.sender_cast_id),
+          (oldData: any) => {
+            if (!oldData) return [newMessage];
+            return [...oldData, newMessage];
+          }
+        );
+      }
+      
+      console.log('useChatMessages: Calling onNewMessage callback');
       // Call the callback for additional side effects
       onNewMessage(newMessage);
     };

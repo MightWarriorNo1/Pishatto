@@ -18,6 +18,7 @@ export const queryKeys = {
   guest: {
     profile: (guestId: number) => ['guest', 'profile', guestId] as const,
     chats: (guestId: number) => ['guest', 'chats', guestId] as const,
+    chatMessages: (chatId: number, guestId: number) => ['guest', 'chatMessages', chatId, guestId] as const,
     notifications: (guestId: number) => ['guest', 'notifications', guestId] as const,
     favorites: (guestId: number) => ['guest', 'favorites', guestId] as const,
     chatFavorites: (guestId: number) => ['guest', 'chatFavorites', guestId] as const,

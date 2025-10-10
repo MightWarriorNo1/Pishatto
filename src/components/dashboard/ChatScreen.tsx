@@ -281,8 +281,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
 
     // Set up real-time listener for chat messages
     useChatMessages(chatId, (message) => {
+        console.log('ChatScreen: Received real-time message:', message);
+        console.log('ChatScreen: fetching:', fetching, 'isUserLoaded:', isUserLoaded);
+        
         // Only process real-time messages if initial fetch is complete and user is loaded
-        if (fetching || !isUserLoaded) return;
+        if (fetching || !isUserLoaded) {
+            console.log('ChatScreen: Skipping message processing - fetching or user not loaded');
+            return;
+        }
         
         // Attach full gift object if missing
         if (message.gift_id && !message.gift && Array.isArray(gifts)) {
@@ -311,6 +317,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         }
 
         setMessages((prev) => {
+            console.log('ChatScreen: Current messages count:', prev.length);
+            console.log('ChatScreen: New message ID:', message.id);
+            
             // Remove optimistic message if real one matches (by image or message and sender information)
             // Also check for duplicate messages by ID to prevent duplicates
             const filtered = prev.filter(m => {
@@ -321,14 +330,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     // Check both sender_guest_id and sender_cast_id for proper matching
                     ((m.sender_guest_id && message.sender_guest_id && m.sender_guest_id === message.sender_guest_id) ||
                      (m.sender_cast_id && message.sender_cast_id && m.sender_cast_id === message.sender_cast_id))) {
+                    console.log('ChatScreen: Removing optimistic message:', m.id);
                     return false;
                 }
                 // Remove duplicate messages by ID
                 if (m.id === message.id) {
+                    console.log('ChatScreen: Removing duplicate message:', m.id);
                     return false;
                 }
                 return true;
             });
+            
+            console.log('ChatScreen: Filtered messages count:', filtered.length);
+            console.log('ChatScreen: Adding new message to state');
             return [...filtered, message];
         });
 
