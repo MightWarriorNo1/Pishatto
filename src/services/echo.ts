@@ -32,7 +32,8 @@ console.log("Echo configuration:", {
   host: REVERB_HOST,
   port: REVERB_PORT,
   scheme: REVERB_SCHEME,
-  forceTLS: forceTLS
+  forceTLS: forceTLS,
+  wsPath: process.env.NODE_ENV === "production" ? "/ws" : "/",
 });
 // Add connection event listeners for debugging
 const pusherConnector = echo.connector as any;
