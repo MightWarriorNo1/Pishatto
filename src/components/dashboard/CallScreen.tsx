@@ -2174,14 +2174,14 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                         </div>
                     </div>
 
-                    <div className="flex items-center mb-4">
+                    {/* <div className="flex items-center mb-4">
                         <div className="flex -space-x-2 mr-4">
                             <img src="assets/avatar/woman.png" alt="VIP" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg" />
                             <img src="assets/avatar/woman.png" alt="Premium" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg" />
                             <img src="assets/avatar/woman.png" alt="Royal VIP" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg" />
                         </div>
                         <span className="text-white/80 text-sm">即座にマッチング</span>
-                    </div>
+                    </div> */}
 
                     <button
                         className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-bold text-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
@@ -2205,10 +2205,10 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                         </div>
                     </div>
 
-                    <div className="flex items-center mb-4">
+                    {/* <div className="flex items-center mb-4">
                         <img src="assets/avatar/woman.png" alt="cast" className="w-8 h-8 rounded-full border-2 border-secondary shadow-lg mr-4" />
                         <span className="text-white/80 text-sm">お気に入りキャストを選択</span>
-                    </div>
+                    </div> */}
 
                     <button
                         className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 rounded-xl font-bold text-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
