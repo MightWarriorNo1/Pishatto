@@ -10,7 +10,18 @@ export function useChatMessages(
 ) {
   useEffect(() => {
     if (!chatId) return;
+    
+    console.log('useChatMessages: Setting up listener for chat:', chatId);
     const channel = echo.channel(`chat.${chatId}`);
+    
+    // Add channel subscription logging
+    channel.subscribed(() => {
+      console.log('useChatMessages: Successfully subscribed to channel chat.' + chatId);
+    });
+    
+    channel.error((error: any) => {
+      console.error('useChatMessages: Channel subscription error for chat.' + chatId, error);
+    });
     
     const handleNewMessage = (e: { message: any }) => {
       const newMessage = e.message;
