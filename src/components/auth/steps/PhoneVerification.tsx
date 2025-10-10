@@ -303,7 +303,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
                 />
               ))}
             </div>
-
+            {displayedCode && <div className="text-sm text-white mb-4">送信された認証コード: {displayedCode}</div>}
             {/* Resend Code */}
             <div className="bg-primary rounded-lg p-3 text-center">
               <button
