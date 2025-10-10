@@ -16,6 +16,7 @@ const forceTLS = REVERB_SCHEME === "wss";
 const echo = new Echo({
   broadcaster: "pusher",
   key: REVERB_KEY,
+  cluster: 'mt1',
   wsHost: REVERB_HOST,
   wsPort: REVERB_PORT,
   wssPort: REVERB_PORT,
@@ -23,6 +24,9 @@ const echo = new Echo({
   encrypted: forceTLS,
   enabledTransports: forceTLS ? ["wss"] : ["ws"],
   ...(forceTLS ? { wsPath: "/ws" } : {}), // Add wsPath only if using secure wss
+
+  // Important: disable pusher stats and do not set cluster
+  disableStats: true,
 });
 
 console.log("Echo configuration:", {
