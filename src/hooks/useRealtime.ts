@@ -10,33 +10,33 @@ export function useChatMessages(
   currentUserId?: number,
   userType?: 'guest' | 'cast'
 ) {
-  console.log('useChatMessages: Hook called with chatId:', chatId, 'currentUserId:', currentUserId, 'userType:', userType);
+  // console.log('useChatMessages: Hook called with chatId:', chatId, 'currentUserId:', currentUserId, 'userType:', userType);
   
   // Simple approach: directly set up the listener without useEffect
   if (chatId && currentUserId && userType) {
-    console.log('useChatMessages: Setting up listener for chat:', chatId);
+    // console.log('useChatMessages: Setting up listener for chat:', chatId);
     const channel = echo.channel(`chat.${chatId}`);
     
-    console.log('useChatMessages: Channel subscription status:', channel.subscription?.subscribed);
+    // console.log('useChatMessages: Channel subscription status:', channel.subscription?.subscribed);
     
     // Add channel subscription logging
     channel.subscribed(() => {
-      console.log('useChatMessages: Successfully subscribed to channel chat.' + chatId);
+      // console.log('useChatMessages: Successfully subscribed to channel chat.' + chatId);
     });
     
     channel.error((error: any) => {
-      console.error('useChatMessages: Channel subscription error for chat.' + chatId, error);
+      // console.error('useChatMessages: Channel subscription error for chat.' + chatId, error);
     });
     
     const handleNewMessage = (e: { message: any }) => {
       const newMessage = e.message;
       
-      console.log('useChatMessages: Received new message:', newMessage);
-      console.log('useChatMessages: Chat ID:', chatId, 'Current User ID:', currentUserId, 'User Type:', userType);
-      console.log('useChatMessages: Message from ChatScreen component:', currentUserId && userType);
+      // console.log('useChatMessages: Received new message:', newMessage);
+      // console.log('useChatMessages: Chat ID:', chatId, 'Current User ID:', currentUserId, 'User Type:', userType);
+      // console.log('useChatMessages: Message from ChatScreen component:', currentUserId && userType);
       
       // Only update cache directly - don't invalidate queries to prevent excessive refetches
-      console.log('useChatMessages: Updating cache directly for chat', chatId);
+      // console.log('useChatMessages: Updating cache directly for chat', chatId);
       
       // Update the appropriate cache based on user type
       if (userType === 'guest' && currentUserId) {
@@ -47,7 +47,7 @@ export function useChatMessages(
           if (exists) return oldData;
           return [...oldData, newMessage];
         });
-        console.log('useChatMessages: Updated guest cache for chat', chatId);
+        // console.log('useChatMessages: Updated guest cache for chat', chatId);
       } else if (userType === 'cast' && currentUserId) {
         const castCacheKey = queryKeys.cast.chatMessages(Number(chatId), Number(currentUserId));
         queryClient.setQueryData(castCacheKey, (oldData: any) => {
@@ -56,10 +56,10 @@ export function useChatMessages(
           if (exists) return oldData;
           return [...oldData, newMessage];
         });
-        console.log('useChatMessages: Updated cast cache for chat', chatId);
+        // console.log('useChatMessages: Updated cast cache for chat', chatId);
       }
       
-      console.log('useChatMessages: Calling onNewMessage callback');
+      // console.log('useChatMessages: Calling onNewMessage callback');
       // Call the callback for additional side effects
       onNewMessage(newMessage);
     };
@@ -69,7 +69,7 @@ export function useChatMessages(
     
     // Force subscription if not already subscribed
     if (!channel.subscription) {
-      console.log('useChatMessages: Channel not subscribed, forcing subscription...');
+      // console.log('useChatMessages: Channel not subscribed, forcing subscription...');
       channel.subscribe();
     }
   }
