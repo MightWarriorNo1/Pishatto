@@ -162,11 +162,13 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                     }
                 }
 
-                // Always set current date and time as default
+                // Always set current date and time as default (30 minutes ahead)
                 const now = new Date();
                 const defaultDate = now.toISOString().slice(0, 10);
-                const defaultTime = formatTime(now);
-                console.log('Setting current time as default:', defaultDate, defaultTime);
+                // Add 30 minutes to current time
+                const futureTime = new Date(now.getTime() + 30 * 60 * 1000);
+                const defaultTime = formatTime(futureTime);
+                console.log('Setting current time as default (30 mins ahead):', defaultDate, defaultTime);
                 setSelectedDate(defaultDate);
                 setSelectedTime(defaultTime);
             } catch (error) {
@@ -236,12 +238,14 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
 
 
     const openDateTimeModal = () => {
-        // Always use current date and time when opening modal
+        // Always use current date and time when opening modal (30 minutes ahead)
         const now = new Date();
         const currentDate = now.toISOString().slice(0, 10);
-        const currentTime = formatTime(now);
+        // Add 30 minutes to current time
+        const futureTime = new Date(now.getTime() + 30 * 60 * 1000);
+        const currentTime = formatTime(futureTime);
         
-        console.log('Opening modal with current date/time:', currentDate, currentTime);
+        console.log('Opening modal with current date/time (30 mins ahead):', currentDate, currentTime);
         setTempDate(currentDate);
         setTempTime(currentTime);
         setShowDateTimeModal(true);
@@ -332,7 +336,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                 <div className="flex items-center justify-center w-full mt-2">
                     <span className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
                         <img 
-                            src={castInfo?.avatar ? getFirstAvatarUrl(castInfo.avatar) : '/assets/avatar/female.png'} 
+                            src={castInfo?.avatar ? getFirstAvatarUrl(castInfo.avatar) : '/assets/avatar/avatar-2.png'} 
                             className="w-12 h-12 rounded-full object-cover" 
                             alt="avatar" 
                         />

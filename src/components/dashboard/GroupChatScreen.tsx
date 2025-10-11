@@ -8,7 +8,6 @@ import { useNotificationSettings } from '../../contexts/NotificationSettingsCont
 import { useGroupMessages } from '../../hooks/useRealtime';
 import dayjs from 'dayjs';
 import Spinner from '../ui/Spinner';
-import ScheduleRequest from '../chat/ScheduleRequest';    
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IMAGE_BASE_URL = API_BASE_URL.replace(/\/api$/, '');

@@ -474,7 +474,7 @@ function OrderHistoryScreen({ onBack, onNext, selectedTime, setSelectedTime, sel
     );
 }
 
-function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSelectedSituations, selectedCastTypes, setSelectedCastTypes, selectedCastSkills, setSelectedCastSkills }: {
+function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSelectedSituations, selectedCastTypes, setSelectedCastTypes, selectedCastSkills, setSelectedCastSkills, selectedMassageIntensity, setSelectedMassageIntensity, selectedConversation, setSelectedConversation, selectedOilScent, setSelectedOilScent }: {
     onBack: () => void,
     onNext: () => void,
     selectedSituations: string[],
@@ -483,6 +483,12 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
     setSelectedCastTypes: (v: string[]) => void,
     selectedCastSkills: string[],
     setSelectedCastSkills: (v: string[]) => void,
+    selectedMassageIntensity: string,
+    setSelectedMassageIntensity: (v: string) => void,
+    selectedConversation: string,
+    setSelectedConversation: (v: string) => void,
+    selectedOilScent: string,
+    setSelectedOilScent: (v: string) => void,
 }) {
     const toggle = (arr: string[], setArr: (v: string[]) => void, value: string) => {
         setArr(arr.includes(value) ? arr.filter(v => v !== value) : [...arr, value]);
@@ -521,15 +527,15 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
                     ))}
                 </div>
             </div>
-            {/* キャストタイプ */}
+            {/* 指圧 - Single selection */}
             <div className="px-4 mt-4">
                 <div className="font-bold mb-6 text-white">指圧</div>
                 <div className="flex flex-wrap gap-2">
                     {massageIntensityOptions.map(opt => (
                         <button
                             key={opt}
-                            className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedCastTypes.includes(opt) ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
-                            onClick={() => toggle(selectedCastTypes, setSelectedCastTypes, opt)}
+                            className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedMassageIntensity === opt ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
+                            onClick={() => setSelectedMassageIntensity(opt)}
                         >{opt}</button>
                     ))}
                 </div>
@@ -547,26 +553,28 @@ function OrderDetailConditionsScreen({ onBack, onNext, selectedSituations, setSe
                     ))}
                 </div>
             </div>
+            {/* 会話 - Single selection */}
             <div className="px-4 mt-8">
                 <div className="font-bold mb-6 text-white">会話</div>
                 <div className="flex flex-wrap gap-2">
                     {conversationOptions.map(opt => (
                         <button
                             key={opt}
-                            className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedSituations.includes(opt) ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
-                            onClick={() => toggle(selectedSituations, setSelectedSituations, opt)}
+                            className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedConversation === opt ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
+                            onClick={() => setSelectedConversation(opt)}
                         >{opt}</button>
                     ))}
                 </div>
             </div>
+            {/* オイルの香り - Single selection */}
             <div className="px-4 mt-8">
                 <div className="font-bold mb-6 text-white">オイルの香り</div>
                 <div className="flex flex-wrap gap-2">
                     {oilScentOptions.map(opt => (
                         <button
                             key={opt}
-                            className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedSituations.includes(opt) ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
-                            onClick={() => toggle(selectedSituations, setSelectedSituations, opt)}
+                            className={`px-4 py-1 rounded-full border shadow-sm font-semibold transition-all duration-200 ${selectedOilScent === opt ? 'bg-secondary border-secondary text-white scale-105' : 'bg-primary border-gray-700 text-white hover:bg-secondary/20 hover:scale-105'}`}
+                            onClick={() => setSelectedOilScent(opt)}
                         >{opt}</button>
                     ))}
                 </div>
@@ -1333,6 +1341,9 @@ function OrderFinalConfirmationScreen({
     selectedSituations,
     selectedCastTypes,
     selectedCastSkills,
+    selectedMassageIntensity,
+    selectedConversation,
+    selectedOilScent,
     customDurationHours,
     reservationName,
     meetingLocation,
@@ -1348,6 +1359,9 @@ function OrderFinalConfirmationScreen({
     selectedSituations: string[];
     selectedCastTypes: string[];
     selectedCastSkills: string[];
+    selectedMassageIntensity: string;
+    selectedConversation: string;
+    selectedOilScent: string;
     customDurationHours: number | null;
     reservationName: string;
     meetingLocation: string;
@@ -1362,10 +1376,11 @@ function OrderFinalConfirmationScreen({
     // Map selected options into explicit categories for display
     const pickSelections = (source: string[], options: string[]) => source.filter(v => options.includes(v));
     const selectedAges = pickSelections(selectedSituations, ageOptions);
-    const selectedConversations = pickSelections(selectedSituations, conversationOptions);
-    const selectedOils = pickSelections(selectedSituations, oilScentOptions);
+    // Use single selection values for these categories
+    const selectedConversations = selectedConversation ? [selectedConversation] : [];
+    const selectedOils = selectedOilScent ? [selectedOilScent] : [];
     const selectedTypes = pickSelections(selectedCastTypes, castTypeOptions);
-    const selectedPressures = pickSelections(selectedCastTypes, massageIntensityOptions);
+    const selectedPressures = selectedMassageIntensity ? [selectedMassageIntensity] : [];
     const selectedTiredAreas = pickSelections(selectedCastSkills, tiredAreasOptions);
 
     const handleNavigateToMessage = () => {
@@ -1787,6 +1802,10 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
     const [selectedSituations, setSelectedSituations] = useState<string[]>([]);
     const [selectedCastTypes, setSelectedCastTypes] = useState<string[]>([]);
     const [selectedCastSkills, setSelectedCastSkills] = useState<string[]>([]);
+    // Single selection states for specific categories
+    const [selectedMassageIntensity, setSelectedMassageIntensity] = useState<string>('');
+    const [selectedConversation, setSelectedConversation] = useState<string>('');
+    const [selectedOilScent, setSelectedOilScent] = useState<string>('');
     const [customDurationHours, setCustomDurationHours] = useState<number | null>(null);
     const [reservationName, setReservationName] = useState<string>("");
     const [meetingLocation, setMeetingLocation] = useState<string>("");
@@ -2013,6 +2032,12 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             setSelectedCastTypes={setSelectedCastTypes}
             selectedCastSkills={selectedCastSkills}
             setSelectedCastSkills={setSelectedCastSkills}
+            selectedMassageIntensity={selectedMassageIntensity}
+            setSelectedMassageIntensity={setSelectedMassageIntensity}
+            selectedConversation={selectedConversation}
+            setSelectedConversation={setSelectedConversation}
+            selectedOilScent={selectedOilScent}
+            setSelectedOilScent={setSelectedOilScent}
         />
     );
     if (page === 'orderAddress') return (
@@ -2039,6 +2064,9 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
             selectedSituations={selectedSituations}
             selectedCastTypes={selectedCastTypes}
             selectedCastSkills={selectedCastSkills}
+            selectedMassageIntensity={selectedMassageIntensity}
+            selectedConversation={selectedConversation}
+            selectedOilScent={selectedOilScent}
             customDurationHours={customDurationHours}
             reservationName={reservationName}
             meetingLocation={meetingLocation}

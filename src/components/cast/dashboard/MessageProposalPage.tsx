@@ -1,12 +1,34 @@
 /* eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { Calendar, Heart, ChevronLeft, Clock, Users, Send, X } from 'lucide-react';
+import { Calendar, ChevronLeft, Clock, Users, Send, X } from 'lucide-react';
 import { getChatById, getReservationById, getGuestProfileById, getCastProfileById } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
 import { useNavigate } from 'react-router-dom';
 import Spinner from '../../ui/Spinner';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+// Utility function to get the first available avatar from comma-separated string
+const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
+    if (!avatarString) {
+        return '/assets/avatar/1.jpg';
+    }
+    
+    // Split by comma and get the first non-empty avatar
+    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
+    
+    if (avatars.length === 0) {
+        return '/assets/avatar/1.jpg';
+    }
+    
+    // If it's already a full URL, return as is
+    if (avatars[0].startsWith('http')) {
+        return avatars[0];
+    }
+    
+    // Construct the full URL using the API base URL
+    return `${API_BASE_URL}/${avatars[0]}`;
+};
 
 function formatJPDate(date: Date) {
     const days = ['日', '月', '火', '水', '木', '金', '土'];
@@ -91,6 +113,9 @@ const MessageProposalPage: React.FC<{
     const [tempTime, setTempTime] = useState('');
 
     const { castId } = useCast() as any;
+    
+    // Debug logging
+    console.log('MessageProposalPage props:', { openedByGuest, castId, guestData, castData });
 
     // Fetch chat, reservation, and guest data only if not a group chat
     useEffect(() => {
@@ -106,13 +131,17 @@ const MessageProposalPage: React.FC<{
 
                 // Get chat data to find reservation_id
                 const chat = await getChatById(chatId);
-                if (!chat || !chat.reservation_id) {
-                    console.error('No reservation found for this chat');
+                console.log('Chat data received:', chat);
+                if (!chat) {
+                    console.error('No chat found');
                     return;
                 }
 
-                // Get reservation data
-                const reservation = await getReservationById(chat.reservation_id);
+                // Get reservation data if it exists
+                let reservation = null;
+                if (chat.reservation_id) {
+                    reservation = await getReservationById(chat.reservation_id);
+                }
                 if (reservation) {
                                             // Parse details to extract number of people (for display only)
                         if (reservation.details) {
@@ -145,15 +174,29 @@ const MessageProposalPage: React.FC<{
                     }
                 }
 
-                // Get guest data
+                // Get guest data - always fetch this regardless of reservation
                 if (chat.guest_id) {
-                    const guest = await getGuestProfileById(chat.guest_id);
-                    if (guest) {
-                        setGuestData({
-                            id: guest.id,
-                            nickname: guest.nickname,
-                            avatar: guest.avatar
-                        });
+                    try {
+                        console.log('Fetching guest data for ID:', chat.guest_id);
+                        const guest = await getGuestProfileById(chat.guest_id);
+                        console.log('Guest data received:', guest);
+                        if (guest) {
+                            setGuestData({
+                                id: guest.id,
+                                nickname: guest.nickname,
+                                avatar: guest.avatar
+                            });
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch guest profile:', error);
+                        // Fallback to chat data if available
+                        if (chat.guest_nickname) {
+                            setGuestData({
+                                id: chat.guest_id,
+                                nickname: chat.guest_nickname,
+                                avatar: chat.guest_avatar
+                            });
+                        }
                     }
                 }
 
@@ -281,16 +324,14 @@ const MessageProposalPage: React.FC<{
                             </div>
                             <span className="font-semibold text-lg flex flex-row text-white">
                                 {groupInfo.name}
-                                <span className="text-white ml-1">
-                                    <Heart />
-                                </span>
                             </span>
                         </>
                     ) : openedByGuest ? (
                         // When opened by guest, show cast information
                         <>
+                            {console.log('Displaying cast info - openedByGuest:', openedByGuest, 'castData:', castData)}
                             <img 
-                                src={castData?.avatar ? `${API_BASE_URL}/${castData.avatar}` : "/assets/avatar/1.jpg"} 
+                                src={castData?.avatar ? getFirstAvatarUrl(castData.avatar) : "/assets/avatar/1.jpg"} 
                                 alt="avatar" 
                                 className="w-9 h-9 rounded-full mr-2 border border-secondary cursor-pointer" 
                                 onClick={() => {
@@ -305,16 +346,14 @@ const MessageProposalPage: React.FC<{
                             />
                             <span className="font-semibold text-lg flex flex-row text-white">
                                 {castData?.nickname || 'キャスト'} 
-                                <span className="text-white">
-                                    <Heart />
-                                </span>
                             </span>
                         </>
                     ) : (
                         // When opened by cast, show guest information
                         <>
+                            {console.log('Displaying guest info - openedByGuest:', openedByGuest, 'guestData:', guestData)}
                             <img 
-                                src={guestData?.avatar ? `${API_BASE_URL}/${guestData.avatar}` : "/assets/avatar/1.jpg"} 
+                                src={guestData?.avatar ? getFirstAvatarUrl(guestData.avatar) : "/assets/avatar/1.jpg"} 
                                 alt="avatar" 
                                 className="w-9 h-9 rounded-full mr-2 border border-secondary cursor-pointer" 
                                 onClick={() => {
@@ -329,9 +368,6 @@ const MessageProposalPage: React.FC<{
                             />
                             <span className="font-semibold text-lg flex flex-row text-white">
                                 {guestData?.nickname || 'ゲスト'} 
-                                <span className="text-white">
-                                    <Heart />
-                                </span>
                             </span>
                         </>
                     )}
@@ -352,28 +388,20 @@ const MessageProposalPage: React.FC<{
                     ) : openedByGuest ? (
                         // When opened by guest, show cast avatar
                         <span className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
-                            {castData?.avatar ? (
-                                <img 
-                                    src={`${API_BASE_URL}/${castData.avatar}`}
-                                    className="w-12 h-12 rounded-full object-cover" 
-                                    alt="avatar" 
-                                />
-                            ) : (
-                                <span className="text-white text-lg font-bold">C</span>
-                            )}
+                            <img 
+                                src={castData?.avatar ? getFirstAvatarUrl(castData.avatar) : '/assets/avatar/1.jpg'} 
+                                className="w-12 h-12 rounded-full object-cover" 
+                                alt="avatar" 
+                            />
                         </span>
                     ) : (
                         // When opened by cast, show guest avatar
                         <span className="w-14 h-14 rounded-full bg-secondary flex items-center justify-center">
-                            {guestData?.avatar ? (
-                                <img 
-                                    src={`${API_BASE_URL}/${guestData.avatar}`}
-                                    className="w-12 h-12 rounded-full object-cover" 
-                                    alt="avatar" 
-                                />
-                            ) : (
-                                <span className="text-white text-lg font-bold">G</span>
-                            )}
+                            <img 
+                                src={guestData?.avatar ? getFirstAvatarUrl(guestData.avatar) : '/assets/avatar/1.jpg'} 
+                                className="w-12 h-12 rounded-full object-cover" 
+                                alt="avatar" 
+                            />
                         </span>
                     )}
                 </div>

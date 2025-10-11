@@ -589,7 +589,7 @@ const CastDetail: React.FC = () => {
                 <div className="mx-4 pb-4">
                     {!liked ? (
                         <button 
-                            className={`w-full rounded-2xl py-5 flex items-center justify-center font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] ${
+                            className={`w-full rounded-xl py-5 flex items-center justify-center font-bold text-lg transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] ${
                                 isNotificationEnabled('likes') 
                                     ? 'bg-gradient-to-r from-secondary to-red-600 text-white hover:from-red-600 hover:to-secondary' 
                                     : 'bg-gray-500 text-gray-300 cursor-not-allowed'
@@ -604,7 +604,7 @@ const CastDetail: React.FC = () => {
                         </button>
                     ) : (
                         <button 
-                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl py-5 flex items-center justify-center font-bold text-lg hover:from-purple-600 hover:to-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02]" 
+                            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl py-5 flex items-center justify-center font-bold text-lg hover:from-purple-600 hover:to-blue-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02]" 
                             onClick={handleMessage} 
                             disabled={messageLoading}
                         >
