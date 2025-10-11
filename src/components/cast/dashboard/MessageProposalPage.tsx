@@ -488,7 +488,7 @@ const MessageProposalPage: React.FC<{
                 </div>
 
                 {/* Action Button */}
-                <div className="flex justify-center w-full mt-6">
+                <div className="flex justify-center w-full mt-6 mb-[100px]">
                     <button
                         className="py-3 px-6 rounded-lg bg-secondary text-white font-bold text-base hover:bg-red-700 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={handleProposalSend}
