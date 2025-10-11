@@ -16,7 +16,7 @@ export function setFavicon(userType: UserType): void {
 
   // Ensure document is fully loaded
   if (document.readyState !== 'complete') {
-    console.log('Document not fully loaded, deferring favicon update');
+    // console.log('Document not fully loaded, deferring favicon update');
     // Defer the favicon update until document is ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => setFavicon(userType), { once: true });
@@ -33,7 +33,7 @@ export function setFavicon(userType: UserType): void {
   if (!faviconLink) {
     // Ensure head element exists
     if (!document.head) {
-      console.warn('Document head not found, cannot set favicon');
+      // console.warn('Document head not found, cannot set favicon');
       return;
     }
     
@@ -66,20 +66,20 @@ export function setFavicon(userType: UserType): void {
     checkFaviconExists(faviconPath).then((exists) => {
       if (exists) {
         faviconLink.href = faviconPath;
-        console.log(`Favicon updated to: ${faviconPath} (was: ${currentHref})`);
+        // console.log(`Favicon updated to: ${faviconPath} (was: ${currentHref})`);
         
         // Store the favicon type in sessionStorage for persistence
         if (typeof sessionStorage !== 'undefined') {
           sessionStorage.setItem('currentFaviconType', userType || 'default');
         }
       } else {
-        console.warn(`Favicon file not found: ${faviconPath}, using default`);
+        // console.warn(`Favicon file not found: ${faviconPath}, using default`);
         // Fall back to default favicon
         faviconLink.href = '/favicon-guest.png';
       }
     });
   } else {
-    console.log(`Favicon already set to: ${faviconPath}`);
+    // console.log(`Favicon already set to: ${faviconPath}`);
   }
 }
 

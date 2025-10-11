@@ -32,17 +32,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       }
       setIsCheckingLine(false);
       setHasCheckedAuth(true);
-      console.log(`ProtectedRoute: Line authentication ${success ? 'succeeded' : 'failed'} for ${userType}`);
+      // console.log(`ProtectedRoute: Line authentication ${success ? 'succeeded' : 'failed'} for ${userType}`);
     };
 
     // Check Line authentication if not already authenticated
     if (!userLoading && !castLoading && !isCheckingLine && !hasCheckedAuth) {
       if (userType === 'guest' && !user) {
-        console.log('ProtectedRoute: Checking Line authentication for guest...');
+        // console.log('ProtectedRoute: Checking Line authentication for guest...');
         setIsCheckingLine(true);
         checkLineAuth();
       } else if (userType === 'cast' && !cast) {
-        console.log('ProtectedRoute: Checking Line authentication for cast...', { cast, castLoading });
+        // console.log('ProtectedRoute: Checking Line authentication for cast...', { cast, castLoading });
         setIsCheckingLine(true);
         checkLineAuth();
       } else {
@@ -56,13 +56,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (!userLoading && !castLoading && !isCheckingLine && hasCheckedAuth) {
       // Don't redirect if we're already on the home page (role selection)
       if (location.pathname === '/') {
-        console.log('ProtectedRoute: On home page, not redirecting');
+        // console.log('ProtectedRoute: On home page, not redirecting');
         return;
       }
       
       if (userType === 'guest') {
         if (!user) {
-          console.log('ProtectedRoute: Guest not authenticated, redirecting to register');
+          // console.log('ProtectedRoute: Guest not authenticated, redirecting to register');
           // Redirect to appropriate login page
           const redirectPath = redirectTo || '/register';
           navigate(redirectPath, { 
@@ -75,7 +75,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         }
       } else if (userType === 'cast') {
         if (!cast) {
-          console.log('ProtectedRoute: Cast not authenticated, redirecting to cast login');
+          // console.log('ProtectedRoute: Cast not authenticated, redirecting to cast login');
           // Redirect to cast login page
           const redirectPath = redirectTo || '/cast/login';
           navigate(redirectPath, { 
@@ -105,23 +105,23 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Don't render anything while we're still checking authentication
   if (!hasCheckedAuth) {
-    console.log(`ProtectedRoute: Waiting for auth check to complete for ${userType}`, { isSettingCastExternally });
+    // console.log(`ProtectedRoute: Waiting for auth check to complete for ${userType}`, { isSettingCastExternally });
     return null;
   }
 
   // Check if user is authenticated for the required user type
   if (userType === 'guest' && !user) {
-    console.log('ProtectedRoute: Guest not authenticated, will redirect');
+    // console.log('ProtectedRoute: Guest not authenticated, will redirect');
     return null; // Will redirect in useEffect
   }
 
   if (userType === 'cast' && !cast) {
-    console.log('ProtectedRoute: Cast not authenticated, will redirect', { isSettingCastExternally });
+    // console.log('ProtectedRoute: Cast not authenticated, will redirect', { isSettingCastExternally });
     return null; // Will redirect in useEffect
   }
 
   // User is authenticated, render the protected content
-  console.log(`ProtectedRoute: Rendering protected content for ${userType}`, { user, cast, isSettingCastExternally });
+  // console.log(`ProtectedRoute: Rendering protected content for ${userType}`, { user, cast, isSettingCastExternally });
   return <>{children}</>;
 };
 

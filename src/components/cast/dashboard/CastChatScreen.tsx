@@ -263,7 +263,7 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                                     </div>
                                 )}
                                 <div className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
-                                    <div className={`${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2`}>
+                                    <div className={`max-w-full break-all ${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2`}>
                                         {msg.message}
                                     </div>
                                 </div>

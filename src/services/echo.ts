@@ -18,9 +18,12 @@ const echo = new Echo({
   cluster: PUSHER_CLUSTER,
   forceTLS: true,
   encrypted: true,
+  enabledTransports: ['ws', 'wss'],
+  disableStats: true,
 });
 
 console.log("Echo configuration:", echo.options);
+console.log('Channel subscription status:', echo.channel('chat.13').subscribed);
 
 // Add connection event listeners for debugging
 const pusherConnector = echo.connector as any;

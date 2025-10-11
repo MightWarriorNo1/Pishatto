@@ -907,7 +907,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                                         </div>
                                     )}
                                     
-                                    <div className={`rounded-lg px-3 py-2 ${
+                                    <div className={`rounded-lg px-3 py-2 max-w-full break-all ${
                                         isOwnMessage 
                                             ? 'bg-secondary text-white' 
                                             : 'bg-white text-primary'
@@ -936,7 +936,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                                         )}
                                         
                                         {message.message && (
-                                            <div className="whitespace-pre-wrap">{message.message}</div>
+                                            <div className="whitespace-pre-wrap max-w-full break-all">{message.message}</div>
                                         )}
                                         
                                         

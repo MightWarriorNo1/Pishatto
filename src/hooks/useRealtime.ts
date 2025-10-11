@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import echo from "../services/echo";
 import { queryClient } from "../lib/react-query";
 import { queryKeys } from "../lib/react-query";
@@ -8,11 +8,19 @@ export function useChatMessages(
   chatId: string | number,
   onNewMessage: (message: any) => void
 ) {
+  const listenerRef = useRef<(() => void) | null>(null);
+  
   useEffect(() => {
     if (!chatId) return;
     
     console.log('useChatMessages: Setting up listener for chat:', chatId);
     const channel = echo.channel(`chat.${chatId}`);
+    
+    // Check if already subscribed to prevent duplicate subscriptions
+    if (channel.subscription && channel.subscription.subscribed) {
+      console.log('useChatMessages: Channel already subscribed, skipping setup');
+      return;
+    }
     
     // Add channel subscription logging
     channel.subscribed(() => {
@@ -22,6 +30,10 @@ export function useChatMessages(
     channel.error((error: any) => {
       console.error('useChatMessages: Channel subscription error for chat.' + chatId, error);
     });
+    
+    // Debug channel subscription
+    console.log('useChatMessages: Channel object:', channel);
+    console.log('useChatMessages: Channel subscribed status:', channel.subscribed);
     
     const handleNewMessage = (e: { message: any }) => {
       const newMessage = e.message;
@@ -59,11 +71,26 @@ export function useChatMessages(
       onNewMessage(newMessage);
     };
     
+    // Listen to the MessageSent event
     channel.listen("MessageSent", handleNewMessage);
-    return () => {
+    
+    // Check if channel is already subscribed
+    console.log('useChatMessages: Channel subscription status:', channel.subscription);
+    
+    // Force subscription if not already subscribed
+    if (!channel.subscription) {
+      console.log('useChatMessages: Channel not subscribed, forcing subscription...');
+      channel.subscribe();
+    }
+    
+    // Store cleanup function in ref
+    listenerRef.current = () => {
+      console.log('useChatMessages: Cleaning up listener for chat.' + chatId);
       channel.stopListening("MessageSent");
     };
-  }, [chatId, onNewMessage]);
+    
+    return listenerRef.current;
+  }, [chatId]);
 }
 
 // Real-time group messages with React Query cache updates

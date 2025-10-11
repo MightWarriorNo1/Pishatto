@@ -792,14 +792,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                 if (parsed.target !== 'guest') return null;
                                                 const text = parsed.text || parsed.content || '';
                                                 return (
-                                                    <div className={`${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
+                                                    <div className={`max-w-full break-all ${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
                                                         {text}
                                                     </div>
                                                 );
                                             }
                                         } catch (_) {}
                                         return (
-                                            <div className={`${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
+                                            <div className={`max-w-full break-all ${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
                                                 {(() => {
                                                     const giftObj = msg.gift_id ? (msg.gift || (Array.isArray(gifts) ? gifts.find((g: any) => g.id === msg.gift_id) : null)) : null;
                                                     if (!giftObj) return null;
@@ -850,7 +850,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 )}
                 {localMessages.map((msg, idx) => (
                     <div key={idx} className="flex items-end justify-end mb-4">
-                        <div className="bg-secondary text-white rounded-lg px-4 py-2 max-w-[80%]">
+                        <div className="bg-secondary text-white rounded-lg px-4 py-2 max-w-full break-all">
                             {msg.message}
                         </div>
                     </div>

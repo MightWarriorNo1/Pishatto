@@ -105,11 +105,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         if (savedAcceptedProposals) {
             try {
                 const parsed = JSON.parse(savedAcceptedProposals);
-                console.log('Accepted proposals initialized from localStorage:', {
-                    chatId: message.id,
-                    storageKey: acceptedProposalsKey,
-                    loadedProposals: parsed
-                });
+                // console.log('Accepted proposals initialized from localStorage:', {
+                //     chatId: message.id,
+                //     storageKey: acceptedProposalsKey,
+                //     loadedProposals: parsed
+                // });
                 return new Set(parsed);
             } catch (error) {
                 console.error('Failed to parse accepted proposals from localStorage during init:', error);
@@ -129,11 +129,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         if (savedClickedProposals) {
             try {
                 const parsed = JSON.parse(savedClickedProposals);
-                console.log('Clicked proposals initialized from localStorage:', {
-                    chatId: message.id,
-                    storageKey: clickedProposalsKey,
-                    loadedProposals: parsed
-                });
+                // console.log('Clicked proposals initialized from localStorage:', {
+                //     chatId: message.id,
+                //     storageKey: clickedProposalsKey,
+                //     loadedProposals: parsed
+                // });
                 return new Set(parsed);
             } catch (error) {
                 console.error('Failed to parse clicked proposals from localStorage during init:', error);
@@ -156,20 +156,20 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                console.log('Initial button usage loaded from localStorage:', {
-                    chatId: message.id,
-                    storageKey,
-                    loadedUsage: parsed
-                });
+                // console.log('Initial button usage loaded from localStorage:', {
+                //     chatId: message.id,
+                //     storageKey,
+                //     loadedUsage: parsed
+                // });
                 return parsed;
             } catch (error) {
                 console.error('Failed to parse button usage from localStorage:', error);
             }
         }
-        console.log('No initial button usage found, using defaults:', {
-            chatId: message.id,
-            storageKey
-        });
+        // console.log('No initial button usage found, using defaults:', {
+        //     chatId: message.id,
+        //     storageKey
+        // });
         return {
             meetUpUsed: false,
             dismissUsed: false
@@ -212,22 +212,6 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
     // Reservation management hooks
     const startReservationMutation = useStartReservation();
-
-    // Debug: Log chatInfo structure
-    useEffect(() => {
-        if (chatInfo) {
-            console.log('chatInfo structure:', chatInfo);
-            console.log('chatInfo.guest:', chatInfo.guest);
-            console.log('chatInfo.guest?.id:', chatInfo.guest?.id);
-        }
-    }, [chatInfo]);
-
-    // Debug: Log guestReservations data
-    useEffect(() => {
-        if (guestReservations.length > 0) {
-            console.log('guestReservations data:', guestReservations);
-        }
-    }, [guestReservations]);
 
     // Session management for proposals
     const {
@@ -407,11 +391,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             try {
                 const parsed = JSON.parse(saved);
                 setButtonUsage(parsed);
-                console.log('Button usage loaded from localStorage:', {
-                    chatId: message.id,
-                    storageKey,
-                    loadedUsage: parsed
-                });
+                // console.log('Button usage loaded from localStorage:', {
+                //     chatId: message.id,
+                //     storageKey,
+                //     loadedUsage: parsed
+                // });
             } catch (error) {
                 console.error('Failed to parse button usage from localStorage:', error);
                 setButtonUsage({
@@ -424,10 +408,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                 meetUpUsed: false,
                 dismissUsed: false
             });
-            console.log('No button usage found in localStorage, using defaults:', {
-                chatId: message.id,
-                storageKey
-            });
+            // console.log('No button usage found in localStorage, using defaults:', {
+            //     chatId: message.id,
+            //     storageKey
+            // });
         }
 
         // Don't clear proposal sessions here - they will be restored from localStorage
@@ -592,14 +576,14 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     });
 
                     setProposalSessions(restoredSessions);
-                    console.log('Restored sessions from localStorage for chat', message.id, ':', restoredSessions);
+                    // console.log('Restored sessions from localStorage for chat', message.id, ':', restoredSessions);
                 } catch (error) {
                     console.error('Failed to restore sessions from localStorage:', error);
                 }
             } else {
                 // If no saved sessions, clear the current sessions
                 setProposalSessions(new Map());
-                console.log('No saved sessions found for chat', message.id, '- clearing sessions');
+                // console.log('No saved sessions found for chat', message.id, '- clearing sessions');
             }
         }
     }, [message.id]);
@@ -618,11 +602,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         if (message.id) {
             const storageKey = getButtonUsageStorageKey(Number(message.id));
             localStorage.setItem(storageKey, JSON.stringify(buttonUsage));
-            console.log('Button usage saved to localStorage:', {
-                chatId: message.id,
-                storageKey,
-                buttonUsage
-            });
+            // console.log('Button usage saved to localStorage:', {
+                // chatId: message.id,
+                // storageKey,
+                // buttonUsage
+            // });
         }
     }, [buttonUsage, message.id]);
 
@@ -631,12 +615,12 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         if (message.id) {
             const storageKey = getClickedProposalsStorageKey(Number(message.id));
             localStorage.setItem(storageKey, JSON.stringify(Array.from(clickedProposals)));
-            console.log('Clicked proposals saved to localStorage:', {
-                chatId: message.id,
-                storageKey,
-                clickedProposals: Array.from(clickedProposals),
-                timestamp: new Date().toISOString()
-            });
+            // console.log('Clicked proposals saved to localStorage:', {
+            //     chatId: message.id,
+            //     storageKey,
+            //     clickedProposals: Array.from(clickedProposals),
+            //     timestamp: new Date().toISOString()
+            // });
         }
     }, [clickedProposals, message.id]);
 
@@ -645,11 +629,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         if (message.id) {
             const storageKey = getAcceptedProposalsStorageKey(Number(message.id));
             localStorage.setItem(storageKey, JSON.stringify(Array.from(acceptedProposals)));
-            console.log('Accepted proposals saved to localStorage:', {
-                chatId: message.id,
-                storageKey,
-                acceptedProposals: Array.from(acceptedProposals)
-            });
+            // console.log('Accepted proposals saved to localStorage:', {
+            //     chatId: message.id,
+            //     storageKey,
+            //     acceptedProposals: Array.from(acceptedProposals)
+            // });
         }
     }, [acceptedProposals, message.id]);
 
@@ -719,11 +703,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     reservationId: matchingReservation.id
                 };
                 newMap.set(proposalKey, newSession);
-                console.log('Setting new session:', { proposalKey, newSession, prevSize: prev.size, newSize: newMap.size });
+                // console.log('Setting new session:', { proposalKey, newSession, prevSize: prev.size, newSize: newMap.size });
                 return newMap;
             });
 
-            console.log('Proposal session started:', proposalKey);
+            // console.log('Proposal session started:', proposalKey);
         } catch (error) {
             console.error('Failed to start proposal session:', error);
         }
@@ -792,11 +776,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
                 // Update the reservation
                 await updateReservation(reservationToUpdate.id, updateData);
-                console.log('Reservation updated with proposal context:', {
-                    reservationId: reservationToUpdate.id,
-                    proposalKey,
-                    updateData
-                });
+                // console.log('Reservation updated with proposal context:', {
+                    // reservationId: reservationToUpdate.id,
+                    // proposalKey,
+                    // updateData
+                // });
 
                 // Invalidate queries to refresh data
                 if (chatInfo?.guest?.id) {
@@ -805,7 +789,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     });
                 }
             } else {
-                console.log('No reservation found to update with proposal context');
+                // console.log('No reservation found to update with proposal context');
             }
         } catch (error) {
             console.error('Failed to update reservation with proposal context:', error);
@@ -827,13 +811,13 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             })();
 
         if (!proposalKey) {
-            console.error('No active session found to exit');
+            // console.error('No active session found to exit');
             return;
         }
 
         const session = proposalSessions.get(proposalKey);
         if (!session) {
-            console.error('No session found for key', proposalKey);
+            // console.error('No session found for key', proposalKey);
             return;
         }
 
@@ -872,7 +856,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             });
 
         } catch (error) {
-            console.error('Failed to exit proposal session:', error);
+            // console.error('Failed to exit proposal session:', error);
         }
     };
 
@@ -1059,7 +1043,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         details = JSON.parse(reservation.details);
                     } catch (jsonError) {
                         // If JSON parsing fails, treat as plain text
-                        console.log('Details is not JSON, treating as plain text:', reservation.details);
+                        // console.log('Details is not JSON, treating as plain text:', reservation.details);
 
                         // Look for patterns like "使用ポイント: 18,000P" or "使用ポイント：18,000P" in plain text
                         const text = reservation.details;
@@ -1078,20 +1062,20 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                 const cleanAmount = match[1].replace(/,/g, '');
                                 const amount = parseInt(cleanAmount, 10);
                                 if (amount > 0) {
-                                    console.log('Extracted pending amount from plain text:', {
-                                        text: reservation.details,
-                                        pattern: pattern.toString(),
-                                        rawMatch: match[1],
-                                        cleanAmount,
-                                        extractedAmount: amount
-                                    });
+                                    // console.log('Extracted pending amount from plain text:', {
+                                    //     text: reservation.details,
+                                    //     pattern: pattern.toString(),
+                                    //     rawMatch: match[1],
+                                    //     cleanAmount,
+                                    //     extractedAmount: amount
+                                    // });
                                     return amount;
                                 }
                             }
                         }
 
                         // If no pattern matches, return 0
-                        console.log('No amount pattern found in plain text details');
+                        // console.log('No amount pattern found in plain text details');
                         return 0;
                     }
                 } else {
@@ -1110,11 +1094,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     }
 
                     if (pendingAmount > 0) {
-                        console.log('Extracted pending amount from JSON details:', {
-                            details,
-                            extractedAmount: pendingAmount,
-                            fieldUsed: details.使用ポイント ? '使用ポイント' : 'usage_points'
-                        });
+                        // console.log('Extracted pending amount from JSON details:', {
+                        //     details,
+                        //     extractedAmount: pendingAmount,
+                        //     fieldUsed: details.使用ポイント ? '使用ポイント' : 'usage_points'
+                        // });
                         return pendingAmount;
                     }
                 }
@@ -1133,14 +1117,14 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             fallbackAmount = parseInt(cleanAmount, 10) || 0;
         }
 
-        console.log('Using fallback total_points:', fallbackAmount);
+        // console.log('Using fallback total_points:', fallbackAmount);
         return fallbackAmount;
     };
 
     // Simplified session start function that works without database reservations
     const startSimpleSession = async (proposal: Proposal) => {
         const proposalKey = makeProposalKey(proposal.date, proposal.duration);
-        console.log('Starting simple session for proposal:', proposal);
+        // console.log('Starting simple session for proposal:', proposal);
         console.log('Current proposalSessions before:', Array.from(proposalSessions.entries()));
 
         setProposalSessions(prev => {
@@ -1152,8 +1136,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                 reservationId: chatInfo?.reservation_id ?? null
             };
             newMap.set(proposalKey, newSession);
-            console.log('Simple session created:', { proposalKey, newSession });
-            console.log('New proposalSessions after:', Array.from(newMap.entries()));
+            // console.log('Simple session created:', { proposalKey, newSession });
+            // console.log('New proposalSessions after:', Array.from(newMap.entries()));
             return newMap;
         });
 
@@ -1365,9 +1349,9 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     }
                                     
                                     await exitProposalSession();
-                                    console.log('All sessions processed. Updating state...');
+                                    // console.log('All sessions processed. Updating state...');
                                     setProposalSessions(new Map());
-                                    console.log('Updated proposalSessions:', Array.from(new Map().entries()));
+                                    // console.log('Updated proposalSessions:', Array.from(new Map().entries()));
                                     const newMap = new Map(proposalSessions);
                                     const activeSessions = Array.from(newMap.entries()).filter(([_, s]) => s.isActive);
                                     if (activeSessions.length === 0) return;
@@ -1444,7 +1428,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             }
 
                                             // Concierge message is now handled by the backend
-                                            console.log('Session completed - concierge message will be sent by backend');
+                                            // console.log('Session completed - concierge message will be sent by backend');
 
                                             newMap.set(key, { ...session, isActive: false, startTime: null, elapsedTime: finalElapsedTime, totalPoints, castPoints, guestPoints });
                                         } catch (e) {
@@ -1460,7 +1444,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             const shortfallPoints = Math.max(0, totalPoints - guestAvailablePoints);
                                             
                                             // Concierge message is now handled by the backend
-                                            console.log('Session completed (fallback) - concierge message will be sent by backend');
+                                            // console.log('Session completed (fallback) - concierge message will be sent by backend');
                                             
                                             newMap.set(key, { ...session, isActive: false, startTime: null, elapsedTime: finalElapsedTime, totalPoints, castPoints, guestPoints });
                                         }
@@ -1771,7 +1755,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     const activeSessions = Array.from(newMap.entries()).filter(([key, session]) => session.isActive);
 
                                     if (activeSessions.length === 0) {
-                                        console.log('No active sessions to resolve');
+                                        // console.log('No active sessions to resolve');
                                         return;
                                     }
 
@@ -1780,7 +1764,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
                                         // Use the timer's current elapsed time instead of calculating from Date.now()
                                         const finalElapsedTime = session.elapsedTime || 0;
-                                        console.log('Final elapsed time:', finalElapsedTime, 'seconds');
+                                        // console.log('Final elapsed time:', finalElapsedTime, 'seconds');
 
                                         // Declare variables outside try block for access in catch block
                                         let totalPoints = 0;
@@ -1809,15 +1793,15 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 throw new Error(`Invalid session key format: ${key}`);
                                             }
 
-                                            console.log('Session key parsing:', {
-                                                originalKey: key,
-                                                sessionKeyParts,
-                                                reconstructedDate: datePart,
-                                                duration,
-                                                isTestSession,
-                                                chatReservationId: chatInfo?.reservation_id,
-                                                guestReservationsCount: guestReservations.length
-                                            });
+                                            // console.log('Session key parsing:', {
+                                            //     originalKey: key,
+                                            //     sessionKeyParts,
+                                            //     reconstructedDate: datePart,
+                                            //     duration,
+                                            //     isTestSession,
+                                            //     chatReservationId: chatInfo?.reservation_id,
+                                            //     guestReservationsCount: guestReservations.length
+                                            // });
 
                                             // First try to find matching reservation by comparing the reconstructed date with scheduled_at
                                             let matchingReservation = guestReservations.find((res: any) => {
@@ -1833,11 +1817,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
                                             // If no reservation found by date matching, try to get the reservation from chat info
                                             if (!matchingReservation) {
-                                                console.log('No exact date match found, trying to get reservation from chat info...');
+                                                // console.log('No exact date match found, trying to get reservation from chat info...');
 
                                                 // Get reservationId from chat info if available
                                                 if (chatInfo?.reservation_id) {
-                                                    console.log('Found reservation_id in chat info:', chatInfo.reservation_id);
+                                                    // console.log('Found reservation_id in chat info:', chatInfo.reservation_id);
 
                                                     // Find reservation by ID in local guestReservations first
                                                     matchingReservation = guestReservations.find((res: any) =>
@@ -1845,14 +1829,14 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                     );
 
                                                     if (matchingReservation) {
-                                                        console.log('Found reservation by ID in local data:', matchingReservation);
+                                                        // console.log('Found reservation by ID in local data:', matchingReservation);
                                                     } else {
-                                                        console.log('Reservation not found in local data, fetching from API...');
+                                                        // console.log('Reservation not found in local data, fetching from API...');
                                                         // Fetch reservation details directly from API
                                                         const apiReservation = await getReservationDetails(chatInfo.reservation_id);
                                                         if (apiReservation) {
                                                             matchingReservation = apiReservation;
-                                                            console.log('Fetched reservation from API:', matchingReservation);
+                                                            // console.log('Fetched reservation from API:', matchingReservation);
                                                         } else {
                                                             console.error('Failed to fetch reservation from API');
                                                         }
@@ -1861,13 +1845,13 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
                                                 // If still no reservation found, try fallback matching
                                                 if (!matchingReservation && guestReservations.length > 0) {
-                                                    console.log('Trying fallback reservation matching...');
+                                                    // console.log('Trying fallback reservation matching...');
                                                     matchingReservation = guestReservations.find((res: any) =>
                                                         res.guest_id === chatInfo?.guest?.id
                                                     );
                                                     if (matchingReservation) {
                                                         isTestSession = true;
-                                                        console.log('Using fallback reservation for test session:', matchingReservation);
+                                                        // console.log('Using fallback reservation for test session:', matchingReservation);
                                                     }
                                                 }
                                             }
@@ -1884,14 +1868,14 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
                                                 // For test sessions without reservations, try to get amount from chat info
                                                 if (isTestSession || guestReservations.length === 0) {
-                                                    console.log('No reservation found, checking if this is a real session with chat reservation...');
+                                                    // console.log('No reservation found, checking if this is a real session with chat reservation...');
 
                                                     // Check if chat has a reservation_id (real session)
                                                     if (chatInfo?.reservation_id) {
                                                         throw new Error(`Chat has reservation_id ${chatInfo.reservation_id} but no matching reservation found. Please check reservation data.`);
                                                     } else {
                                                         // This is truly a test session without any reservation
-                                                        console.log('Using default pending amount for test session');
+                                                        // console.log('Using default pending amount for test session');
                                                         pendingAmount = 1000; // Default test amount
                                                         matchingReservation = {
                                                             id: 0,
@@ -1907,17 +1891,17 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
                                             // Get the pending amount from the reservation details (使用ポイント field)
                                             pendingAmount = extractPendingAmount(matchingReservation);
-                                            console.log('Reservation details:', {
-                                                reservation: matchingReservation,
-                                                pendingAmount,
-                                                guestId: chatInfo?.guest?.id,
-                                                proposalDate: datePart,
-                                                scheduledAt: matchingReservation.scheduled_at,
-                                                isTestSession,
-                                                availableReservations: guestReservations.length,
-                                                chatReservationId: chatInfo?.reservation_id,
-                                                reservationSource: matchingReservation.id === chatInfo?.reservation_id ? 'chat_info' : 'guest_reservations'
-                                            });
+                                            // console.log('Reservation details:', {
+                                            //     reservation: matchingReservation,
+                                            //     pendingAmount,
+                                            //     guestId: chatInfo?.guest?.id,
+                                            //     proposalDate: datePart,
+                                            //     scheduledAt: matchingReservation.scheduled_at,
+                                            //     isTestSession,
+                                            //     availableReservations: guestReservations.length,
+                                            //     chatReservationId: chatInfo?.reservation_id,
+                                            //     reservationSource: matchingReservation.id === chatInfo?.reservation_id ? 'chat_info' : 'guest_reservations'
+                                            // });
 
                                             // Additional validation for pending amount
                                             if (pendingAmount <= 0) {
@@ -1954,14 +1938,14 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 totalPoints = 1;
                                             }
 
-                                            console.log('Point calculation:', {
-                                                pendingAmount,
-                                                castGradePoints,
-                                                pointsPerMinute,
-                                                elapsedMinutes,
-                                                finalElapsedTime,
-                                                totalPoints
-                                            });
+                                            // console.log('Point calculation:', {
+                                            //     pendingAmount,
+                                            //     castGradePoints,
+                                            //     pointsPerMinute,
+                                            //     elapsedMinutes,
+                                            //     finalElapsedTime,
+                                            //     totalPoints
+                                            // });
 
                                             // Cast gets the calculated points based on their grade and time
                                             castPoints = totalPoints;
@@ -1977,15 +1961,15 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             const shortfallPoints = Math.max(0, totalPoints - guestAvailablePoints);
 
                                             // Debug: Log the guest points calculation
-                                            console.log('Guest points calculation:', {
-                                                pendingAmount,
-                                                totalPoints,
-                                                calculatedGuestPoints: pendingAmount - totalPoints,
-                                                finalGuestPoints: guestPoints,
-                                                refundPercentage: ((pendingAmount - totalPoints) / pendingAmount * 100).toFixed(2) + '%',
-                                                exceededPoints,
-                                                shortfallPoints
-                                            });
+                                            // console.log('Guest points calculation:', {
+                                            //     pendingAmount,
+                                            //     totalPoints,
+                                            //     calculatedGuestPoints: pendingAmount - totalPoints,
+                                            //     finalGuestPoints: guestPoints,
+                                            //     refundPercentage: ((pendingAmount - totalPoints) / pendingAmount * 100).toFixed(2) + '%',
+                                            //     exceededPoints,
+                                            //     shortfallPoints
+                                            // });
 
                                             // Validate required data
                                             if (!chatInfo?.guest?.id) {
@@ -2020,14 +2004,14 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             // Recalculate guest points after any capping to ensure accuracy
                                             guestPoints = Math.max(0, pendingAmount - totalPoints);
 
-                                            console.log('Final point calculations after validation:', {
-                                                pendingAmount,
-                                                totalPoints,
-                                                castPoints,
-                                                guestPoints,
-                                                refundAmount: pendingAmount - totalPoints,
-                                                refundPercentage: ((pendingAmount - totalPoints) / pendingAmount * 100).toFixed(2) + '%'
-                                            });
+                                            // console.log('Final point calculations after validation:', {
+                                            //     pendingAmount,
+                                            //     totalPoints,
+                                            //     castPoints,
+                                            //     guestPoints,
+                                            //     refundAmount: pendingAmount - totalPoints,
+                                            //     refundPercentage: ((pendingAmount - totalPoints) / pendingAmount * 100).toFixed(2) + '%'
+                                            // });
 
                                             // Ensure backend stops reservation to compute exceeded time based on reservation duration
                                             try {
@@ -2057,18 +2041,6 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 console.warn('Failed to persist started_at/ended_at on dissolve:', persistErr);
                                             }
 
-                                            // API call to handle point transactions
-                                            console.log('Calling completeSession API with:', {
-                                                chat_id: Number(message.id),
-                                                cast_id: castId,
-                                                guest_id: chatInfo.guest.id,
-                                                session_duration: finalElapsedTime,
-                                                total_points: totalPoints,
-                                                cast_points: castPoints,
-                                                guest_points: guestPoints,
-                                                session_key: key
-                                            });
-
                                             let result;
                                             if (matchingReservation && matchingReservation.id > 0) {
                                                 // Complete reservation with proper backend logic
@@ -2086,11 +2058,6 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 session_key: key
                                             });
                                             }
-
-                                            console.log("RESULT", result);
-
-                                            // Concierge message is now handled by the backend
-                                            console.log('Session completed (main handler) - concierge message will be sent by backend');
 
                                             // Update local session with calculated points
                                             newMap.set(key, {
@@ -2119,9 +2086,6 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             const guestAvailablePoints = guestProfile.points || 0;
                                             const shortfallPoints = Math.max(0, totalPoints - guestAvailablePoints);
 
-                                            // Concierge message is now handled by the backend
-                                            console.log('Session completed (second handler) - concierge message will be sent by backend');
-
                                             // Update local session even if API fails
                                             newMap.set(key, {
                                                 ...session,
@@ -2135,10 +2099,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         }
                                     }
 
-                                    console.log('All sessions processed. Updating state...');
                                     setProposalSessions(newMap);
-                                    console.log('Updated proposalSessions:', Array.from(newMap.entries()));
-                                    
+
                                     // Calculate session summary for messages
                                     const sessionSummary = Array.from(newMap.entries())
                                         .filter(([_, session]) => !session.isActive && session.elapsedTime > 0)
@@ -2257,13 +2219,13 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         // Check if proposal has been clicked by cast member
                         const isClicked = clickedProposals.has(proposalKey);
                         
-                        // Debug logging
-                        console.log('Proposal render check:', {
-                            proposalKey,
-                            isClicked,
-                            clickedProposals: Array.from(clickedProposals),
-                            chatId: message.id
-                        });
+                        // // Debug logging
+                        // console.log('Proposal render check:', {
+                        //     proposalKey,
+                        //     isClicked,
+                        //     clickedProposals: Array.from(clickedProposals),
+                        //     chatId: message.id
+                        // });
                         
                         // Check if this proposal was sent by the current cast member
                         const isSentByCast = castId && String(msg.sender_cast_id) === String(castId);
@@ -2460,7 +2422,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             if (parsed && parsed.type === 'system' && parsed.target === 'guest') return null;
                                         } catch (_) {}
                                         return (
-                                    <div className={`${isSent ? 'w-full bg-secondary text-white rounded-lg px-4 py-2' : 'w-full bg-white text-black rounded-lg px-4 py-2'} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
+                                    <div className={`${isSent ? 'w-full bg-secondary text-white rounded-lg px-4 py-2 max-w-full break-all' : 'w-full bg-white text-black rounded-lg px-4 py-2 max-w-full break-all'} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
                                         {/* Gift display */}
                                         {msg.gift_id && msg.gift && (
                                             <div className="mb-1">
@@ -2806,21 +2768,15 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             reservation_id: selectedProposal.reservationId
                                         };
 
-                                        console.log('Sending proposal data:', proposalData);
-                                        console.log('chatInfo:', chatInfo);
-                                        console.log('selectedProposal:', selectedProposal);
-
                                         // Accept the proposal
                                         await acceptProposal(proposalData);
 
                                         // Add to local accepted state for immediate UI feedback
                                         const proposalKey = makeProposalKey(selectedProposal.date, duration);
-                                        console.log('Adding proposal to accepted set:', proposalKey);
                                         
                                         setAcceptedProposals(prev => {
                                             const newSet = new Set(Array.from(prev));
                                             newSet.add(proposalKey);
-                                            console.log('Updated accepted proposals:', Array.from(newSet));
                                             return newSet;
                                         });
                                         
@@ -2828,7 +2784,6 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         setClickedProposals(prev => {
                                             const newSet = new Set(prev);
                                             newSet.add(proposalKey);
-                                            console.log('Updated clicked proposals:', Array.from(newSet));
                                             return newSet;
                                         });
 
@@ -2955,7 +2910,6 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
 
     // Real-time group chat updates for cast
     useGroupChatsRealtime(castId || 0, 'cast', (groupChat) => {
-        console.log('MessagePage: Real-time group chat created:', groupChat);
         // The hook automatically updates the React Query cache
     });
 

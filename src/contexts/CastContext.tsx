@@ -53,14 +53,14 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
   };
 
   const setCastWrapper = (newCast: CastProfile | null) => {
-    console.log('CastContext: Setting cast data:', newCast);
+    // console.log('CastContext: Setting cast data:', newCast);
     
     // Mark that we're setting cast data externally
     setIsSettingCastExternally(true);
     
     // Ensure we have valid cast data
     if (newCast && newCast.id) {
-      console.log('CastContext: Valid cast data, updating state...');
+      // console.log('CastContext: Valid cast data, updating state...');
       setCast(newCast);
       // Update favicon for cast user
       setFavicon('cast');
@@ -68,23 +68,23 @@ export const CastProvider: React.FC<CastProviderProps> = ({ children }) => {
       localStorage.setItem('castData', JSON.stringify(newCast));
       // Also store cast ID for consistency
       setCastId(newCast.id);
-      console.log('CastContext: Cast data successfully set and stored:', { id: newCast.id, nickname: newCast.nickname });
+      // console.log('CastContext: Cast data successfully set and stored:', { id: newCast.id, nickname: newCast.nickname });
       
       
       // Verify the data was stored correctly
       setTimeout(() => {
         const storedData = localStorage.getItem('castData');
         const storedId = localStorage.getItem('castId');
-        console.log('CastContext: Verification - stored data:', { storedData, storedId, expectedId: newCast.id });
+        // console.log('CastContext: Verification - stored data:', { storedData, storedId, expectedId: newCast.id });
         
         // Clear the external flag after a delay to allow context to stabilize
         setTimeout(() => {
           setIsSettingCastExternally(false);
-          console.log('CastContext: External cast setting flag cleared');
+          // console.log('CastContext: External cast setting flag cleared');
         }, 500);
       }, 100);
     } else {
-      console.warn('CastContext: Invalid cast data provided:', newCast);
+      // console.warn('CastContext: Invalid cast data provided:', newCast);
       setCast(null);
       // Reset favicon when cast is cleared
       setFavicon(null);
