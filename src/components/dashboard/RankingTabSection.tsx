@@ -234,7 +234,7 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
             <Spinner />
           </div>
         ) : ranking.length === 0 ? (
-          <div className="text-white text-center">ランキングデータがありません</div>
+          <div className="text-white text-center mt-8">ランキングデータがありません</div>
         ) : (
           <div className="w-full">
             {ranking.map((item, idx) => (

@@ -227,10 +227,12 @@ const MessageProposalPage: React.FC<{
                     }
                 }
 
-                // Set current date and time as default
+                // Set current date and time as default (30 minutes ahead)
                 const now = new Date();
                 const defaultDate = now.toISOString().slice(0, 10);
-                const defaultTime = formatTime(now);
+                // Add 30 minutes to current time
+                const futureTime = new Date(now.getTime() + 30 * 60 * 1000);
+                const defaultTime = formatTime(futureTime);
                 setDate(defaultDate);
                 setTime(defaultTime);
             } catch (error) {

@@ -534,7 +534,7 @@ const CastDetail: React.FC = () => {
                             自己紹介
                         </h3>
                         <div className="text-white leading-relaxed">
-                            <p className="text-base">{cast?.profile_text || '自己紹介はありません'}</p>
+                            <p className="text-base whitespace-pre-line">{cast?.profile_text || '自己紹介はありません'}</p>
                         </div>
                     </div>
                 </div>
