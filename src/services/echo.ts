@@ -3,37 +3,21 @@ import Pusher from "pusher-js";
 
 (window as any).Pusher = Pusher;
 
-const REVERB_KEY = process.env.REACT_APP_REVERB_KEY || "local";
-const REVERB_HOST = process.env.REACT_APP_REVERB_HOST || "127.0.0.1";
-const REVERB_SCHEME = process.env.REACT_APP_REVERB_SCHEME || "ws";
-const REVERB_PORT = Number(
-  process.env.REACT_APP_REVERB_PORT ||
-  (REVERB_SCHEME === "wss" ? "443" : "8080")
-);
-const forceTLS = REVERB_SCHEME === "wss";
+// Pusher Configuration
+const PUSHER_KEY = process.env.REACT_APP_PUSHER_APP_KEY;
+const PUSHER_CLUSTER = process.env.REACT_APP_PUSHER_APP_CLUSTER;
 
-console.log("REVERB_KEY", REVERB_KEY);
-console.log("REVERB_HOST", REVERB_HOST);
-console.log("REVERB_SCHEME", REVERB_SCHEME);
-console.log("REVERB_PORT", REVERB_PORT);
-console.log("forceTLS", forceTLS);
+console.log("PUSHER_KEY", PUSHER_KEY);
+console.log("PUSHER_CLUSTER", PUSHER_CLUSTER);
 
 
 
 const echo = new Echo({
   broadcaster: "pusher",
-  key: REVERB_KEY,
-  cluster: 'mt1',
-  wsHost: REVERB_HOST,
-  wsPort: REVERB_PORT,
-  wssPort: REVERB_PORT,
-  forceTLS: forceTLS,
-  encrypted: forceTLS,
-  enabledTransports: forceTLS ? ["wss"] : ["ws"],
-  ...(forceTLS ? { wsPath: "/ws" } : {}), // Add wsPath only if using secure wss
-
-  // Important: disable pusher stats and do not set cluster
-  disableStats: true,
+  key: PUSHER_KEY,
+  cluster: PUSHER_CLUSTER,
+  forceTLS: true,
+  encrypted: true,
 });
 
 console.log("Echo configuration:", echo.options);
@@ -42,11 +26,11 @@ console.log("Echo configuration:", echo.options);
 const pusherConnector = echo.connector as any;
 if (pusherConnector.pusher?.connection) {
   pusherConnector.pusher.connection.bind('connected', () => {
-    console.log('Echo: Connected to Reverb server');
+    console.log('Echo: Connected to Pusher');
   });
 
   pusherConnector.pusher.connection.bind('disconnected', () => {
-    console.log('Echo: Disconnected from Reverb server');
+    console.log('Echo: Disconnected from Pusher');
   });
 
   pusherConnector.pusher.connection.bind('error', (error: any) => {
