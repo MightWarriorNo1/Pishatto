@@ -630,6 +630,19 @@ export const useSendMessage = () => {
       // Return a context object with the snapshotted value
       return { previousMessages, optimisticMessage };
     },
+    onSuccess: (data, variables) => {
+      // Remove optimistic message when server responds
+      if (variables.chat_id && variables.sender_cast_id) {
+        queryClient.setQueryData(
+          queryKeys.cast.chatMessages(variables.chat_id, variables.sender_cast_id),
+          (old: any) => {
+            if (!old) return old;
+            // Remove optimistic messages (they have isOptimistic: true)
+            return old.filter((msg: any) => !msg.isOptimistic);
+          }
+        );
+      }
+    },
     onError: (err, variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       if (context?.previousMessages && variables.chat_id && variables.sender_cast_id) {
@@ -640,18 +653,8 @@ export const useSendMessage = () => {
       }
     },
     onSettled: (data, error, variables) => {
-      // Always refetch after error or success
-      if (variables.chat_id && variables.sender_cast_id) {
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.cast.chatMessages(variables.chat_id, variables.sender_cast_id) 
-        });
-      }
-      // Also invalidate cast chats list
-      if (variables.sender_cast_id) {
-        queryClient.invalidateQueries({ 
-          queryKey: queryKeys.cast.chats(variables.sender_cast_id) 
-        });
-      }
+      // Don't invalidate queries - real-time updates will handle cache updates
+      // This prevents duplicate requests and the "送信中..." issue
     },
   });
 };

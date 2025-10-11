@@ -6,21 +6,18 @@ import { queryKeys } from "../lib/react-query";
 // Real-time chat messages with React Query cache updates
 export function useChatMessages(
   chatId: string | number,
-  onNewMessage: (message: any) => void
+  onNewMessage: (message: any) => void,
+  currentUserId?: number,
+  userType?: 'guest' | 'cast'
 ) {
-  const listenerRef = useRef<(() => void) | null>(null);
+  console.log('useChatMessages: Hook called with chatId:', chatId, 'currentUserId:', currentUserId, 'userType:', userType);
   
-  useEffect(() => {
-    if (!chatId) return;
-    
+  // Simple approach: directly set up the listener without useEffect
+  if (chatId && currentUserId && userType) {
     console.log('useChatMessages: Setting up listener for chat:', chatId);
     const channel = echo.channel(`chat.${chatId}`);
     
-    // Check if already subscribed to prevent duplicate subscriptions
-    if (channel.subscription && channel.subscription.subscribed) {
-      console.log('useChatMessages: Channel already subscribed, skipping setup');
-      return;
-    }
+    console.log('useChatMessages: Channel subscription status:', channel.subscription?.subscribed);
     
     // Add channel subscription logging
     channel.subscribed(() => {
@@ -31,39 +28,35 @@ export function useChatMessages(
       console.error('useChatMessages: Channel subscription error for chat.' + chatId, error);
     });
     
-    // Debug channel subscription
-    console.log('useChatMessages: Channel object:', channel);
-    console.log('useChatMessages: Channel subscribed status:', channel.subscribed);
-    
     const handleNewMessage = (e: { message: any }) => {
       const newMessage = e.message;
       
       console.log('useChatMessages: Received new message:', newMessage);
+      console.log('useChatMessages: Chat ID:', chatId, 'Current User ID:', currentUserId, 'User Type:', userType);
+      console.log('useChatMessages: Message from ChatScreen component:', currentUserId && userType);
       
-      // Update React Query cache for chat messages - handle both guest and cast scenarios
-      // For guest users, we need to update the guest chat messages cache
-      if (newMessage.sender_guest_id) {
-        console.log('useChatMessages: Updating guest chat cache for guest:', newMessage.sender_guest_id);
-        // This is a guest message, update guest chat cache
-        queryClient.setQueryData(
-          queryKeys.guest.chatMessages(Number(chatId), newMessage.sender_guest_id),
-          (oldData: any) => {
-            if (!oldData) return [newMessage];
-            return [...oldData, newMessage];
-          }
-        );
-      }
+      // Only update cache directly - don't invalidate queries to prevent excessive refetches
+      console.log('useChatMessages: Updating cache directly for chat', chatId);
       
-      // For cast users, update cast chat cache
-      if (newMessage.sender_cast_id) {
-        console.log('useChatMessages: Updating cast chat cache for cast:', newMessage.sender_cast_id);
-        queryClient.setQueryData(
-          queryKeys.cast.chatMessages(Number(chatId), newMessage.sender_cast_id),
-          (oldData: any) => {
-            if (!oldData) return [newMessage];
-            return [...oldData, newMessage];
-          }
-        );
+      // Update the appropriate cache based on user type
+      if (userType === 'guest' && currentUserId) {
+        const guestCacheKey = queryKeys.guest.chatMessages(Number(chatId), Number(currentUserId));
+        queryClient.setQueryData(guestCacheKey, (oldData: any) => {
+          if (!oldData) return [newMessage];
+          const exists = oldData.some((msg: any) => msg.id === newMessage.id);
+          if (exists) return oldData;
+          return [...oldData, newMessage];
+        });
+        console.log('useChatMessages: Updated guest cache for chat', chatId);
+      } else if (userType === 'cast' && currentUserId) {
+        const castCacheKey = queryKeys.cast.chatMessages(Number(chatId), Number(currentUserId));
+        queryClient.setQueryData(castCacheKey, (oldData: any) => {
+          if (!oldData) return [newMessage];
+          const exists = oldData.some((msg: any) => msg.id === newMessage.id);
+          if (exists) return oldData;
+          return [...oldData, newMessage];
+        });
+        console.log('useChatMessages: Updated cast cache for chat', chatId);
       }
       
       console.log('useChatMessages: Calling onNewMessage callback');
@@ -72,25 +65,14 @@ export function useChatMessages(
     };
     
     // Listen to the MessageSent event
-    channel.listen("MessageSent", handleNewMessage);
-    
-    // Check if channel is already subscribed
-    console.log('useChatMessages: Channel subscription status:', channel.subscription);
+    channel.listen(".MessageSent", handleNewMessage);
     
     // Force subscription if not already subscribed
     if (!channel.subscription) {
       console.log('useChatMessages: Channel not subscribed, forcing subscription...');
       channel.subscribe();
     }
-    
-    // Store cleanup function in ref
-    listenerRef.current = () => {
-      console.log('useChatMessages: Cleaning up listener for chat.' + chatId);
-      channel.stopListening("MessageSent");
-    };
-    
-    return listenerRef.current;
-  }, [chatId]);
+  }
 }
 
 // Real-time group messages with React Query cache updates

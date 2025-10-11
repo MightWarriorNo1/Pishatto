@@ -272,23 +272,24 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         });
 
         if (hasProposals) {
-            const interval = setInterval(() => {
-                getGuestReservations(user.id).then(setGuestReservations).catch(() => {});
-            }, 3000); // Check every 3 seconds when proposals exist for faster updates
-            return () => clearInterval(interval);
+            // Only refresh once when proposals are detected, not continuously
+            getGuestReservations(user.id).then(setGuestReservations).catch(() => {});
         }
     }, [user?.id, messages]);
 
     // Set up real-time listener for chat messages
-    useChatMessages(chatId, (message) => {
-        console.log('ChatScreen: Received real-time message:', message);
-        console.log('ChatScreen: fetching:', fetching, 'isUserLoaded:', isUserLoaded);
-        
-        // Only process real-time messages if initial fetch is complete and user is loaded
-        if (fetching || !isUserLoaded) {
-            console.log('ChatScreen: Skipping message processing - fetching or user not loaded');
-            return;
-        }
+    console.log('ChatScreen: Setting up useChatMessages for chatId:', chatId, 'userId:', user?.id);
+    console.log('ChatScreen: User object:', user);
+        useChatMessages(chatId, (message) => {
+            console.log('ChatScreen: Received real-time message:', message);
+            console.log('ChatScreen: fetching:', fetching, 'isUserLoaded:', isUserLoaded);
+
+            // Process real-time messages even if initial fetch is still in progress
+            // This ensures messages appear immediately without waiting for the initial load
+            if (!isUserLoaded) {
+                console.log('ChatScreen: Skipping message processing - user not loaded');
+                return;
+            }
         
         // Attach full gift object if missing
         if (message.gift_id && !message.gift && Array.isArray(gifts)) {
@@ -319,6 +320,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         setMessages((prev) => {
             console.log('ChatScreen: Current messages count:', prev.length);
             console.log('ChatScreen: New message ID:', message.id);
+            console.log('ChatScreen: New message data:', message);
             
             // Remove optimistic message if real one matches (by image or message and sender information)
             // Also check for duplicate messages by ID to prevent duplicates
@@ -356,7 +358,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 getGuestReservations(user.id).then(setGuestReservations).catch(() => {});
             }, 1000);
         }
-    });
+    }, user?.id, 'guest');
 
     // Matching messages are now handled by backend through group chats
     // No need for frontend simulation

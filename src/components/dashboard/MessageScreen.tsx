@@ -205,12 +205,12 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                 }
             };
 
-            channel.listen(eventName, handleNewMessage);
+            channel.listen(`.${eventName}`, handleNewMessage);
 
             // Store cleanup function
             cleanupFunctions.push(() => {
                 try {
-                    channel.stopListening(eventName);
+                    channel.stopListening(`.${eventName}`);
                 } catch (error) {
                     console.warn(`Error cleaning up channel ${channelName}:`, error);
                 }

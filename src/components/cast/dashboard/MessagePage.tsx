@@ -261,11 +261,16 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
     // Real-time updates using the existing hook
     useRealtimeChatMessages(Number(message.id), (incoming: any) => {
-        // Lightweight guard: if we already have this message ID locally, skip redundant refetch
+        // Lightweight guard: if we already have this message ID locally, skip redundant processing
         const exists = (messages || []).some((m: any) => String(m.id) === String(incoming.id));
         if (!exists) {
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.cast.chatMessages(Number(message.id), castId)
+            // Update cache directly instead of invalidating to prevent excessive refetches
+            const castCacheKey = queryKeys.cast.chatMessages(Number(message.id), castId);
+            queryClient.setQueryData(castCacheKey, (oldData: any) => {
+                if (!oldData) return [incoming];
+                const messageExists = oldData.some((msg: any) => msg.id === incoming.id);
+                if (messageExists) return oldData;
+                return [...oldData, incoming];
             });
         }
 
@@ -280,7 +285,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                 queryKey: queryKeys.cast.guestReservations(chatInfo.guest.id)
             });
         }
-    });
+    }, castId, 'cast');
 
     // Refresh guest reservations when proposals are present to ensure acceptance status is up-to-date
     useEffect(() => {
@@ -319,14 +324,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         });
 
         if (hasProposals) {
-            // Set up periodic refresh every 3 seconds when proposals exist
-            const interval = setInterval(() => {
-                queryClient.invalidateQueries({
-                    queryKey: queryKeys.cast.guestReservations(chatInfo.guest.id)
-                });
-            }, 3000);
-            
-            return () => clearInterval(interval);
+            // Only refresh once when proposals are detected, not continuously
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.cast.guestReservations(chatInfo.guest.id)
+            });
         }
     }, [chatInfo?.guest?.id, castId, messages, queryClient]);
 

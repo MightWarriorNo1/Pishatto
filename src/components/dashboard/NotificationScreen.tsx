@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, ChevronLeft, Trash2 } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
-import { getNotifications, deleteNotification, Notification, createChat, sendGuestMessage, getAdminNews, AdminNews, getCastProfileById, markAllNotificationsRead, fetchUserChats } from '../../services/api';
+import { getNotifications, deleteNotification, Notification, createChat, sendGuestMessage, getAdminNews, AdminNews, markAllNotificationsRead, fetchUserChats } from '../../services/api';
 import { useAdminNews } from '../../hooks/useRealtime';
 import Spinner from '../ui/Spinner';
 
@@ -71,33 +71,11 @@ const NotificationScreen: React.FC<NotificationScreenProps> = ({ onBack, onNotif
             // Filter out admin news from notifications - they should only appear in the news tab
             const nonAdminNotifications = data.filter(notification => notification.type !== 'admin_news');
             
-            // Fetch cast profiles for notifications that have cast_id
-            const notificationsWithCastData = await Promise.all(
-                nonAdminNotifications.map(async (notification) => {
-                    if (notification.cast_id) {
-                        try {
-                            const castProfile = await getCastProfileById(notification.cast_id);
-                            return {
-                                ...notification,
-                                cast: {
-                                    id: castProfile.cast.id,
-                                    nickname: castProfile.cast.nickname,
-                                    avatar: castProfile.cast.avatar
-                                }
-                            };
-                        } catch (error) {
-                            console.error(`Failed to fetch cast profile for cast_id ${notification.cast_id}:`, error);
-                            return notification;
-                        }
-                    }
-                    return notification;
-                })
-            );
-            
-            setNotifications(notificationsWithCastData);
+            // The backend now includes cast profile data, so no additional fetching is needed
+            setNotifications(nonAdminNotifications);
             
             // Update unread count
-            const unreadCount = notificationsWithCastData.filter(n => !n.read).length;
+            const unreadCount = nonAdminNotifications.filter(n => !n.read).length;
             onNotificationCountChange?.(unreadCount);
         } catch (error) {
             console.error('Failed to load notifications:', error);

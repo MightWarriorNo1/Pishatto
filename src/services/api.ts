@@ -481,6 +481,7 @@ export const getCastProfileById = async (castId: number) => {
   return response.data;
 };
 
+
 export const getCastPointsData = async (castId: number) => {
   const response = await api.get(`/casts/points/${castId}`);
   return response.data;

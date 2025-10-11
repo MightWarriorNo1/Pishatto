@@ -22,6 +22,20 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     return `${API_BASE_URL}/${avatars[0]}`;
 };
 
+// Utility function to get category-specific styles
+const getCategoryStyles = (category: string): string => {
+    switch (category) {
+        case 'プレミアム':
+            return 'bg-gradient-to-r from-cyan-500 to-teal-600 text-white px-2 py-1 rounded-md shadow-lg w-fit';
+        case 'VIP':
+            return 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-md shadow-lg w-fit';
+        case 'ロイヤルVIP':
+            return 'bg-gradient-to-r from-red-600 to-pink-600 text-white px-2 py-1 rounded-md shadow-lg w-fit';
+        default:
+            return 'bg-gray-600 text-white px-2 py-1 rounded-md shadow-lg w-fit';
+    }
+};
+
 interface CastProfile {
   id: number;
   name?: string;
@@ -103,11 +117,11 @@ const NewCastSection: React.FC<NewCastSectionProps> = ({ hideLoading = false }) 
                     alt={profile.nickname || profile.name || ''}
                     className="w-full h-full object-cover rounded-lg border border-secondary"
                   />
-                  {profile.category && (
-                    <div className='absolute top-2 left-2 rounded text-xs font-medium text-white'>
-                      {profile.category}
-                    </div>
-                  )}
+                    {profile.category && (
+                      <span className={`absolute top-0 left-0 text-xs h-min font-medium ${getCategoryStyles(profile.category)}`}>
+                        {profile.category}
+                      </span>
+                    )}
                 </div>
                 <div className="p-1 sm:p-2">
                   <div className="flex flex-col gap-1 text-xs items-center">

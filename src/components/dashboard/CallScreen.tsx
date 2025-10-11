@@ -35,6 +35,20 @@ const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
     return `${APP_BASE_URL}/${avatars[0]}`;
 };
 
+// Utility function to get category-specific styles
+const getCategoryStyles = (category: string): string => {
+    switch (category) {
+        case 'プレミアム':
+            return 'bg-gradient-to-r from-cyan-500 to-teal-600 text-white px-2 py-1 rounded-md shadow-lg w-fit';
+        case 'VIP':
+            return 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-2 py-1 rounded-md shadow-lg w-fit';
+        case 'ロイヤルVIP':
+            return 'bg-gradient-to-r from-red-600 to-pink-600 text-white px-2 py-1 rounded-md shadow-lg w-fit';
+        default:
+            return 'bg-gray-600 text-white px-2 py-1 rounded-md shadow-lg w-fit';
+    }
+};
+
 // Helper to work with combined area values like "name/prefecture"
 const getAreaNamePart = (area: string | undefined | null): string => {
     if (!area) return '';
@@ -1701,8 +1715,8 @@ function AvailableCastsModal({ isOpen, onClose, casts, onCastClick }: {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="bg-gradient-to-r from-secondary to-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">プレミアム</span>
-                                                <span className="text-green-400 text-xs font-semibold">オンライン</span>
+                                                <span className={`text-xs font-bold ${getCategoryStyles('プレミアム')}`}>プレミアム</span>
+                                                <span className="text-white/60 text-xs">25歳</span>
                                             </div>
                                             <div className="text-white font-semibold text-lg mb-1 truncate">{cast.cast_nickname}</div>
                                             {cast.last_message && (
@@ -2283,15 +2297,10 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                                     <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse"></div>
                                 </div>
                                 <div className="mb-2">
-                                    <span className="bg-gradient-to-r from-secondary to-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">プレミアム</span>
+                                    <span className={`text-xs font-bold ${getCategoryStyles('プレミアム')}`}>プレミアム</span>
                                 </div>
                                 <div className="text-white font-semibold text-sm mb-1">{cast.cast_nickname}</div>
-                                <div className="text-white/60 text-xs">オンライン</div>
-                                {cast.unread && cast.unread > 0 && (
-                                    <div className="absolute top-2 right-2 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                                        <span className="text-white text-xs font-bold">{cast.unread}</span>
-                                    </div>
-                                )}
+                                <div className="text-white/60 text-xs">25歳</div>
                             </div>
                         ))}
                         {appliedCasts.length > 4 && (
