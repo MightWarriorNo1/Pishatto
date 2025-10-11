@@ -601,7 +601,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
             style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
         >
             {/* Top bar */}
-            <div className="fixed max-w-md mx-auto top-0 left-0 right-0 grid grid-cols-3 items-center px-4 py-3 border-b border-secondary bg-primary">
+            <div className="fixed max-w-md mx-auto top-0 left-0 right-0 grid grid-cols-3 items-center px-4 py-3 border-b border-secondary bg-primary z-20">
                 <button
                     className="justify-self-start relative p-1"
                     aria-label="通知を開く"
@@ -656,7 +656,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                 </button>
             </div>
             {/* Search bar */}
-            <div className="px-4 mt-3">
+            <div className="sticky top-20 z-10 bg-primary px-4 py-3">
                 <div className="flex items-center">
                     <div className="flex-1 relative">
                         <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
