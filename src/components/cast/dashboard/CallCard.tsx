@@ -61,7 +61,7 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
     }
 
     // Time calculations
-    const format = (d: Date) => d.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const format = (d: Date) => d.toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).replace(/\//g, '-');
     const diff = (a: Date, b: Date) => {
         let ms = Math.abs(a.getTime() - b.getTime());
         let h = Math.floor(ms / 3600000);

@@ -817,7 +817,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                                         )}
                                                         {chat.created_at && (
                                                             <div className="text-xs text-gray-400 mt-1">
-                                                                作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
+                                                                作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP').replace(/\//g, '-')}
                                                             </div>
                                                         )}
                                                     </div>
@@ -927,7 +927,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                                         )}
                                                         {chat.created_at && (
                                                             <div className="text-xs text-gray-400 mt-1">
-                                                                作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP')}
+                                                                作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP').replace(/\//g, '-')}
                                                             </div>
                                                         )}
                                                     </div>

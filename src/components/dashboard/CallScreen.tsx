@@ -1496,7 +1496,7 @@ function OrderFinalConfirmationScreen({
                                     day: 'numeric',
                                     hour: '2-digit',
                                     minute: '2-digit'
-                                })}
+                                }).replace(/\//g, '-')}
                                 {isNightTime && <span className="text-orange-300 ml-1">(深夜)</span>}
                             </div>
                         </div>
@@ -1717,7 +1717,7 @@ function AvailableCastsModal({ isOpen, onClose, casts, onCastClick }: {
                                                         day: 'numeric',
                                                         hour: '2-digit',
                                                         minute: '2-digit'
-                                                    })}
+                                                    }).replace(/\//g, '-')}
                                                 </div>
                                             )}
                                         </div>
@@ -2444,7 +2444,7 @@ function CalendarPopupWindow({ isOpen, onClose }: {
         month: 'long',
         day: 'numeric',
         weekday: 'long'
-    });
+    }).replace(/\//g, '-');
     const currentTime = now.toLocaleTimeString('ja-JP', {
         hour: '2-digit',
         minute: '2-digit'

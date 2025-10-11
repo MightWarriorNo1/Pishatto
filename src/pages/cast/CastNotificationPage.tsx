@@ -181,7 +181,7 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
         const diffInDays = Math.floor(diffInHours / 24);
         if (diffInDays < 7) return `${diffInDays}日前`;
         
-        return date.toLocaleDateString('ja-JP');
+        return date.toLocaleDateString('ja-JP').replace(/\//g, '-');
     };
 
     // Render message with clickable URLs and subtle styling like guest NotificationScreen

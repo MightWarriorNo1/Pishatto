@@ -2304,7 +2304,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         style={isSentByCast || isClicked ? { cursor: 'default' } : { cursor: 'pointer' }}
                                     >
                                         {/* Do not show clicked indicator on proposal tap */}
-                                        <div>日程：{currentProposal.date ? new Date(currentProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
+                                        <div>日程：{currentProposal.date ? new Date(currentProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-') : ''}～</div>
                                         <div>人数：{currentProposal.people?.replace(/名$/, '')}人</div>
                                         <div>時間：{currentProposal.duration}</div>
                                         <div>消費ポイント：{currentProposal.totalPoints?.toLocaleString()}P</div>
@@ -2771,7 +2771,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
                         <h2 className="font-bold text-lg mb-4 text-black">予約提案の確認</h2>
                         <div className="mb-4 text-black">
-                            <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '未設定'}～</div>
+                            <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-') : '未設定'}～</div>
                             <div>人数：{selectedProposal.people?.replace(/名$/, '') || '未設定'}人</div>
                             <div>時間：{selectedProposal.duration || '未設定'}</div>
                             <div>消費ポイント：{selectedProposal.totalPoints?.toLocaleString() || '0'}P</div>

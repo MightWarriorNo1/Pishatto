@@ -9,7 +9,7 @@ const NotificationDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
         <div className="p-6">
             <h2 className="font-bold text-xl mb-2 text-white">通知タイトル</h2>
             <div className="text-white mb-4">ここに通知の詳細内容が表示されます。</div>
-            <div className="text-xs text-white">2025/02/20 13:32</div>
+            <div className="text-xs text-white">2025-02-20 13:32</div>
         </div>
     </div>
 );

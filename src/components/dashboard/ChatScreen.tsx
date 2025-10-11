@@ -706,7 +706,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                     setShowProposalModal(true);
                                                 } : undefined}
                                             >
-                                                <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
+                                                <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-') : ''}～</div>
                                                 <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
                                                 <div>時間：{proposal.duration}</div>
                                                 <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
@@ -1124,7 +1124,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
                         <h2 className="font-bold text-lg mb-4 text-black">予約提案の確認</h2>
                         <div className="mb-4 text-black">
-                            <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '未設定'}～</div>
+                            <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-') : '未設定'}～</div>
                             <div>人数：{selectedProposal.people?.replace(/名$/, '') || '未設定'}人</div>
                             <div>時間：{selectedProposal.duration || '未設定'}</div>
                             <div>消費ポイント：{selectedProposal.totalPoints?.toLocaleString() || '0'}P</div>

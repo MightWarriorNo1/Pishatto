@@ -94,7 +94,7 @@ const PointHistory: React.FC<PointHistoryProps> = ({ onBack, userType = 'guest',
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit'
-    });
+    }).replace(/\//g, '-');
   };
 
   const getTransactionType = (transaction: PointTransactionData) => {

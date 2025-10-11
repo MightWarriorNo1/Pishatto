@@ -264,7 +264,7 @@ const Timeline: React.FC = () => {
                                 />
                                 <div className="flex flex-col flex-1">
                                     <span className="font-bold text-sm text-white">{tweet.guest?.nickname || tweet.cast?.nickname || 'ゲスト/キャスト'}</span>
-                                    <span className="text-xs text-white">{new Date(tweet.created_at).toLocaleString('ja-JP')}</span>
+                                    <span className="text-xs text-white">{new Date(tweet.created_at).toLocaleString('ja-JP').replace(/\//g, '-')}</span>
                                 </div>
                                 {/* Delete button - only show for user's own tweets */}
                                 {isCurrentUserTweet(tweet) && (

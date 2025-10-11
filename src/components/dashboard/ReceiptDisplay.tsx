@@ -14,7 +14,7 @@ const ReceiptDisplay: React.FC<ReceiptDisplayProps> = ({ receipt, onBack }) => {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
-    }).replace(/\//g, '年').replace(/\//g, '月') + '日';
+    }).replace(/\//g, '-');
   };
 
   const formatCurrency = (amount: number) => {

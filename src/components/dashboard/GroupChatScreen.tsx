@@ -419,7 +419,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                         )}
                                         
                                         <div className={`bg-orange-500 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative`}>
-                                            <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}～</div>
+                                            <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-') : ''}～</div>
                                             <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
                                             <div>時間：{proposal.duration}</div>
                                             <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
@@ -854,7 +854,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                                             day: '2-digit', 
                                             hour: '2-digit', 
                                             minute: '2-digit' 
-                                        }) : ''}～
+                                        }).replace(/\//g, '-') : ''}～
                                     </span>
                                 </div>
                                 <div className="flex items-center">

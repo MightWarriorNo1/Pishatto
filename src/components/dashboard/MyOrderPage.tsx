@@ -212,7 +212,7 @@ const ReservationTimer: React.FC<{
         hour: '2-digit', 
         minute: '2-digit', 
         second: '2-digit' 
-    });
+    }).replace(/\//g, '-');
     
     const diff = (a: Date, b: Date) => {
         let ms = Math.abs(a.getTime() - b.getTime());

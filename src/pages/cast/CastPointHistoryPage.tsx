@@ -159,7 +159,7 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               </div>
               <div className="flex-1">
                 <div className="text-xs text-white">
-                  {transaction.created_at ? new Date(transaction.created_at).toLocaleString('ja-JP') : ''}
+                  {transaction.created_at ? new Date(transaction.created_at).toLocaleString('ja-JP').replace(/\//g, '-') : ''}
                 </div>
                 <div className="text-base text-white truncate">
                   {getTransactionDescription(transaction)}
@@ -169,7 +169,7 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
                 {transaction.reservation && (
                   <div className="text-xs text-gray-400">
-                    予約: {new Date(transaction.reservation.scheduled_at).toLocaleDateString('ja-JP')}
+                    予約: {new Date(transaction.reservation.scheduled_at).toLocaleDateString('ja-JP').replace(/\//g, '-')}
                     {transaction.reservation.duration && ` (${transaction.reservation.duration}時間)`}
                   </div>
                 )}

@@ -103,7 +103,7 @@ const PaymentHistory: React.FC<PaymentHistoryProps> = ({ onBack, userType = 'gue
                   <div className="text-xs text-gray-600 mb-1">{payment.description}</div>
                 )}
                 <div className="text-xs text-gray-500">
-                  {payment.created_at ? new Date(payment.created_at).toLocaleString('ja-JP') : ''}
+                  {payment.created_at ? new Date(payment.created_at).toLocaleString('ja-JP').replace(/\//g, '-') : ''}
                 </div>
               </div>
             ))}

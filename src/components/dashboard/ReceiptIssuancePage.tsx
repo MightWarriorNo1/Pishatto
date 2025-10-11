@@ -244,7 +244,7 @@ const ReceiptIssuancePage: React.FC<ReceiptIssuancePageProps> = ({
                 )}
                 <div className="flex justify-between items-center">
                   <span className="opacity-80">日時:</span>
-                  <span className="font-medium">{new Date(transactionData.created_at).toLocaleString('ja-JP')}</span>
+                  <span className="font-medium">{new Date(transactionData.created_at).toLocaleString('ja-JP').replace(/\//g, '-')}</span>
                 </div>
               </div>
             </div>

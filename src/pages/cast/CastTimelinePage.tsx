@@ -291,7 +291,7 @@ const CastTimelinePage: React.FC = () => {
                                         {tweet.cast?.nickname || tweet.guest?.nickname || '匿名'}
                                     </span>
                                     <span className="text-gray-400 text-xs">
-                                        {new Date(tweet.created_at).toLocaleString('ja-JP')}
+                                        {new Date(tweet.created_at).toLocaleString('ja-JP').replace(/\//g, '-')}
                                     </span>
                                 </div>
                                 {/* Delete button - only show for current cast's own tweets */}

@@ -119,9 +119,9 @@ const ReservationTimerModal: React.FC<{
                 <button onClick={onClose} className="absolute top-3 right-3 text-white text-xl font-bold bg-secondary rounded-full w-8 h-8 flex items-center justify-center">×</button>
                 <div className="text-lg font-bold text-white mb-2">予約タイマー</div>
                 <div className="w-full text-center text-white space-y-2">
-                    {started && <div><b>開始時刻:</b> {started.toLocaleString('ja-JP')}</div>}
-                    {plannedEnd && <div><b>予定終了:</b> {plannedEnd.toLocaleString('ja-JP')}</div>}
-                    {!exitedInfo && <div><b>現在時刻:</b> {currentTime.toLocaleString('ja-JP')}</div>}
+                    {started && <div><b>開始時刻:</b> {started.toLocaleString('ja-JP').replace(/\//g, '-')}</div>}
+                    {plannedEnd && <div><b>予定終了:</b> {plannedEnd.toLocaleString('ja-JP').replace(/\//g, '-')}</div>}
+                    {!exitedInfo && <div><b>現在時刻:</b> {currentTime.toLocaleString('ja-JP').replace(/\//g, '-')}</div>}
                 </div>
                 {!exitedInfo && (
                     <button
@@ -138,7 +138,7 @@ const ReservationTimerModal: React.FC<{
                 )}
                 {exitedInfo && (
                     <div className="mt-4 w-full text-center">
-                        <div className="text-white font-bold">終了時刻: {exitedInfo.ended.toLocaleString('ja-JP')}</div>
+                        <div className="text-white font-bold">終了時刻: {exitedInfo.ended.toLocaleString('ja-JP').replace(/\//g, '-')}</div>
                         {exitedInfo.exceeded && (
                             <div className="text-red-200 font-bold">超過: {Math.floor(exitedInfo.exceeded/60000)}分{Math.floor((exitedInfo.exceeded%60000)/1000)}秒</div>
                         )}

@@ -75,7 +75,7 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
             day: '2-digit',
             hour: '2-digit',
             minute: '2-digit'
-        }).replace(/\//g, '年').replace(/:/g, ':').replace(/\s/, ' ');
+        }).replace(/\//g, '-');
     };
 
     const getTransactionDescription = (transaction: PointTransaction) => {

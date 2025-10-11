@@ -47,7 +47,7 @@ const CastGiftBoxPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             <div className="flex-1">
                                 <div className="flex items-center mb-1">
                                     <span className="font-bold text-base mr-2 text-white">{gift.sender}</span>
-                                    <span className="text-xs text-white/50">{gift.date ? new Date(gift.date).toLocaleString('ja-JP') : ''}</span>
+                                    <span className="text-xs text-white/50">{gift.date ? new Date(gift.date).toLocaleString('ja-JP').replace(/\//g, '-') : ''}</span>
                                 </div>
                                 <div className="text-sm text-white flex items-center">
                                     {gift.gift_icon} {gift.gift_name}
