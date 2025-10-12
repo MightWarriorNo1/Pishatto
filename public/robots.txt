@@ -1,3 +1,22 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+# Disallow private areas
+Disallow: /dashboard
+Disallow: /cast/dashboard
+Disallow: /cast/profile
+Disallow: /cast/grade-detail
+Disallow: /cast/*/message
+Disallow: /guest/*
+Disallow: /cast/*
+
+# Allow public pages
+Allow: /welcome
+Allow: /legal/terms
+Allow: /legal/privacy
+Allow: /legal/specified-commercial
+Allow: /receipt/*
+
+# Sitemap
+Sitemap: https://pishatto.jp/sitemap.xml

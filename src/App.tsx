@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { HelmetProvider } from 'react-helmet-async';
 import LandingPage from './pages/LandingPage';
 import RoleSelectPage from './pages/RoleSelectPage';
 import RegisterSteps from './components/auth/RegisterSteps';
@@ -39,13 +40,14 @@ const FaviconManager: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <UserProvider>
-        <CastProvider>
-          <NotificationSettingsProvider>
-            <ConciergeProvider>
-              <FaviconManager />
-                <Router>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <UserProvider>
+          <CastProvider>
+            <NotificationSettingsProvider>
+              <ConciergeProvider>
+                <FaviconManager />
+                  <Router>
                   <Routes>
                     <Route path="/welcome" element={<LandingPage />} />
                     <Route path="/" element={<RoleSelectPage />} />
@@ -86,12 +88,13 @@ const App: React.FC = () => {
                       </ProtectedRoute>
                     } />
                   </Routes>
-                </Router>
-            </ConciergeProvider>
-          </NotificationSettingsProvider>
-        </CastProvider>
-      </UserProvider>
-    </QueryClientProvider>
+                  </Router>
+              </ConciergeProvider>
+            </NotificationSettingsProvider>
+          </CastProvider>
+        </UserProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 };
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LandingPageSEO } from '../components/SEO/PageSEO';
 import { 
   Star, 
   Shield, 
@@ -34,7 +35,9 @@ const LandingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-primary">
+    <>
+      <LandingPageSEO />
+      <div className="min-h-screen bg-primary">
       {/* Hero Section */}
       <section className="relative min-h-screen bg-gradient-to-br from-primary via-primary/90 to-secondary text-white overflow-hidden">
         {/* Background Image with Overlay */}
@@ -882,7 +885,8 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 };
 
