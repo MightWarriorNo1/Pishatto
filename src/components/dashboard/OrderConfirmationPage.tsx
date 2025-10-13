@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import {  MapPin, Clock, User, CreditCard, CheckCircle, X } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import { createReservation, createChat } from '../../services/api';
+import InsufficientPointsModal from './InsufficientPointsModal';
 
 interface Cast {
   id: number;
@@ -168,6 +169,8 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [confirmedTime, setConfirmedTime] = useState(scheduledTime);
   const [updatedDuration, setUpdatedDuration] = useState(duration);
+  const [showInsufficientPointsModal, setShowInsufficientPointsModal] = useState(false);
+  const [requiredPointsForModal, setRequiredPointsForModal] = useState(0);
 
   const computeHours = (durationLabel: string): number => {
     if (!durationLabel) return 1;
@@ -237,11 +240,6 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
       return;
     }
 
-    // Check if user has sufficient points
-    if (!user.points || user.points < computedPoints) {
-      setErrorMessage(`ポイントが不足しています。必要ポイント: ${computedPoints.toLocaleString()}P、現在のポイント: ${Number(user.points || 0).toLocaleString()}P`);
-      return;
-    }
 
     setIsProcessing(true);
     setErrorMessage('');
@@ -292,9 +290,19 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
       await refreshUser();
 
       onConfirm(reservationId, chatId, confirmedTime, updatedDuration);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Order confirmation error:', error);
+      
+      // Handle specific backend errors
+      if (error.response?.status === 400 && error.response?.data?.message === 'Insufficient points') {
+        const requiredPoints = error.response.data.required_points;
+        const availablePoints = error.response.data.available_points;
+        const insufficientAmount = Number(requiredPoints) - Number(availablePoints);
+        setRequiredPointsForModal(insufficientAmount);
+        setErrorMessage(`ポイントが不足しています。必要ポイント: ${Number(requiredPoints).toLocaleString()}P、現在のポイント: ${Number(availablePoints).toLocaleString()}P`);
+      } else {
       setErrorMessage('注文の処理中にエラーが発生しました。もう一度お試しください。');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -449,7 +457,19 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
         <div className="px-4 py-2 animate-shake">
           <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 flex items-center gap-2">
             <CheckCircle size={18} className="text-red-400 animate-pulse" />
-            <p className="text-red-400 text-sm">{errorMessage}</p>
+            <div className="text-red-400 text-sm">
+              {errorMessage}
+              {errorMessage.includes('ポイントが不足') && (
+                <div className="mt-2">
+                  <button
+                    className="underline text-blue-500 hover:text-blue-600 transition-colors"
+                    onClick={() => setShowInsufficientPointsModal(true)}
+                  >
+                    簡単ポイント購入
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -480,6 +500,20 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
         onConfirm={handleTimeChange}
         currentTime={confirmedTime}
         currentDuration={updatedDuration}
+      />
+
+      {/* Insufficient Points Modal */}
+      <InsufficientPointsModal
+        isOpen={showInsufficientPointsModal}
+        onClose={() => setShowInsufficientPointsModal(false)}
+        requiredPoints={requiredPointsForModal}
+        onPointsPurchased={() => {
+          setShowInsufficientPointsModal(false);
+          // Clear error message
+          setErrorMessage('');
+          // Refresh user data to get updated points
+          refreshUser();
+        }}
       />
     </div>
   );

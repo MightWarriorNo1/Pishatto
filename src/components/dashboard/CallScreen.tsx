@@ -1413,17 +1413,10 @@ function OrderFinalConfirmationScreen({
     const nightTimeFee = isNightTime ? nightTimeFeePerHour * durationHours * (counts[0] + counts[1] + counts[2]) : 0;
     const totalCost = baseCost + nightTimeFee;
 
-    // Check if user has enough points
-    const hasEnoughPoints = user && user.points && user.points >= totalCost;
+    // Point validation is now handled by the backend
 
     const handleReservation = async () => {
         if (!user) return;
-
-        // Check if user has enough points
-        if (!hasEnoughPoints) {
-            setReservationMessage('ポイントが不足しているため、予約ができません。');
-            return;
-        }
 
         // Format date as MySQL DATETIME string
         const now = new Date();
@@ -1489,10 +1482,15 @@ function OrderFinalConfirmationScreen({
                 onConfirmed();
             }, 1200);
         } catch (error: any) {
-            if (error.response?.data?.message === 'Insufficient points') {
-                setReservationMessage(`ポイントが不足しています。必要: ${error.response.data.required_points?.toLocaleString()}P, 所持: ${error.response.data.available_points?.toLocaleString()}P`);
+            console.error('Reservation error:', error);
+            
+            // Handle specific backend errors
+            if (error.response?.status === 400 && error.response?.data?.message === 'Insufficient points') {
+                const requiredPoints = error.response.data.required_points;
+                const availablePoints = error.response.data.available_points;
+                setReservationMessage(`ポイントが不足しています。必要ポイント: ${Number(requiredPoints).toLocaleString()}P、現在のポイント: ${Number(availablePoints).toLocaleString()}P`);
             } else {
-                setReservationMessage('予約に失敗しました');
+                setReservationMessage('注文の処理中にエラーが発生しました。もう一度お試しください。');
             }
         }
     };
@@ -1611,30 +1609,25 @@ function OrderFinalConfirmationScreen({
             {/* Confirm button sticky */}
             <div className="max-w-md mx-auto px-4 pt-8 pb-8">
                 <button
-                    className={`w-full py-3 rounded-lg font-bold text-lg transition shadow-lg ${hasEnoughPoints
-                        ? 'bg-secondary text-white hover:bg-red-700'
-                        : 'bg-gray-600 text-gray-300 cursor-not-allowed'
-                        }`}
+                    className="w-full py-3 rounded-lg font-bold text-lg transition shadow-lg bg-secondary text-white hover:bg-red-700"
                     onClick={handleReservation}
-                    disabled={!hasEnoughPoints}
                 >
                     予約を確定する
                 </button>
-                {!hasEnoughPoints && (
-                    <div className="text-red-400 text-center mt-2 text-sm">
-                        ポイントが不足しているため、予約ができません。
-                        <button
-                            className="underline text-blue-500 hover:text-blue-600"
-                            onClick={() => setShowInsufficientPointsModal(true)}
-                        >
-                            簡単ポイント購入
-                        </button>
-                    </div>
-                )}
                 {reservationMessage && (
                     <div className={`text-center mt-2 text-sm ${reservationMessage.includes('不足') ? 'text-red-400' : 'text-white'
                         }`}>
                         {reservationMessage}
+                        {reservationMessage.includes('ポイントが不足') && (
+                            <div className="mt-2">
+                                <button
+                                    className="underline text-blue-500 hover:text-blue-600 transition-colors"
+                                    onClick={() => setShowInsufficientPointsModal(true)}
+                                >
+                                    簡単ポイント購入
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -1657,10 +1650,18 @@ function OrderFinalConfirmationScreen({
                         15000 * counts[1] * durationHours * 60 / 30 +
                         12000 * counts[2] * durationHours * 60 / 30;
                     const nightTimeFee = 0; // Simplified for modal - could add night time logic if needed
-                    return baseCost + nightTimeFee;
+                    const totalCost = baseCost + nightTimeFee;
+                    
+                    // Calculate insufficient amount (total cost - user's current points)
+                    const userCurrentPoints = user?.points || 0;
+                    const insufficientAmount = Math.max(0, totalCost - userCurrentPoints);
+                    
+                    return insufficientAmount;
                 })()}
                 onPointsPurchased={() => {
                     setShowInsufficientPointsModal(false);
+                    // Clear error message
+                    setReservationMessage('');
                     // Refresh user data to get updated points
                     refreshUser();
                 }}

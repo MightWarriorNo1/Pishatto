@@ -1150,8 +1150,28 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             {/* Proposal Modal */}
             {showProposalModal && selectedProposal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
+                    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw] relative">
+                        {/* Close button */}
+                        <button
+                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
+                            onClick={() => {
+                                setShowProposalModal(false);
+                                setSelectedProposal(null);
+                                setProposalMsgId(null);
+                                setProposalMessage(null);
+                                setProposalActionLoading(false);
+                                setProposalActionError(null);
+                                isApprovingRef.current = false;
+                            }}
+                        >
+                            ×
+                        </button>
                         <h2 className="font-bold text-lg mb-4 text-black">予約提案の確認</h2>
+                        {proposalActionError && (
+                            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                                {proposalActionError}
+                            </div>
+                        )}
                         <div className="mb-4 text-black">
                             <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-') : '未設定'}～</div>
                             <div>人数：{selectedProposal.people?.replace(/名$/, '') || '未設定'}人</div>
@@ -1159,7 +1179,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             <div>消費ポイント：{selectedProposal.totalPoints?.toLocaleString() || '0'}P</div>
                             <div>（延長：{selectedProposal.extensionPoints?.toLocaleString() || '0'}P / 15分）</div>
                         </div>
-                        {proposalActionError && <div className="text-red-500 mb-2">{proposalActionError}</div>}
                         <div className="flex gap-4 w-full flex-col sm:flex-row">
                             <button
                                 className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
@@ -1176,9 +1195,10 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                     }
 
                                     try {
+                                        // Clear any previous errors and set loading state
+                                        setProposalActionError(null);
                                         setProposalActionLoading(true);
                                         isApprovingRef.current = true;
-                                        setProposalActionError(null);
 
                                         // Prepare proposal data for acceptance
                                         const duration = parseInt(selectedProposal.duration?.toString() || '0', 10);
@@ -1231,15 +1251,30 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                         // The onReservationUpdate callback in useSessionManagement will automatically
                                         // update both reservationId and guestReservations, so no manual refresh needed here
 
-                                        // Close modal and reset state
+                                        // Success - close modal and reset state
+                                        setProposalActionLoading(false);
+                                        isApprovingRef.current = false;
                                         setShowProposalModal(false);
                                         setSelectedProposal(null);
                                         setProposalMsgId(null);
                                         setProposalMessage(null);
                                     } catch (e: any) {
                                         console.error('Error accepting proposal:', e);
-                                        setProposalActionError('提案の承認に失敗しました');
-                                    } finally {
+                                        
+                                        // Handle API errors and show user-friendly messages
+                                        let errorMessage = '提案の承認中にエラーが発生しました。';
+                                        
+                                        if (e?.response?.data?.error === 'Insufficient guest points') {
+                                            errorMessage = 'ゲストのポイントが不足しています。';
+                                        } else if (e?.response?.data?.message) {
+                                            errorMessage = e.response.data.message;
+                                        } else if (e?.message) {
+                                            errorMessage = e.message;
+                                        }
+                                        
+                                        setProposalActionError(errorMessage);
+                                        
+                                        // Reset loading state but keep modal open for error display
                                         setProposalActionLoading(false);
                                         isApprovingRef.current = false;
                                     }
@@ -1282,7 +1317,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                     setProposalMessage(null);
                                 }}
                             >
-                                キャンセル
+                                却下
                             </button>
                         </div>
                     </div>

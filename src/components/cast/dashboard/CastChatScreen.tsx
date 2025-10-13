@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { ChevronLeft, Image, Send } from 'lucide-react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -45,6 +45,54 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
     const [showProposalModal, setShowProposalModal] = useState(false);
     const [selectedProposal, setSelectedProposal] = useState<any>(null);
     const [proposalMsgId, setProposalMsgId] = useState<number | null>(null);
+    const [rejectedProposals, setRejectedProposals] = useState<number[]>([]);
+    const [approvedProposals, setApprovedProposals] = useState<number[]>([]);
+
+    // Build accepted proposal set from DB marker messages
+    const acceptedFromDb = useMemo(() => {
+        const set = new Set<number>();
+        (messages || []).forEach((m: any) => {
+            try {
+                const parsed = typeof m.message === 'string' ? JSON.parse(m.message) : null;
+                if (parsed && parsed.type === 'proposal_accept' && typeof parsed.proposalMsgId === 'number') {
+                    set.add(parsed.proposalMsgId);
+                }
+            } catch (_) {}
+        });
+        return set;
+    }, [messages]);
+
+    // Merge DB acceptance into local state so it persists after refresh
+    useEffect(() => {
+        if (acceptedFromDb.size === 0) return;
+        setApprovedProposals(prev => {
+            const merged = Array.from(new Set([...(prev || []), ...Array.from(acceptedFromDb)]));
+            return merged;
+        });
+    }, [acceptedFromDb]);
+
+    // Build denied proposal set from DB marker messages
+    const deniedFromDb = useMemo(() => {
+        const set = new Set<number>();
+        (messages || []).forEach((m: any) => {
+            try {
+                const parsed = typeof m.message === 'string' ? JSON.parse(m.message) : null;
+                if (parsed && parsed.type === 'proposal_reject' && typeof parsed.proposalMsgId === 'number') {
+                    set.add(parsed.proposalMsgId);
+                }
+            } catch (_) {}
+        });
+        return set;
+    }, [messages]);
+
+    // Merge DB denial into local state so it persists after refresh
+    useEffect(() => {
+        if (deniedFromDb.size === 0) return;
+        setRejectedProposals(prev => {
+            const merged = Array.from(new Set([...(prev || []), ...Array.from(deniedFromDb)]));
+            return merged;
+        });
+    }, [deniedFromDb]);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -235,7 +283,9 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                         
                         if (isProposalMessage && proposal) {
                             // This is a proposal - always display on left side for cast
-                            const isAccepted = reservationData && reservationData.scheduled_at === proposal.date;
+                            const isRejected = rejectedProposals.includes(msg.id);
+                            const isApproved = approvedProposals.includes(msg.id);
+                            const isProcessed = isRejected || isApproved;
                             
                             return (
                                 <React.Fragment key={msg.id || idx}>
@@ -248,8 +298,8 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                                     )}
                                     <div className="flex justify-start mb-4">{/* Force proposals to left side for cast */}
                                         <div 
-                                            className={`bg-orange-600 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative ${isAccepted ? 'opacity-60' : 'cursor-pointer hover:bg-orange-700'}`}
-                                            onClick={!isAccepted ? () => {
+                                            className={`bg-orange-600 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative ${isProcessed ? 'opacity-60' : 'cursor-pointer hover:bg-orange-700'}`}
+                                            onClick={!isProcessed ? () => {
                                                 setSelectedProposal(proposal);
                                                 setProposalMsgId(msg.id);
                                                 setShowProposalModal(true);
@@ -260,8 +310,11 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                                             <div>時間：{proposal.duration}</div>
                                             <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
                                             <div>（延長：{proposal.extensionPoints?.toLocaleString()}P / 15分）</div>
-                                            {isAccepted && (
+                                            {isApproved && (
                                                 <span className="absolute top-2 right-2 bg-green-600 text-white text-xs px-2 py-1 rounded">承認済み</span>
+                                            )}
+                                            {isRejected && (
+                                                <span className="absolute top-2 right-2 bg-red-600 text-white text-xs px-2 py-1 rounded">却下済み</span>
                                             )}
                                         </div>
                                     </div>
@@ -345,6 +398,21 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                                             console.error('Failed to send confirmation messages:', error);
                                         }
                                         
+                                        // Send proposal_accept marker message
+                                        if (proposalMsgId) {
+                                            try {
+                                                await sendMessage({
+                                                    chat_id: chatId,
+                                                    sender_cast_id: castId,
+                                                    message: JSON.stringify({
+                                                        type: 'proposal_accept',
+                                                        proposalMsgId: proposalMsgId
+                                                    })
+                                                });
+                                            } catch (error) {
+                                                console.error('Failed to send proposal_accept marker:', error);
+                                            }
+                                        }
                                         setShowProposalModal(false);
                                         setSelectedProposal(null);
                                         setProposalMsgId(null);
@@ -355,12 +423,27 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                             >承認</button>
                             <button
                                 className="px-4 py-2 bg-gray-400 text-white rounded font-bold"
-                                onClick={() => { 
+                                onClick={async () => { 
+                                    // Send proposal_reject marker message
+                                    if (proposalMsgId) {
+                                        try {
+                                            await sendMessage({
+                                                chat_id: chatId,
+                                                sender_cast_id: castId,
+                                                message: JSON.stringify({
+                                                    type: 'proposal_reject',
+                                                    proposalMsgId: proposalMsgId
+                                                })
+                                            });
+                                        } catch (error) {
+                                            console.error('Failed to send proposal_reject marker:', error);
+                                        }
+                                    }
                                     setShowProposalModal(false); 
                                     setSelectedProposal(null); 
                                     setProposalMsgId(null); 
                                 }}
-                            >キャンセル</button>
+                            >却下</button>
                         </div>
                     </div>
                 </div>

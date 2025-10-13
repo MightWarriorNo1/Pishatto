@@ -87,8 +87,7 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     // Helper function to get localStorage key for button usage
     const getButtonUsageStorageKey = (chatId: number) => `button_usage_${chatId}`;
 
-    // Helper function to get localStorage key for clicked proposals
-    const getClickedProposalsStorageKey = (chatId: number) => `clicked_proposals_${chatId}`;
+    // Note: Clicked proposals are now managed by database marker messages
 const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_${chatId}`;
 
     // Proposal modal state
@@ -96,10 +95,11 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
     const [selectedProposalMsgId, setSelectedProposalMsgId] = useState<number | null>(null);
     const [proposalModalLoading, setProposalModalLoading] = useState(false);
+    const [proposalModalError, setProposalModalError] = useState<string | null>(null);
     const isApprovingRef = useRef(false);
 
     // Local state to track accepted proposals for immediate UI feedback
-    const [acceptedProposals, setAcceptedProposals] = useState<Set<string>>(() => {
+    const [acceptedProposals, setAcceptedProposals] = useState<Set<number>>(() => {
         if (!message.id) return new Set();
         
         const acceptedProposalsKey = getAcceptedProposalsStorageKey(Number(message.id));
@@ -122,28 +122,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     });
     const [deniedProposalMsgIds, setDeniedProposalMsgIds] = useState<Set<number>>(new Set());
 
-    // New state to track clicked proposals - persisted in localStorage
-    const [clickedProposals, setClickedProposals] = useState<Set<string>>(() => {
-        if (!message.id) return new Set();
-        
-        const clickedProposalsKey = getClickedProposalsStorageKey(Number(message.id));
-        const savedClickedProposals = localStorage.getItem(clickedProposalsKey);
-        if (savedClickedProposals) {
-            try {
-                const parsed = JSON.parse(savedClickedProposals);
-                // console.log('Clicked proposals initialized from localStorage:', {
-                //     chatId: message.id,
-                //     storageKey: clickedProposalsKey,
-                //     loadedProposals: parsed
-                // });
-                return new Set(parsed);
-            } catch (error) {
-                console.error('Failed to parse clicked proposals from localStorage during init:', error);
-                return new Set();
-            }
-        }
-        return new Set();
-    });
+    // Note: Clicked proposals are now managed by database marker messages
+    // No need for local state tracking
 
     // New state to track button usage - persisted in localStorage
     const [buttonUsage, setButtonUsage] = useState<{
@@ -203,6 +183,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     // New: ref for input bar and popover for click outside
     const inputBarRef = useRef<HTMLDivElement>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
+    const hasInvalidatedRef = useRef(false);
     const { castId } = useCast() as any;
     const queryClient = useQueryClient();
 
@@ -239,24 +220,24 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
 
     // Build accepted proposal set from DB marker messages
     const acceptedFromDb = useMemo(() => {
-        const set = new Set<string>();
+        const set = new Set<number>();
         (messages || []).forEach((msg: any) => {
             try {
                 const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
-                if (parsed && parsed.type === 'proposal_accept' && parsed.proposalKey) {
-                    set.add(String(parsed.proposalKey));
+                if (parsed && parsed.type === 'proposal_accept' && typeof parsed.proposalMsgId === 'number') {
+                    set.add(parsed.proposalMsgId);
                 }
             } catch (_) {}
         });
         return set;
     }, [messages]);
 
-    // Merge DB-derived acceptance into local state so it persists after refresh
+    // Merge DB acceptance into local state so it persists after refresh
     useEffect(() => {
         if (acceptedFromDb.size === 0) return;
         setAcceptedProposals(prev => {
             const merged = new Set(prev);
-            acceptedFromDb.forEach(k => merged.add(k));
+            acceptedFromDb.forEach(id => merged.add(id));
             return merged;
         });
     }, [acceptedFromDb]);
@@ -282,7 +263,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             if (parsed && parsed.type === 'proposal') shouldRefreshReservations = true;
             if (parsed && (parsed.type === 'proposal_accept' || parsed.type === 'proposal_reject')) shouldRefreshReservations = true;
         } catch (_) {}
-        if (shouldRefreshReservations && chatInfo?.guest?.id) {
+        if (shouldRefreshReservations && chatInfo?.guest?.id && !hasInvalidatedRef.current) {
+            hasInvalidatedRef.current = true;
             queryClient.invalidateQueries({
                 queryKey: queryKeys.cast.guestReservations(chatInfo.guest.id)
             });
@@ -290,8 +272,9 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     }, castId, 'cast');
 
     // Refresh guest reservations when proposals are present to ensure acceptance status is up-to-date
+    // Use a ref to prevent multiple invalidations
     useEffect(() => {
-        if (!chatInfo?.guest?.id || !castId) return;
+        if (!chatInfo?.guest?.id || !castId || hasInvalidatedRef.current) return;
         
         // Check if there are any proposal messages
         const hasProposals = messages.some((msg: any) => {
@@ -304,29 +287,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         });
 
         if (hasProposals) {
-            // Invalidate guest reservations query to get fresh data
-            queryClient.invalidateQueries({
-                queryKey: queryKeys.cast.guestReservations(chatInfo.guest.id)
-            });
-        }
-    }, [chatInfo?.guest?.id, castId, messages, queryClient]);
-
-    // Periodic refresh of guest reservations when proposals are present
-    useEffect(() => {
-        if (!chatInfo?.guest?.id || !castId) return;
-        
-        // Check if there are any proposal messages
-        const hasProposals = messages.some((msg: any) => {
-            try {
-                const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
-                return parsed && parsed.type === 'proposal';
-            } catch (e) {
-                return false;
-            }
-        });
-
-        if (hasProposals) {
-            // Only refresh once when proposals are detected, not continuously
+            // Only invalidate once when proposals are first detected
+            hasInvalidatedRef.current = true;
             queryClient.invalidateQueries({
                 queryKey: queryKeys.cast.guestReservations(chatInfo.guest.id)
             });
@@ -430,23 +392,16 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
                     if (parsed && parsed.type === 'proposal') {
                         const proposalKey = makeProposalKey(parsed.date, parsed.duration);
-                        const isAccepted = acceptedProposals.has(proposalKey);
-                        const isClicked = clickedProposals.has(proposalKey);
-                        
-                        if (isAccepted && !isClicked) {
-                            setClickedProposals(prev => {
-                                const newSet = new Set(prev);
-                                newSet.add(proposalKey);
-                                return newSet;
-                            });
-                        }
+                        const isAccepted = acceptedProposals.has(Number(msg.id));
+                        // Note: Clicked proposals are now managed by database marker messages
+                        // No need for local state management
                     }
                 } catch (e) {
                     // Ignore parsing errors
                 }
             });
         }
-    }, [messages, acceptedProposals, clickedProposals]);
+    }, [messages, acceptedProposals]);
 
     // Measure input bar height (including dynamic content) and update on resize/state changes
     useEffect(() => {
@@ -613,19 +568,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
         }
     }, [buttonUsage, message.id]);
 
-    // Save clicked proposals to localStorage whenever they change
-    useEffect(() => {
-        if (message.id) {
-            const storageKey = getClickedProposalsStorageKey(Number(message.id));
-            localStorage.setItem(storageKey, JSON.stringify(Array.from(clickedProposals)));
-            // console.log('Clicked proposals saved to localStorage:', {
-            //     chatId: message.id,
-            //     storageKey,
-            //     clickedProposals: Array.from(clickedProposals),
-            //     timestamp: new Date().toISOString()
-            // });
-        }
-    }, [clickedProposals, message.id]);
+    // Note: Clicked proposals are now managed by database marker messages
+    // No need for localStorage save logic
 
     // Save accepted proposals to localStorage whenever they change
     useEffect(() => {
@@ -653,18 +597,14 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                 const storageKey = getButtonUsageStorageKey(Number(message.id));
                 localStorage.setItem(storageKey, JSON.stringify(buttonUsage));
             }
-            // Save clicked proposals before unmounting
-            if (message.id) {
-                const storageKey = getClickedProposalsStorageKey(Number(message.id));
-                localStorage.setItem(storageKey, JSON.stringify(Array.from(clickedProposals)));
-            }
+            // Note: Clicked proposals are now managed by database marker messages
             // Save accepted proposals before unmounting
             if (message.id) {
                 const storageKey = getAcceptedProposalsStorageKey(Number(message.id));
                 localStorage.setItem(storageKey, JSON.stringify(Array.from(acceptedProposals)));
             }
         };
-    }, [message.id, proposalSessions, buttonUsage, clickedProposals, acceptedProposals]);
+    }, [message.id, proposalSessions, buttonUsage, acceptedProposals]);
 
     // Session management functions for proposals
     const startProposalSession = async (proposal: Proposal) => {
@@ -720,12 +660,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     const handleProposalClick = async (proposal: Proposal, messageId: string) => {
         const proposalKey = makeProposalKey(proposal.date, proposal.duration);
         
-        // Mark proposal as clicked
-        setClickedProposals(prev => {
-            const newSet = new Set(prev);
-            newSet.add(proposalKey);
-            return newSet;
-        });
+        // Note: Clicked proposals are now managed by database marker messages
 
         try {
             // Try to find existing reservation to update
@@ -851,12 +786,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                 return newMap;
             });
 
-            // Remove from accepted proposals
-            setAcceptedProposals(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(proposalKey);
-                return newSet;
-            });
+            // Note: Accepted proposals are now managed by database marker messages
+            // No need to manually remove from local state
 
         } catch (error) {
             // console.error('Failed to exit proposal session:', error);
@@ -1526,7 +1457,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                 className="overflow-y-auto px-4 pt-4 scrollbar-hidden pb-32"
                 style={{
                     marginTop: chatInfo?.reservation_id ? '14rem' : '4rem',
-                    height: `calc(100vh - 8rem - ${inputBarHeight}px)`,
+                    height: `100%`,
                 }}
             >
 
@@ -2167,21 +2098,12 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         // Create a non-null proposal reference for use in the JSX
                         const currentProposal = { ...proposal, type: proposal.type || 'proposal' };
 
-                        // Only rely on explicit local acceptance to avoid false positives
-                        const proposalKey = makeProposalKey(currentProposal.date, currentProposal.duration);
-                        const isAccepted = acceptedProposals.has(proposalKey);
+                        // Check proposal state using database marker messages
+                        const isAccepted = acceptedProposals.has(Number(msg.id));
                         const isDenied = deniedProposalMsgIds.has(Number(msg.id));
                         
-                        // Check if proposal has been clicked by cast member
-                        const isClicked = clickedProposals.has(proposalKey);
-                        
-                        // // Debug logging
-                        // console.log('Proposal render check:', {
-                        //     proposalKey,
-                        //     isClicked,
-                        //     clickedProposals: Array.from(clickedProposals),
-                        //     chatId: message.id
-                        // });
+                        // Note: Clicked proposals are now managed by database marker messages
+                        // No need for local state checking
                         
                         // Check if this proposal was sent by the current cast member
                         const isSentByCast = castId && String(msg.sender_cast_id) === String(castId);
@@ -2201,25 +2123,17 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                 )}
                                 <div className={`${isSentByCast ? 'flex justify-end' : 'flex justify-start'} mb-4`}>
                                     <div
-                                        className={`${isClicked ? 'bg-blue-600 shadow-lg shadow-blue-500/30' : 'bg-orange-500'} text-white rounded-lg px-4 py-3 max-w-[85%] md:max-w-[70%] text-sm shadow-md relative transition-all duration-300 `}
+                                        className={`bg-orange-600 text-white rounded-lg px-4 py-3 max-w-[85%] md:max-w-[70%] text-sm shadow-md relative transition-all duration-300 ${isSentByCast || isAccepted || isDenied ? 'opacity-50 cursor-default' : 'cursor-pointer hover:bg-orange-600'}`}
                                         onClick={() => {
-                                            // Non-clickable for cast-sent proposals; guest can open modal
+                                            // Non-clickable for cast-sent proposals
                                             if (isSentByCast) return;
-                                            // Prevent re-clicking already clicked proposals
-                                            if (isClicked) return;
-                                            
-                                            // Mark proposal as clicked
-                                            setClickedProposals(prev => {
-                                                const newSet = new Set(prev);
-                                                newSet.add(proposalKey);
-                                                return newSet;
-                                            });
+                                            // Prevent re-clicking already processed proposals
+                                            if (isAccepted || isDenied) return;
                                             
                                             setSelectedProposal(currentProposal);
                                             setSelectedProposalMsgId(Number(msg.id));
                                             setShowProposalModal(true);
                                         }}
-                                        style={isSentByCast || isClicked ? { cursor: 'default' } : { cursor: 'pointer' }}
                                     >
                                         {/* Do not show clicked indicator on proposal tap */}
                                         <div>日程：{currentProposal.date ? new Date(currentProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-') : ''}～</div>
@@ -2686,8 +2600,27 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             {/* Proposal Modal */}
             {showProposalModal && selectedProposal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-                    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw]">
+                    <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center min-w-[320px] max-w-[90vw] relative">
+                        {/* Close button */}
+                        <button
+                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
+                            onClick={() => {
+                                setShowProposalModal(false);
+                                setSelectedProposal(null);
+                                setSelectedProposalMsgId(null);
+                                setProposalModalLoading(false);
+                                setProposalModalError(null);
+                                isApprovingRef.current = false;
+                            }}
+                        >
+                            ×
+                        </button>
                         <h2 className="font-bold text-lg mb-4 text-black">予約提案の確認</h2>
+                        {proposalModalError && (
+                            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+                                {proposalModalError}
+                            </div>
+                        )}
                         <div className="mb-4 text-black">
                             <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-') : '未設定'}～</div>
                             <div>人数：{selectedProposal.people?.replace(/名$/, '') || '未設定'}人</div>
@@ -2713,7 +2646,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         return;
                                     }
 
-                                    // Set loading state immediately to prevent multiple clicks
+                                    // Clear any previous errors and set loading state
+                                    setProposalModalError(null);
                                     setProposalModalLoading(true);
                                     isApprovingRef.current = true;
                                     
@@ -2756,6 +2690,22 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         
                                         console.log('MessagePage: ProposalService.acceptProposal completed, result:', newReservation);
                                         
+                                        // Send proposal_accept marker message
+                                            if (selectedProposalMsgId) {
+                                            try {
+                                                await sendMessageMutation.mutateAsync({
+                                                    chat_id: Number(message.id),
+                                                    sender_cast_id: castId,
+                                                    message: JSON.stringify({
+                                                        type: 'proposal_accept',
+                                                        proposalMsgId: selectedProposalMsgId
+                                                    })
+                                                });
+                                            } catch (error) {
+                                                console.error('Failed to send proposal_accept marker:', error);
+                                            }
+                                        }
+                                        
                                         // Send confirmation messages
                                         try {
                                             await ProposalService.sendConfirmationMessages(Number(message.id), {
@@ -2771,30 +2721,44 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         // Add to local accepted state for immediate UI feedback
                                         const proposalKey = makeProposalKey(selectedProposal.date, duration);
                                         
-                                        setAcceptedProposals(prev => {
-                                            const newSet = new Set(Array.from(prev));
-                                            newSet.add(proposalKey);
-                                            return newSet;
-                                        });
+                                        if (selectedProposalMsgId) {
+                                            setAcceptedProposals(prev => {
+                                                const newSet = new Set(prev);
+                                                newSet.add(selectedProposalMsgId);
+                                                return newSet;
+                                            });
+                                        }
                                         
-                                        // Also mark as clicked to prevent re-clicking after refresh
-                                        setClickedProposals(prev => {
-                                            const newSet = new Set(prev);
-                                            newSet.add(proposalKey);
-                                            return newSet;
-                                        });
+                                        // Note: Clicked proposals are now managed by database marker messages
 
                                         // Note: Confirmation messages are handled by ProposalService
-
-                                    } catch (e: any) {
-                                        console.error('Error accepting proposal:', e);
-                                    } finally {
-                                        // Close modal and reset state
+                                        
+                                        // Success - close modal and reset state
                                         setProposalModalLoading(false);
                                         isApprovingRef.current = false;
                                         setShowProposalModal(false);
                                         setSelectedProposal(null);
                                         setSelectedProposalMsgId(null);
+
+                                    } catch (e: any) {
+                                        console.error('Error accepting proposal:', e);
+                                        
+                                        // Handle API errors and show user-friendly messages
+                                        let errorMessage = '提案の承認中にエラーが発生しました。';
+                                        
+                                        if (e?.response?.data?.error === 'Insufficient guest points') {
+                                            errorMessage = 'ゲストのポイントが不足しています。';
+                                        } else if (e?.response?.data?.message) {
+                                            errorMessage = e.response.data.message;
+                                        } else if (e?.message) {
+                                            errorMessage = e.message;
+                                        }
+                                        
+                                        setProposalModalError(errorMessage);
+                                        
+                                        // Reset loading state but keep modal open for error display
+                                        setProposalModalLoading(false);
+                                        isApprovingRef.current = false;
                                     }
                                 }}
                             >{proposalModalLoading ? (
@@ -2819,7 +2783,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                 text: 'スケジュール提案は却下されました。別日や別時間帯で再調整をお願いします。'
                                             })
                                         });
+                                        
+                                        // Send proposal_reject marker message
                                         if (selectedProposalMsgId) {
+                                            try {
                                             await sendMessageMutation.mutateAsync({
                                                 chat_id: Number(message.id),
                                                 sender_cast_id: castId,
@@ -2828,6 +2795,9 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                                     proposalMsgId: selectedProposalMsgId
                                                 })
                                             });
+                                            } catch (error) {
+                                                console.error('Failed to send proposal_reject marker:', error);
+                                            }
                                         }
                                     } catch (e) {
                                         console.error('Failed to send rejection system messages:', e);
@@ -2843,7 +2813,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white inline-block mr-2"></div>
                                     処理中...
                                 </>
-                            ) : 'キャンセル'}</button>
+                            ) : '却下'}</button>
                         </div>
                     </div>
                 </div>
@@ -3063,18 +3033,10 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                             </div>
                         ) : (
                             filteredMessages.map((message: Message) => {
-                                // Check if this chat has any clicked proposals
-                                const hasClickedProposals = (() => {
-                                    try {
-                                        const clickedProposalsKey = `clicked_proposals_${message.id}`;
-                                        const saved = localStorage.getItem(clickedProposalsKey);
-                                        if (saved) {
-                                            const parsed = JSON.parse(saved);
-                                            return parsed.length > 0;
-                                        }
-                                    } catch (error) {
-                                        console.error('Failed to check clicked proposals for chat:', message.id, error);
-                                    }
+                                // Check if this chat has any processed proposals using database markers
+                                const hasProcessedProposals = (() => {
+                                    // This would need to be implemented by checking the messages for proposal_accept/proposal_reject markers
+                                    // For now, we'll keep it simple and not show any indicator
                                     return false;
                                 })();
 
@@ -3093,7 +3055,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                                                     <span className="font-bold text-white text-base mr-2">
                                                         {message.is_group_chat ? message.group_name || 'Group Chat' : message.name}
                                                     </span>
-                                                    {hasClickedProposals && (
+                                                    {hasProcessedProposals && (
                                                         <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full mr-2" title="提案確認済み">
                                                             📋
                                                         </span>
