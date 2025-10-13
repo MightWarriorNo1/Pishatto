@@ -92,7 +92,7 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
                 </button>
             </div>
             <div className="w-full h-48 bg-primary flex items-center justify-center border-b border-secondary">
-                <img src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'} alt="guest_detail" className="object-contain h-full mx-auto" />
+                <img src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/1.jpg'} alt="guest_detail" className="object-contain h-full mx-auto" />
             </div>
             {/* Badge */}
             <div className="px-4 mt-2">
@@ -100,7 +100,7 @@ const GuestDetailPage: React.FC<GuestDetailPageProps> = ({ onBack, guest }) => {
             </div>
             {/* Profile card */}
             <div className="flex items-center px-4 py-2 mt-2 bg-primary rounded shadow border border-secondary">
-                <img src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'} alt="guest_thumb" className="w-10 h-10 rounded mr-2 border-2 border-secondary" />
+                <img src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/1.jpg'} alt="guest_thumb" className="w-10 h-10 rounded mr-2 border-2 border-secondary" />
                 <div>
                     <div className="font-bold text-sm text-white">{profile ? profile.nickname : guest.nickname}</div>
                     <div className="text-xs text-white">{profile ? profile.occupation : ''}</div>
@@ -351,7 +351,7 @@ interface RankingItem {
 
 // Utility function to get the first available avatar from comma-separated string
 const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
-    const defaultAvatar = '/assets/avatar/female.png';
+    const defaultAvatar = '/assets/avatar/1.jpg';
 
     if (!avatarString) {
         return defaultAvatar;
@@ -760,7 +760,7 @@ const RepeatGuestsModal: React.FC<RepeatGuestsModalProps> = ({ isOpen, onClose, 
                                     <div className="relative overflow-hidden">
                                         <div className="w-full h-28 bg-gradient-to-br from-secondary/20 to-primary/20 flex items-center justify-center">
                                             <img
-                                                src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'}
+                                                src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/1.jpg'}
                                                 alt={guest.nickname}
                                                 className="w-20 h-20 object-cover rounded-full border-3 border-white/30 group-hover:border-secondary/50 transition-all duration-300 group-hover:scale-110"
                                             />
@@ -997,7 +997,7 @@ const CastSearchPage: React.FC = () => {
     const filteredRepeatGuestsForDisplay: DisplayUser[] = useMemo(() => {
         return filteredRepeatGuests.map((g) => ({
             id: g.id,
-            avatar: g.avatar ? (g.avatar.startsWith('http') ? g.avatar : `${API_BASE_URL}/${g.avatar}`) : '/assets/avatar/female.png',
+            avatar: g.avatar ? (g.avatar.startsWith('http') ? g.avatar : `${API_BASE_URL}/${g.avatar}`) : '/assets/avatar/1.jpg',
             displayName: g.nickname,
             age: g.birth_year ? new Date().getFullYear() - g.birth_year : null,
             region: g.residence,
@@ -1059,7 +1059,7 @@ const CastSearchPage: React.FC = () => {
                     >
                         <div className="w-20 h-20 mb-2 relative">
                             <img
-                                src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/female.png'}
+                                src={guest.avatar ? (guest.avatar.startsWith('http') ? guest.avatar : `${API_BASE_URL}/${guest.avatar}`) : '/assets/avatar/1.jpg'}
                                 alt={guest.nickname}
                                 className="w-full h-full object-cover rounded-lg border-2 border-secondary"
                             />
