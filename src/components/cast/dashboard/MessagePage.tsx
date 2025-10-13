@@ -22,6 +22,7 @@ import CastConciergeDetailPage from './CastConciergeDetailPage';
 import CastGroupChatScreen from './CastGroupChatScreen';
 import Spinner from '../../ui/Spinner';
 import { useSessionManagement } from '../../../hooks/useSessionManagement';
+import ProposalService from '../../../services/ProposalService';
 import { startReservation, stopReservation, updateReservation, getChatById, completeSession, completeReservation, getCastGrade, getCastProfileById, getReservationById, getGuestProfileById } from '../../../services/api';
 import { useStartReservation } from '../../../hooks/useQueries';
 
@@ -95,6 +96,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
     const [selectedProposalMsgId, setSelectedProposalMsgId] = useState<number | null>(null);
     const [proposalModalLoading, setProposalModalLoading] = useState(false);
+    const isApprovingRef = useRef(false);
 
     // Local state to track accepted proposals for immediate UI feedback
     const [acceptedProposals, setAcceptedProposals] = useState<Set<string>>(() => {
@@ -1190,6 +1192,9 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                 </div>
             </div>
 
+            {/* Debug: Log chatInfo to see if reservation_id is available */}
+            {console.log('MessagePage: chatInfo debug', { chatInfo, hasReservationId: !!chatInfo?.reservation_id })}
+
             {/* Fixed Timer - Only visible when chat has reservation_id */}
             {chatInfo?.reservation_id && (
             <div className="fixed left-0 right-0 top-16 mx-auto w-full max-w-md z-20 px-4 py-2 bg-primary border-b border-secondary">
@@ -1212,20 +1217,22 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                             <span className="text-white text-xs mb-1">予約時間</span>
                             <div className="text-lg font-mono font-bold text-blue-400">
                                 {(() => {
-                                    // Find the matching reservation to get the duration
-                                    const today = new Date().toISOString().split('T')[0];
+                                    // Find the matching reservation by reservation_id
                                     const matchingReservation = guestReservations.find((res: any) => {
-                                        if (!res.scheduled_at || !chatInfo?.guest?.id) return false;
-                                        const proposalDate = dayjs(today);
-                                        const reservationDate = dayjs(res.scheduled_at);
-                                        return res.guest_id === chatInfo.guest.id &&
-                                            reservationDate.isSame(proposalDate, 'day');
+                                        return res.id === chatInfo?.reservation_id;
                                     });
+                                    
+                                    console.log('MessagePage Timer: chatInfo.reservation_id:', chatInfo?.reservation_id);
+                                    console.log('MessagePage Timer: guestReservations:', guestReservations);
+                                    console.log('MessagePage Timer: matchingReservation:', matchingReservation);
                                     
                                     // Use actual reservation duration or default to 1 hour
                                     // Convert hours to seconds for formatElapsedTime
                                     const durationInHours = matchingReservation?.duration || 1;
                                     const durationInSeconds = Math.round(durationInHours * 3600);
+                                    
+                                    console.log('MessagePage Timer: durationInHours:', durationInHours);
+                                    console.log('MessagePage Timer: durationInSeconds:', durationInSeconds);
                                     
                                     return formatElapsedTime(durationInSeconds);
                                 })()}
@@ -1383,9 +1390,22 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             const castProfile = await getCastProfileById(castId);
                                             if (!castProfile || typeof castProfile.cast.grade_points !== 'number') throw new Error('Invalid cast grade');
                                             const pointsPerMinute = castProfile.cast.grade_points / 30;
-                                            // Match backend calculation: use decimal minutes then convert to int
                                             const elapsedMinutes = finalElapsedTime / 60;
+                                            
+                                            // Get scheduled duration from reservation
+                                            const duration = typeof matchingReservation.duration === 'number' ? matchingReservation.duration : 0;
+                                            const scheduledMinutes = duration * 60; // Convert hours to minutes
+                                            
+                                            // NEW LOGIC: Match backend calculation
+                                            // If tracked time <= scheduled time: use full reserved points
+                                            // If tracked time > scheduled time: calculate based on actual time
+                                            if (elapsedMinutes <= scheduledMinutes) {
+                                                // Within scheduled time - use full reserved points
+                                                totalPoints = pendingAmount;
+                                            } else {
+                                                // Exceeded scheduled time - calculate based on actual time
                                             totalPoints = Math.max(1, Math.floor(pointsPerMinute * elapsedMinutes));
+                                            }
                                             
                                             // Calculate exceeded points and shortfall
                                             // Fetch the guest's current points BEFORE completing the reservation
@@ -1488,40 +1508,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         }
                                     }
                                     
-                                    // Send dismiss message to chat (both guest and cast)
-                                    try {
-                                        // Message for guest
-                                        const guestMessage = sessionSummary.length > 0 
-                                            ? `キャストが解散しました。お疲れ様でした！\n\n📊 セッション詳細:\n⏱️ 利用時間: ${sessionSummary[0].duration}\n💰 獲得ポイント: ${sessionSummary[0].totalPoints}pt\n${reservationInfo ? `📅 予約ID: ${reservationInfo.id}` : ''}`
-                                            : 'キャストが解散しました。お疲れ様でした！';
-                                        
-                                        await sendMessageMutation.mutateAsync({
-                                            chat_id: Number(message.id),
-                                            sender_cast_id: castId,
-                                            message: JSON.stringify({
-                                                type: 'system',
-                                                target: 'guest',
-                                                text: guestMessage
-                                            })
-                                        });
-                                        
-                                        // Message for cast
-                                        const castMessage = sessionSummary.length > 0
-                                            ? `解散しました。お疲れ様でした！\n\n📊 セッション詳細:\n⏱️ 利用時間: ${sessionSummary[0].duration}\n💰 獲得ポイント: ${sessionSummary[0].totalPoints}pt (キャスト: ${sessionSummary[0].castPoints}pt, ゲスト: ${sessionSummary[0].guestPoints}pt)\n${reservationInfo ? `📅 予約ID: ${reservationInfo.id}` : ''}`
-                                            : '解散しました。お疲れ様でした！';
-                                        
-                                        await sendMessageMutation.mutateAsync({
-                                            chat_id: Number(message.id),
-                                            sender_cast_id: castId,
-                                            message: JSON.stringify({
-                                                type: 'system',
-                                                target: 'cast',
-                                                text: castMessage
-                                            })
-                                        });
-                                    } catch (error) {
-                                        console.error('Failed to send dismiss message:', error);
-                                    }
+                                    // Session completion messages are now sent by the backend
+                                    // No need to send frontend messages
                                 }}
                                 disabled={(() => { let active = false; proposalSessions.forEach(s => { if (s.isActive) active = true; }); return !active; })()}
                                 className={`flex-1 px-4 py-2 rounded-lg font-bold text-sm transition-all disabled:opacity-50 ${(() => { let active = false; proposalSessions.forEach(s => { if (s.isActive) active = true; }); return active ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-400 text-white'; })()}`}
@@ -1535,11 +1523,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             )}
 
             <div
-                className="overflow-y-auto px-4 pt-4 scrollbar-hidden"
+                className="overflow-y-auto px-4 pt-4 scrollbar-hidden pb-32"
                 style={{
-                    marginTop: chatInfo?.reservation_id ? '13rem' : '4rem',
+                    marginTop: chatInfo?.reservation_id ? '14rem' : '4rem',
                     height: `calc(100vh - 8rem - ${inputBarHeight}px)`,
-                    paddingBottom: '4rem'
                 }}
             >
 
@@ -2137,40 +2124,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         }
                                     }
                                     
-                                    // Send dismiss message to chat (both guest and cast)
-                                    try {
-                                        // Message for guest
-                                        const guestMessage = sessionSummary.length > 0 
-                                            ? `キャストが解散しました。お疲れ様でした！\n\n📊 セッション詳細:\n⏱️ 利用時間: ${sessionSummary[0].duration}\n💰 獲得ポイント: ${sessionSummary[0].totalPoints}pt\n${reservationInfo ? `📅 予約ID: ${reservationInfo.id}` : ''}`
-                                            : 'キャストが解散しました。お疲れ様でした！';
-                                        
-                                        await sendMessageMutation.mutateAsync({
-                                            chat_id: Number(message.id),
-                                            sender_cast_id: castId,
-                                            message: JSON.stringify({
-                                                type: 'system',
-                                                target: 'guest',
-                                                text: guestMessage
-                                            })
-                                        });
-                                        
-                                        // Message for cast
-                                        const castMessage = sessionSummary.length > 0
-                                            ? `解散しました。お疲れ様でした！\n\n📊 セッション詳細:\n⏱️ 利用時間: ${sessionSummary[0].duration}\n💰 獲得ポイント: ${sessionSummary[0].totalPoints}pt (キャスト: ${sessionSummary[0].castPoints}pt, ゲスト: ${sessionSummary[0].guestPoints}pt)\n${reservationInfo ? `📅 予約ID: ${reservationInfo.id}` : ''}`
-                                            : '解散しました。お疲れ様でした！';
-                                        
-                                        await sendMessageMutation.mutateAsync({
-                                            chat_id: Number(message.id),
-                                            sender_cast_id: castId,
-                                            message: JSON.stringify({
-                                                type: 'system',
-                                                target: 'cast',
-                                                text: castMessage
-                                            })
-                                        });
-                                    } catch (error) {
-                                        console.error('Failed to send dismiss message:', error);
-                                    }
+                                    // Session completion messages are now sent by the backend
+                                    // No need to send frontend messages
                                 }}
                                 disabled={(() => {
                                     let hasActiveSession = false;
@@ -2462,10 +2417,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             try {
                                                 const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
                                                 if (parsed && parsed.type === 'system' && parsed.target === 'cast') {
-                                                    return parsed.text || parsed.content || '';
+                                                    return <div className="whitespace-pre-wrap">{parsed.text || parsed.content || ''}</div>;
                                                 }
                                             } catch (_) {}
-                                            return msg.message;
+                                            return <div className="whitespace-pre-wrap">{msg.message}</div>;
                                         })()}
                                         {msg.isOptimistic && !msg.gift_id && (
                                             <div className="text-xs text-yellow-300 mt-1">送信中...</div>
@@ -2745,17 +2700,26 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                             <button
                                 className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                                 disabled={sessionLoading || proposalModalLoading}
-                                onClick={async () => {
+                                onClick={async (e) => {
+                                    // Prevent multiple clicks
+                                    if (proposalModalLoading || isApprovingRef.current) {
+                                        e.preventDefault();
+                                        return;
+                                    }
+                                    
                                     if (!selectedProposal || !chatInfo?.guest?.id || !selectedProposal.date) {
                                         console.error('Missing required data for proposal acceptance');
                                         console.log('Debug info:', { selectedProposal, chatInfo, castId });
                                         return;
                                     }
 
+                                    // Set loading state immediately to prevent multiple clicks
                                     setProposalModalLoading(true);
+                                    isApprovingRef.current = true;
+                                    
                                     try {
                                         // Prepare proposal data for acceptance
-                                        const duration = parseInt(selectedProposal.duration?.toString() || '0', 10);
+                                        const duration = parseFloat(selectedProposal.duration?.toString() || '0');
                                         if (isNaN(duration) || duration <= 0) {
                                             console.error('Invalid duration for proposal acceptance');
                                             return;
@@ -2769,8 +2733,40 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             reservation_id: selectedProposal.reservationId
                                         };
 
-                                        // Accept the proposal
-                                        await acceptProposal(proposalData);
+                                        // Accept the proposal using ProposalService (reuses existing Pishatto-call system)
+                                        console.log('MessagePage: Calling ProposalService.acceptProposal with:', {
+                                            guest_id: chatInfo.guest.id,
+                                            cast_id: castId,
+                                            date: selectedProposal.date,
+                                            duration: duration,
+                                            totalPoints: selectedProposal.totalPoints,
+                                            chatId: Number(message.id),
+                                            reservationId: selectedProposal.reservationId
+                                        });
+                                        
+                                        const newReservation = await ProposalService.acceptProposal({
+                                            guest_id: chatInfo.guest.id,
+                                            cast_id: castId,
+                                            date: selectedProposal.date,
+                                            duration: duration,
+                                            totalPoints: selectedProposal.totalPoints,
+                                            chatId: Number(message.id),
+                                            reservationId: selectedProposal.reservationId
+                                        }, queryClient);
+                                        
+                                        console.log('MessagePage: ProposalService.acceptProposal completed, result:', newReservation);
+                                        
+                                        // Send confirmation messages
+                                        try {
+                                            await ProposalService.sendConfirmationMessages(Number(message.id), {
+                                                guest_id: chatInfo.guest.id,
+                                                date: selectedProposal.date,
+                                                duration: duration,
+                                                totalPoints: selectedProposal.totalPoints
+                                            }, newReservation.id);
+                                        } catch (error) {
+                                            console.error('Failed to send confirmation messages:', error);
+                                        }
 
                                         // Add to local accepted state for immediate UI feedback
                                         const proposalKey = makeProposalKey(selectedProposal.date, duration);
@@ -2788,48 +2784,14 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                             return newSet;
                                         });
 
-                                        // Persist acceptance marker and send role-targeted auto messages
-                                        try {
-                                            if (selectedProposalMsgId) {
-                                                await sendMessageMutation.mutateAsync({
-                                                    chat_id: Number(message.id),
-                                                    sender_cast_id: castId,
-                                                    message: JSON.stringify({
-                                                        type: 'proposal_accept',
-                                                        proposalMsgId: selectedProposalMsgId,
-                                                        proposalKey: proposalKey
-                                                    })
-                                                });
-                                            }
-                                            // Guest-facing auto message
-                                            await sendMessageMutation.mutateAsync({
-                                                chat_id: Number(message.id),
-                                                sender_cast_id: castId,
-                                                message: JSON.stringify({
-                                                    type: 'system',
-                                                    target: 'guest',
-                                                    text: '合流の仮予約が確定しました。合流後にキャストがタイマーを押下し、合流スタートとなります。そこからは自動課金となりますので、解散をご希望になる場合はキャスト側に解散の旨、お伝えください。'
-                                                })
-                                            });
-                                            // Cast-facing auto message
-                                            await sendMessageMutation.mutateAsync({
-                                                chat_id: Number(message.id),
-                                                sender_cast_id: castId,
-                                                message: JSON.stringify({
-                                                    type: 'system',
-                                                    target: 'cast',
-                                                    text: '合流の仮予約が確定しました。合流直前にタイマーの押下を必ず行ってください。推し忘れが起きた場合、売上対象にならない可能性がありますので、ご注意ください。'
-                                                })
-                                            });
-                                        } catch (e) {
-                                            console.error('Failed to send acceptance system messages:', e);
-                                        }
+                                        // Note: Confirmation messages are handled by ProposalService
 
                                     } catch (e: any) {
                                         console.error('Error accepting proposal:', e);
                                     } finally {
                                         // Close modal and reset state
                                         setProposalModalLoading(false);
+                                        isApprovingRef.current = false;
                                         setShowProposalModal(false);
                                         setSelectedProposal(null);
                                         setSelectedProposalMsgId(null);

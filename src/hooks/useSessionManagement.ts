@@ -151,21 +151,27 @@ export const useSessionManagement = ({
         }
     }, [reservationId, castId, onSessionEnd, onReservationUpdate]);
 
-    // Create new reservation
+    // Create new reservation (reuses existing Pishatto-call system)
     const createNewReservation = useCallback(async (proposalData: any) => {
         setIsLoading(true);
         setError(null);
 
         try {
-            // Create reservation with required fields
+            // Create reservation with required fields using existing Pishatto-call API
             // Handle both camelCase and snake_case field names
             const newReservation = await createReservation({
                 guest_id: proposalData.guest_id || proposalData.guestId,
                 cast_id: proposalData.cast_id || proposalData.castId,
+                type: 'Pishatto', // Use same type as Pishatto-call
                 scheduled_at: proposalData.date,
-                duration: proposalData.duration
+                duration: proposalData.duration,
+                location: '提案による予約', // Default location for proposals
+                meeting_location: '提案による予約',
+                reservation_name: '提案による予約',
+                details: `提案による予約 - 日時: ${proposalData.date}, 時間: ${proposalData.duration}分`
             });
 
+            console.log('Proposal reservation created:', newReservation);
             onReservationUpdate?.(newReservation);
             return newReservation;
         } catch (err: any) {
@@ -176,7 +182,7 @@ export const useSessionManagement = ({
         }
     }, [onReservationUpdate]);
 
-    // Update existing reservation
+    // Update existing reservation (reuses existing Pishatto-call system)
     const updateExistingReservation = useCallback(async (proposalData: any) => {
         if (!reservationId) {
             setError('予約IDが見つかりません');
@@ -187,11 +193,14 @@ export const useSessionManagement = ({
         setError(null);
 
         try {
+            // Update reservation using existing Pishatto-call API
             const updatedReservation = await updateReservation(reservationId, {
                 scheduled_at: proposalData.date,
-                duration: proposalData.duration
+                duration: proposalData.duration,
+                details: `提案による予約更新 - 日時: ${proposalData.date}, 時間: ${proposalData.duration}分`
             });
 
+            console.log('Proposal reservation updated:', updatedReservation);
             onReservationUpdate?.(updatedReservation);
             return updatedReservation;
         } catch (err: any) {

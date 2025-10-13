@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Heart, ChevronLeft, Clock, Users, Send, X } from 'lucide-react';
 import { getChatById, getReservationById, sendMessage, getCastProfileById } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
@@ -83,6 +83,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
     const { user } = useUser();
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
+    const isSubmittingRef = useRef(false);
     const [reservationData, setReservationData] = useState<any>(null);
     const [castInfo, setCastInfo] = useState<any>(null);
     const [castGradePoints, setCastGradePoints] = useState<number>(9000); // Default to 9000 if not available
@@ -189,6 +190,11 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
     const extensionPoints = Math.round(castGradePoints / 2);
 
     const handleResubmit = async () => {
+        // Prevent multiple clicks
+        if (sending || isSubmittingRef.current) {
+            return;
+        }
+        
         if (!user || !selectedDate || !selectedTime || !selectedDuration) {
             return;
         }
@@ -202,6 +208,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
         }
 
         setSending(true);
+        isSubmittingRef.current = true;
         try {
             // Create proposal message
             const proposalData = {
@@ -228,6 +235,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
             console.error('Error sending proposal:', error);
         } finally {
             setSending(false);
+            isSubmittingRef.current = false;
         }
     };
 
@@ -467,7 +475,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                     </button>
                     <button
                         onClick={handleResubmit}
-                        disabled={sending || !selectedDate || !selectedTime || !selectedDuration}
+                        disabled={sending || isSubmittingRef.current || !selectedDate || !selectedTime || !selectedDuration}
                         className="flex-1 py-3 px-4 bg-secondary text-white rounded-lg font-bold hover:bg-red-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                         {sending ? (

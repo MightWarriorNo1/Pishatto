@@ -115,6 +115,7 @@ export interface Reservation {
   reservation_name?: string;
   duration?: number;
   details?: string;
+  points?: number;
   created_at?: string;
   started_at?: string;
   ended_at?: string;
@@ -923,6 +924,11 @@ export const likeGuest = async (cast_id: number, guest_id: number) => {
 
 export const createChat = async (cast_id: number, guest_id: number, reservation_id?: number) => {
   const response = await api.post('/chats/create', { cast_id, guest_id, reservation_id });
+  return response.data;
+};
+
+export const updateChat = async (chatId: number, data: { reservation_id?: number }) => {
+  const response = await api.put(`/chats/${chatId}`, data);
   return response.data;
 };
 

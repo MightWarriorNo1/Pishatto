@@ -456,7 +456,7 @@ const CastDashboardInner: React.FC = () => {
         } else if (selectedSort === '人気順') {
             return b.people - a.people;
         } else if (selectedSort === 'おすすめ順') {
-            const getPoints = (call: CallWithActive) => parseInt((call.points || '0').replace(/[^\d]/g, ''));
+            const getPoints = (call: CallWithActive) => parseInt((call.points as string || '0').replace(/[^\d]/g, ''));
             return getPoints(b) - getPoints(a);
         }
         

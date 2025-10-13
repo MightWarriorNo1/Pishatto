@@ -13,6 +13,8 @@ import Spinner from '../ui/Spinner';
 import GuestCalendarPage from './GuestCalendarPage';
 import SessionTimer from '../ui/SessionTimer';
 import { useSessionManagement } from '../../hooks/useSessionManagement';
+import ProposalService from '../../services/ProposalService';
+import { useQueryClient } from '@tanstack/react-query';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -59,6 +61,7 @@ interface Proposal {
 const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const { user, refreshUser } = useUser();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     
     
     // Check if user is fully loaded
@@ -89,6 +92,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const [proposalMessage, setProposalMessage] = useState<any>(null);
     const [proposalActionLoading, setProposalActionLoading] = useState(false);
     const [proposalActionError, setProposalActionError] = useState<string | null>(null);
+    const isApprovingRef = useRef(false);
     const [acceptedProposals, setAcceptedProposals] = useState<number[]>([]);
     const [deniedProposals, setDeniedProposals] = useState<number[]>([]);
     const [reservationId, setReservationId] = useState<number | null>(null);
@@ -283,12 +287,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
         useChatMessages(chatId, (message) => {
             console.log('ChatScreen: Received real-time message:', message);
             console.log('ChatScreen: fetching:', fetching, 'isUserLoaded:', isUserLoaded);
+            console.log('ChatScreen: user:', user);
 
             // Process real-time messages even if initial fetch is still in progress
             // This ensures messages appear immediately without waiting for the initial load
             if (!isUserLoaded) {
-                console.log('ChatScreen: Skipping message processing - user not loaded');
-                return;
+                console.log('ChatScreen: User not loaded, but processing message anyway to avoid losing it');
+                // Don't return early - process the message anyway to avoid losing it
             }
         
         // Attach full gift object if missing
@@ -321,6 +326,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             console.log('ChatScreen: Current messages count:', prev.length);
             console.log('ChatScreen: New message ID:', message.id);
             console.log('ChatScreen: New message data:', message);
+            console.log('ChatScreen: Message sender_guest_id:', message.sender_guest_id);
+            console.log('ChatScreen: Message sender_cast_id:', message.sender_cast_id);
             
             // Remove optimistic message if real one matches (by image or message and sender information)
             // Also check for duplicate messages by ID to prevent duplicates
@@ -345,7 +352,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             
             console.log('ChatScreen: Filtered messages count:', filtered.length);
             console.log('ChatScreen: Adding new message to state');
-            return [...filtered, message];
+            const newMessages = [...filtered, message];
+            console.log('ChatScreen: New messages count after adding:', newMessages.length);
+            return newMessages;
         });
 
         // If this message is related to proposals, refresh guest reservations
@@ -647,7 +656,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
             
             {/* Chat history (scrollable, between header and input) */}
             <div
-                className="flex-1 overflow-y-auto px-4 pt-16 pb-12"
+                className="flex-1 overflow-y-auto px-4 pt-16 pb-32"
             >
                 {fetching ? (
                     <div className="flex justify-center items-center h-40">
@@ -675,9 +684,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         let proposal: Proposal | null = null;
                         try {
                             const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
-                            if (parsed && parsed.type === 'proposal') proposal = parsed;
-                        } catch (e) { }
+                            console.log('ChatScreen: Checking for proposal in message:', { msgId: msg.id, parsed, message: msg.message });
+                            if (parsed && parsed.type === 'proposal') {
+                                console.log('ChatScreen: Proposal detected:', parsed);
+                                proposal = parsed;
+                            }
+                        } catch (e) {
+                            console.log('ChatScreen: Error parsing proposal message:', e);
+                        }
                         if (proposal) {
+                            console.log('ChatScreen: Rendering proposal message:', proposal);
                             // Only consider locally accepted proposals to avoid false positives
                             const isAccepted = acceptedProposals.includes(msg.id);
                             const isDenied = deniedProposals.includes(msg.id);
@@ -740,17 +756,28 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                             let displayText: string | null = null;
                             try {
                                 const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                                console.log('ChatScreen: Message parsing result:', { msgId: msg.id, parsed, message: msg.message });
                                 if (parsed && (parsed.type === 'proposal_accept' || parsed.type === 'proposal_reject')) {
+                                    console.log('ChatScreen: Hiding proposal_accept/proposal_reject message');
                                     hide = true;
                                 } else if (parsed && parsed.type === 'system') {
+                                    console.log('ChatScreen: System message, target:', parsed.target);
                                     if (parsed.target !== 'guest') {
+                                        console.log('ChatScreen: Hiding system message not targeted to guest');
                                         hide = true;
                                     } else {
                                         displayText = parsed.text || parsed.content || '';
                                     }
+                                } else if (parsed && parsed.type === 'proposal') {
+                                    console.log('ChatScreen: Proposal message detected, should be visible');
                                 }
-                            } catch (e) {}
-                            if (hide) return null;
+                            } catch (e) {
+                                console.log('ChatScreen: Error parsing message:', e);
+                            }
+                            if (hide) {
+                                console.log('ChatScreen: Message hidden, returning null');
+                                return null;
+                            }
                             // Attach normalized text for rendering below
                             if (displayText !== null) {
                                 msg = { ...msg, message: displayText };
@@ -794,14 +821,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                 if (parsed.target !== 'guest') return null;
                                                 const text = parsed.text || parsed.content || '';
                                                 return (
-                                                    <div className={`max-w-full break-all ${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
+                                                    <div className={`max-w-full break-all whitespace-pre-wrap ${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
                                                         {text}
                                                     </div>
                                                 );
                                             }
                                         } catch (_) {}
                                         return (
-                                            <div className={`max-w-full break-all ${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
+                                            <div className={`max-w-full break-all whitespace-pre-wrap ${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2 ${!isSent && msg.cast ? 'border-l-4 border-blue-500' : ''} ${msg.isOptimistic ? 'opacity-70' : ''}`}>
                                                 {(() => {
                                                     const giftObj = msg.gift_id ? (msg.gift || (Array.isArray(gifts) ? gifts.find((g: any) => g.id === msg.gift_id) : null)) : null;
                                                     if (!giftObj) return null;
@@ -835,7 +862,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                                         />
                                                     );
                                                 })()}
-                                                {msg.message}
+                                                <div className="whitespace-pre-wrap">{msg.message}</div>
                                                 {msg.isOptimistic && !msg.gift_id && (<div className="text-xs text-yellow-300 mt-1">送信中...</div>)}
                                             </div>
                                         );
@@ -852,7 +879,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 )}
                 {localMessages.map((msg, idx) => (
                     <div key={idx} className="flex items-end justify-end mb-4">
-                        <div className="bg-secondary text-white rounded-lg px-4 py-2 max-w-full break-all">
+                        <div className="bg-secondary text-white rounded-lg px-4 py-2 max-w-full break-all whitespace-pre-wrap">
                             {msg.message}
                         </div>
                     </div>
@@ -1138,6 +1165,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                 className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
                                 disabled={proposalActionLoading}
                                 onClick={async () => {
+                                    // Prevent multiple clicks
+                                    if (proposalActionLoading || isApprovingRef.current) {
+                                        return;
+                                    }
+                                    
                                     if (!selectedProposal || !user?.id || !selectedProposal.date) {
                                         setProposalActionError('Missing required data for proposal acceptance');
                                         return;
@@ -1145,6 +1177,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
 
                                     try {
                                         setProposalActionLoading(true);
+                                        isApprovingRef.current = true;
                                         setProposalActionError(null);
 
                                         // Prepare proposal data for acceptance
@@ -1162,8 +1195,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                             reservation_id: reservationId || selectedProposal.reservationId
                                         };
 
-                                        // Accept the proposal using session management
-                                        const newReservation = await sessionAcceptProposal(proposalData);
+                                        // Accept the proposal using ProposalService (reuses existing Pishatto-call system)
+                                        const newReservation = await ProposalService.acceptProposal({
+                                            guest_id: proposalData.guest_id,
+                                            cast_id: proposalData.cast_id,
+                                            date: proposalData.date,
+                                            duration: proposalData.duration,
+                                            totalPoints: selectedProposal.totalPoints,
+                                            chatId: chatId,
+                                            reservationId: proposalData.reservation_id
+                                        }, queryClient);
 
                                         // Update local reservation ID if a new one was created
                                         if (newReservation && newReservation.id) {
@@ -1175,41 +1216,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                             setAcceptedProposals(prev => [...prev, proposalMsgId]);
                                         }
 
-                                        // Persist acceptance and send automatic messages
+                                        // Send confirmation messages using ProposalService
                                         try {
-                                            // Persist acceptance marker (readable by both sides)
-                                            if (proposalMsgId) {
-                                                await sendMessage({
-                                                    chat_id: chatId,
-                                                    sender_guest_id: user.id,
-                                                    message: JSON.stringify({
-                                                        type: 'proposal_accept',
-                                                        proposalMsgId,
-                                                        proposalKey: `${selectedProposal.date ? dayjs(selectedProposal.date).format('YYYY-MM-DD HH:mm') : ''}-${parseInt(String(selectedProposal.duration), 10)}`
-                                                    })
-                                                });
-                                            }
-                                            // Auto message to guest only (rendered on guest side; cast side will ignore target !== 'cast' messages)
-                                            await sendMessage({
-                                                chat_id: chatId,
-                                                sender_guest_id: user.id,
-                                                message: JSON.stringify({
-                                                    type: 'system',
-                                                    target: 'guest',
-                                                    text: '合流の仮予約が確定しました。合流後にキャストがタイマーを押下し、合流スタートとなります。そこからは自動課金となりますので、解散をご希望になる場合はキャスト側に解散の旨、お伝えください。'
-                                                })
-                                            });
-                                            // Auto message to cast only (cast side will render; guest side will ignore target !== 'guest')
-                                            await sendMessage({
-                                                chat_id: chatId,
-                                                sender_guest_id: user.id,
-                                                message: JSON.stringify({
-                                                    type: 'system',
-                                                    target: 'cast',
-                                                    text: '合流の仮予約が確定しました。合流直前にタイマーの押下を必ず行ってください。推し忘れが起きた場合、売上対象にならない可能性がありますので、ご注意ください。'
-                                                })
-                                            });
-                                        } catch (_) {}
+                                            await ProposalService.sendConfirmationMessages(chatId, {
+                                                guest_id: user.id,
+                                                date: selectedProposal.date,
+                                                duration: selectedProposal.duration,
+                                                totalPoints: selectedProposal.totalPoints
+                                            }, newReservation.id);
+                                        } catch (error) {
+                                            console.error('Failed to send confirmation messages:', error);
+                                        }
 
                                         // The onReservationUpdate callback in useSessionManagement will automatically
                                         // update both reservationId and guestReservations, so no manual refresh needed here
@@ -1224,6 +1241,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                         setProposalActionError('提案の承認に失敗しました');
                                     } finally {
                                         setProposalActionLoading(false);
+                                        isApprovingRef.current = false;
                                     }
                                 }}
                             >

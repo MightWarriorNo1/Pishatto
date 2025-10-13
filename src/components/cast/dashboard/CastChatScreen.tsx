@@ -10,6 +10,8 @@ import { useChatMessages } from '../../../hooks/useRealtime';
 import Spinner from '../../ui/Spinner';
 import SessionTimer from '../../ui/SessionTimer';
 import { useSessionManagement } from '../../../hooks/useSessionManagement';
+import ProposalService from '../../../services/ProposalService';
+import { useQueryClient } from '@tanstack/react-query';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -31,6 +33,7 @@ interface CastChatScreenProps {
 const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
     const { isNotificationEnabled } = useNotificationSettings();
     const { castId } = useCast() as any;
+    const queryClient = useQueryClient();
     const [messages, setMessages] = useState<any[]>([]);
     const [input, setInput] = useState('');
     const [sending, setSending] = useState(false);
@@ -99,11 +102,23 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                 setReservationId(chat.reservation_id);
                 // Fetch reservation details
                 getReservationById(chat.reservation_id).then(reservation => {
+                    console.log('CastChatScreen: Fetched reservation data:', reservation);
                     setReservationData(reservation);
                 }).catch(() => setReservationData(null));
             }
         }).catch(() => setGuestInfo(null));
     }, [chatId]);
+
+    // Watch for reservation_id changes and refetch reservation data
+    useEffect(() => {
+        if (reservationId) {
+            console.log('CastChatScreen: Refetching reservation data for ID:', reservationId);
+            getReservationById(reservationId).then(reservation => {
+                console.log('CastChatScreen: Refetched reservation data:', reservation);
+                setReservationData(reservation);
+            }).catch(() => setReservationData(null));
+        }
+    }, [reservationId]);
 
     useChatMessages(chatId, (message) => {
         setMessages(prev => {
@@ -185,6 +200,7 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                         onDissolve={handleDissolve}
                         isLoading={sessionLoading}
                         className="w-full"
+                        reservationData={reservationData}
                     />
                 </div>
             )}
@@ -263,7 +279,7 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                                     </div>
                                 )}
                                 <div className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
-                                    <div className={`max-w-full break-all ${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2`}>
+                                    <div className={`max-w-full break-all whitespace-pre-wrap ${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2`}>
                                         {msg.message}
                                     </div>
                                 </div>
@@ -299,13 +315,36 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                                             (selectedProposal.duration ? parseInt(selectedProposal.duration as string, 10) : 120);
                                         
                                         const proposalData = {
+                                            guest_id: selectedProposal.guestId,
+                                            cast_id: castId,
+                                            date: selectedProposal.date,
+                                            duration: actualDuration,
+                                            totalPoints: selectedProposal.totalPoints
+                                        };
+                                        
+                                        // Accept proposal using ProposalService (reuses existing Pishatto-call system)
+                                        const newReservation = await ProposalService.acceptProposal({
+                                            guest_id: selectedProposal.guestId,
+                                            cast_id: castId,
                                             date: selectedProposal.date,
                                             duration: actualDuration,
                                             totalPoints: selectedProposal.totalPoints,
-                                            guestId: selectedProposal.guestId,
-                                            castId: castId
-                                        };
-                                        await sessionAcceptProposal(proposalData);
+                                            chatId: chatId,
+                                            reservationId: reservationData?.id
+                                        }, queryClient);
+                                        
+                                        // Send confirmation messages
+                                        try {
+                                            await ProposalService.sendConfirmationMessages(chatId, {
+                                                guest_id: selectedProposal.guestId,
+                                                date: selectedProposal.date,
+                                                duration: actualDuration,
+                                                totalPoints: selectedProposal.totalPoints
+                                            }, newReservation.id);
+                                        } catch (error) {
+                                            console.error('Failed to send confirmation messages:', error);
+                                        }
+                                        
                                         setShowProposalModal(false);
                                         setSelectedProposal(null);
                                         setProposalMsgId(null);

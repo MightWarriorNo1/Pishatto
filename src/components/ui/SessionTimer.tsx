@@ -70,8 +70,15 @@ const SessionTimer: React.FC<SessionTimerProps> = ({
 
     // Calculate reserved time (duration in seconds)
     const getReservedTime = (): number => {
-        if (!reservationData?.duration) return 3600; // Default 1 hour
-        return Math.round(reservationData.duration * 3600); // Convert hours to seconds
+        console.log('SessionTimer: reservationData:', reservationData);
+        console.log('SessionTimer: duration:', reservationData?.duration);
+        if (!reservationData?.duration) {
+            console.log('SessionTimer: No duration found, using default 1 hour');
+            return 3600; // Default 1 hour
+        }
+        const reservedTime = Math.round(reservationData.duration * 3600); // Convert hours to seconds
+        console.log('SessionTimer: Calculated reserved time:', reservedTime, 'seconds');
+        return reservedTime;
     };
 
     // Calculate extension time (elapsed time - reserved time)
