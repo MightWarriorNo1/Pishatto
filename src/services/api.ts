@@ -128,6 +128,9 @@ export interface Reservation {
   feedback_text?: string;
   feedback_rating?: number;
   feedback_badge_id?: number;
+  // Feedback status from backend
+  has_feedback?: boolean;
+  feedback_count?: number;
   // Free call result fields
   selected_casts?: any[];
   cast_counts?: {
@@ -1058,11 +1061,6 @@ export const submitFeedback = async (feedbackData: FeedbackData) => {
   return response.data;
 };
 
-export const getReservationFeedback = async (reservationId: number) => {
-  const response = await api.get(`/feedback/reservation/${reservationId}`);
-  return response.data.feedback;
-};
-
 export const getCastFeedback = async (castId: number) => {
   const response = await api.get(`/feedback/cast/${castId}`);
   return response.data;
@@ -1110,6 +1108,11 @@ export const completeReservation = async (reservationId: number, feedback: {
 export const refundUnusedPoints = async (reservationId: number) => {
   const response = await api.post(`/reservations/${reservationId}/refund`);
   return response.data;
+};
+
+export const getReservationFeedback = async (reservationId: number) => {
+  const response = await api.get(`/feedback/reservation/${reservationId}`);
+  return response.data.feedback;
 };
 
 export const completeSession = async (sessionData: {

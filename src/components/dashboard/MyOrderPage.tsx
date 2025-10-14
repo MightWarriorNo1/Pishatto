@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getGuestReservations, Reservation, updateReservation, completeReservation } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
-import { ChevronLeft, Clock, MapPin, Users, Calendar, Award, MessageCircle } from 'lucide-react';
+import { ChevronLeft, Clock, MapPin, Users, Calendar, Award, MessageCircle, CheckCircle } from 'lucide-react';
 import { useReservationUpdates } from '../../hooks/useRealtime';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ja';
@@ -141,7 +141,8 @@ const MyOrderPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                                 scheduled_at={r.scheduled_at}
                                                 duration={r.duration}
                                                 userId={user?.id}
-                                                 selected_casts={r.selected_casts}
+                                                selected_casts={r.selected_casts}
+                                                reservations={reservations}
                                                 onReservationUpdate={data => setReservations(prev => prev.map(rr => rr.id === r.id ? { ...rr, ...data } : rr))}
                                             />
                                         </div>
@@ -168,8 +169,9 @@ const ReservationTimer: React.FC<{
     duration?: number; 
     onReservationUpdate?: (data: Partial<Reservation>) => void; 
     userId?: number,
-    selected_casts?: any[]
-}> = ({ started_at, ended_at, points_earned, reservationId, scheduled_at, duration, onReservationUpdate, userId, selected_casts }) => {
+    selected_casts?: any[],
+    reservations?: Reservation[]
+}> = ({ started_at, ended_at, points_earned, reservationId, scheduled_at, duration, onReservationUpdate, userId, selected_casts, reservations = [] }) => {
     const [currentTime, setCurrentTime] = React.useState<Date>(new Date());
     const [finished, setFinished] = React.useState(false);
     const [exceededAt, setExceededAt] = React.useState<number | null>(null);
@@ -178,14 +180,7 @@ const ReservationTimer: React.FC<{
     const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
     const [showFeedbackModal, setShowFeedbackModal] = React.useState(false);
     const [isExiting, setIsExiting] = React.useState(false);
-
-    React.useEffect(() => {
-        if (finished) return;
-        const interval = setInterval(() => {
-            setCurrentTime(new Date());
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [finished]);
+    const [hasFeedback, setHasFeedback] = React.useState(false);
 
     // Use scheduled_at and duration for planned times
     const scheduled = scheduled_at ? new Date(scheduled_at) : undefined;
@@ -203,6 +198,25 @@ const ReservationTimer: React.FC<{
     } else if (scheduled && now < scheduled) {
         state = 'before';
     }
+
+    React.useEffect(() => {
+        if (finished) return;
+        const interval = setInterval(() => {
+            setCurrentTime(new Date());
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [finished]);
+
+    // Set feedback status from reservation data
+    React.useEffect(() => {
+        if (state === 'after') {
+            // Check if reservation has feedback data
+            const reservation = reservations.find(r => r.id === reservationId);
+            if (reservation && typeof reservation.has_feedback === 'boolean') {
+                setHasFeedback(reservation.has_feedback);
+            }
+        }
+    }, [state, reservationId, reservations]);
 
     // Time calculations
     const format = (d: Date) => d.toLocaleString('ja-JP', { 
@@ -349,13 +363,20 @@ const ReservationTimer: React.FC<{
                                 </div>
                             </div>
                         )}
-                        <button 
-                            className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center space-x-2"
-                            onClick={() => setShowFeedbackModal(true)}
-                        >
-                            <MessageCircle className="w-4 h-4" />
-                            <span>フィードバックを送信</span>
-                        </button>
+                        {hasFeedback ? (
+                            <div className="w-full bg-green-50 border border-green-200 text-green-800 py-3 px-4 rounded-lg font-semibold flex items-center justify-center space-x-2">
+                                <CheckCircle className="w-4 h-4" />
+                                <span>フィードバックを送信済み</span>
+                            </div>
+                        ) : (
+                            <button 
+                                className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center space-x-2"
+                                onClick={() => setShowFeedbackModal(true)}
+                            >
+                                <MessageCircle className="w-4 h-4" />
+                                <span>フィードバックを送信</span>
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
@@ -383,7 +404,14 @@ const ReservationTimer: React.FC<{
                     }
                 })() }
                 guestId={userId || 0}
-                onSuccess={() => setShowFeedbackModal(false)}
+                onSuccess={() => {
+                    setShowFeedbackModal(false);
+                    setHasFeedback(true);
+                    // Update the reservation data to reflect feedback status
+                    if (onReservationUpdate) {
+                        onReservationUpdate({ has_feedback: true });
+                    }
+                }}
             />
         </div>
     );

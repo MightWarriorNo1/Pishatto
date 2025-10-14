@@ -233,7 +233,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
 
   return (
     <>
-      <div className="overflow-y-auto inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
         <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col items-center border border-gray-200 min-w-[420px] max-w-[420px] max-h-[90vh] overflow-y-auto">
           <h2 className="font-bold text-xl mb-6 text-gray-800">フィードバックを送信</h2>
 
@@ -297,7 +297,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
 
                   <div className="mb-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">バッジを選択 (任意)</label>
-                    <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
+                    <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
                       {badges.map(badge => (
                         <button
                           key={badge.id}
@@ -330,7 +330,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-4 w-full mt-6 pb-24">
+          <div className="flex gap-4 w-full mt-6">
             <button 
               className="flex-1 bg-gray-300 text-gray-700 px-4 py-3 rounded-lg font-medium transition-colors hover:bg-gray-400"
               onClick={handleClose}
