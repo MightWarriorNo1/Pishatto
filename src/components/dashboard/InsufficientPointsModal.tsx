@@ -47,10 +47,11 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
     try {
       const paymentInfo = await getPaymentInfo('guest', user.id);
       setHasRegisteredCard(!!paymentInfo?.card_count);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to check registered cards:', error);
       setHasRegisteredCard(false);
-      setError('カード情報の確認に失敗しました。');
+      const backendError = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail;
+      setError(backendError || 'カード情報の確認に失敗しました。');
     } finally {
       setLoading(false);
     }
@@ -89,7 +90,8 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
       }
     } catch (error: any) {
       console.error('Point purchase failed:', error);
-      setError('ポイント購入中にエラーが発生しました。');
+      const backendError = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail;
+      setError(backendError || 'ポイント購入中にエラーが発生しました。');
     } finally {
       setLoading(false);
     }
@@ -193,7 +195,10 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
               </div>
             ) : error ? (
               <div className="text-center py-4">
-                <p className="text-red-400 mb-4">{error}</p>
+                <div className="mb-4">
+                  <div className="text-red-400 text-sm font-medium mb-2">エラーが発生しました</div>
+                  <p className="text-red-300 text-sm break-words">{error}</p>
+                </div>
                 <button
                   onClick={checkRegisteredCards}
                   className="px-4 py-2 bg-secondary text-white rounded-lg hover:bg-red-700 transition-colors"
