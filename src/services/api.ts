@@ -386,7 +386,7 @@ export const getAllChats = async () => {
 };
 
 export const getCastChats = async (castId: number) => {
-  const response = await api.get(`/chats/cast/${castId}`);
+  const response = await api.get(`/chats-list/cast/${castId}`);
   return response.data.chats;
 };
 

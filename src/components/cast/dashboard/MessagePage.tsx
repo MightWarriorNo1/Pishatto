@@ -48,6 +48,8 @@ interface Message {
     is_group_chat?: boolean;
     group_id?: number;
     group_name?: string;
+    reservation_name?: string;
+    meeting_location?: string;
 }
 
 interface MessageDetailProps {
@@ -2867,6 +2869,8 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                     is_group_chat: Boolean(target.group_id),
                     group_id: target.group_id,
                     group_name: target.group_name,
+                    reservation_name: target.reservation_name,
+                    meeting_location: target.meeting_location,
                 } as any;
                 console.log("", mapped);
                 setSelectedMessage(mapped);
@@ -2893,6 +2897,8 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
         is_group_chat: !!chat.is_group_chat,
         group_id: chat.group_id,
         group_name: chat.group_name,
+        reservation_name: chat.reservation_name,
+        meeting_location: chat.meeting_location,
     }));
 
     // Filter messages based on nickname and age
@@ -3072,6 +3078,11 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                                                     </span>
                                                 )}
                                             </div>
+                                            {(message.reservation_name || message.meeting_location) && (
+                                                <div className="text-xs text-blue-300 mt-1">
+                                                    📅 {[message.reservation_name, message.meeting_location].filter(Boolean).join(' - ')}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 );

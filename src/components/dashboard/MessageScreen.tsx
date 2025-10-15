@@ -779,6 +779,17 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                     return getAvatarSrc();
                                 };
 
+                                // Get reservation info for display
+                                const getReservationInfo = () => {
+                                    if (chat.reservation_name || chat.meeting_location) {
+                                        const parts = [];
+                                        if (chat.reservation_name) parts.push(chat.reservation_name);
+                                        if (chat.meeting_location) parts.push(chat.meeting_location);
+                                        return parts.join(' - ');
+                                    }
+                                    return null;
+                                };
+
                                 const isUnread = (chat.unread || 0) > 0;
                                 return (
                                     <div key={chat.id} className="relative">
@@ -831,6 +842,11 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                                         {chat.updated_at && (
                                                             <div className="text-xs text-gray-400 mt-1">
                                                                 最終更新: {formatTime(chat.updated_at)}
+                                                            </div>
+                                                        )}
+                                                        {getReservationInfo() && (
+                                                            <div className="text-xs text-blue-300 mt-1">
+                                                                📅 {getReservationInfo()}
                                                             </div>
                                                         )}
                                                     </div>
@@ -889,6 +905,17 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                     return getAvatarSrc();
                                 };
 
+                                // Get reservation info for display
+                                const getReservationInfo = () => {
+                                    if (chat.reservation_name || chat.meeting_location) {
+                                        const parts = [];
+                                        if (chat.reservation_name) parts.push(chat.reservation_name);
+                                        if (chat.meeting_location) parts.push(chat.meeting_location);
+                                        return parts.join(' - ');
+                                    }
+                                    return null;
+                                };
+
                                 const isUnread = (chat.unread || 0) > 0;
                                 return (
                                     <div key={chat.id} className="relative">
@@ -941,6 +968,11 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                                         {chat.updated_at && (
                                                             <div className="text-xs text-gray-400 mt-1">
                                                                 最終更新: {formatTime(chat.updated_at)}
+                                                            </div>
+                                                        )}
+                                                        {getReservationInfo() && (
+                                                            <div className="text-xs text-blue-300 mt-1">
+                                                                📅 {getReservationInfo()}
                                                             </div>
                                                         )}
                                                     </div>
