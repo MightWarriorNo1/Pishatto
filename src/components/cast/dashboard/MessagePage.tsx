@@ -488,7 +488,6 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
     // Real-time updates are handled by React Query automatically
 
     const formatTime = (timestamp: string) => {
-
         return dayjs.utc(timestamp).tz(userTz).format('YYYY-MM-DD HH:mm');
     };
 
@@ -1454,10 +1453,10 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             )}
 
             <div
-                className="overflow-y-auto px-4 pt-4 scrollbar-hidden pb-32"
+                className="overflow-y-auto px-4 pt-4 scrollbar-hidden pb-[150px]"
                 style={{
                     marginTop: chatInfo?.reservation_id ? '14rem' : '4rem',
-                    height: `100%`,
+                    height: `calc(100vh - 8rem - ${inputBarHeight}px)`,
                 }}
             >
 
@@ -2837,7 +2836,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
 
     // React Query hooks
     const { data: chats = [], isLoading: loading } = useCastChats(castId);
-
+    console.log(chats);
     // Real-time: keep cast chats up-to-date without polling
     useCastChatsRealtime(castId || 0);
 
@@ -2862,13 +2861,14 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                     avatar: buildAvatarUrl(target.avatar),
                     name: target.name,
                     lastMessage: target.last_message || '',
-                    timestamp: target.updated_at ? new Date(target.updated_at) : new Date(),
+                    timestamp: target.updated_at || new Date().toISOString(),
                     unread: false,
                     guestAge: target.guest_age,
                     is_group_chat: Boolean(target.group_id),
                     group_id: target.group_id,
                     group_name: target.group_name,
                 } as any;
+                console.log("", mapped);
                 setSelectedMessage(mapped);
             }
         };
@@ -2887,7 +2887,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
         avatar: buildAvatarUrl(chat.avatar),
         name: chat.guest_nickname || `ゲスト ${chat.guest_id}`,
         lastMessage: chat.last_message || '',
-        timestamp: chat.updated_at ? new Date(chat.updated_at) : new Date(),
+        timestamp: chat.updated_at || new Date().toISOString(),
         unread: !!chat.unread,
         guestAge: chat.guest_age || '', // Backend returns 'guest_age' but it contains birth year
         is_group_chat: !!chat.is_group_chat,
@@ -2938,7 +2938,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
 
     return (
         <div
-            className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary py-28 overflow-y-auto scrollbar-hidden"
+            className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pt-28 pb-[150px] overflow-y-auto scrollbar-hidden"
         >
             {/* Fixed Header */}
             <div className="fixed top-0 left-0 right-0 max-w-md mx-auto bg-primary z-20 border-b border-secondary">
@@ -3062,7 +3062,7 @@ const MessagePage: React.FC<MessagePageProps> = ({ setIsMessageDetailOpen, onCon
                                                     )}
                                                 </div>
                                                 <span className="text-xs text-gray-400">
-                                                    {dayjs(message.timestamp).tz(userTz).format('YYYY-MM-DD HH:mm')}
+                                                    {dayjs.utc(message.timestamp).tz(userTz).format('YYYY-MM-DD HH:mm')}
                                                 </span>
                                             </div>
                                             <div className="flex items-center">

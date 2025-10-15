@@ -49,9 +49,10 @@ export class StripeService {
       };
     } catch (error: any) {
       console.error('Payment method creation failed:', error);
+      const backendError = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail;
       return {
         success: false,
-        error: error.response?.data?.error || 'カード情報の処理中にエラーが発生しました',
+        error: backendError || 'カード情報の処理中にエラーが発生しました',
       };
     }
   }
@@ -65,9 +66,10 @@ export class StripeService {
       return response.data;
     } catch (error: any) {
       console.error('Payment processing failed:', error);
+      const backendError = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail;
       return {
         success: false,
-        error: error.response?.data?.error || '決済処理中にエラーが発生しました',
+        error: backendError || '決済処理中にエラーが発生しました',
       };
     }
   }
@@ -101,9 +103,10 @@ export class StripeService {
       return data;
     } catch (error: any) {
       console.error('Direct payment processing failed:', error);
+      const backendError = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail;
       return {
         success: false,
-        error: error.response?.data?.error || '決済処理中にエラーが発生しました',
+        error: backendError || '決済処理中にエラーが発生しました',
       };
     }
   }
@@ -122,9 +125,10 @@ export class StripeService {
       return response.data;
     } catch (error: any) {
       console.error('3DS authentication failed:', error);
+      const backendError = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail;
       return {
         success: false,
-        error: error.response?.data?.error || '3D Secure認証中にエラーが発生しました',
+        error: backendError || '3D Secure認証中にエラーが発生しました',
       };
     }
   }

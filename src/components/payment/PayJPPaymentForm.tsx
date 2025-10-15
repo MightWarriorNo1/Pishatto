@@ -82,7 +82,8 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       }
     } catch (error: any) {
       console.error('Payment error:', error);
-      onError?.(error.message || '決済処理中にエラーが発生しました');
+      const backendError = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail;
+      onError?.(backendError || error.message || '決済処理中にエラーが発生しました');
     } finally {
       setLoading(false);
     }
@@ -154,7 +155,8 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
 
     } catch (error: any) {
       console.error('Payment error:', error);
-      onError?.(error.message || '決済処理中にエラーが発生しました');
+      const backendError = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail;
+      onError?.(backendError || error.message || '決済処理中にエラーが発生しました');
     } finally {
       setLoading(false);
     }

@@ -84,10 +84,32 @@ const PaymentInfoSimplePage: React.FC<PaymentInfoSimplePageProps> = ({ onBack })
         }
 
         try {
-            await deletePaymentInfo('guest', user.id, cardId);
+            const response = await deletePaymentInfo('guest', user.id, cardId);
+            
+            // Check if the response indicates active reservations
+            if (response && !response.success && response.active_reservations) {
+                const reservationList = response.active_reservations
+                    .map((r: any) => `予約ID: ${r.id} (${r.status})`)
+                    .join('\n');
+                
+                alert(`カードを削除できません。\n\n${response.error}\n\nアクティブな予約:\n${reservationList}`);
+                return;
+            }
+            
             await getPaymentInfoData(); // Reload cards after deletion
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to delete card:', error);
+            
+            // Check if it's an active reservations error
+            if (error.response?.data?.active_reservations) {
+                const reservationList = error.response.data.active_reservations
+                    .map((r: any) => `予約ID: ${r.id} (${r.status})`)
+                    .join('\n');
+                
+                alert(`カードを削除できません。\n\n${error.response.data.error}\n\nアクティブな予約:\n${reservationList}`);
+            } else {
+                alert('カードの削除に失敗しました');
+            }
         }
     };
 

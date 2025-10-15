@@ -14,9 +14,16 @@ import { queryKeys } from '../../lib/react-query';
 import echo from '../../services/echo';
 import NotificationScreen from './NotificationScreen';
 import Spinner from '../ui/Spinner';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+// Configure dayjs
+dayjs.extend(utc);
+dayjs.extend(timezone);
 interface MessageScreenProps {
     showChat: number | null;
     setShowChat: (show: number | null) => void;
@@ -38,6 +45,12 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
     const { user } = useUser();
     const { isNotificationEnabled } = useNotificationSettings();
+
+    // Get user timezone and format time function
+    const userTz = dayjs.tz.guess();
+    const formatTime = (timestamp: string) => {
+        return dayjs.utc(timestamp).tz(userTz).format('YYYY-MM-DD HH:mm:ss');
+    };
 
     // React Query hooks
     const { data: chats = [], isLoading } = useGuestChats(userId);
@@ -598,7 +611,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
     return (
         <div
             className="bg-gradient-to-b from-primary via-primary to-secondary min-h-screen flex flex-col pb-24"
-            style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+            style={{ paddingBottom: 'calc(10rem + env(safe-area-inset-bottom))' }}
         >
             {/* Top bar */}
             <div className="fixed max-w-md mx-auto top-0 left-0 right-0 grid grid-cols-3 items-center px-4 py-3 border-b border-secondary bg-primary z-20">
@@ -629,7 +642,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                     {messageNotifications.map((n) => (
                         <div key={n.id} className="mb-2 p-2 bg-yellow-100 rounded cursor-pointer" onClick={() => handleNotificationClick(n.id)}>
                             <div className="text-sm text-yellow-900">{n.message}</div>
-                            <div className="text-xs text-yellow-700">{new Date(n.created_at).toLocaleString()}</div>
+                            <div className="text-xs text-yellow-700">{formatTime(n.created_at)}</div>
                         </div>
                     ))}
                 </div>
@@ -815,9 +828,9 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                                                 キャストが選択されるまでお待ちください
                                                             </div>
                                                         )}
-                                                        {chat.created_at && (
+                                                        {chat.updated_at && (
                                                             <div className="text-xs text-gray-400 mt-1">
-                                                                作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP').replace(/\//g, '-')}
+                                                                最終更新: {formatTime(chat.updated_at)}
                                                             </div>
                                                         )}
                                                     </div>
@@ -925,9 +938,9 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
                                                                 キャストが選択されるまでお待ちください
                                                             </div>
                                                         )}
-                                                        {chat.created_at && (
+                                                        {chat.updated_at && (
                                                             <div className="text-xs text-gray-400 mt-1">
-                                                                作成日: {new Date(chat.created_at).toLocaleDateString('ja-JP').replace(/\//g, '-')}
+                                                                最終更新: {formatTime(chat.updated_at)}
                                                             </div>
                                                         )}
                                                     </div>

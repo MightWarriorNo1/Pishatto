@@ -89,11 +89,32 @@ const CardManagementPage: React.FC<CardManagementPageProps> = ({
     }
 
     try {
-      await deletePaymentInfo(userType, currentUserId, cardId);
+      const response = await deletePaymentInfo(userType, currentUserId, cardId);
+      
+      // Check if the response indicates active reservations
+      if (response && !response.success && response.active_reservations) {
+        const reservationList = response.active_reservations
+          .map((r: any) => `予約ID: ${r.id} (${r.status})`)
+          .join('\n');
+        
+        setError(`カードを削除できません。\n\n${response.error}\n\nアクティブな予約:\n${reservationList}`);
+        return;
+      }
+      
       await loadCards(); // Reload cards after deletion
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to delete card:', error);
-      setError('カードの削除に失敗しました');
+      
+      // Check if it's an active reservations error
+      if (error.response?.data?.active_reservations) {
+        const reservationList = error.response.data.active_reservations
+          .map((r: any) => `予約ID: ${r.id} (${r.status})`)
+          .join('\n');
+        
+        setError(`カードを削除できません。\n\n${error.response.data.error}\n\nアクティブな予約:\n${reservationList}`);
+      } else {
+        setError('カードの削除に失敗しました');
+      }
     }
   };
 
