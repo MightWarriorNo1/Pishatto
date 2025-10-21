@@ -121,6 +121,18 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
                 </div>
 
                 <div className="pt-6 space-y-5">
+                    {/* Show verification code for testing */}
+                    {displayedCode && (
+                        <div className="bg-yellow-100 border border-yellow-400 rounded-lg p-3 mb-4">
+                            <div className="text-yellow-800 text-sm font-medium">
+                                🧪 テスト用認証コード: <span className="font-mono text-lg font-bold">{displayedCode}</span>
+                            </div>
+                            <div className="text-yellow-700 text-xs mt-1">
+                                開発環境でのみ表示されます
+                            </div>
+                        </div>
+                    )}
+                    
                     <div className="grid grid-cols-6 gap-2 sm:gap-3">
                         {code.map((digit, index) => (
                             <input

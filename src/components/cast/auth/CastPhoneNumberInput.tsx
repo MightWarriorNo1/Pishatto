@@ -108,7 +108,18 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
                     <div className="text-[13px] text-secondary">SMSによる本人確認のため、テキストメッセージをお送りします（通信料が発生する場合があります）。</div>
                     {error && <div role="alert" className="text-rose-600 text-sm">{error}</div>}
                 </div>
-                {verificationCode && <div className="text-sm text-white mb-4">送信された認証コード: {verificationCode}</div>}
+                
+                {/* Show verification code for testing */}
+                {verificationCode && (
+                    <div className="bg-yellow-100 border border-yellow-400 rounded-lg p-3 mb-4">
+                        <div className="text-yellow-800 text-sm font-medium">
+                            🧪 テスト用認証コード: <span className="font-mono text-lg font-bold">{verificationCode}</span>
+                        </div>
+                        <div className="text-yellow-700 text-xs mt-1">
+                            開発環境でのみ表示されます
+                        </div>
+                    </div>
+                )}
                 {/* Spacer bottom is handled by pb-28 on container */}
             </div>
             <div className="fixed max-w-md mx-auto inset-x-0 bottom-0 z-20 backdrop-blur pb-10">
