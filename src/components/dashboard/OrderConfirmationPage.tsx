@@ -301,7 +301,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
         setRequiredPointsForModal(insufficientAmount);
         setErrorMessage(`ポイントが不足しています。必要ポイント: ${Number(requiredPoints).toLocaleString()}P、現在のポイント: ${Number(availablePoints).toLocaleString()}P`);
       } else {
-      setErrorMessage('注文の処理中にエラーが発生しました。もう一度お試しください。');
+        setErrorMessage('注文の処理中にエラーが発生しました。もう一度お試しください。');
       }
     } finally {
       setIsProcessing(false);

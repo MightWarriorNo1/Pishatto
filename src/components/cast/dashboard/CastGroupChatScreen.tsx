@@ -183,10 +183,9 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             // Mark dissolve button as used
             setDissolveButtonUsed(true);
             
-            // Calculate elapsed time
-            const startTime = reservationData.started_at ? new Date(reservationData.started_at) : new Date();
-            const endTime = new Date();
-            const elapsedTime = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+            // Use the elapsed time from session state for accurate calculation
+            // This ensures we get the correct elapsed time from the running timer
+            const elapsedTime = sessionState.elapsedTime;
 
             console.log("ELAPS", elapsedTime);
             
@@ -252,41 +251,8 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
             // based on actual session time and creates the appropriate transactions.
             
             // Call backend to stop reservation and get actual earnings
+            // The backend will handle sending session completion messages with correct elapsed time
             const result = await originalHandleDissolve();
-            
-            // Send session end message to the chat
-            try {
-                console.log('Attempting to send session end message...', {
-                    group_id: reservationData.group_id,
-                    groupId: groupId,
-                    reservationData: reservationData
-                });
-                
-                const sessionEndMessage = {
-                    group_id: reservationData.group_id || groupId, // Fallback to groupId if group_id not available
-                    message: `セッションが終了しました。経過時間: ${Math.floor(elapsedTime / 60)}分${elapsedTime % 60}秒`,
-                    sender_cast_id: castId || user?.id
-                };
-                
-                console.log('Sending session end message:', sessionEndMessage);
-                const messageResponse = await sendGroupMessage(sessionEndMessage);
-                console.log('Session end message sent successfully:', messageResponse);
-            } catch (messageError) {
-                console.error('Failed to send session end message:', messageError);
-                // Try alternative message sending if the first attempt fails
-                try {
-                    const fallbackMessage = {
-                        group_id: groupId,
-                        message: `セッションが終了しました。経過時間: ${Math.floor(elapsedTime / 60)}分${elapsedTime % 60}秒`,
-                        sender_cast_id: castId || user?.id
-                    };
-                    console.log('Trying fallback message:', fallbackMessage);
-                    await sendGroupMessage(fallbackMessage);
-                    console.log('Fallback session end message sent successfully');
-                } catch (fallbackError) {
-                    console.error('Fallback message also failed:', fallbackError);
-                }
-            }
             
             // Set session summary with backend data if available
             // Otherwise fall back to frontend calculations for display only

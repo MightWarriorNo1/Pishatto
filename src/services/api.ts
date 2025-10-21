@@ -748,8 +748,12 @@ export const startReservation = async (reservation_id: number, cast_id: number) 
   return response.data.reservation;
 };
 
-export const stopReservation = async (reservation_id: number, cast_id: number) => {
-  const response = await api.post('/reservation/stop', { reservation_id, cast_id });
+export const stopReservation = async (reservation_id: number, cast_id: number, frontend_elapsed_time?: number) => {
+  const response = await api.post('/reservation/stop', { 
+    reservation_id, 
+    cast_id,
+    frontend_elapsed_time // Pass frontend-calculated time to backend
+  });
   return response.data;
 };
 

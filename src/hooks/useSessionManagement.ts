@@ -116,16 +116,26 @@ export const useSessionManagement = ({
             return;
         }
 
+        // STOP TIMER IMMEDIATELY for better UX
+        const endTime = new Date();
+        const startTimeToUse = sessionState.startTime || new Date();
+        const frontendElapsedTime = sessionState.elapsedTime; // Get current elapsed time from frontend timer
+        
+        // Update local state immediately to stop the timer
+        setSessionState(prev => ({
+            ...prev,
+            isActive: false,
+            endTime: endTime
+        }));
+
         setIsLoading(true);
         setError(null);
 
         try {
-            // Use cast-specific stop reservation endpoint
-			const updatedReservation = await stopReservation(reservationId, castId);
+            // Use cast-specific stop reservation endpoint with frontend-calculated time
+			const updatedReservation = await stopReservation(reservationId, castId, frontendElapsedTime);
 
 			// Persist started_at and ended_at explicitly to reservation
-			const endTime = new Date();
-			const startTimeToUse = sessionState.startTime || new Date();
 			try {
 				await updateReservation(reservationId, {
 					started_at: startTimeToUse.toISOString(),
@@ -135,13 +145,6 @@ export const useSessionManagement = ({
 				console.error('Failed to persist started_at/ended_at on dissolve:', persistErr);
 			}
 
-            // Update local state
-			setSessionState(prev => ({
-                ...prev,
-				isActive: false,
-				endTime: endTime
-            }));
-
             onSessionEnd?.();
             onReservationUpdate?.(updatedReservation);
         } catch (err: any) {
@@ -149,7 +152,7 @@ export const useSessionManagement = ({
         } finally {
             setIsLoading(false);
         }
-    }, [reservationId, castId, onSessionEnd, onReservationUpdate]);
+    }, [reservationId, castId, sessionState.startTime, sessionState.elapsedTime, onSessionEnd, onReservationUpdate]);
 
     // Create new reservation (reuses existing Pishatto-call system)
     const createNewReservation = useCallback(async (proposalData: any) => {

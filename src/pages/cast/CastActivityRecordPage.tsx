@@ -52,7 +52,11 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
                 setLoading(true);
                 const response = await getPointTransactions('cast', castId);
                 if (response.success) {
-                    setTransactions(response.transactions);
+                    // Filter out pending transactions as they are internal system records
+                    const filteredTransactions = response.transactions.filter(
+                        (transaction: PointTransaction) => transaction.type !== 'pending'
+                    );
+                    setTransactions(filteredTransactions);
                 } else {
                     setError('Failed to fetch transactions');
                 }
@@ -81,6 +85,12 @@ const CastActivityRecordPage: React.FC<{ onBack: () => void }> = ({ onBack }) =>
     const getTransactionDescription = (transaction: PointTransaction) => {
         if (transaction.type === 'transfer') {
             return transaction.description || '予約完了';
+        } else if (transaction.type === 'exceeded_pending') {
+            // Show detailed breakdown for extension earnings
+            if (transaction.description && transaction.description.includes('フリーコール延長時間料金')) {
+                return transaction.description;
+            }
+            return '延長時間料金';
         } else if (transaction.type === 'gift') {
             return 'ギフト受け取り';
         } else if (transaction.type === 'payout') {

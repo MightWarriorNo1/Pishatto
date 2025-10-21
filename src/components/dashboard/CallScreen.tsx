@@ -1368,6 +1368,7 @@ function OrderFinalConfirmationScreen({
     onShowInsufficientPointsModal: () => void;
 }) {
     const [showInsufficientPointsModal, setShowInsufficientPointsModal] = useState(false);
+    const [requiredPointsForModal, setRequiredPointsForModal] = useState(0);
     const { user, refreshUser } = useUser();
     const navigate = useNavigate();
     const [reservationMessage, setReservationMessage] = useState<string | null>(null);
@@ -1488,6 +1489,8 @@ function OrderFinalConfirmationScreen({
             if (error.response?.status === 400 && error.response?.data?.message === 'Insufficient points') {
                 const requiredPoints = error.response.data.required_points;
                 const availablePoints = error.response.data.available_points;
+                const insufficientAmount = Number(requiredPoints) - Number(availablePoints);
+                setRequiredPointsForModal(insufficientAmount);
                 setReservationMessage(`ポイントが不足しています。必要ポイント: ${Number(requiredPoints).toLocaleString()}P、現在のポイント: ${Number(availablePoints).toLocaleString()}P`);
             } else {
                 setReservationMessage('注文の処理中にエラーが発生しました。もう一度お試しください。');
@@ -1643,21 +1646,7 @@ function OrderFinalConfirmationScreen({
             <InsufficientPointsModal
                 isOpen={showInsufficientPointsModal}
                 onClose={() => setShowInsufficientPointsModal(false)}
-                requiredPoints={(() => {
-                    // Calculate total cost for the modal
-                    const durationHours = customDurationHours || (selectedDuration.includes('以上') ? 4 : selectedDuration === '1分' ? 1/60 : Number(selectedDuration.replace('時間', '')));
-                    const baseCost = 18000 * counts[0] * durationHours * 60 / 30 +
-                        15000 * counts[1] * durationHours * 60 / 30 +
-                        12000 * counts[2] * durationHours * 60 / 30;
-                    const nightTimeFee = 0; // Simplified for modal - could add night time logic if needed
-                    const totalCost = baseCost + nightTimeFee;
-                    
-                    // Calculate insufficient amount (total cost - user's current points)
-                    const userCurrentPoints = user?.points || 0;
-                    const insufficientAmount = Math.max(0, totalCost - userCurrentPoints);
-                    
-                    return insufficientAmount;
-                })()}
+                requiredPoints={requiredPointsForModal}
                 onPointsPurchased={() => {
                     setShowInsufficientPointsModal(false);
                     // Clear error message
