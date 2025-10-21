@@ -56,11 +56,11 @@ const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
             </span>
             LINEで始める
           </button>
-
+{/* 
           <button className="w-full flex items-center justify-center py-2 text-gray-400 hover:text-white"
             onClick={() => { window.location.href = "/"; }}>
             閉じる
-          </button>
+          </button> */}
         </div>
       </div>
     </div>

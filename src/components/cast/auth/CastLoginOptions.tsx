@@ -90,14 +90,14 @@ const CastLoginOptions: React.FC<CastLoginOptionsProps> = ({ onNext }) => {
                         プライバシーポリシー
                         に同意のうえでお願いします。
                     </div>
-
+{/* 
                     <button
                         className="w-full flex items-center justify-center py-2 text-rose-500 hover:text-rose-600 focus:outline-none transition-colors"
                         onClick={() => { window.location.href = "/"; }}
                         type="button"
                     >
                         閉じる
-                    </button>
+                    </button> */}
                 </div>
             </div>
         </div>
