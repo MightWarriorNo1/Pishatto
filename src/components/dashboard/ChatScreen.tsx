@@ -570,7 +570,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 // Remove optimistic message on error
                 setMessages(prev => prev.filter(m => m.id !== optimisticId));
                 
-                if (e.response?.data?.error === 'Insufficient points to send this gift') {
+                if (e.response?.data?.error === 'ギフト送信に必要なポイントが不足しています') {
                     setSendError(`ポイントが不足しています。必要: ${Number(e.response.data.required_points).toLocaleString()}P、所持: ${Number(e.response.data.available_points).toLocaleString()}P`);
                 } else {
                     setSendError('メッセージの送信に失敗しました');
@@ -1278,6 +1278,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                         
                                         if (e?.response?.data?.error === 'Insufficient guest points') {
                                             errorMessage = 'ゲストのポイントが不足しています。';
+                                        } else if (e?.response?.data?.message?.includes('ポイントが不足しており、自動支払いも失敗しました')) {
+                                            errorMessage = 'ゲストのポイントが不足しており、自動支払いも失敗しました。ゲストにカード登録をお願いしてください。';
                                         } else if (e?.response?.data?.message) {
                                             errorMessage = e.response.data.message;
                                         } else if (e?.message) {

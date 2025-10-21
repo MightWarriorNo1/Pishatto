@@ -50,6 +50,7 @@ export class ProposalService {
                 });
             } else {
                 // Create new reservation using existing Pishatto-call API
+                // The backend will now handle automatic payment for insufficient points
                 reservation = await createReservation({
                     guest_id: proposalData.guest_id,
                     cast_id: proposalData.cast_id,

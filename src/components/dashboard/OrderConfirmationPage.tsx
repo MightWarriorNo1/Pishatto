@@ -294,7 +294,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
       console.error('Order confirmation error:', error);
       
       // Handle specific backend errors
-      if (error.response?.status === 400 && error.response?.data?.message === 'Insufficient points') {
+      if (error.response?.status === 400 && error.response?.data?.message === 'ポイントが不足しています') {
         const requiredPoints = error.response.data.required_points;
         const availablePoints = error.response.data.available_points;
         const insufficientAmount = Number(requiredPoints) - Number(availablePoints);
