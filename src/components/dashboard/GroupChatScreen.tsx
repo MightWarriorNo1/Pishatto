@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Users, Calendar, Clock, Check, Send } from 'lucide-react';
+import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Users, Calendar, Clock, Check, Send, Info } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants, updateReservation } from '../../services/api';
+import ReservationDetailsModal from '../ui/ReservationDetailsModal';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useGroupMessages } from '../../hooks/useRealtime';
@@ -87,7 +88,8 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
     const [mentionOpen, setMentionOpen] = useState(false);
     const [mentionQuery, setMentionQuery] = useState('');
     const [selectedCastTarget, setSelectedCastTarget] = useState<{ id: number; nickname: string } | null>(null);
-    
+    const [reservationId, setReservationId] = useState<number | null>(null);
+    const [showReservationDetails, setShowReservationDetails] = useState(false);
     
     // Camera functionality
     const [showCamera, setShowCamera] = useState(false);
@@ -119,12 +121,16 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
         fetchMessages();
     }, [groupId, user]);
 
-    // Fetch participants
+    // Fetch participants and reservation ID
     useEffect(() => {
         const fetchParticipants = async () => {
             try {
                 const response = await getGroupParticipants(groupId);
                 setParticipants(response.participants || []);
+                // Set reservation ID if available
+                if (response.group?.reservation_id) {
+                    setReservationId(response.group.reservation_id);
+                }
             } catch (e) {
                 console.error('Failed to fetch participants:', e);
             }
@@ -349,7 +355,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                     <button onClick={onBack} className="text-white">
                         <ChevronLeft className="w-6 h-6 hover:text-secondary cursor-pointer" />
                     </button>
-                    <div className="flex items-center">
+                    <div className="flex items-center flex-1">
                         <Users className="w-5 h-5 text-white mr-2" />
                         <span className="text-white font-bold">
                             {groupInfo?.name || `グループ ${groupId}`}
@@ -358,6 +364,16 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                             ({participants.length}人)
                         </span>
                     </div>
+                    {/* Reservation Details Button */}
+                    {reservationId && (
+                        <button
+                            onClick={() => setShowReservationDetails(true)}
+                            className="ml-2 p-2 text-white hover:text-secondary cursor-pointer"
+                            title="予約詳細"
+                        >
+                            <Info size={20} />
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -1072,6 +1088,13 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({ groupId, onBack }) =>
                 </div>
             )}
 
+            {/* Reservation Details Modal */}
+            <ReservationDetailsModal
+                isOpen={showReservationDetails}
+                onClose={() => setShowReservationDetails(false)}
+                reservationId={reservationId}
+                userType="guest"
+            />
         </div>
     );
 };

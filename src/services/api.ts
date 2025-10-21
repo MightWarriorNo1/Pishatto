@@ -370,6 +370,11 @@ export const getReservationById = async (id: number) => {
   return response.data.reservation;
 };
 
+export const getReservationDetails = async (id: number) => {
+  const response = await api.get(`/reservations/${id}/details`);
+  return response.data.reservation;
+};
+
 export const castRegister = async (data: { phone: string; nickname?: string; avatar?: string }) => {
   const response = await api.post('/cast/register', data, { withCredentials: true });
   return response.data;

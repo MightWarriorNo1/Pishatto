@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { ChevronLeft, Calendar, Image, Search, Filter, Camera, FolderClosed, Send } from 'lucide-react';
+import { ChevronLeft, Calendar, Image, Search, Filter, Camera, FolderClosed, Send, Info } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { useNavigate } from 'react-router-dom';
@@ -24,6 +24,7 @@ import Spinner from '../../ui/Spinner';
 import { useSessionManagement } from '../../../hooks/useSessionManagement';
 import ProposalService from '../../../services/ProposalService';
 import { startReservation, stopReservation, updateReservation, getChatById, completeSession, completeReservation, getCastGrade, getCastProfileById, getReservationById, getGuestProfileById } from '../../../services/api';
+import ReservationDetailsModal from '../../ui/ReservationDetailsModal';
 import { useStartReservation } from '../../../hooks/useQueries';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -82,6 +83,8 @@ const MessageDetail: React.FC<MessageDetailProps> = ({ message, onBack }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [inputBarHeight, setInputBarHeight] = useState<number>(0);
+    const [reservationId, setReservationId] = useState<number | null>(null);
+    const [showReservationDetails, setShowReservationDetails] = useState(false);
 
     // Helper function to get localStorage key for sessions
     const getSessionStorageKey = (chatId: number) => `proposal_sessions_${chatId}`;
@@ -321,6 +324,15 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
             setGroupId(null);
         }
     }, [message.id, castId, chatInfo]);
+
+    // Set reservation ID when chatInfo changes
+    useEffect(() => {
+        if (chatInfo?.reservation_id) {
+            setReservationId(chatInfo.reservation_id);
+        } else {
+            setReservationId(null);
+        }
+    }, [chatInfo]);
 
     // Check for matching confirmation and add automatic message
     // Matching messages are now handled by backend through group chats
@@ -1113,7 +1125,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                 <button onClick={onBack} className="mr-2 text-white hover:text-secondary cursor-pointer">
                     <ChevronLeft size={24} />
                 </button>
-                <div className="flex items-center">
+                <div className="flex items-center flex-1">
                     <img
                         src={`${message.avatar}`}
                         alt={message.name}
@@ -1122,6 +1134,16 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     />
                     <span className="text-lg font-bold text-white">{message.name}</span>
                 </div>
+                {/* Reservation Details Button */}
+                {reservationId && (
+                    <button
+                        onClick={() => setShowReservationDetails(true)}
+                        className="ml-2 p-2 text-white hover:text-secondary cursor-pointer"
+                        title="予約詳細"
+                    >
+                        <Info size={20} />
+                    </button>
+                )}
             </div>
 
             {/* Debug: Log chatInfo to see if reservation_id is available */}
@@ -2819,6 +2841,14 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                     </div>
                 </div>
             )}
+
+            {/* Reservation Details Modal */}
+            <ReservationDetailsModal
+                isOpen={showReservationDetails}
+                onClose={() => setShowReservationDetails(false)}
+                reservationId={reservationId}
+                userType="cast"
+            />
         </div >
     );
 };

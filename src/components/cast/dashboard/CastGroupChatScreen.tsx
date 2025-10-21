@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Image, Camera, FolderClosed,  ChevronLeft, X, Users, Send } from 'lucide-react';
+import { Image, Camera, FolderClosed,  ChevronLeft, X, Users, Send, Info } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { sendGroupMessage, getGroupMessages, fetchAllGifts, getGroupParticipants, getReservationById, getCastProfile, createPointTransaction } from '../../../services/api';
+import ReservationDetailsModal from '../../ui/ReservationDetailsModal';
 import { useCast } from '../../../contexts/CastContext';
 import { useUser } from '../../../contexts/UserContext';
 import { useGroupMessages, useReservationUpdates } from '../../../hooks/useRealtime';
@@ -80,6 +81,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
     // Session management state
     const [reservationId, setReservationId] = useState<number | null>(null);
     const [reservationData, setReservationData] = useState<any>(null);
+    const [showReservationDetails, setShowReservationDetails] = useState(false);
     const [dissolveButtonUsed, setDissolveButtonUsed] = useState(false);
     const [sessionSummary, setSessionSummary] = useState<{
         elapsedTime: number;
@@ -714,7 +716,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                 <button onClick={onBack} className="text-white hover:text-secondary cursor-pointer">
                     <ChevronLeft className="w-6 h-6" />
                 </button>
-                <div className="flex items-center">
+                <div className="flex items-center flex-1">
                     <Users className="w-5 h-5 text-white mr-2" />
                     <span className="text-white font-bold">
                         {groupInfo?.name || `グループ ${groupId}`}
@@ -723,6 +725,16 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         ({participants.length}人)
                     </span>
                 </div>
+                {/* Reservation Details Button */}
+                {reservationId && (
+                    <button
+                        onClick={() => setShowReservationDetails(true)}
+                        className="ml-2 p-2 text-white hover:text-secondary cursor-pointer"
+                        title="予約詳細"
+                    >
+                        <Info size={20} />
+                    </button>
+                )}
                 {/* <div className="flex space-x-2">
                     <button 
                         onClick={() => {
@@ -1123,6 +1135,14 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                 </div>
             )}
             {/* Image preview overlay moved inside messages container */}
+
+            {/* Reservation Details Modal */}
+            <ReservationDetailsModal
+                isOpen={showReservationDetails}
+                onClose={() => setShowReservationDetails(false)}
+                reservationId={reservationId}
+                userType="cast"
+            />
         </div>
     );
 };

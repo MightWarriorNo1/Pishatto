@@ -1,10 +1,11 @@
 /* eslint-disable */
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Send, Calendar } from 'lucide-react';
+import { Image, Camera, FolderClosed, Gift, ChevronLeft, X, Send, Calendar, Info } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { sendMessage, getChatMessages, fetchAllGifts, getChatById, getGuestReservations } from '../../services/api';
+import ReservationDetailsModal from '../ui/ReservationDetailsModal';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useChatMessages } from '../../hooks/useRealtime';
@@ -98,6 +99,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
     const [reservationId, setReservationId] = useState<number | null>(null);
     const [guestReservations, setGuestReservations] = useState<any[]>([]);
     const [castInfo, setCastInfo] = useState<any>(null);
+    const [showReservationDetails, setShowReservationDetails] = useState(false);
     const [castLoading, setCastLoading] = useState(true);
     const [selectedGift, setSelectedGift] = useState<any>(null);
     const [showGiftDetailModal, setShowGiftDetailModal] = useState(false);
@@ -615,7 +617,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         target.src = '/assets/avatar/female.png';
                     }}
                 />
-                <div className="flex flex-col">
+                <div className="flex flex-col flex-1">
                     {castLoading ? (
                         <span className="font-bold text-white text-base truncate">読み込み中...</span>
                     ) : (
@@ -641,6 +643,16 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         </>
                     )}
                 </div>
+                {/* Reservation Details Button */}
+                {reservationId && (
+                    <button
+                        onClick={() => setShowReservationDetails(true)}
+                        className="ml-2 p-2 text-white hover:text-secondary cursor-pointer"
+                        title="予約詳細"
+                    >
+                        <Info size={20} />
+                    </button>
+                )}
             </div>
             {/* Session Timer - Only show if there's an active reservation */}
             {/* {reservationId && (
@@ -1323,6 +1335,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                     </div>
                 </div>
             )}
+
+            {/* Reservation Details Modal */}
+            <ReservationDetailsModal
+                isOpen={showReservationDetails}
+                onClose={() => setShowReservationDetails(false)}
+                reservationId={reservationId}
+                userType="guest"
+            />
         </div>
     );
 };
