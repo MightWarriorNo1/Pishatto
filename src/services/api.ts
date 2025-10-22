@@ -577,6 +577,12 @@ export const purchasePoints = async (user_id: number, user_type: 'guest' | 'cast
   return response.data;
 };
 
+export const purchasePointsWithPendingCapture = async (user_id: number, user_type: 'guest' | 'cast', amount: number, required_points: number, description?: string) => {
+  const payload = { user_id, user_type, amount, required_points, description };
+  const response = await api.post('/payments/purchase-pending', payload);
+  return response.data;
+};
+
 export const getPaymentHistory = async (user_type: 'guest' | 'cast', user_id: number) => {
   const response = await api.get(`/payments/history/${user_type}/${user_id}`);
   if (response.data.success === false) {

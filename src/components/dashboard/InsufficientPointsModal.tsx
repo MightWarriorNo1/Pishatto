@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Plus, CheckCircle2 } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
-import { getPaymentInfo, purchasePoints } from '../../services/api';
+import { getPaymentInfo, purchasePoints, purchasePointsWithPendingCapture } from '../../services/api';
 import StripePaymentForm from '../payment/PayJPPaymentForm';
 import CardRegistrationForm from '../payment/CardRegistrationForm';
 import Spinner from '../ui/Spinner';
@@ -68,10 +68,13 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
       const YEN_PER_POINT = 1.2;
       const yenAmount = Math.max(100, Math.ceil(requiredPoints * YEN_PER_POINT)); // Minimum 100 yen for Stripe
 
-      const result = await purchasePoints(
+      // Use the new pending capture API for insufficient points scenario
+      const result = await purchasePointsWithPendingCapture(
         user.id,
         'guest',
-        yenAmount
+        yenAmount,
+        requiredPoints,
+        `ポイント不足時の自動支払い - ${requiredPoints}ポイント`
       );
 
       if (result.success) {
@@ -82,7 +85,7 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
           onClose();
         }, 2000);
       } else {
-        if (result.error?.includes('カード情報が必要')) {
+        if (result.error?.includes('カード情報が必要') || result.requires_card_registration) {
           setShowCardRegistration(true);
         } else {
           setError(result.error || 'ポイント購入に失敗しました。');
@@ -142,9 +145,12 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
         {purchaseSuccess ? (
           <div className="text-center py-8">
             <CheckCircle2 className="text-green-400 w-16 h-16 mx-auto mb-4 animate-bounce" />
-            <h3 className="text-xl font-bold text-white mb-2">ポイント購入完了！</h3>
-            <p className="text-gray-300">
+            <h3 className="text-xl font-bold text-white mb-2">ポイント追加完了！</h3>
+            <p className="text-gray-300 mb-2">
               {requiredPoints.toLocaleString()}ポイントが追加されました
+            </p>
+            <p className="text-yellow-300 text-sm">
+              2日後に自動的に支払いが完了します
             </p>
           </div>
         ) : showCardRegistration ? (
@@ -214,7 +220,8 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
                     登録済みカードで購入
                   </h3>
                   <p className="text-gray-300 text-sm mb-4">
-                    登録済みのカードから自動で{requiredYen.toLocaleString()}円を決済し、{requiredPoints.toLocaleString()}ポイントを購入します。
+                    登録済みのカードから{requiredYen.toLocaleString()}円の支払いを予約し、{requiredPoints.toLocaleString()}ポイントを追加します。<br />
+                    <span className="text-yellow-300">2日後に自動的に支払いが完了します。</span>
                   </p>
                 </div>
                 <button
