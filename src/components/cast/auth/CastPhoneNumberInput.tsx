@@ -122,7 +122,7 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
                 )}
                 {/* Spacer bottom is handled by pb-28 on container */}
             </div>
-            <div className="fixed max-w-md mx-auto inset-x-0 bottom-0 z-20 backdrop-blur pb-10">
+            <div className="fixed max-w-md mx-auto inset-x-0 bottom-0 z-20 backdrop-blur pb-[100px]">
                 <div className="max-w-md mx-auto px-6 py-3">
                     <button
                         className={`w-full h-14 rounded-full font-medium text-base transition-colors ${isActive && !loading ? 'bg-rose-500 text-white hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-300' : 'bg-rose-100 text-rose-300 cursor-not-allowed'}`}

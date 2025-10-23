@@ -522,7 +522,7 @@ const CastRegisterPage: React.FC = () => {
     };
 
     return (
-        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
+        <div className="max-w-md mx-auto min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-[100px]">
             {/* Top bar */}
             <div className="flex items-center px-4 py-3 border-b border-secondary bg-gradient-to-b from-primary via-primary to-secondary">
                 <span className="text-lg font-bold flex-1 text-center text-white">写真を提出</span>

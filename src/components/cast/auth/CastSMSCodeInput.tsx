@@ -166,7 +166,7 @@ const CastSMSCodeInput: React.FC<CastSMSCodeInputProps> = ({ onBack, phone, veri
                     </div>
                 </div>
 
-                <div className="fixed max-w-md mx-auto bottom-0 left-0 right-0 px-4 pb-10 pt-3">
+                <div className="fixed max-w-md mx-auto bottom-0 left-0 right-0 px-4 pb-[100px] pt-3">
                     <div className="max-w-md mx-auto">
                         <button
                             className={`w-full h-14 rounded-full font-medium text-base transition-colors ${isActive ? 'bg-rose-500 text-white hover:bg-rose-600 focus:outline-none focus:ring-2 focus:ring-rose-300' : 'bg-rose-100 text-rose-300 cursor-not-allowed'}`}

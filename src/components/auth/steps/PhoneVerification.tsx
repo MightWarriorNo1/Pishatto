@@ -251,7 +251,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
           </div>
         </div>
         {/* Fixed Bottom Button */}
-        <div className="p-4">
+        <div className="p-4 mb-[100px]">
           <button
             onClick={handlePhoneSubmit}
             disabled={!phoneNumber || loading}
@@ -326,7 +326,7 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
         </div>
       </div>
       {/* Fixed Bottom Button */}
-      <div className="p-4">
+      <div className="p-4 mb-[100px]">
         <button
           onClick={handleCodeSubmit}
           disabled={verificationCode.some(digit => digit === '') || loading}
