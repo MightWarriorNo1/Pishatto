@@ -2125,6 +2125,14 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
 
     if (showStepRequirement) return <StepRequirementScreen onBack={() => { setShowStepRequirement(false); setTimeout(refreshSetupStatuses, 0); }} />;
 
+    // Check if both requirements are met
+    const isSetupComplete = hasRegisteredCard && verificationStatus === 'success';
+    
+    // Show StepRequirementScreen if requirements are not met
+    if (user?.id && !isSetupLoading && !isSetupComplete) {
+        return <StepRequirementScreen onBack={() => { setShowStepRequirement(false); setTimeout(refreshSetupStatuses, 0); }} />;
+    }
+
     // Show loading state until verification and card statuses are loaded
     if (user?.id && isSetupLoading) {
         return (
@@ -2216,8 +2224,13 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                     </div>
 
                     <button
-                        className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-3 rounded-xl font-bold text-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-                        onClick={() => setPage('orderHistory')}
+                        className={`w-full py-3 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg ${
+                            isSetupComplete 
+                                ? 'bg-gradient-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 hover:shadow-xl transform hover:scale-105 active:scale-95' 
+                                : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                        }`}
+                        onClick={() => isSetupComplete && setPage('orderHistory')}
+                        disabled={!isSetupComplete}
                     >
                         人数を決める
                     </button>
@@ -2243,8 +2256,13 @@ const CallScreen: React.FC<CallScreenProps> = ({ onStartOrder, onNavigateToMessa
                     </div>
 
                     <button
-                        className="w-full bg-gradient-to-r from-purple-500 to-purple-600 text-white py-3 rounded-xl font-bold text-lg hover:from-purple-600 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-                        onClick={() => setPage("freeCall")}
+                        className={`w-full py-3 rounded-xl font-bold text-lg transition-all duration-200 shadow-lg ${
+                            isSetupComplete 
+                                ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 hover:shadow-xl transform hover:scale-105 active:scale-95' 
+                                : 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                        }`}
+                        onClick={() => isSetupComplete && setPage("freeCall")}
+                        disabled={!isSetupComplete}
                     >
                         キャストを選ぶ
                     </button>
