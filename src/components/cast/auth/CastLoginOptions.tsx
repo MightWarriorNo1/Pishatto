@@ -86,8 +86,8 @@ const CastLoginOptions: React.FC<CastLoginOptionsProps> = ({ onNext }) => {
 
                     <div className="pt-2 text-center text-xs text-rose-500">
                         ご利用は<strong className="mx-1">18歳以上</strong>、
-                        利用規約と
-                        プライバシーポリシー
+                        <a href="/legal/terms" className="underline hover:text-white">利用規約</a>と<a href="/legal/privacy" className="underline hover:text-white">
+                        プライバシーポリシー</a>
                         に同意のうえでお願いします。
                     </div>
 {/* 

@@ -32,7 +32,7 @@ const LoginOptions: React.FC<LoginOptionsProps> = ({ onNext }) => {
       <div className="flex-1 flex items-center justify-center">
         <div className="w-full px-4 space-y-4">
           <div className="p-2 text-center text-xs text-white">
-            18歳以上全ての利用規約とプライバシーポリシーに同意し
+           登録する方は18歳以上の方で、全ての <a href="/legal/terms" className="underline hover:text-white">利用規約</a> と <a href="/legal/privacy" className="underline hover:text-white">プライバシーポリシー</a> に同意した上でサービスを利用することとします。よろしいでしょうか。
           </div>
 
           <button
