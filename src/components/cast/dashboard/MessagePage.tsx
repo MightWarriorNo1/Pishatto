@@ -2468,8 +2468,8 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                 <Image size={24} />
                             </span>
                         )}
-                        {/* Show send button only when text is input */}
-                        {newMessage.trim() && (
+                        {/* Show send button when text is input or image is attached */}
+                        {(newMessage.trim() || imagePreview) && (
                             <button
                                 onClick={async () => {
                                     if ((newMessage.trim() || attachedFile) && !sendMessageMutation.isPending) {

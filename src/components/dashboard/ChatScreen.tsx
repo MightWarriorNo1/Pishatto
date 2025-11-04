@@ -967,19 +967,19 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                                 </span>
                                 <button 
                                     className={`${
-                                        user && user.points && user.points > 0 && isNotificationEnabled('messages') 
+                                        user && isNotificationEnabled('messages') 
                                             ? 'text-white hover:text-secondary' 
                                             : 'text-gray-500'
                                     }`} 
                                     onClick={() => setShowGiftModal(true)}
-                                    disabled={!user || !user.points || user.points <= 0 || !isNotificationEnabled('messages')}
+                                    disabled={!user || !isNotificationEnabled('messages')}
                                 >
                                     <Gift size={24} />
                                 </button>
                             </>
                         )}
-                        {/* Show send button only when text is input */}
-                        {input.trim() && (
+                        {/* Show send button when text is input or image is attached */}
+                        {(input.trim() || imagePreview) && (
                             <button
                                 onClick={handleSend}
                                 disabled={sending || !isNotificationEnabled('messages')}
@@ -1068,17 +1068,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         </div>
                         <div className="grid grid-cols-4 gap-4 mb-4">
                             {gifts.filter(g => g.category === selectedGiftCategory).map(gift => {
-                                const hasEnoughPoints = user && user.points && user.points >= gift.points;
                                 return (
                                 <button
                                     key={gift.id}
-                                    className={`flex flex-col items-center justify-center rounded-lg p-2 transition ${
-                                        hasEnoughPoints 
-                                            ? 'bg-secondary text-white hover:bg-red-700' 
-                                            : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                    }`}
+                                    className="flex flex-col items-center justify-center rounded-lg p-2 transition bg-secondary text-white hover:bg-red-700 cursor-pointer"
                                     onClick={() => {
-                                        if (!hasEnoughPoints) return;
                                         setSelectedGift(gift);
                                         setShowGiftDetailModal(true);
                                     }}
@@ -1110,9 +1104,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                         <div className="flex gap-4">
                             <button
                                 className="px-4 py-2 bg-green-600 text-white rounded font-bold disabled:opacity-50"
-                                disabled={sending || !user || (user.points ?? 0) < selectedGift.points}
+                                disabled={sending || !user}
                                 onClick={async () => {
-                                    if (!user || (user.points ?? 0) < selectedGift.points) return;
+                                    if (!user) return;
                                     setSending(true);
                                     setSendError(null);
                                     try {

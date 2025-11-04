@@ -1031,8 +1031,8 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                         )}
                     </div>
                     
-                    {/* Show send button only when text is input */}
-                    {input.trim() && (
+                    {/* Show send button when text is input or image is attached */}
+                    {(input.trim() || imagePreview) && (
                         <button
                             onClick={handleSend}
                             disabled={sending}
