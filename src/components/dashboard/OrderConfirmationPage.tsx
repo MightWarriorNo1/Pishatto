@@ -1,9 +1,9 @@
 /*eslint-disable */
-import React, { useState } from 'react';
-import {  MapPin, Clock, User, CreditCard, CheckCircle, X } from 'lucide-react';
-import { useUser } from '../../contexts/UserContext';
-import { createReservation, createChat } from '../../services/api';
-import InsufficientPointsModal from './InsufficientPointsModal';
+import React, { useState, useEffect } from "react";
+import { MapPin, Clock, User, CreditCard, CheckCircle, X } from "lucide-react";
+import { useUser } from "../../contexts/UserContext";
+import { createReservation, createChat } from "../../services/api";
+import InsufficientPointsModal from "./InsufficientPointsModal";
 
 interface Cast {
   id: number;
@@ -15,7 +15,12 @@ interface Cast {
 
 interface OrderConfirmationPageProps {
   onBack: () => void;
-  onConfirm: (reservationId: number, chatId: number, confirmedTime?: string, updatedDuration?: string) => void;
+  onConfirm: (
+    reservationId: number,
+    chatId: number,
+    confirmedTime?: string,
+    updatedDuration?: string
+  ) => void;
   selectedCast: Cast;
   meetingArea: string;
   scheduledTime: string;
@@ -23,7 +28,13 @@ interface OrderConfirmationPageProps {
 }
 
 // Time selection modal component
-function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime, currentDuration }: {
+function TimeSelectionModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  currentTime,
+  currentDuration,
+}: {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (time: string) => void;
@@ -34,18 +45,19 @@ function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime, currentDu
   const [customHours, setCustomHours] = useState(1);
 
   const timeOptions = [
-    { label: '1分', value: '1分後' },
-    { label: '5分', value: '5分後' },
-    { label: '1時間', value: '1時間後' },
-    { label: '2時間', value: '2時間後' },
-    { label: '3時間', value: '3時間後' },
-    { label: '4時間', value: '4時間後' },
-    { label: '5時間', value: '5時間後' },
-    { label: 'カスタム', value: 'custom' }
+    { label: "1分", value: "1分後" },
+    { label: "5分", value: "5分後" },
+    { label: "1時間", value: "1時間後" },
+    { label: "2時間", value: "2時間後" },
+    { label: "3時間", value: "3時間後" },
+    { label: "4時間", value: "4時間後" },
+    { label: "5時間", value: "5時間後" },
+    { label: "カスタム", value: "custom" },
   ];
 
   const handleConfirm = () => {
-    const finalTime = selectedTime === 'custom' ? `${customHours}時間後` : selectedTime;
+    const finalTime =
+      selectedTime === "custom" ? `${customHours}時間後` : selectedTime;
     onConfirm(finalTime);
     onClose();
   };
@@ -62,60 +74,70 @@ function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime, currentDu
             </div>
             <div>
               <h3 className="text-xl font-bold text-white">設定時間を変更</h3>
-              <p className="text-white/70 text-sm">希望の設定時間を選択してください</p>
+              <p className="text-white/70 text-sm">
+                希望の設定時間を選択してください
+              </p>
             </div>
           </div>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="text-white hover:text-gray-300 p-2 rounded-full hover:bg-white/10 transition-all duration-200"
           >
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="mb-6">
-          <label className="block text-white mb-4 font-semibold">設定時間</label>
+          <label className="block text-white mb-4 font-semibold">
+            設定時間
+          </label>
           <div className="grid grid-cols-2 gap-3 mb-4">
-            {timeOptions.map(option => (
+            {timeOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => setSelectedTime(option.value)}
                 className={`p-4 rounded-2xl border-2 transition-all duration-200 text-left ${
-                  selectedTime === option.value 
-                    ? 'bg-gradient-to-r from-secondary to-red-500 text-white border-secondary shadow-lg' 
-                    : 'bg-white/10 text-white border-white/20 hover:border-white/40 hover:bg-white/20'
+                  selectedTime === option.value
+                    ? "bg-gradient-to-r from-secondary to-red-500 text-white border-secondary shadow-lg"
+                    : "bg-white/10 text-white border-white/20 hover:border-white/40 hover:bg-white/20"
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{option.label}</span>
                   {selectedTime === option.value && (
                     <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
-                      <span className="text-secondary text-xs font-bold">✓</span>
+                      <span className="text-secondary text-xs font-bold">
+                        ✓
+                      </span>
                     </div>
                   )}
                 </div>
               </button>
             ))}
           </div>
-          
-          {selectedTime === 'custom' && (
+
+          {selectedTime === "custom" && (
             <div className="bg-white/10 rounded-2xl p-4 border border-white/20">
-              <label className="block text-white mb-2 font-semibold">カスタム時間</label>
+              <label className="block text-white mb-2 font-semibold">
+                カスタム時間
+              </label>
               <div className="flex items-center gap-3">
                 <select
                   className="flex-1 border border-white/20 rounded-lg px-4 py-3 bg-white/10 text-primary focus:outline-none focus:border-secondary"
                   value={customHours}
                   onChange={(e) => setCustomHours(Number(e.target.value))}
                 >
-                  {Array.from({ length: 8 }, (_, i) => i + 1).map(hour => (
-                    <option key={hour} value={hour}>{hour}時間</option>
+                  {Array.from({ length: 8 }, (_, i) => i + 1).map((hour) => (
+                    <option key={hour} value={hour}>
+                      {hour}時間
+                    </option>
                   ))}
                 </select>
               </div>
             </div>
           )}
         </div>
-        
+
         <div className="flex gap-3">
           <button
             onClick={onClose}
@@ -135,22 +157,28 @@ function TimeSelectionModal({ isOpen, onClose, onConfirm, currentTime, currentDu
   );
 }
 
-const getAllAvatarUrls = (avatarString: string | null | undefined): string[] => {
-    if (!avatarString) {
-        return ['/assets/avatar/female.png'];
-    }
-    
-    // Split by comma and get all non-empty avatars
-    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-    
-    if (avatars.length === 0) {
-        return ['/assets/avatar/female.png'];
-    }
-    
-    return avatars.map(avatar => `${API_BASE_URL}/${avatar}`);
+const getAllAvatarUrls = (
+  avatarString: string | null | undefined
+): string[] => {
+  if (!avatarString) {
+    return ["/assets/avatar/female.png"];
+  }
+
+  // Split by comma and get all non-empty avatars
+  const avatars = avatarString
+    .split(",")
+    .map((avatar) => avatar.trim())
+    .filter((avatar) => avatar.length > 0);
+
+  if (avatars.length === 0) {
+    return ["/assets/avatar/female.png"];
+  }
+
+  return avatars.map((avatar) => `${API_BASE_URL}/${avatar}`);
 };
 
-const API_BASE_URL=process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:8000/api";
 
 const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   onBack,
@@ -158,32 +186,64 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   selectedCast,
   meetingArea,
   scheduledTime,
-  duration
+  duration,
 }) => {
   const { user, refreshUser } = useUser();
-  const [meetingLocation, setMeetingLocation] = useState('');
-  const [reservationName, setReservationName] = useState('');
+  const [meetingLocation, setMeetingLocation] = useState("");
+  const [reservationName, setReservationName] = useState("");
   const [isAreaConfirmed, setIsAreaConfirmed] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
   const [showTimeModal, setShowTimeModal] = useState(false);
   const [confirmedTime, setConfirmedTime] = useState(scheduledTime);
   const [updatedDuration, setUpdatedDuration] = useState(duration);
-  const [showInsufficientPointsModal, setShowInsufficientPointsModal] = useState(false);
+  const [showInsufficientPointsModal, setShowInsufficientPointsModal] =
+    useState(false);
   const [requiredPointsForModal, setRequiredPointsForModal] = useState(0);
+
+  // Check for payment success on mount (after redirect from authentication)
+  useEffect(() => {
+    const checkPaymentSuccess = () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const paymentSuccess = searchParams.get("payment_success");
+      const successData = sessionStorage.getItem("payment_success");
+
+      if (paymentSuccess === "true" || successData) {
+        // Close modal if open
+        setShowInsufficientPointsModal(false);
+        // Clear error message
+        setErrorMessage("");
+        // Refresh user data to get updated points
+        refreshUser();
+
+        // Clear the success flag
+        sessionStorage.removeItem("payment_success");
+
+        // Remove payment_success from URL params
+        if (paymentSuccess === "true") {
+          const newUrl = new URL(window.location.href);
+          newUrl.searchParams.delete("payment_success");
+          newUrl.searchParams.delete("points");
+          window.history.replaceState({}, "", newUrl.toString());
+        }
+      }
+    };
+
+    checkPaymentSuccess();
+  }, [refreshUser]);
 
   const computeHours = (durationLabel: string): number => {
     if (!durationLabel) return 1;
-    if (durationLabel.includes('以上')) {
+    if (durationLabel.includes("以上")) {
       return 4;
     }
     // Handle minute-based labels like "5分"
-    if (durationLabel.includes('分')) {
-      const minutes = parseInt(durationLabel.replace('分', ''));
+    if (durationLabel.includes("分")) {
+      const minutes = parseInt(durationLabel.replace("分", ""));
       const hrs = minutes / 60;
       return Number.isNaN(hrs) ? 1 : hrs;
     }
-    const parsed = parseFloat(durationLabel.replace('時間', ''));
+    const parsed = parseFloat(durationLabel.replace("時間", ""));
     return Number.isNaN(parsed) ? 1 : parsed;
   };
 
@@ -194,9 +254,9 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   const getScheduledDateFromConfirmedTime = (timeLabel: string): Date => {
     const now = new Date();
     // For testing, if user selected minute-based option like "5分後"
-    if (timeLabel.includes('分後')) {
-      const minutes = parseInt(timeLabel.replace('分後', '')); 
-      const m = Number.isNaN(minutes) ? 30 : minutes; 
+    if (timeLabel.includes("分後")) {
+      const minutes = parseInt(timeLabel.replace("分後", ""));
+      const m = Number.isNaN(minutes) ? 30 : minutes;
       return new Date(now.getTime() + m * 60 * 1000);
     }
     // Default: 30 minutes later for 1時間後 etc. (keeps previous UX)
@@ -210,8 +270,12 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
     return h >= 0 && h < 5;
   };
 
-  const computeTotalPoints = (gp: number, hrs: number, timeLabel: string): number => {
-    const base = gp * (hrs * 60) / 30; // points per 30min (hrs can be fractional)
+  const computeTotalPoints = (
+    gp: number,
+    hrs: number,
+    timeLabel: string
+  ): number => {
+    const base = (gp * (hrs * 60)) / 30; // points per 30min (hrs can be fractional)
     const scheduled = getScheduledDateFromConfirmedTime(timeLabel);
     const nightFee = isNightHour(scheduled) ? NIGHT_FEE_PER_HOUR * hrs : 0;
     return base + nightFee;
@@ -221,87 +285,106 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
 
   const handleConfirm = async () => {
     if (!isAreaConfirmed) {
-      setErrorMessage('合流エリアの確認をお願いします。');
+      setErrorMessage("合流エリアの確認をお願いします。");
       return;
     }
 
     if (!meetingLocation.trim()) {
-      setErrorMessage('合流場所を入力してください。');
+      setErrorMessage("合流場所を入力してください。");
       return;
     }
 
     if (!reservationName.trim()) {
-      setErrorMessage('予約名を入力してください。');
+      setErrorMessage("予約名を入力してください。");
       return;
     }
 
     if (!user) {
-      setErrorMessage('ユーザー情報が見つかりません。');
+      setErrorMessage("ユーザー情報が見つかりません。");
       return;
     }
 
-
     setIsProcessing(true);
-    setErrorMessage('');
+    setErrorMessage("");
 
     try {
       // Format date as MySQL DATETIME string
-      const pad = (n: number) => n.toString().padStart(2, '0');
+      const pad = (n: number) => n.toString().padStart(2, "0");
       const toMysqlDatetime = (date: Date) =>
-          `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
-      
+        `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+          date.getDate()
+        )} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+          date.getSeconds()
+        )}`;
+
       // Calculate scheduled time based on confirmed time
       const scheduledDate = getScheduledDateFromConfirmedTime(confirmedTime);
-      
-      
+
       // Recompute points including night fee at confirmation time
-      const finalComputedPoints = computeTotalPoints(gradePoints, hours, confirmedTime);
+      const finalComputedPoints = computeTotalPoints(
+        gradePoints,
+        hours,
+        confirmedTime
+      );
 
       // Create reservation
       const reservationData = {
         guest_id: user.id,
         cast_id: selectedCast.id,
-        type: 'Pishatto' as const,
+        type: "Pishatto" as const,
         scheduled_at: scheduledDate.toISOString(),
         location: meetingArea,
         meeting_location: meetingLocation,
         reservation_name: reservationName,
         duration: hours,
         points: finalComputedPoints,
-        details: `キャスト: ${selectedCast.nickname}, 合流エリア: ${meetingArea}, 設定時間: ${updatedDuration}, 使用ポイント: ${finalComputedPoints.toLocaleString()}P, 合流時間: ${scheduledDate.toLocaleString()}`,
+        details: `キャスト: ${
+          selectedCast.nickname
+        }, 合流エリア: ${meetingArea}, 設定時間: ${updatedDuration}, 使用ポイント: ${finalComputedPoints.toLocaleString()}P, 合流時間: ${scheduledDate.toLocaleString()}`,
       };
 
       // Debug: Log the reservation data being sent
-      console.log('Sending reservation data:', reservationData);
+      console.log("Sending reservation data:", reservationData);
 
       const reservation = await createReservation(reservationData);
-      
+
       // Debug: Log the response from the API
-      console.log('Reservation response:', reservation);
-      
+      console.log("Reservation response:", reservation);
+
       const reservationId = reservation.reservation.id;
 
       // Create chat between user and cast
       const chat = await createChat(selectedCast.id, user.id, reservationId);
       const chatId = chat.id;
 
-
       // Refresh user data to get updated point balance
       await refreshUser();
 
       onConfirm(reservationId, chatId, confirmedTime, updatedDuration);
     } catch (error: any) {
-      console.error('Order confirmation error:', error);
-      
+      console.error("Order confirmation error:", error);
+
       // Handle specific backend errors
-      if (error.response?.status === 400 && error.response?.data?.message === 'ポイントが不足しています') {
+      if (
+        error.response?.status === 400 &&
+        error.response?.data?.message === "ポイントが不足しています"
+      ) {
         const requiredPoints = error.response.data.required_points;
         const availablePoints = error.response.data.available_points;
-        const insufficientAmount = Number(requiredPoints) - Number(availablePoints);
+        const insufficientAmount =
+          Number(requiredPoints) - Number(availablePoints);
         setRequiredPointsForModal(insufficientAmount);
-        setErrorMessage(`ポイントが不足しています。必要ポイント: ${Number(requiredPoints).toLocaleString()}P、現在のポイント: ${Number(availablePoints).toLocaleString()}P`);
+        setErrorMessage(
+          `ポイントが不足しています。必要ポイント: ${Number(
+            requiredPoints
+          ).toLocaleString()}P、現在のポイント: ${Number(
+            availablePoints
+          ).toLocaleString()}P`
+        );
       } else {
-        setErrorMessage('注文の処理中にエラーが発生しました。もう一度お試しください。');
+        setErrorMessage(
+          "注文の処理中にエラーが発生しました。もう一度お試しください。"
+        );
       }
     } finally {
       setIsProcessing(false);
@@ -310,21 +393,21 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
 
   const handleTimeChange = (newTime: string) => {
     setConfirmedTime(newTime);
-    
+
     // Convert the selected time to duration format
     let durationValue: string;
-    if (newTime.includes('時間後')) {
-      const hours = parseInt(newTime.replace('時間後', ''));
+    if (newTime.includes("時間後")) {
+      const hours = parseInt(newTime.replace("時間後", ""));
       durationValue = `${hours}時間`;
-    } else if (newTime.includes('分後')) {
-      const minutes = parseInt(newTime.replace('分後', ''));
+    } else if (newTime.includes("分後")) {
+      const minutes = parseInt(newTime.replace("分後", ""));
       // Preserve minute granularity for testing (e.g., 5分)
       durationValue = `${minutes}分`;
     } else {
       // Default to 1 hour if format is not recognized
-      durationValue = '1時間';
+      durationValue = "1時間";
     }
-    
+
     setUpdatedDuration(durationValue);
   };
 
@@ -333,16 +416,20 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
       {/* Fixed Header */}
       <div className="fixed top-0 max-w-md mx-auto w-full z-50 bg-primary px-4 py-3 border-b border-white/10 shadow-lg shadow-primary/30 bg-gradient-to-r from-primary via-blue-900 to-secondary">
         <div className="relative flex items-center justify-center">
-          <button 
+          <button
             onClick={onBack}
             className="absolute left-0 text-white text-xl font-bold hover:bg-white/10 rounded-full w-10 h-10 flex items-center justify-center transition-colors"
             aria-label="戻る"
           >
             ✕
           </button>
-          <h1 className="text-lg font-bold text-white tracking-wide drop-shadow">注文内容</h1>
+          <h1 className="text-lg font-bold text-white tracking-wide drop-shadow">
+            注文内容
+          </h1>
         </div>
-        <h2 className="text-2xl font-bold text-white mt-2 pt-4 tracking-tight">注文内容</h2>
+        <h2 className="text-2xl font-bold text-white mt-2 pt-4 tracking-tight">
+          注文内容
+        </h2>
       </div>
 
       {/* Spacer to prevent content from being hidden behind fixed header */}
@@ -350,14 +437,16 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
 
       {/* Matched Cast Information */}
       <div className="px-4 py-6">
-        <h3 className="text-lg font-bold text-white mb-4">マッチングしたキャスト</h3>
-        
+        <h3 className="text-lg font-bold text-white mb-4">
+          マッチングしたキャスト
+        </h3>
+
         <div className="bg-white/10 rounded-lg border border-white/10 p-4 shadow-md shadow-primary/20 hover:shadow-lg transition-shadow">
           <div className="flex items-start space-x-4">
             {/* Cast Avatar */}
             <div className="w-16 h-16 rounded-full overflow-hidden bg-primary flex-shrink-0 border-4 border-secondary ring-2 ring-white/40 transition-transform hover:scale-105">
-              <img 
-                src={getAllAvatarUrls(selectedCast.avatar)[0]} 
+              <img
+                src={getAllAvatarUrls(selectedCast.avatar)[0]}
                 alt={selectedCast.nickname}
                 className="w-full h-full object-cover"
               />
@@ -365,34 +454,55 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
             {/* Cast Details */}
             <div className="flex-1">
               <div className="flex items-center mb-2 space-x-2">
-                <span className="text-lg font-bold text-white drop-shadow">{selectedCast.nickname}さん</span>
+                <span className="text-lg font-bold text-white drop-shadow">
+                  {selectedCast.nickname}さん
+                </span>
                 {selectedCast.category && (
-                  <span className="bg-secondary/80 text-white text-xs px-2 py-0.5 rounded-full font-semibold shadow">{selectedCast.category}</span>
+                  <span className="bg-secondary/80 text-white text-xs px-2 py-0.5 rounded-full font-semibold shadow">
+                    {selectedCast.category}
+                  </span>
                 )}
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center">
-                  <span className="text-white flex items-center gap-1"><MapPin size={16} />合流エリア</span>
+                  <span className="text-white flex items-center gap-1">
+                    <MapPin size={16} />
+                    合流エリア
+                  </span>
                   <span className="font-medium text-white">{meetingArea}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white flex items-center gap-1"><Clock size={16} />合流予定時間</span>
+                  <span className="text-white flex items-center gap-1">
+                    <Clock size={16} />
+                    合流予定時間
+                  </span>
                   <span className="font-medium text-white">{30}分後</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white flex items-center gap-1"><User size={16} />設定時間</span>
+                  <span className="text-white flex items-center gap-1">
+                    <User size={16} />
+                    設定時間
+                  </span>
                   {/* <span className="font-medium text-white">{duration}</span> */}
-                  <button 
+                  <button
                     onClick={() => setShowTimeModal(true)}
                     className="font-medium text-white hover:text-secondary transition-colors flex items-center gap-1 group"
                   >
                     <span>{updatedDuration}</span>
-                    <Clock size={14} className="group-hover:scale-110 transition-transform" />
+                    <Clock
+                      size={14}
+                      className="group-hover:scale-110 transition-transform"
+                    />
                   </button>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-white flex items-center gap-1"><CreditCard size={16} />合計ポイント</span>
-                  <span className="font-bold text-white text-lg">{computedPoints.toLocaleString()}P</span>
+                  <span className="text-white flex items-center gap-1">
+                    <CreditCard size={16} />
+                    合計ポイント
+                  </span>
+                  <span className="font-bold text-white text-lg">
+                    {computedPoints.toLocaleString()}P
+                  </span>
                 </div>
               </div>
             </div>
@@ -402,7 +512,10 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
 
       {/* Meeting Location Section */}
       <div className="px-4 py-4">
-        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><MapPin size={20} />合流場所</h3>
+        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+          <MapPin size={20} />
+          合流場所
+        </h3>
         <div className="relative">
           <input
             type="text"
@@ -422,7 +535,10 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
 
       {/* Reservation Name Section */}
       <div className="px-4 py-4">
-        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><User size={20} />予約名</h3>
+        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+          <User size={20} />
+          予約名
+        </h3>
         <div className="relative">
           <input
             type="text"
@@ -459,7 +575,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
             <CheckCircle size={18} className="text-red-400 animate-pulse" />
             <div className="text-red-400 text-sm">
               {errorMessage}
-              {errorMessage.includes('ポイントが不足') && (
+              {errorMessage.includes("ポイントが不足") && (
                 <div className="mt-2">
                   <button
                     className="underline text-blue-500 hover:text-blue-600 transition-colors"
@@ -480,13 +596,37 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
           onClick={handleConfirm}
           disabled={isProcessing || !isAreaConfirmed}
           className={`w-full py-4 rounded-lg font-bold text-lg transition-all duration-200 shadow-lg shadow-secondary/20 flex items-center justify-center gap-2
-            ${isProcessing || !isAreaConfirmed
-              ? 'bg-gray-500/50 text-gray-300 cursor-not-allowed'
-              : 'bg-white/10 text-white hover:bg-secondary/80 hover:scale-[1.02] cursor-pointer'}
+            ${
+              isProcessing || !isAreaConfirmed
+                ? "bg-gray-500/50 text-gray-300 cursor-not-allowed"
+                : "bg-white/10 text-white hover:bg-secondary/80 hover:scale-[1.02] cursor-pointer"
+            }
           `}
         >
           {isProcessing ? (
-            <span className="flex items-center gap-2"><svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path></svg>処理中...</span>
+            <span className="flex items-center gap-2">
+              <svg
+                className="animate-spin h-5 w-5 text-white"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v8z"
+                ></path>
+              </svg>
+              処理中...
+            </span>
           ) : (
             <span>注文の最終確認</span>
           )}
@@ -510,7 +650,7 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
         onPointsPurchased={() => {
           setShowInsufficientPointsModal(false);
           // Clear error message
-          setErrorMessage('');
+          setErrorMessage("");
           // Refresh user data to get updated points
           refreshUser();
         }}
@@ -519,4 +659,4 @@ const OrderConfirmationPage: React.FC<OrderConfirmationPageProps> = ({
   );
 };
 
-export default OrderConfirmationPage; 
+export default OrderConfirmationPage;

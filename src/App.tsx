@@ -27,6 +27,7 @@ import { useFavicon } from './hooks/useFavicon';
 import TermsOfService from './pages/legal/TermsOfService';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
 import TermsOfSale from './pages/legal/TermsOfSale';
+import PaymentReturnPage from './pages/PaymentReturnPage';
 
 const CastLoginWrapper: React.FC = () => {
   return <CastLoginOptions onNext={() => {}} />;
@@ -59,6 +60,7 @@ const App: React.FC = () => {
                     <Route path="/line-login" element={<LineLogin />} />
                     <Route path="/line-register" element={<LineRegister />} />
                     <Route path="/receipt/:receiptNumber" element={<PublicReceiptView />} />
+                    <Route path="/payment/return" element={<PaymentReturnPage />} />
                     <Route path="/cast/register" element={<CastRegisterPage />} />  
                     <Route path="/dashboard" element={
                       <ProtectedRoute userType="guest">
