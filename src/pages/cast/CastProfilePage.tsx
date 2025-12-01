@@ -1,11 +1,12 @@
 /*eslint-disable */
 import React, { useEffect, useState } from 'react';
-import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight, ChevronLeft, Medal, Calendar, LogOut, RefreshCcw } from 'lucide-react';
+import { Bell, CircleQuestionMark, Gift, Pencil, QrCode, Settings, Users, ChartSpline, UserPlus, ChevronRight, ChevronLeft, Medal, Calendar, LogOut, RefreshCcw, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CastGiftBoxPage from './CastGiftBoxPage';
 import CastActivityRecordPage from './CastActivityRecordPage';
 import CastFriendReferralPage from './CastFriendReferralPage';
 import CastImmediatePaymentPage from './CastImmediatePaymentPage';
+import CastPayoutSettingsPage from './CastPayoutSettingsPage';
 import { useCast } from '../../contexts/CastContext';
 import { getCastProfileById, getCastPointsData, getCastPassportData, getUnreadNotificationCount, getCastGrade, GradeInfo, getMonthlyEarnedRanking, MonthlyRankingResponse } from '../../services/api';
 import { useNotifications } from '../../hooks/useRealtime';
@@ -102,6 +103,7 @@ const CastProfilePage: React.FC = () => {
     const [showActivityRecord, setShowActivityRecord] = useState(false);
     const [showFriendReferral, setShowFriendReferral] = useState(false);
     const [showImmediatePayment, setShowImmediatePayment] = useState(false);
+    const [showPayoutSettings, setShowPayoutSettings] = useState(false);
     const { castId, logout } = useCast();
     const [showEdit, setShowEdit] = useState(false);
     const [showPointHistory, setShowPointHistory] = useState(false);
@@ -257,6 +259,7 @@ const CastProfilePage: React.FC = () => {
     if (showActivityRecord) return <CastActivityRecordPage onBack={() => setShowActivityRecord(false)} />;
     if (showFriendReferral) return <CastFriendReferralPage onBack={() => setShowFriendReferral(false)} />;
     if (showImmediatePayment) return <CastImmediatePaymentPage onBack={() => setShowImmediatePayment(false)} />;
+    if (showPayoutSettings) return <CastPayoutSettingsPage onBack={() => setShowPayoutSettings(false)} />;
     if (showEdit) return <CastProfileEditPage onBack={() => setShowEdit(false)} onProfileUpdate={handleProfileUpdate} />;
     if (showPointHistory) return <CastPointHistoryPage onBack={() => setShowPointHistory(false)} />;
     if (showNotification) return <CastNotificationPage onBack={handleNotificationClose} />;
@@ -566,6 +569,15 @@ const CastProfilePage: React.FC = () => {
                         <UserPlus />
                     </span>
                     <span className='flex-1 text-white'>すぐ入金</span>
+                    <span className="text-gray-400">
+                        <ChevronRight />
+                    </span>
+                </div>
+                <div className="w-full flex items-center px-4 py-4 text-left cursor-pointer hover:bg-secondary transition" onClick={() => setShowPayoutSettings(true)}>
+                    <span className="text-xl mr-3 text-white">
+                        <ShieldCheck />
+                    </span>
+                    <span className='flex-1 text-white'>Stripe振込設定</span>
                     <span className="text-gray-400">
                         <ChevronRight />
                     </span>

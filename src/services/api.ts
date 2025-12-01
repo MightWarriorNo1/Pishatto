@@ -675,8 +675,8 @@ export const processAutomaticPayment = async (data: {
 };
 
 export const requestPayout = async (cast_id: number, amount: number) => {
-  const response = await api.post('/payouts/request', { cast_id, amount });
-  return response.data.payout;
+  const response = await api.post(`/casts/${cast_id}/stripe/payouts`, { amount });
+  return response.data;
 };
 
 // PAY.JP related functions (handled through PayJPService)

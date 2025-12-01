@@ -29,6 +29,100 @@ export interface PaymentMethodResponse {
   error?: string;
 }
 
+export interface CastConnectRequirements {
+  currently_due: string[];
+  eventually_due: string[];
+  past_due: string[];
+  pending_verification: string[];
+  disabled_reason?: string | null;
+}
+
+export interface CastConnectStatus {
+  id?: string | null;
+  email?: string | null;
+  payouts_enabled: boolean;
+  charges_enabled?: boolean;
+  details_submitted?: boolean;
+  requirements: CastConnectRequirements;
+  needs_attention?: boolean;
+  last_requirement_refresh?: string;
+}
+
+export interface CastConnectAccountPayload {
+  email?: string;
+  country?: string;
+  business_type?: 'individual' | 'company';
+  metadata?: Record<string, string>;
+  product_description?: string;
+  support_email?: string;
+  support_phone?: string;
+  force_sync?: boolean;
+}
+
+export interface CastOnboardingLinkPayload {
+  refresh_url?: string;
+  return_url?: string;
+  type?: 'account_onboarding' | 'account_update';
+}
+
+export interface CastConnectAccountResponse {
+  success: boolean;
+  account: CastConnectStatus;
+  cast?: any;
+}
+
+export interface CastOnboardingLinkResponse {
+  success: boolean;
+  link: {
+    url: string;
+    expires_at?: number;
+  };
+}
+
+export interface CastPayoutPayload {
+  amount: number;
+  currency?: string;
+  metadata?: Record<string, string>;
+  description?: string;
+}
+
+export interface CastPayoutResponse {
+  success: boolean;
+  payout: any;
+  payment: any;
+}
+
+export interface CastPayoutRecord {
+  id: number;
+  type: 'scheduled' | 'instant';
+  closing_month: string;
+  period_start: string;
+  period_end: string;
+  total_points: number;
+  gross_amount_yen: number;
+  net_amount_yen: number;
+  fee_amount_yen: number;
+  fee_rate: number;
+  status: string;
+  scheduled_payout_date: string | null;
+  paid_at?: string | null;
+}
+
+export interface CastPayoutSummaryResponse {
+  success: boolean;
+  summary: {
+    conversion_rate: number;
+    scheduled_fee_rate: number;
+    instant_fee_rate: number;
+    unsettled_points: number;
+    unsettled_amount_yen: number;
+    instant_available_points: number;
+    instant_available_amount_yen: number;
+    upcoming_payout: CastPayoutRecord | null;
+    recent_history: CastPayoutRecord[];
+  };
+}
+
 export class StripeService {
   /**
    * Create a payment method for card information
@@ -189,15 +283,99 @@ export class StripeService {
    * Request payout (for casts)
    */
   static async requestPayout(castId: number, amount: number): Promise<any> {
+    return this.requestCastPayout(castId, { amount });
+  }
+
+  static async ensureCastConnectAccount(
+    castId: number,
+    payload: CastConnectAccountPayload = {}
+  ): Promise<CastConnectAccountResponse> {
     try {
-      const response = await api.post('/payouts/request', {
-        cast_id: castId,
-        amount: amount,
+      const response = await api.post(`/casts/${castId}/stripe/connect`, payload);
+      return response.data;
+    } catch (error: any) {
+      this.throwStripeError(error, 'Stripe Connectアカウントの作成に失敗しました。');
+    }
+  }
+
+  static async getCastConnectAccount(
+    castId: number,
+    params?: { force?: boolean }
+  ): Promise<{ success: boolean; account: CastConnectStatus }> {
+    try {
+      const response = await api.get(`/casts/${castId}/stripe/account`, {
+        params,
       });
       return response.data;
     } catch (error: any) {
-      console.error('Payout request failed:', error);
-      throw error;
+      this.throwStripeError(error, 'Stripe Connectステータスの取得に失敗しました。');
+    }
+  }
+
+  static async getCastAccountBalance(
+    castId: number
+  ): Promise<{ success: boolean; balance: any }> {
+    try {
+      const response = await api.get(`/casts/${castId}/stripe/balance`);
+      return response.data;
+    } catch (error: any) {
+      this.throwStripeError(error, '残高情報の取得に失敗しました。');
+    }
+  }
+
+  static async createCastOnboardingLink(
+    castId: number,
+    payload: CastOnboardingLinkPayload = {}
+  ): Promise<CastOnboardingLinkResponse> {
+    try {
+      const response = await api.post(`/casts/${castId}/stripe/onboarding-link`, payload);
+      return response.data;
+    } catch (error: any) {
+      this.throwStripeError(error, 'Stripe Connectオンボーディングリンクの生成に失敗しました。');
+    }
+  }
+
+  static async createCastLoginLink(
+    castId: number
+  ): Promise<{ success: boolean; link: any }> {
+    try {
+      const response = await api.post(`/casts/${castId}/stripe/login-link`);
+      return response.data;
+    } catch (error: any) {
+      this.throwStripeError(error, 'Stripeダッシュボードリンクの生成に失敗しました。');
+    }
+  }
+
+  static async requestCastPayout(
+    castId: number,
+    payload: CastPayoutPayload
+  ): Promise<CastPayoutResponse> {
+    try {
+      const response = await api.post(`/casts/${castId}/stripe/payouts`, payload);
+      return response.data;
+    } catch (error: any) {
+      this.throwStripeError(error, '振込リクエストの作成に失敗しました。');
+    }
+  }
+
+  static async getCastPayoutSummary(castId: number): Promise<CastPayoutSummaryResponse> {
+    try {
+      const response = await api.get(`/casts/${castId}/payouts/summary`);
+      return response.data;
+    } catch (error: any) {
+      this.throwStripeError(error, '振込サマリーの取得に失敗しました。');
+    }
+  }
+
+  static async requestInstantCastPayout(
+    castId: number,
+    payload: { amount: number; memo?: string }
+  ): Promise<any> {
+    try {
+      const response = await api.post(`/casts/${castId}/payouts/instant`, payload);
+      return response.data;
+    } catch (error: any) {
+      this.throwStripeError(error, '即時振込の申請に失敗しました。');
     }
   }
 
@@ -253,6 +431,16 @@ export class StripeService {
       console.error('Payment method deletion failed:', error);
       throw error;
     }
+  }
+
+  private static throwStripeError(error: any, fallbackMessage: string): never {
+    const message =
+      error?.response?.data?.error ||
+      error?.response?.data?.message ||
+      fallbackMessage;
+    const err = new Error(message) as Error & { status?: number };
+    err.status = error?.response?.status;
+    throw err;
   }
 }
 

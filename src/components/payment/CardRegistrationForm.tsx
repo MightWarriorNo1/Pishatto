@@ -81,29 +81,64 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
     setError(null);
 
     try {
+      console.log('Creating PaymentMethod with Stripe.js...');
       const { paymentMethod, error } = await stripeInstance.createPaymentMethod({
         type: 'card',
         card: cardElement.current,
       });
       
       if (error) {
+        console.error('PaymentMethod creation error:', error);
         setError(error.message);
+        setLoading(false);
         return;
       }
 
+      // Validate that paymentMethod.id exists and is valid
+      if (!paymentMethod || !paymentMethod.id || !paymentMethod.id.startsWith('pm_')) {
+        console.error('Invalid PaymentMethod created:', paymentMethod);
+        setError('カード情報の処理に失敗しました。もう一度お試しください。');
+        setLoading(false);
+        return;
+      }
+
+      console.log('PaymentMethod created successfully:', paymentMethod.id);
+
       try {
+        console.log('Registering card with backend:', {
+          userId: currentUserId,
+          userType: userType,
+          paymentMethodId: paymentMethod.id
+        });
+        
         const response = await registerCard(currentUserId, userType, paymentMethod.id);
+        
+        console.log('Backend response:', response);
+        
         if (response.success) {
           setSuccess('カード情報を安全に登録しました');
           setTimeout(() => onSuccess?.(paymentMethod.id), 1500);
         } else {
+          console.error('Backend returned error:', response.error);
           setError(response.error || 'カード登録中にエラーが発生しました');
         }
       } catch (apiError: any) {
-        if (apiError.response?.status === 500) {
+        console.error('API error during card registration:', {
+          status: apiError.response?.status,
+          data: apiError.response?.data,
+          message: apiError.message
+        });
+        
+        const errorMessage = apiError.response?.data?.error || apiError.message || 'カード登録中にエラーが発生しました';
+        
+        // Check for specific PaymentMethod errors
+        if (errorMessage.includes('No such PaymentMethod') || 
+            errorMessage.includes('PaymentMethod does not exist')) {
+          setError('カード情報の処理に失敗しました。ページを再読み込みして、もう一度カード情報を入力してください。');
+        } else if (apiError.response?.status === 500) {
           setError('サーバーエラーが発生しました。データベースの設定を確認してください。');
         } else {
-          setError(apiError.response?.data?.error || apiError.message || 'カード登録中にエラーが発生しました');
+          setError(errorMessage);
         }
       }
     } catch (error: any) {

@@ -147,9 +147,8 @@ export class PayJPService {
    */
   static async requestPayout(castId: number, amount: number): Promise<any> {
     try {
-      const response = await api.post('/payouts/request', {
-        cast_id: castId,
-        amount: amount,
+      const response = await api.post(`/casts/${castId}/stripe/payouts`, {
+        amount,
       });
       return response.data;
     } catch (error: any) {
