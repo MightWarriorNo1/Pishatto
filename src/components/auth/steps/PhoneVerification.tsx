@@ -84,7 +84,13 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
         setError(response.message || 'SMS送信に失敗しました');
       }
     } catch (err: any) {
-      setError('SMS送信に失敗しました。もう一度お試しください。');
+      // Extract error message from API response
+      const errorMessage = err.response?.data?.message 
+        || err.response?.data?.errors?.phone?.[0]
+        || err.message 
+        || 'SMS送信に失敗しました。もう一度お試しください。';
+      setError(errorMessage);
+      console.error('SMS verification error:', err);
     } finally {
       setLoading(false);
     }
@@ -170,8 +176,11 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
               setUser(guest);
             }
             window.location.href = '/dashboard';
-          } catch (e) {
-            setError('ログインに失敗しました');
+          } catch (e: any) {
+            const loginErrorMessage = e.response?.data?.message 
+              || e.message 
+              || 'ログインに失敗しました';
+            setError(loginErrorMessage);
           }
           return;
         }
@@ -181,7 +190,14 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
         setError(response.message || '認証コードが正しくありません');
       }
     } catch (err: any) {
-      setError('認証に失敗しました。もう一度お試しください。');
+      // Extract error message from API response
+      const errorMessage = err.response?.data?.message 
+        || err.response?.data?.errors?.code?.[0]
+        || err.response?.data?.errors?.phone?.[0]
+        || err.message 
+        || '認証に失敗しました。もう一度お試しください。';
+      setError(errorMessage);
+      console.error('SMS verification error:', err);
     } finally {
       setLoading(false);
     }
@@ -212,7 +228,13 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({
         setError(response.message || 'SMS再送に失敗しました');
       }
     } catch (err: any) {
-      setError('SMS再送に失敗しました。もう一度お試しください。');
+      // Extract error message from API response
+      const errorMessage = err.response?.data?.message 
+        || err.response?.data?.errors?.phone?.[0]
+        || err.message 
+        || 'SMS再送に失敗しました。もう一度お試しください。';
+      setError(errorMessage);
+      console.error('SMS resend error:', err);
     } finally {
       setLoading(false);
     }

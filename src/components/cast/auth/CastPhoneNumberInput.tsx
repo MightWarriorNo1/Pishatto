@@ -55,12 +55,14 @@ const CastPhoneNumberInput: React.FC<CastPhoneNumberInputProps> = ({ onBack }) =
                 setError(response.message || 'SMS送信に失敗しました');
             }
         } catch (err: any) {
-            // Check if it's a 404 error with the specific message
-            if (err.response?.status === 404 && err.response?.data?.message) {
-                setError(err.response.data.message);
-            } else {
-                setError('SMS送信に失敗しました。もう一度お試しください。');
-            }
+            // Extract error message from API response
+            const errorMessage = err.response?.data?.message 
+                || err.response?.data?.errors?.phone?.[0]
+                || (err.response?.status === 404 ? 'お客様の情報は存在しません。管理者までご連絡ください。' : null)
+                || err.message 
+                || 'SMS送信に失敗しました。もう一度お試しください。';
+            setError(errorMessage);
+            console.error('SMS verification error:', err);
         } finally {
             setLoading(false);
         }

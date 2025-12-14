@@ -655,7 +655,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
               </button>
             </div>
 
-            <div className="bg-white/10 border border-secondary/40 rounded-2xl p-5 space-y-4">
+            {/* <div className="bg-white/10 border border-secondary/40 rounded-2xl p-5 space-y-4">
               <div className="flex items-center gap-2">
                 <Wallet className="text-white" />
                 <div>
@@ -713,7 +713,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
 
             <div className="bg-white/10 border border-secondary/40 rounded-2xl p-5 space-y-4">
               <div className="flex items-center gap-2">
