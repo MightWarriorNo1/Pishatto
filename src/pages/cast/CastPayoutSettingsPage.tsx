@@ -302,7 +302,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
         amount: amountValue,
         memo: instantMemo || undefined,
       });
-      setSuccessMessage('即時振込を受け付けました。審査完了後に通知されます。');
+      setSuccessMessage('即時振込の申請を受け付けました。承認後に処理されます。');
       setInstantAmount('');
       setInstantMemo('');
       await loadSummary();
@@ -418,6 +418,16 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
               <div className="text-gray-400 text-xs">
                 手数料 {Math.round(upcoming.fee_rate * 10000) / 100}% ({upcoming.fee_amount_yen.toLocaleString()}円)
               </div>
+              {upcoming.type === 'instant' && upcoming.status === 'pending_approval' && (
+                <div className="text-orange-300 text-xs mt-2 bg-orange-500/10 border border-orange-500/30 rounded px-2 py-1">
+                  ⏳ 承認待ち: 管理者の承認後に処理されます。
+                </div>
+              )}
+              {upcoming.type === 'instant' && upcoming.status === 'processing' && (
+                <div className="text-blue-300 text-xs mt-2 bg-blue-500/10 border border-blue-500/30 rounded px-2 py-1">
+                  🔄 処理中: 振込処理を実行中です。
+                </div>
+              )}
               {!status?.payouts_enabled && (
                 <div className="text-yellow-300 text-xs mt-2 bg-yellow-500/10 border border-yellow-500/30 rounded px-2 py-1">
                   ⚠️ Stripe Connect未設定のため、振込は保留されます。設定完了後に自動で振込されます。
@@ -428,6 +438,37 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
             <div className="text-gray-300 text-xs">まだ今月の集計はありません。</div>
           )}
         </div>
+        {payoutSummary.recent_history && payoutSummary.recent_history.length > 0 && (
+          <div className="bg-black/10 rounded-xl p-3 text-sm space-y-2">
+            <div className="text-gray-400 text-xs">最近の振込履歴</div>
+            {payoutSummary.recent_history.slice(0, 3).map((record) => (
+              <div key={record.id} className="border-t border-white/10 pt-2 first:border-t-0 first:pt-0">
+                <div className="flex items-center justify-between">
+                  <div className="text-white text-xs">
+                    {record.type === 'instant' ? '即時振込' : '定期振込'} - {record.closing_month}
+                  </div>
+                  <div className="text-white font-semibold">¥{record.net_amount_yen.toLocaleString()}</div>
+                </div>
+                <div className="flex items-center justify-between mt-1">
+                  <div className="text-gray-400 text-xs">
+                    {record.status === 'pending_approval' && '⏳ 承認待ち'}
+                    {record.status === 'processing' && '🔄 処理中'}
+                    {record.status === 'paid' && '✅ 支払済み'}
+                    {record.status === 'failed' && '❌ 失敗'}
+                    {record.status === 'cancelled' && '🚫 キャンセル'}
+                    {record.status === 'scheduled' && '📅 予定済み'}
+                    {!['pending_approval', 'processing', 'paid', 'failed', 'cancelled', 'scheduled'].includes(record.status) && record.status}
+                  </div>
+                  {record.paid_at && (
+                    <div className="text-gray-400 text-xs">
+                      {formatTimestamp(record.paid_at)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
