@@ -596,7 +596,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
               </div>
 
               {/* Balance Display */}
-              {balance && (
+              {/* {balance && (
                 <div className="bg-white/10 border border-secondary/40 rounded-2xl p-5 space-y-3">
                   <div className="flex items-center gap-2 mb-3">
                     <Wallet className="text-white" />
@@ -634,7 +634,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
                     )}
                   </div>
                 </div>
-              )}
+              )} */}
 
               {renderRequirements()}
 
