@@ -8,6 +8,7 @@ interface LineLoginOptions {
   onSuccess?: () => void;
   onError?: (error: string) => void;
   castRegistration?: boolean;
+  castDirectRegistration?: boolean;
   useCastCallback?: boolean;
 }
 
@@ -171,7 +172,7 @@ export const retryLineLoginWithDisabledAutoLogin = (userType: 'guest' | 'cast'):
  * Main LINE login handler with iOS-specific logic following LINE's official recommendations
  */
 export const handleLineLogin = async (options: LineLoginOptions): Promise<void> => {
-  const { userType, onError, castRegistration = false, useCastCallback = false } = options;
+  const { userType, onError, castRegistration = false, useCastCallback = false, castDirectRegistration = false } = options;
   
   try {
     // Generate secure state parameter (for local validation/UI)
@@ -183,6 +184,9 @@ export const handleLineLogin = async (options: LineLoginOptions): Promise<void> 
     redirectTo.searchParams.set('user_type', userType);
     if (castRegistration) {
       redirectTo.searchParams.set('cast_registration', 'true');
+    }
+    if (castDirectRegistration) {
+      redirectTo.searchParams.set('cast_direct_registration', 'true');
     }
     if (useCastCallback) {
       redirectTo.searchParams.set('use_cast_callback', 'true');

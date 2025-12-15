@@ -43,6 +43,7 @@ export const API_ENDPOINTS = {
   GUEST_REGISTER: `${API_CONFIG.API_BASE_URL}/guest/register`,
   GUEST_LOGIN: `${API_CONFIG.API_BASE_URL}/guest/login`,
   CAST_REGISTER: `${API_CONFIG.API_BASE_URL}/cast/register`,
+  CAST_REGISTER_DIRECT: `${API_CONFIG.API_BASE_URL}/cast/register-direct`,
   CAST_LOGIN: `${API_CONFIG.API_BASE_URL}/cast/login`,
   CAST_APPLICATION_SUBMIT: `${API_CONFIG.API_BASE_URL}/cast-applications/submit`,
   CAST_UPLOAD_IMAGES: `${API_CONFIG.API_BASE_URL}/cast/upload-images`,

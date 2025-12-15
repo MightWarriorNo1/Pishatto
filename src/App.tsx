@@ -23,6 +23,7 @@ import { ConciergeProvider } from './contexts/ConciergeContext';
 import { NotificationSettingsProvider } from './contexts/NotificationSettingsContext';
 import { queryClient } from './lib/react-query';
 import CastRegisterPage from './pages/cast/CastRegisterPage';
+import CastRegisterDirectPage from './pages/cast/CastRegisterDirectPage';
 import { useFavicon } from './hooks/useFavicon';
 import TermsOfService from './pages/legal/TermsOfService';
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
@@ -61,7 +62,8 @@ const App: React.FC = () => {
                     <Route path="/line-register" element={<LineRegister />} />
                     <Route path="/receipt/:receiptNumber" element={<PublicReceiptView />} />
                     <Route path="/payment/return" element={<PaymentReturnPage />} />
-                    <Route path="/cast/register" element={<CastRegisterPage />} />  
+                    <Route path="/cast/register" element={<CastRegisterPage />} />
+                    <Route path="/cast/register-direct" element={<CastRegisterDirectPage />} />  
                     <Route path="/dashboard" element={
                       <ProtectedRoute userType="guest">
                         <Dashboard />
