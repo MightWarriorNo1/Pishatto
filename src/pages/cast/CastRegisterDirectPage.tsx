@@ -472,30 +472,43 @@ const CastRegisterDirectPage: React.FC = () => {
                 body: formData,
             });
 
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    // Clear form data
-                    setSelectedImages({
-                        front: null,
-                        profile: null,
-                        fullBody: null
-                    });
-                    setPhoneNumber('');
-                    setLineId('');
-                    setLineName('');
-                    sessionStorage.removeItem('cast_line_data_direct');
-                    sessionStorage.removeItem('cast_register_direct_form_data');
-                    
-                    // Navigate to cast dashboard
-                    alert('登録が完了しました。');
-                    navigate('/cast/dashboard');
-                } else {
-                    alert('登録に失敗しました: ' + (result.message || 'エラーが発生しました'));
-                }
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                // Clear form data
+                setSelectedImages({
+                    front: null,
+                    profile: null,
+                    fullBody: null
+                });
+                setPhoneNumber('');
+                setLineId('');
+                setLineName('');
+                sessionStorage.removeItem('cast_line_data_direct');
+                sessionStorage.removeItem('cast_register_direct_form_data');
+                
+                // Navigate to cast dashboard
+                alert('登録が完了しました。');
+                navigate('/cast/dashboard');
             } else {
-                const errorData = await response.json();
-                alert('登録に失敗しました: ' + (errorData.message || 'エラーが発生しました'));
+                // Handle validation errors
+                let errorMessage = result.message || '登録に失敗しました。';
+                
+                // Check for specific field errors
+                if (result.errors) {
+                    const errorMessages: string[] = [];
+                    if (result.errors.phone_number) {
+                        errorMessages.push(result.errors.phone_number);
+                    }
+                    if (result.errors.line_id) {
+                        errorMessages.push(result.errors.line_id);
+                    }
+                    if (errorMessages.length > 0) {
+                        errorMessage = errorMessages.join('\n');
+                    }
+                }
+                
+                alert(errorMessage);
             }
         } catch (error) {
             console.error('Error submitting registration:', error);
