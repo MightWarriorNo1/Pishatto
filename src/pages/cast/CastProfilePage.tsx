@@ -21,6 +21,7 @@ import { formatNumber, formatPoints, formatFanPoints } from '../../utils/formatt
 import { formatBadgeCount, shouldShowBadge } from '../../utils/badgeFormatter';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+const STORAGE_BASE_URL = API_BASE_URL.replace('/api', '');
 
 const formatDateJa = (dateString?: string): string => {
     if (!dateString) return '';
@@ -44,7 +45,15 @@ const getAllAvatarUrls = (avatarString: string | null | undefined): string[] => 
         return ['/assets/avatar/avatar-1.png'];
     }
     
-    return avatars.map(avatar => `${API_BASE_URL}/${avatar}`);
+    // Construct proper storage URLs
+    return avatars.map(avatar => {
+        // If the avatar path already starts with /storage, use it as-is
+        if (avatar.startsWith('/storage/')) {
+            return `${STORAGE_BASE_URL}${avatar}`;
+        }
+        // Otherwise, construct the full storage URL
+        return `${STORAGE_BASE_URL}/storage/${avatar}`;
+    });
 };
 
 // Always return the first avatar when multiple are present
