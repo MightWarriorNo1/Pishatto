@@ -798,6 +798,26 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                     const showDate = index === 0 || 
                         !dayjs(message.created_at).isSame(dayjs(messages[index - 1]?.created_at), 'day');
 
+                    // Pre-filter internal markers and guest-only system messages so we don't render empty rows
+                    let hide = false;
+                    let displayText: string | null = null;
+                    try {
+                        const parsed = typeof message.message === 'string' ? JSON.parse(message.message) : null;
+                        if (parsed && (parsed.type === 'proposal_accept' || parsed.type === 'proposal_reject')) {
+                            hide = true;
+                        } else if (parsed && parsed.type === 'system') {
+                            if (parsed.target !== 'cast') {
+                                hide = true;
+                            } else {
+                                displayText = parsed.text || parsed.content || '';
+                            }
+                        }
+                    } catch (_) {}
+                    if (hide) return null;
+                    if (displayText !== null) {
+                        message = { ...message, message: displayText };
+                    }
+
                     // Handle proposal messages
                     let proposal: Proposal | null = null;
                     try {

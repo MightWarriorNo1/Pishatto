@@ -273,6 +273,26 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                         const isFromCast = msg.sender_cast_id && !msg.sender_guest_id;
                         const isSent = isFromCast && castId && String(msg.sender_cast_id) === String(castId);
                         
+                        // Pre-filter internal markers and guest-only system messages so we don't render empty rows
+                        let hide = false;
+                        let displayText: string | null = null;
+                        try {
+                            const parsed = typeof msg.message === 'string' ? JSON.parse(msg.message) : null;
+                            if (parsed && (parsed.type === 'proposal_accept' || parsed.type === 'proposal_reject')) {
+                                hide = true;
+                            } else if (parsed && parsed.type === 'system') {
+                                if (parsed.target !== 'cast') {
+                                    hide = true;
+                                } else {
+                                    displayText = parsed.text || parsed.content || '';
+                                }
+                            }
+                        } catch (_) {}
+                        if (hide) return null;
+                        if (displayText !== null) {
+                            msg = { ...msg, message: displayText };
+                        }
+                        
                         // Check if message is a proposal
                         let proposal: any = null;
                         let isProposalMessage = false;
@@ -340,6 +360,18 @@ const CastChatScreen: React.FC<CastChatScreenProps> = ({ chatId, onBack }) => {
                                 )}
                                 <div className={isSent ? 'flex justify-end mb-4' : 'flex justify-start mb-4'}>
                                     <div className={`max-w-full break-all whitespace-pre-wrap ${isSent ? 'bg-secondary text-white' : 'bg-white text-black'} rounded-lg px-4 py-2`}>
+                                        {/* Gift display */}
+                                        {msg.gift_id && msg.gift && (
+                                            <div className="mb-1">
+                                                <div className="flex items-center">
+                                                    <span className="text-3xl mr-2">
+                                                        {msg.gift.icon || '🎁'}
+                                                    </span>
+                                                    <span className="font-bold">{msg.gift.name}</span>
+                                                    <span className="ml-2 text-xs text-primary font-bold">{msg.gift.points?.toLocaleString()}P</span>
+                                                </div>
+                                            </div>
+                                        )}
                                         {msg.message}
                                     </div>
                                 </div>
