@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Image, LockKeyhole, Plus, CirclePlus, X, CircleUser, Phone } from 'lucide-react';
+import { Image, LockKeyhole, Plus, CirclePlus, X, CircleUser, Phone, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Spinner from '../../components/ui/Spinner';
 import { API_ENDPOINTS } from '../../config/api';
@@ -41,6 +41,7 @@ const CastRegisterDirectPage: React.FC = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [lineId, setLineId] = useState('');
     const [lineName, setLineName] = useState('');
+    const [nickname, setNickname] = useState('');
     const [loading] = useState(true);
     const [uploadSessionId, setUploadSessionId] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -83,6 +84,7 @@ const CastRegisterDirectPage: React.FC = () => {
             setLineId(lineIdFromUrl);
             if (lineNameFromUrl) {
                 setLineName(lineNameFromUrl);
+                setNickname(lineNameFromUrl); // Initialize nickname with LINE name
             }
             
             // Store LINE data in sessionStorage for persistence
@@ -102,10 +104,17 @@ const CastRegisterDirectPage: React.FC = () => {
         const savedFormData = sessionStorage.getItem('cast_register_direct_form_data');
         const savedLineData = sessionStorage.getItem('cast_line_data_direct');
         
+        let nicknameFromFormData = false;
+        
         if (savedFormData) {
             try {
                 const formData = JSON.parse(savedFormData);
                 setPhoneNumber(formData.phoneNumber || '');
+                // Restore nickname if available
+                if (formData.nickname) {
+                    setNickname(formData.nickname);
+                    nicknameFromFormData = true;
+                }
                 
                 // Restore upload session ID if available
                 if (formData.uploadSessionId) {
@@ -150,6 +159,10 @@ const CastRegisterDirectPage: React.FC = () => {
                 const lineData = JSON.parse(savedLineData);
                 setLineId(lineData.line_id || '');
                 setLineName(lineData.line_name || '');
+                // Initialize nickname with LINE name if nickname was not set from form data
+                if (lineData.line_name && !nicknameFromFormData) {
+                    setNickname(lineData.line_name);
+                }
             } catch (error) {
                 console.error('Error restoring LINE data:', error);
             }
@@ -384,6 +397,7 @@ const CastRegisterDirectPage: React.FC = () => {
         // Store the current form data in sessionStorage to restore after LINE login
         const formData = {
             phoneNumber,
+            nickname, // Store nickname
             uploadSessionId, // Store the upload session ID
             selectedImages: {
                 front: selectedImages.front ? { 
@@ -431,8 +445,10 @@ const CastRegisterDirectPage: React.FC = () => {
             const formData = new FormData();
             formData.append('phone_number', phoneNumber);
             formData.append('line_id', lineId);
-            if (lineName) {
-                formData.append('line_name', lineName);
+            // Use nickname if provided, otherwise fall back to lineName
+            const nameToSend = nickname.trim() || lineName;
+            if (nameToSend) {
+                formData.append('line_name', nameToSend);
             }
             
             // Use server URLs if available, otherwise fall back to files
@@ -484,6 +500,7 @@ const CastRegisterDirectPage: React.FC = () => {
                 setPhoneNumber('');
                 setLineId('');
                 setLineName('');
+                setNickname('');
                 sessionStorage.removeItem('cast_line_data_direct');
                 sessionStorage.removeItem('cast_register_direct_form_data');
                 
@@ -603,6 +620,7 @@ const CastRegisterDirectPage: React.FC = () => {
                                         onClick={() => {
                                             setLineId('');
                                             setLineName('');
+                                            setNickname('');
                                             sessionStorage.removeItem('cast_line_data_direct');
                                         }}
                                         className="text-green-600 hover:text-green-800 text-sm underline"
@@ -611,7 +629,7 @@ const CastRegisterDirectPage: React.FC = () => {
                                     </button>
                                 </div>
                                 <p className="text-green-700 text-sm mt-1">
-                                    {lineName && `名前: ${lineName}`}
+                                    {lineName && `LINE名: ${lineName}`}
                                     <br />
                                     LINE ID: {lineId}
                                 </p>
@@ -628,6 +646,32 @@ const CastRegisterDirectPage: React.FC = () => {
                     </div>
                     <div className="text-xs text-red-300 mt-6">※LINEアカウントを連携は必要になります。</div>
                 </div>
+
+                {/* Nickname input section */}
+                {lineId && (
+                    <div className="px-4 py-4">
+                        <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                            <User size={20} />
+                            ニックネームを入力してください
+                        </h3>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                maxLength={50}
+                                placeholder="ニックネームを入力してください"
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-400 transition-all pr-10 shadow"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-primary/70 pointer-events-none">
+                                <User size='18' />
+                            </span>
+                        </div>
+                        <div className="text-xs text-white/75 mt-2">
+                            {lineName && `※LINE名「${lineName}」が初期値として設定されています。変更可能です。`}
+                        </div>
+                    </div>
+                )}
                 {/* Photo upload boxes */}
                 <div className="grid grid-cols-3 gap-4 px-4 py-6">
                     {renderImageBox('front', '正面')}
