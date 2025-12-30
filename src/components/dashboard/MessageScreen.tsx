@@ -8,6 +8,7 @@ import { getNotifications, markNotificationRead, getCastProfileById, markChatMes
 import { useGuestChats, useGuestChatFavorites, useFavoriteChat, useUnfavoriteChat } from '../../hooks/useQueries';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
+import { getFirstAvatarUrl } from '../../utils/avatar';
 import { useNotifications, useGuestChatsRealtime, useUnreadMessageCount, useGroupChatsRealtime } from '../../hooks/useRealtime';
 import { queryClient } from '../../lib/react-query';
 import { queryKeys } from '../../lib/react-query';
@@ -544,16 +545,6 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
         } catch (error) {
             console.error('Error toggling star:', error);
         }
-    };
-
-    // Ensure we always display the first avatar if multiple are provided
-    const getFirstAvatarUrl = (avatar: string | null | undefined): string => {
-        if (!avatar || typeof avatar !== 'string') return '/assets/avatar/female.png';
-        const first = avatar
-            .split(',')
-            .map((item: string) => item.trim())
-            .filter(Boolean)[0];
-        return first ? `${API_BASE_URL}/${first}` : '/assets/avatar/female.png';
     };
 
     // const handleNotificationClick = async (id: number) => {

@@ -4,29 +4,9 @@ import { getChatById, getReservationById, sendMessage, getCastProfileById } from
 import { useUser } from '../../contexts/UserContext';
 import Spinner from '../ui/Spinner';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+import { getFirstAvatarUrl } from '../../utils/avatar';
 
-// Utility function to get the first available avatar from comma-separated string
-const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
-    if (!avatarString) {
-        return '/assets/avatar/avatar-2.png';
-    }
-    
-    // Split by comma and get the first non-empty avatar
-    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-    
-    if (avatars.length === 0) {
-        return '/assets/avatar/avatar-2.png';
-    }
-    
-    // If it's already a full URL, return as is
-    if (avatars[0].startsWith('http')) {
-        return avatars[0];
-    }
-    
-    // Construct the full URL using the API base URL
-    return `${API_BASE_URL}/${avatars[0]}`;
-};
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 function formatJPDate(date: Date) {
     const days = ['日', '月', '火', '水', '木', '金', '土'];

@@ -10,6 +10,7 @@ import { useNotificationSettings } from '../contexts/NotificationSettingsContext
 import Toast from '../components/ui/Toast';
 import Spinner from '../components/ui/Spinner';
 import { formatPoints } from '../utils/formatters';
+import { getFirstAvatarUrl, getAllAvatarUrls } from '../utils/avatar';
 
 // Interface for badge data
 interface Badge {
@@ -271,17 +272,11 @@ const CastDetail: React.FC = () => {
 
     // Get first avatar from multiple avatars
     const getFirstAvatar = (avatarString: string) => {
-        if (avatarString) {
-            const avatars = avatarString.split(',').map((avatar: string) => avatar.trim()).filter((avatar: string) => avatar);
-            return avatars.length > 0 ? `${API_BASE_URL}/${avatars[0]}` : '/assets/avatar/female.png';
-        }
-        return '/assets/avatar/female.png';
+        return getFirstAvatarUrl(avatarString);
     };
 
-
-
     const avatarUrls = getAvatarUrls();
-    const images = avatarUrls.length > 0 ? avatarUrls.map((url: string) => `${API_BASE_URL}/${url}`) : ['/assets/avatar/female.png'];
+    const images = avatarUrls.length > 0 ? getAllAvatarUrls(cast?.avatar || '').map((url: string) => url) : ['/assets/avatar/female.png'];
 
     const timePosted = '10時間前';
 

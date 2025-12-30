@@ -4,26 +4,9 @@ import { useUser } from '../../contexts/UserContext';
 import { uploadGuestAvatar, deleteGuestAvatar } from '../../services/api';
 import ProfileDetailEditPage from './ProfileDetailEditPage';
 
+import { getFirstAvatarUrl } from '../../utils/avatar';
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
-
-// Utility function to get the first available avatar from comma-separated string
-const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
-    if (!avatarString) {
-        return '/assets/avatar/1.jpg';
-    }
-
-    // Split by comma and get the first non-empty avatar (assumed latest)
-    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-
-    if (avatars.length === 0) {
-        return '/assets/avatar/1.jpg';
-    }
-    // Respect absolute URLs
-    if (avatars[0].startsWith('http')) {
-        return avatars[0];
-    }
-    return `${API_BASE_URL}/${avatars[0]}`;
-};
 
 interface AvatarEditPageProps {
     onBack: () => void;

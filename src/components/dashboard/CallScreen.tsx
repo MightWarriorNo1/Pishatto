@@ -37,31 +37,13 @@ import OrderConfirmationPage from "./OrderConfirmationPage";
 import OrderCompletionPage from "./OrderCompletionPage";
 import InsufficientPointsModal from "./InsufficientPointsModal";
 import Spinner from "../ui/Spinner";
+import { getFirstAvatarUrl, getAllAvatarUrls } from "../../utils/avatar";
 
 import React from "react"; // Added for React.useEffect
 
 // API base URL configuration
 const APP_BASE_URL =
   process.env.REACT_APP_API_URL || "http://localhost:8000/api";
-
-// Utility function to get the first available avatar from comma-separated string
-const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
-  if (!avatarString) {
-    return "/assets/avatar/female.png";
-  }
-
-  // Split by comma and get the first non-empty avatar
-  const avatars = avatarString
-    .split(",")
-    .map((avatar) => avatar.trim())
-    .filter((avatar) => avatar.length > 0);
-
-  if (avatars.length === 0) {
-    return "/assets/avatar/female.png";
-  }
-
-  return `${APP_BASE_URL}/${avatars[0]}`;
-};
 
 // Utility function to get category-specific styles
 const getCategoryStyles = (category: string): string => {
@@ -1312,29 +1294,11 @@ function CastSelectionScreen({
     }
   };
 
-  // Function to get all avatars for a cast
-  const getAllAvatars = (avatarString: string | null | undefined): string[] => {
-    if (!avatarString) {
-      return ["/assets/avatar/female.png"];
-    }
-
-    const avatars = avatarString
-      .split(",")
-      .map((avatar) => avatar.trim())
-      .filter((avatar) => avatar.length > 0);
-
-    if (avatars.length === 0) {
-      return ["/assets/avatar/female.png"];
-    }
-
-    return avatars.map((avatar) => `${APP_BASE_URL}/${avatar}`);
-  };
-
   // Function to get current avatar URL
   const getCurrentAvatarUrl = (
     avatarString: string | null | undefined
   ): string => {
-    const avatars = getAllAvatars(avatarString);
+    const avatars = getAllAvatarUrls(avatarString);
     return avatars[currentAvatarIndex] || avatars[0];
   };
 
@@ -1342,7 +1306,7 @@ function CastSelectionScreen({
   const handlePreviousAvatar = () => {
     const currentCast = casts[currentCastIndex];
     if (currentCast) {
-      const avatars = getAllAvatars(currentCast.avatar);
+      const avatars = getAllAvatarUrls(currentCast.avatar);
       setCurrentAvatarIndex((prev) =>
         prev > 0 ? prev - 1 : avatars.length - 1
       );
@@ -1352,7 +1316,7 @@ function CastSelectionScreen({
   const handleNextAvatar = () => {
     const currentCast = casts[currentCastIndex];
     if (currentCast) {
-      const avatars = getAllAvatars(currentCast.avatar);
+      const avatars = getAllAvatarUrls(currentCast.avatar);
       setCurrentAvatarIndex((prev) =>
         prev < avatars.length - 1 ? prev + 1 : 0
       );
@@ -1361,7 +1325,7 @@ function CastSelectionScreen({
 
   // Get current cast data
   const currentCast = casts[currentCastIndex];
-  const currentAvatars = currentCast ? getAllAvatars(currentCast.avatar) : [];
+  const currentAvatars = currentCast ? getAllAvatarUrls(currentCast.avatar) : [];
   const hasMultipleAvatars = currentAvatars.length > 1;
 
   return (

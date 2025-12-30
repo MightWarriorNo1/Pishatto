@@ -157,25 +157,7 @@ function TimeSelectionModal({
   );
 }
 
-const getAllAvatarUrls = (
-  avatarString: string | null | undefined
-): string[] => {
-  if (!avatarString) {
-    return ["/assets/avatar/female.png"];
-  }
-
-  // Split by comma and get all non-empty avatars
-  const avatars = avatarString
-    .split(",")
-    .map((avatar) => avatar.trim())
-    .filter((avatar) => avatar.length > 0);
-
-  if (avatars.length === 0) {
-    return ["/assets/avatar/female.png"];
-  }
-
-  return avatars.map((avatar) => `${API_BASE_URL}/${avatar}`);
-};
+import { getAllAvatarUrls } from "../../utils/avatar";
 
 const API_BASE_URL =
   process.env.REACT_APP_API_URL || "http://localhost:8000/api";

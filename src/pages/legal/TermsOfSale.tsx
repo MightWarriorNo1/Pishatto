@@ -10,7 +10,7 @@ const TermsOfSale: React.FC = () => {
             <tbody>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">事業者</th>
-                <td className="p-3 text-white/90">株式会社GeNEEメディカルケア. 事務局</td>
+                <td className="p-3 text-white/90">株式会社Pishatto事務局</td>
               </tr>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">業種</th>
@@ -18,7 +18,7 @@ const TermsOfSale: React.FC = () => {
               </tr>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">責任者</th>
-                <td className="p-3 text-white/90">高木杏里紗（Takagi Arisa）</td>
+                <td className="p-3 text-white/90">内布久子</td>
               </tr>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">メールアドレス</th>
@@ -27,12 +27,12 @@ const TermsOfSale: React.FC = () => {
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-center">所在地</th>
                 <td className="p-3 text-white/90">
-                〒107-0052<br />東京都港区赤坂9-4-1
+                東京都世田谷区中町一丁目24番2号
                 </td>
               </tr>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">企業URL</th>
-                <td className="p-3"><a className="underline text-white" href="https://gn-solutions.jp/" target="_blank" rel="noreferrer">https://gn-solutions.jp/</a></td>
+                <td className="p-3"><a className="underline text-white" href="https://pishatto.jp/welcome/" target="_blank" rel="noreferrer">https://pishatto.jp/welcome/</a></td>
               </tr>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">営業時間</th>

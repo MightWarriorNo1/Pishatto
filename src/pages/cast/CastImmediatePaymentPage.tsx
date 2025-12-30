@@ -5,6 +5,7 @@ import { getCastImmediatePaymentData, processCastImmediatePayment, getCastProfil
 import CardRegistrationForm from '../../components/payment/CardRegistrationForm';
 import { useCast } from '../../contexts/CastContext';
 import Spinner from '../../components/ui/Spinner';
+import { getFirstAvatarUrl } from '../../utils/avatar';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 interface ImmediatePaymentData {
@@ -258,7 +259,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
                     <div className="flex items-center mb-4">
                         {castProfile.avatar && (
                             <img
-                                src={`${API_BASE_URL}/${castProfile.avatar.split(',')[0].trim()}`}
+                                src={getFirstAvatarUrl(castProfile.avatar)}
                                 alt={castProfile.nickname}
                                 className="w-14 h-14 rounded-full mr-4 border-2 border-secondary object-cover"
                             />

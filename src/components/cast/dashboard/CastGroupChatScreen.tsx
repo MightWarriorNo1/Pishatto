@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import getFirstAvatarUrl from "../../../utils/avatar";
 import { Image, Camera, FolderClosed,  ChevronLeft, X, Users, Send, Info } from 'lucide-react';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -18,21 +19,6 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 const userTz=dayjs.tz.guess();
-// Utility function to get the first available avatar from comma-separated string
-const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
-    if (!avatarString) {
-        return '/assets/avatar/female.png';
-    }
-    
-    // Split by comma and get the first non-empty avatar
-    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-    
-    if (avatars.length === 0) {
-        return '/assets/avatar/female.png';
-    }
-    
-    return `${API_BASE_URL}/${avatars[0]}`;
-};
 
 interface Proposal {
     type: string;

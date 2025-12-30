@@ -1,4 +1,5 @@
 import React from 'react';
+import getFirstAvatarUrl from '../../utils/avatar';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
 import { useGuestFootprints } from '../../hooks/useQueries';
@@ -13,23 +14,8 @@ interface FootprintItem {
   created_at?: string;
 }
 
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
-
-// Utility function to get the first available avatar from comma-separated string
-const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
-  if (!avatarString) {
-    return '/assets/avatar/female.png';
-  }
-
-  // Split by comma and get the first non-empty avatar
-  const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-
-  if (avatars.length === 0) {
-    return '/assets/avatar/female.png';
-  }
-
-  return `${API_BASE_URL}/${avatars[0]}`;
-};
 
 const FootprintsSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = false }) => {
   const { user } = useUser();

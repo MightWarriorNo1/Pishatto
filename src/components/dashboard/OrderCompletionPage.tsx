@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, MessageCircle, Calendar, MapPin, User, X } from 'lucide-react';
+import { getFirstAvatarUrl } from '../../utils/avatar';
 
 interface OrderCompletionPageProps {
   onViewChat: () => void;
@@ -223,7 +224,7 @@ const OrderCompletionPage: React.FC<OrderCompletionPageProps> = ({
             <div className="w-16 h-16 rounded-full overflow-hidden bg-primary flex-shrink-0 flex items-center justify-center">
               {selectedCast.avatar && ((Array.isArray(selectedCast.avatar) && selectedCast.avatar.length > 0) || typeof selectedCast.avatar === 'string') ? (
                 <img
-                  src={`${API_BASE_URL}/${Array.isArray(selectedCast.avatar) && selectedCast.avatar.length > 0 ? selectedCast.avatar[0] : (typeof selectedCast.avatar === 'string' ? selectedCast.avatar : '')}`}
+                  src={getFirstAvatarUrl(typeof selectedCast.avatar === 'string' ? selectedCast.avatar : (Array.isArray(selectedCast.avatar) && selectedCast.avatar.length > 0 ? selectedCast.avatar[0] : ''))}
                   alt={selectedCast.nickname}
                   className="w-full h-full object-cover"
                   onError={(e) => {

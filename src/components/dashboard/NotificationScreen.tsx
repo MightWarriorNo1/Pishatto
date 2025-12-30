@@ -6,22 +6,7 @@ import { useUser } from '../../contexts/UserContext';
 import { getNotifications, deleteNotification, Notification, createChat, sendGuestMessage, getAdminNews, AdminNews, markAllNotificationsRead, fetchUserChats } from '../../services/api';
 import { useAdminNews } from '../../hooks/useRealtime';
 import Spinner from '../ui/Spinner';
-
-// Utility function to get the first available avatar from comma-separated string
-const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
-    if (!avatarString) {
-        return '/assets/avatar/female.png';
-    }
-    
-    // Split by comma and get the first non-empty avatar
-    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-    if (avatars.length === 0) {
-        return '/assets/avatar/female.png';
-    }
-    
-    return `${API_BASE_URL}/${avatars[0]}`;
-};
-
+import { getFirstAvatarUrl } from '../../utils/avatar';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 

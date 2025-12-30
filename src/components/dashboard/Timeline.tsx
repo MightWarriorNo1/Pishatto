@@ -12,6 +12,7 @@ import { useAllTweets, useUserTweets, useTweetLikeStatus, useCreateTweet, useLik
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/react-query';
 import Spinner from '../ui/Spinner';
+import { getFirstAvatarUrl } from '../../utils/avatar';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 const IMAGE_BASE_URL = APP_BASE_URL.replace(/\/api$/, '');
@@ -243,9 +244,9 @@ const Timeline: React.FC = () => {
                                 <img
                                     src={
                                         tweet.guest?.avatar
-                                            ? `${APP_BASE_URL}/${tweet.guest.avatar}`
+                                            ? getFirstAvatarUrl(tweet.guest.avatar)
                                             : tweet.cast?.avatar
-                                                ? `${APP_BASE_URL}/${tweet.cast.avatar.split(',')[0].trim()}`
+                                                ? getFirstAvatarUrl(tweet.cast.avatar)
                                                 : tweet.cast?.id 
                                                 ? '/assets/avatar/female.png'
                                                 : '/assets/avatar/1.jpg'

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { fetchRanking } from '../../services/api';
 import Spinner from '../ui/Spinner';
 
+import { getFirstAvatarUrl } from '../../utils/avatar';
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 // Format numbers with comma separators (e.g., 2,000)
@@ -10,22 +12,6 @@ const formatAmount = (value: unknown): string => {
   const num = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
   if (!isFinite(num)) return '0';
   return new Intl.NumberFormat('en-US').format(num);
-};
-
-// Utility function to get the first available avatar from comma-separated string
-const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
-    if (!avatarString) {
-        return '/assets/avatar/female.png';
-    }
-    
-    // Split by comma and get the first non-empty avatar
-    const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-    
-    if (avatars.length === 0) {
-        return '/assets/avatar/female.png';
-    }
-    
-    return `${API_BASE_URL}/${avatars[0]}`;
 };
 
 type UserType = 'cast' | 'guest';

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
+import getFirstAvatarUrl from "../../../utils/avatar";
 import { ChevronLeft, Image, Send, Info } from 'lucide-react';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
@@ -17,14 +18,8 @@ import { useQueryClient } from '@tanstack/react-query';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
-const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
-    if (!avatarString) return '/assets/avatar/avatar-1.png';
-    const avatars = avatarString.split(',').map(a => a.trim()).filter(a => a.length > 0);
-    if (avatars.length === 0) return '/assets/avatar/avatar-1.png';
-    return `${API_BASE_URL}/${avatars[0]}`;
-};
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 interface CastChatScreenProps {
     chatId: number;

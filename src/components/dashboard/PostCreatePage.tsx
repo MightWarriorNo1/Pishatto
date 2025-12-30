@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { getGuestProfileById, getCastProfileById } from '../../services/api';
+import getFirstAvatarUrl from '../../utils/avatar';
 
 interface PostCreatePageProps {
     onClose: () => void;
@@ -32,24 +33,6 @@ const PostCreatePage: React.FC<PostCreatePageProps> = ({ onClose, onSubmit, user
         console.error('PostCreatePage: Missing required props onClose or onSubmit');
         return null;
     }
-
-    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
-
-    // Utility function to get the first available avatar from comma-separated string
-    const getFirstAvatarUrl = (avatarString: string | null | undefined): string => {
-        if (!avatarString) {
-            return '/assets/avatar/2.jpg';
-        }
-        
-        // Split by comma and get the first non-empty avatar
-        const avatars = avatarString.split(',').map(avatar => avatar.trim()).filter(avatar => avatar.length > 0);
-        
-        if (avatars.length === 0) {
-            return '/assets/avatar/2.jpg';
-        }
-        
-        return `${API_BASE_URL}/${avatars[0]}`;
-    };
 
     useEffect(() => {
         const fetchUserProfile = async () => {

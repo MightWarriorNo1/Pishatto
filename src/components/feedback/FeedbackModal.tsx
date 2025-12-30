@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { submitFeedback, fetchAllBadges, getReservationById, getCastProfile, getReservationFeedback, updateFeedback } from '../../services/api';
 import Toast from '../ui/Toast';
-
+import getFirstAvatarUrl from '../../utils/avatar';
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -42,17 +42,6 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   const [existingFeedbackByCast, setExistingFeedbackByCast] = useState<Record<number, { id: number; comment?: string | null; rating?: number | null; badge_id?: number | null; guest_id?: number }>>({});
 
   // Return first avatar URL when multiple are provided (comma-separated). Supports http/data URLs.
-  const getFirstAvatarUrl = (avatarString?: string | null): string | null => {
-    if (!avatarString || typeof avatarString !== 'string') return null;
-    const first = avatarString
-      .split(',')
-      .map(s => s.trim())
-      .filter(Boolean)[0];
-    if (!first) return null;
-    if (first.startsWith('http') || first.startsWith('data:')) return first;
-    return `${API_BASE_URL}/${first}`;
-  };
-
   useEffect(() => {
     if (!isOpen) return;
     fetchAllBadges().then(setBadges);

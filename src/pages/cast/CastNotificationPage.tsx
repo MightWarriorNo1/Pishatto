@@ -9,6 +9,7 @@ import Spinner from '../../components/ui/Spinner';
 import { useCastNotifications } from '../../hooks/useQueries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/react-query';
+import { getFirstAvatarUrl } from '../../utils/avatar';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -309,7 +310,7 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
                                     >
                                         {notification.cast && (
                                             <img 
-                                                src={notification.cast.avatar ? `${API_BASE_URL}/${notification.cast.avatar}` : '/assets/avatar/female.png'} 
+                                                src={notification.cast.avatar ? getFirstAvatarUrl(notification.cast.avatar) : '/assets/avatar/female.png'} 
                                                 alt={notification.cast.nickname} 
                                                 className="w-14 h-14 rounded-full object-cover border-2 border-white cursor-pointer"
                                                 onError={(e) => {

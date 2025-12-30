@@ -12,6 +12,7 @@ import Spinner from '../../components/ui/Spinner';
 import { useAllTweets, useUserTweets, useTweetLikeStatus, useCreateTweet, useLikeTweet, useDeleteTweet } from '../../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/react-query';
+import { getFirstAvatarUrl } from '../../utils/avatar';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -246,22 +247,9 @@ const CastTimelinePage: React.FC = () => {
                                     
                                     let avatarSrc = '';
                                     if (tweet.cast?.avatar) {
-                                        if (Array.isArray(tweet.cast.avatar)) {
-                                            avatarSrc = `${APP_BASE_URL}/${tweet.cast.avatar[0]}`;
-                                        } else if (typeof tweet.cast.avatar === 'string') {
-                                            // Handle comma-separated avatars like in Timeline component
-                                            avatarSrc = `${APP_BASE_URL}/${tweet.cast.avatar.split(',')[0].trim()}`;
-                                        } else {
-                                            avatarSrc = `${APP_BASE_URL}/${tweet.cast.avatar}`;
-                                        }
+                                        avatarSrc = getFirstAvatarUrl(tweet.cast.avatar);
                                     } else if (tweet.guest?.avatar) {
-                                        if (Array.isArray(tweet.guest.avatar)) {
-                                            avatarSrc = `${APP_BASE_URL}/${tweet.guest.avatar[0]}`;
-                                        } else if (typeof tweet.guest.avatar === 'string') {
-                                            avatarSrc = `${APP_BASE_URL}/${tweet.guest.avatar}`;
-                                        } else {
-                                            avatarSrc = `${APP_BASE_URL}/${tweet.guest.avatar}`;
-                                        }
+                                        avatarSrc = getFirstAvatarUrl(tweet.guest.avatar);
                                     } else {
                                         avatarSrc = tweet.cast?.id 
                                             ? '/assets/avatar/female.png'

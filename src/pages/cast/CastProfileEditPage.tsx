@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getCastProfileById, castUpdateProfile, uploadCastAvatar } from '../../services/api';
 import { ChevronLeft, X, Plus } from 'lucide-react';
 import Spinner from '../../components/ui/Spinner';
+import { getFirstAvatarUrl } from '../../utils/avatar';
 
 const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () => void }> = ({ onBack, onProfileUpdate }) => {
     const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
@@ -145,7 +146,7 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
                         {avatars.map((avatar, index) => (
                             <div key={index} className="relative">
                                 <img
-                                    src={`${API_BASE_URL}/${avatar}`}
+                                    src={getFirstAvatarUrl(avatar)}
                                     alt={`Avatar ${index + 1}`}
                                     className="w-20 h-20 rounded-lg object-cover border-2 border-secondary"
                                     onError={e => (e.currentTarget.src = '/assets/avatar/avatar-1.png')}

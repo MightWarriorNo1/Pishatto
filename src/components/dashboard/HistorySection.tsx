@@ -4,6 +4,7 @@ import { useUser } from '../../contexts/UserContext';
 import ChatScreen from './ChatScreen';
 import { MessageSquare } from 'lucide-react';
 import Spinner from '../ui/Spinner';
+import { getFirstAvatarUrl } from '../../utils/avatar';
 
 const API_BASE_URL=process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -54,7 +55,7 @@ const HistorySection: React.FC = () => {
                 <div className="flex items-start space-x-3">
                   <div className="w-12 h-12 flex-shrink-0">
                     <img
-                      src={cast.avatar ? `${API_BASE_URL}/${cast.avatar}` : '/assets/avatar/female.png'}
+                      src={cast.avatar ? getFirstAvatarUrl(cast.avatar) : '/assets/avatar/female.png'}
                       alt={cast.nickname || ''}
                       className="w-full h-full object-cover rounded border border-secondary"
                     />
