@@ -636,7 +636,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
                 </div>
               )} */}
 
-              {renderRequirements()}
+              {/* {renderRequirements()} */}
 
               {renderPayoutSummary()}
 
