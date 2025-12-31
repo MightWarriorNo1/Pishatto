@@ -154,7 +154,7 @@ const PrivacyPolicy: React.FC = () => {
           <address className="not-italic">
 東京都世田谷区中町一丁目24番2号<br />
 株式会社Pishatto事務局<br />
-E-mail: <a className="underline" href="mailto:info@presidents.jp">info@presidents.jp</a>
+E-mail: <a className="underline" href="mailto:info@pishatto.jp">info@pishatto.jp</a>
           </address>
         </div>
 

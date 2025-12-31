@@ -22,7 +22,7 @@ const TermsOfSale: React.FC = () => {
               </tr>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">メールアドレス</th>
-                <td className="p-3"><a className="underline text-white" href="mailto:info@presidents.jp">info@presidents.jp</a></td>
+                <td className="p-3"><a className="underline text-white" href="mailto:info@pishatto.jp">info@pishatto.jp</a></td>
               </tr>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-center">所在地</th>
