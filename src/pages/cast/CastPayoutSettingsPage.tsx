@@ -344,20 +344,8 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
     }
 
     return (
-      <div className="space-y-2">
-        {outstandingRequirements.map((req) => (
-          <div
-            key={req}
-            className="flex items-center gap-3 bg-white/5 border border-yellow-500/40 rounded-xl px-4 py-3"
-          >
-            <AlertTriangle className="text-yellow-400" />
-            <div className="flex-1">
-              <div className="text-sm font-semibold text-white">{translateRequirement(req)}</div>
-              <div className="text-xs text-gray-300">{req}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <>
+      </>
     );
   };
 
@@ -636,7 +624,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
                 </div>
               )} */}
 
-              {/* {renderRequirements()} */}
+              {renderRequirements()}
 
               {renderPayoutSummary()}
 
