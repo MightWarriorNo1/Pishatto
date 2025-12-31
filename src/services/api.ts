@@ -1162,6 +1162,29 @@ export const processCastImmediatePayment = async (castId: number, data: {
   return response.data;
 };
 
+export interface CastBankAccount {
+  bank_name: string;
+  branch_name: string;
+  account_type: '普通' | '当座';
+  account_number: string;
+  account_holder_name: string;
+}
+
+export const getCastBankAccount = async (castId: number): Promise<{ success: boolean; bank_account: CastBankAccount | null }> => {
+  const response = await api.get(`/casts/${castId}/bank-account`);
+  return response.data;
+};
+
+export const saveCastBankAccount = async (castId: number, data: CastBankAccount): Promise<{ success: boolean; message: string; bank_account: CastBankAccount }> => {
+  const response = await api.post(`/casts/${castId}/bank-account`, data);
+  return response.data;
+};
+
+export const deleteCastBankAccount = async (castId: number): Promise<{ success: boolean; message: string }> => {
+  const response = await api.delete(`/casts/${castId}/bank-account`);
+  return response.data;
+};
+
 export const uploadIdentity = async (file: File, user_id: number) => {
   const formData = new FormData();
   formData.append('file', file);
