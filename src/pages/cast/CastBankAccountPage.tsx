@@ -117,14 +117,14 @@ const CastBankAccountPage: React.FC<CastBankAccountPageProps> = ({ onBack }) => 
 
     if (loading) {
         return (
-            <div className='max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24 flex items-center justify-center'>
+            <div className='max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen flex items-center justify-center' style={{ paddingBottom: 'max(12rem, calc(12rem + env(safe-area-inset-bottom)))' }}>
                 <Spinner size='lg' />
             </div>
         );
     }
 
     return (
-        <div className='bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24 overflow-y-auto scrollbar-hidden'>
+        <div className='bg-gradient-to-b from-primary via-primary to-secondary min-h-screen overflow-y-auto scrollbar-hidden' style={{ paddingBottom: 'max(12rem, calc(12rem + env(safe-area-inset-bottom)))' }}>
             {/* Top bar */}
             <div className="fixed max-w-md mx-auto left-0 right-0 top-0 z-50 flex items-center justify-between px-4 pt-4 pb-4 border-b border-secondary bg-primary shadow-lg">
                 <button className="text-2xl text-white hover:text-secondary cursor-pointer transition-colors duration-200" onClick={onBack}>

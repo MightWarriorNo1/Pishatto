@@ -90,3 +90,10 @@ code {
     background-position-x: 0;
   }
 }
+
+/* Safe area support for mobile devices (especially iOS) */
+@supports (padding: max(0px)) {
+  .pb-safe {
+    padding-bottom: max(12rem, calc(12rem + env(safe-area-inset-bottom)));
+  }
+}

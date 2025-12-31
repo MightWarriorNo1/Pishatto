@@ -463,7 +463,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
 
   if (loading) {
     return (
-      <div className="max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-24 flex items-center justify-center">
+      <div className="max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen flex items-center justify-center" style={{ paddingBottom: 'max(12rem, calc(12rem + env(safe-area-inset-bottom)))' }}>
         <Spinner size="lg" />
       </div>
     );
@@ -471,8 +471,8 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
 
   return (
     <div
-      className="bg-gradient-to-b from-primary via-primary to-secondary min-h-screen max-h-screen pb-24 overflow-y-auto"
-      style={{ WebkitOverflowScrolling: 'touch' }}
+      className="bg-gradient-to-b from-primary via-primary to-secondary min-h-screen max-h-screen overflow-y-auto scrollbar-hidden"
+      style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'max(12rem, calc(12rem + env(safe-area-inset-bottom)))' }}
     >
       <div className="fixed max-w-md mx-auto left-0 right-0 top-0 z-50 flex items-center px-4 pt-4 pb-4 border-b border-secondary bg-primary shadow">
         <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" onClick={onBack}>

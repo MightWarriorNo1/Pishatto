@@ -258,7 +258,7 @@ const CastNotificationPage: React.FC<CastNotificationPageProps> = ({ onBack }) =
     };
 
     return (
-        <div className="max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen pb-20 overflow-y-auto scrollbar-hidden">
+        <div className="max-w-md bg-gradient-to-b from-primary via-primary to-secondary min-h-screen overflow-y-auto scrollbar-hidden" style={{ paddingBottom: 'max(12rem, calc(12rem + env(safe-area-inset-bottom)))' }}>
             {/* Header - Fixed */}
             <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-full max-w-md z-50">
                 <div className="flex items-center justify-between px-4 py-3 border-b bg-gradient-to-b from-primary via-primary to-secondary border-secondary">

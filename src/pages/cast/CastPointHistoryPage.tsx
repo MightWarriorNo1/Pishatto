@@ -125,7 +125,7 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   return (
-    <div className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary pb-8">
+    <div className="max-w-md min-h-screen bg-gradient-to-b from-primary via-primary to-secondary overflow-y-auto scrollbar-hidden" style={{ paddingBottom: 'max(12rem, calc(12rem + env(safe-area-inset-bottom)))' }}>
       {/* Top bar */}
       <div className="flex items-center px-4 py-3 border-b border-secondary bg-gradient-to-b from-primary via-primary to-secondary">
         <button className="mr-2 text-2xl text-white hover:text-secondary cursor-pointer" onClick={onBack}>

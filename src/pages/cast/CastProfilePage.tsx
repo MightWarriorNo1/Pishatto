@@ -610,8 +610,8 @@ const CastProfilePage: React.FC = () => {
             </div>
             </div>
 
-            {/* Logout Section */}
-            <div className="px-4 pb-32">
+            {/* Logout Section - Extra padding for bottom navigation and safe area */}
+            <div className="px-4 pb-safe" style={{ paddingBottom: 'max(12rem, calc(12rem + env(safe-area-inset-bottom)))' }}>
                 <div className="bg-white/10 rounded-lg border border-red-400/30 overflow-hidden">
                     <button 
                         onClick={handleLogout}
