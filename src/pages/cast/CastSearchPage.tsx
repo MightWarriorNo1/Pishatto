@@ -566,7 +566,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ onBack, initialMainTab, initi
                                 </div>
                                 <div className="flex flex-col items-center w-full">
                                     <div className="w-28 h-28 rounded-full border-4 border-secondary overflow-hidden mb-2 cursor-pointer" onClick={() => handleUserClick(user)}>
-                                        <img src={getFirstAvatarUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" />
+                                        <img src={getFirstAvatarUrl(user.avatar, '/assets/avatar/1.jpg')} alt={user.name} className="w-full h-full object-cover" />
                                     </div>
                                     <div className="text-lg font-bold text-white">{user.name}{user.age && `　${user.age}歳`}</div>
                                     {user.region && user.region !== '全国' && (
@@ -579,7 +579,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ onBack, initialMainTab, initi
                                 <div className={`flex items-center justify-center w-8 h-8 text-lg font-bold ${user.rank === 2 ? 'text-white bg-primary border border-secondary rounded' : user.rank === 3 ? 'text-white bg-primary border border-secondary rounded' : 'text-white bg-primary border border-secondary rounded'}`}>{user.rank}</div>
                                 <div className="mx-4">
                                     <img 
-                                        src={getFirstAvatarUrl(user.avatar)} 
+                                        src={getFirstAvatarUrl(user.avatar, '/assets/avatar/1.jpg')} 
                                         alt={user.name} 
                                         className="w-16 h-16 rounded-full border-4 border-transparent cursor-pointer"
                                         onClick={() => handleUserClick(user)}
@@ -900,21 +900,27 @@ const CastSearchPage: React.FC = () => {
                 name: item.name || item.nickname || 'Unknown',
                 nickname: item.nickname,
                 age: item.age ?? null,
-                avatar: item.avatar || '',
+                avatar: item.avatar ?? null, // Preserve null instead of converting to empty string
                 region: item.region || newFilters.region,
                 userType: newFilters.userType,
             }));
 
             localStorage.setItem('lastFilterResults', JSON.stringify(simplified));
 
-            const displayMapped: DisplayUser[] = simplified.map((item: any) => ({
-                id: item.id,
-                avatar: getFirstAvatarUrl(item.avatar || ''),
-                displayName: item.nickname || item.name || 'Unknown',
-                age: item.age ?? null,
-                region: item.region,
-                userType: item.userType === 'cast' ? 'cast' : 'guest',
-            }));
+            const displayMapped: DisplayUser[] = simplified.map((item: any) => {
+                // Normalize avatar: convert empty string to null, keep null as null, keep valid strings
+                const avatarValue = (!item.avatar || (typeof item.avatar === 'string' && !item.avatar.trim())) 
+                    ? null 
+                    : item.avatar;
+                return {
+                    id: item.id,
+                    avatar: getFirstAvatarUrl(avatarValue, '/assets/avatar/1.jpg'),
+                    displayName: item.nickname || item.name || 'Unknown',
+                    age: item.age ?? null,
+                    region: item.region,
+                    userType: item.userType === 'cast' ? 'cast' : 'guest',
+                };
+            });
             setLastSearchDisplayResults(displayMapped);
         } catch (e) {
             console.error('Failed to fetch filter results:', e);
@@ -931,14 +937,20 @@ const CastSearchPage: React.FC = () => {
             const filterRaw = localStorage.getItem('lastFilterResults');
             if (filterRaw) {
                 const parsed = JSON.parse(filterRaw) as Array<any>;
-                const displayMapped: DisplayUser[] = parsed.map((item) => ({
-                    id: item.id,
-                    avatar: getFirstAvatarUrl(item.avatar || ''),
-                    displayName: item.nickname || item.name || 'Unknown',
-                    age: item.age ?? null,
-                    region: item.region,
-                    userType: item.userType === 'cast' ? 'cast' : 'guest',
-                }));
+                const displayMapped: DisplayUser[] = parsed.map((item) => {
+                    // Normalize avatar: convert empty string to null, keep null as null, keep valid strings
+                    const avatarValue = (!item.avatar || (typeof item.avatar === 'string' && !item.avatar.trim())) 
+                        ? null 
+                        : item.avatar;
+                    return {
+                        id: item.id,
+                        avatar: getFirstAvatarUrl(avatarValue, '/assets/avatar/1.jpg'),
+                        displayName: item.nickname || item.name || 'Unknown',
+                        age: item.age ?? null,
+                        region: item.region,
+                        userType: item.userType === 'cast' ? 'cast' : 'guest',
+                    };
+                });
                 setLastSearchDisplayResults(displayMapped);
                 return;
             }
@@ -947,14 +959,20 @@ const CastSearchPage: React.FC = () => {
             const rankingRaw = localStorage.getItem('lastSearchResults');
             if (rankingRaw) {
                 const parsed = JSON.parse(rankingRaw) as Array<any>;
-                const displayMapped: DisplayUser[] = parsed.map((item) => ({
-                    id: item.id,
-                    avatar: getFirstAvatarUrl(item.avatar || ''),
-                    displayName: item.nickname || item.name || 'Unknown',
-                    age: item.age ?? null,
-                    region: item.region,
-                    userType: item.userType === 'cast' ? 'cast' : 'guest',
-                }));
+                const displayMapped: DisplayUser[] = parsed.map((item) => {
+                    // Normalize avatar: convert empty string to null, keep null as null, keep valid strings
+                    const avatarValue = (!item.avatar || (typeof item.avatar === 'string' && !item.avatar.trim())) 
+                        ? null 
+                        : item.avatar;
+                    return {
+                        id: item.id,
+                        avatar: getFirstAvatarUrl(avatarValue, '/assets/avatar/1.jpg'),
+                        displayName: item.nickname || item.name || 'Unknown',
+                        age: item.age ?? null,
+                        region: item.region,
+                        userType: item.userType === 'cast' ? 'cast' : 'guest',
+                    };
+                });
                 setLastSearchDisplayResults(displayMapped);
             }
         } catch (e) {
@@ -1061,9 +1079,12 @@ const CastSearchPage: React.FC = () => {
                         >
                             <div className="w-32 h-32 mb-2 relative">
                                 <img
-                                    src={guest.avatar}
+                                    src={guest.avatar || '/assets/avatar/1.jpg'}
                                     alt={guest.displayName}
                                     className="w-full h-full object-cover rounded-lg border-2 border-secondary"
+                                    onError={(e) => {
+                                        e.currentTarget.src = '/assets/avatar/1.jpg';
+                                    }}
                                 />
                             </div>
                             <div className="text-xs text-white font-bold truncate w-full text-center">

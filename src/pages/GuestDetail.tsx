@@ -164,7 +164,7 @@ const GuestDetail: React.FC = () => {
             {/* Large avatar image with enhanced overlay and back button */}
             <div className="relative group overflow-hidden rounded-b-3xl shadow-xl">
                 <img 
-                    src={getFirstAvatarUrl(guest.avatar)} 
+                    src={getFirstAvatarUrl(guest.avatar, '/assets/avatar/1.jpg')} 
                     alt="ゲストのアバター" 
                     className="w-full h-64 object-cover transition-transform duration-500 ease-out group-hover:scale-[1.02]"
                     onError={e => (e.currentTarget.src = '/assets/avatar/1.jpg')}
@@ -209,7 +209,7 @@ const GuestDetail: React.FC = () => {
             {/* Profile card */}
             <div className="flex items-center gap-3 px-4 mt-4 bg-primary/80 backdrop-blur rounded-xl shadow-lg py-4 border border-white/5">
                 <img 
-                    src={getFirstAvatarUrl(guest.avatar)} 
+                    src={getFirstAvatarUrl(guest.avatar, '/assets/avatar/1.jpg')} 
                     alt="ゲストのアバター（小）" 
                     className="w-14 h-14 rounded-full object-cover border-2 border-secondary shadow" 
                     onError={e => (e.currentTarget.src = '/assets/avatar/1.jpg')}
