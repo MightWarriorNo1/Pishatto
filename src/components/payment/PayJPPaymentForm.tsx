@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../../contexts/UserContext';
 import StripeService, { CardData, PaymentData } from '../../services/stripe';
-import { purchasePoints, getPaymentInfo } from '../../services/api';
+import { purchasePoints, getPaymentInfo, updatePaymentIntent } from '../../services/api';
 import CardRegistrationForm from './CardRegistrationForm';
 import { ChevronLeft } from 'lucide-react';
 
@@ -169,8 +169,8 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                   hasLastPaymentError: !!paymentIntent.last_payment_error
                 });
 
-                // When status is requires_payment_method, we need to confirm on-session with the payment method
-                // confirmCardPayment will update the payment intent and confirm it, triggering 3D Secure if needed
+                // When status is requires_payment_method, we need to update the payment intent first
+                // then confirm it on-session to trigger 3D Secure
                 if (paymentMethodId) {
                   try {
                     console.log('Attempting to confirm payment intent on-session', {
@@ -179,11 +179,34 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                       status: paymentIntent.status
                     });
 
-                    // Use confirmCardPayment with payment_method parameter
-                    // This will update the payment intent with the payment method and confirm it on-session
+                    // First, update the payment intent with the payment method via backend
+                    // Then confirm it on-session
+                    try {
+                      const updateData = await updatePaymentIntent(paymentIntentId, paymentMethodId);
+                      console.log('Payment intent updated', updateData);
+                      // Retrieve updated payment intent to get latest status
+                      const { paymentIntent: updatedIntent } = await stripe.retrievePaymentIntent(clientSecret);
+                      console.log('Updated payment intent status', updatedIntent?.status);
+                      
+                      // If the update changed the status to requires_action, redirect immediately
+                      if (updatedIntent?.status === 'requires_action' && 
+                          updatedIntent?.next_action?.type === 'redirect_to_url') {
+                        console.log('Redirecting to authentication after update', {
+                          url: updatedIntent.next_action.redirect_to_url.url
+                        });
+                        window.location.href = updatedIntent.next_action.redirect_to_url.url;
+                        return;
+                      }
+                    } catch (updateError: any) {
+                      console.warn('Update payment intent failed, proceeding with confirmation', updateError);
+                      // Continue anyway - might work without update
+                    }
+
+                    // Now confirm the payment intent on-session
+                    // This will trigger 3D Secure if needed
+                    // Note: We don't pass payment_method here because we already updated it via backend
                     const { error: confirmError, paymentIntent: confirmedIntent } =
                       await stripe.confirmCardPayment(clientSecret, {
-                        payment_method: paymentMethodId,
                         return_url: `${window.location.origin}/payment/return`,
                       });
 

@@ -583,6 +583,12 @@ export const purchasePointsWithPendingCapture = async (user_id: number, user_typ
   return response.data;
 };
 
+export const updatePaymentIntent = async (payment_intent_id: string, payment_method: string) => {
+  const payload = { payment_intent_id, payment_method };
+  const response = await api.post('/payments/update-payment-intent', payload);
+  return response.data;
+};
+
 export const getPaymentHistory = async (user_type: 'guest' | 'cast', user_id: number) => {
   const response = await api.get(`/payments/history/${user_type}/${user_id}`);
   if (response.data.success === false) {
