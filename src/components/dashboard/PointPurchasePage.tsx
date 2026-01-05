@@ -203,6 +203,11 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
               </span>
             </div>
           )}
+          {error && (
+            <div className="text-red-400 text-sm mt-3 text-center bg-red-900/20 rounded-lg p-2 border border-red-500/30">
+              {error}
+            </div>
+          )}
         </div>
       </div>
       
@@ -230,7 +235,6 @@ const PointPurchasePage: React.FC<{ onBack?: () => void }> = ({ onBack }) => {
             </div>
           ))
         )}
-        {error && <div className="text-red-400 text-center mb-2">{error}</div>}
         {paymentStatus && (
           <div className="flex flex-col items-center justify-center my-4 animate-fade-in">
             <CheckCircle2 className="text-green-400 w-12 h-12 mb-2 animate-bounce-in" />

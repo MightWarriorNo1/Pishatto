@@ -306,6 +306,7 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
           }
         } else {
           // Backend didn't return payment intent details, try alternative approach
+          // Automatically try to create an on-session payment intent (smooth redirect)
           try {
             // Use regular purchasePoints which might create an on-session payment intent
             const onSessionResult = await purchasePoints(
@@ -323,7 +324,7 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
                 onSessionResult.client_secret &&
                 onSessionResult.payment_intent_id
               ) {
-                // Handle redirect-based authentication
+                // Handle redirect-based authentication (automatic redirect, no error shown)
                 const authSuccess = await handleStripeAuthentication(
                   onSessionResult.client_secret,
                   onSessionResult.payment_intent_id
@@ -338,7 +339,7 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
                     onClose();
                   }, 2000);
                 } else {
-                  // Redirect happened, the PaymentReturnPage will handle the rest
+                  // Redirect happened automatically, the PaymentReturnPage will handle the rest
                   setLoading(false);
                   return;
                 }
@@ -352,17 +353,31 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
                 }, 2000);
               }
             } else {
+              // Only show error if payment creation failed completely
               setError(onSessionResult.error || "ポイント購入に失敗しました。");
             }
           } catch (onSessionError: any) {
             console.error("On-session payment failed:", onSessionError);
+            // Only show error if we couldn't redirect
             const onSessionBackendError =
               onSessionError.response?.data?.error ||
               onSessionError.response?.data?.message ||
               onSessionError.response?.data?.detail;
-            setError(
-              "認証が必要です。別の方法で決済を完了するか、カスタマーサポートにお問い合わせください。"
-            );
+            
+            // Check if this is also an on-session error that we can handle
+            if (
+              onSessionBackendError?.includes("on-session action") ||
+              onSessionBackendError?.includes("requires an on-session")
+            ) {
+              // Try one more time with a different approach or show helpful message
+              setError(
+                "認証が必要です。カスタマーサポートにお問い合わせください。"
+              );
+            } else {
+              setError(
+                onSessionBackendError || "ポイント購入中にエラーが発生しました。"
+              );
+            }
           }
         }
       } else {

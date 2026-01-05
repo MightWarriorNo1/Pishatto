@@ -203,9 +203,122 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
         backendError?.includes("on-session action") ||
         backendError?.includes("requires an on-session")
       ) {
-        // The error indicates that on-session confirmation is required
-        // This should be handled by the backend, but if it's not, show a helpful message
-        onError?.("認証が必要です。別の方法で決済を完了してください。");
+        // Check if backend returned payment intent details in error response
+        const paymentIntentData = error.response?.data?.payment_intent;
+        const clientSecret = error.response?.data?.client_secret || paymentIntentData?.client_secret;
+        const paymentIntentId = error.response?.data?.payment_intent_id || paymentIntentData?.id;
+
+        if (clientSecret && paymentIntentId) {
+          // Backend returned payment intent details - automatically redirect to authentication
+          try {
+            // Load Stripe.js if not already loaded
+            if (!(window as any).Stripe) {
+              const script = document.createElement("script");
+              script.src = "https://js.stripe.com/v3/";
+              await new Promise((resolve, reject) => {
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+              });
+            }
+
+            const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY || "";
+            const stripe = (window as any).Stripe(STRIPE_PUBLIC_KEY);
+
+            // Retrieve the payment intent to get redirect URL
+            const { error: retrieveError, paymentIntent } =
+              await stripe.retrievePaymentIntent(clientSecret);
+
+            if (!retrieveError && paymentIntent) {
+              // Check if payment requires redirect
+              if (
+                paymentIntent.status === "requires_action" &&
+                paymentIntent.next_action &&
+                paymentIntent.next_action.type === "redirect_to_url"
+              ) {
+                // Store payment context for return handling
+                const paymentContext = {
+                  payment_intent_id: paymentIntentId,
+                  client_secret: clientSecret,
+                  returnUrl: window.location.pathname + window.location.search,
+                };
+
+                sessionStorage.setItem("payment_intent_id", paymentIntentId);
+                sessionStorage.setItem(
+                  "payment_context",
+                  JSON.stringify(paymentContext)
+                );
+
+                // Automatically redirect to authentication page (smooth, no error shown)
+                window.location.href = paymentIntent.next_action.redirect_to_url.url;
+                return; // Exit early - redirect is happening
+              }
+            }
+          } catch (redirectError: any) {
+            console.error("Failed to redirect for authentication:", redirectError);
+            // If redirect fails, show error
+            onError?.("認証ページへのリダイレクトに失敗しました。もう一度お試しください。");
+          }
+        } else {
+          // Backend didn't return payment intent details
+          // Try to create an on-session payment intent as fallback
+          try {
+            // This will create a new payment intent that can be confirmed on-session
+            const onSessionResult = await purchasePoints(
+              user.id,
+              userType,
+              yenAmount,
+              undefined,
+              'card'
+            );
+
+            if (
+              onSessionResult.success &&
+              onSessionResult.requires_authentication &&
+              onSessionResult.client_secret &&
+              onSessionResult.payment_intent_id
+            ) {
+              // Load Stripe.js and redirect
+              if (!(window as any).Stripe) {
+                const script = document.createElement("script");
+                script.src = "https://js.stripe.com/v3/";
+                await new Promise((resolve, reject) => {
+                  script.onload = resolve;
+                  script.onerror = reject;
+                  document.head.appendChild(script);
+                });
+              }
+
+              const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY || "";
+              const stripe = (window as any).Stripe(STRIPE_PUBLIC_KEY);
+
+              const { paymentIntent } = await stripe.retrievePaymentIntent(onSessionResult.client_secret);
+
+              if (
+                paymentIntent &&
+                paymentIntent.status === "requires_action" &&
+                paymentIntent.next_action &&
+                paymentIntent.next_action.type === "redirect_to_url"
+              ) {
+                const paymentContext = {
+                  payment_intent_id: onSessionResult.payment_intent_id,
+                  client_secret: onSessionResult.client_secret,
+                  returnUrl: window.location.pathname + window.location.search,
+                };
+
+                sessionStorage.setItem("payment_intent_id", onSessionResult.payment_intent_id);
+                sessionStorage.setItem("payment_context", JSON.stringify(paymentContext));
+
+                // Automatically redirect
+                window.location.href = paymentIntent.next_action.redirect_to_url.url;
+                return;
+              }
+            }
+          } catch (fallbackError: any) {
+            console.error("Fallback payment creation failed:", fallbackError);
+            onError?.("認証が必要です。別の方法で決済を完了してください。");
+          }
+        }
       } else {
         onError?.(backendError || error.message || '決済処理中にエラーが発生しました');
       }
