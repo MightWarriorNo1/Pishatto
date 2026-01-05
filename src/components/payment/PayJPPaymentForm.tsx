@@ -103,12 +103,12 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
             const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY || "";
             const stripe = (window as any).Stripe(STRIPE_PUBLIC_KEY);
 
-            // Retrieve the payment intent to get redirect URL
+            // Retrieve the payment intent to check its status
             const { error: retrieveError, paymentIntent } =
               await stripe.retrievePaymentIntent(clientSecret);
 
             if (!retrieveError && paymentIntent) {
-              // Check if payment requires redirect
+              // Check if payment requires redirect (requires_action with redirect_to_url)
               if (
                 paymentIntent.status === "requires_action" &&
                 paymentIntent.next_action &&
@@ -130,6 +130,154 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
                 // Automatically redirect to authentication page
                 window.location.href = paymentIntent.next_action.redirect_to_url.url;
                 return; // Exit early - redirect is happening
+              }
+
+              // If status is requires_payment_method, we need to confirm on-session
+              // This happens when off-session confirmation failed and needs on-session authentication
+              if (paymentIntent.status === "requires_payment_method") {
+                // Store payment context for return handling
+                const paymentContext = {
+                  payment_intent_id: paymentIntentId,
+                  client_secret: clientSecret,
+                  returnUrl: window.location.pathname + window.location.search,
+                };
+
+                sessionStorage.setItem("payment_intent_id", paymentIntentId);
+                sessionStorage.setItem(
+                  "payment_context",
+                  JSON.stringify(paymentContext)
+                );
+
+                // Get payment method from the error (if available) or from payment intent
+                let paymentMethodId = null;
+                if (paymentIntent.last_payment_error && paymentIntent.last_payment_error.payment_method) {
+                  paymentMethodId = typeof paymentIntent.last_payment_error.payment_method === 'string'
+                    ? paymentIntent.last_payment_error.payment_method
+                    : paymentIntent.last_payment_error.payment_method.id;
+                } else if (paymentIntent.payment_method) {
+                  paymentMethodId = typeof paymentIntent.payment_method === 'string' 
+                    ? paymentIntent.payment_method 
+                    : paymentIntent.payment_method.id;
+                } else if (paymentResult.payment_intent?.payment_method_id) {
+                  paymentMethodId = paymentResult.payment_intent.payment_method_id;
+                }
+
+                console.log('Confirming payment intent on-session', {
+                  paymentIntentId,
+                  status: paymentIntent.status,
+                  paymentMethodId,
+                  hasLastPaymentError: !!paymentIntent.last_payment_error
+                });
+
+                // When status is requires_payment_method, we need to confirm on-session with the payment method
+                // confirmCardPayment will update the payment intent and confirm it, triggering 3D Secure if needed
+                if (paymentMethodId) {
+                  try {
+                    console.log('Attempting to confirm payment intent on-session', {
+                      paymentIntentId,
+                      paymentMethodId,
+                      status: paymentIntent.status
+                    });
+
+                    // Use confirmCardPayment with payment_method parameter
+                    // This will update the payment intent with the payment method and confirm it on-session
+                    const { error: confirmError, paymentIntent: confirmedIntent } =
+                      await stripe.confirmCardPayment(clientSecret, {
+                        payment_method: paymentMethodId,
+                        return_url: `${window.location.origin}/payment/return`,
+                      });
+
+                    console.log('Payment confirmation result', {
+                      error: confirmError,
+                      status: confirmedIntent?.status,
+                      hasNextAction: !!confirmedIntent?.next_action
+                    });
+
+                    if (confirmError) {
+                      // Check if error indicates redirect is needed
+                      if (
+                        confirmError.type === "card_error" &&
+                        (confirmError.code === "authentication_required" ||
+                         confirmError.code === "card_declined")
+                      ) {
+                        // Retrieve again to get redirect URL
+                        const { paymentIntent: retryIntent } =
+                          await stripe.retrievePaymentIntent(clientSecret);
+                        if (
+                          retryIntent &&
+                          retryIntent.next_action &&
+                          retryIntent.next_action.type === "redirect_to_url"
+                        ) {
+                          console.log('Redirecting to authentication page', {
+                            url: retryIntent.next_action.redirect_to_url.url
+                          });
+                          // Redirect to authentication page
+                          window.location.href = retryIntent.next_action.redirect_to_url.url;
+                          return;
+                        }
+                      }
+
+                      console.error("Stripe confirmation error:", confirmError);
+                      onError?.(confirmError.message || "認証処理中にエラーが発生しました。");
+                      setLoading(false);
+                      return;
+                    }
+
+                    // Check payment intent status after confirmation
+                    if (
+                      confirmedIntent &&
+                      (confirmedIntent.status === "requires_capture" ||
+                        confirmedIntent.status === "succeeded" ||
+                        confirmedIntent.status === "processing")
+                    ) {
+                      // Payment succeeded
+                      console.log('Payment confirmed successfully');
+                      onSuccess?.(paymentResult.payment);
+                      setLoading(false);
+                      return;
+                    } else if (
+                      confirmedIntent &&
+                      confirmedIntent.status === "requires_action" &&
+                      confirmedIntent.next_action &&
+                      confirmedIntent.next_action.type === "redirect_to_url"
+                    ) {
+                      // Redirect to authentication
+                      console.log('Redirecting to authentication', {
+                        url: confirmedIntent.next_action.redirect_to_url.url
+                      });
+                      window.location.href = confirmedIntent.next_action.redirect_to_url.url;
+                      return;
+                    } else if (confirmedIntent && confirmedIntent.status === "requires_payment_method") {
+                      // Still requires payment method - show error
+                      console.error('Payment still requires payment method after confirmation');
+                      onError?.("決済に失敗しました。カード情報を確認してください。");
+                      setLoading(false);
+                      return;
+                    } else {
+                      // Unknown status
+                      console.warn('Unexpected payment intent status after confirmation', {
+                        status: confirmedIntent?.status
+                      });
+                      onError?.("予期しない支払い状態です。もう一度お試しください。");
+                      setLoading(false);
+                      return;
+                    }
+                  } catch (confirmException: any) {
+                    console.error("Exception during payment confirmation:", confirmException);
+                    onError?.(confirmException.message || "認証処理中にエラーが発生しました。");
+                    setLoading(false);
+                    return;
+                  }
+                } else {
+                  // No payment method available - show error
+                  console.error("No payment method available for confirmation", {
+                    paymentIntent: paymentIntent,
+                    paymentResult: paymentResult
+                  });
+                  onError?.("決済に失敗しました。カード情報が見つかりませんでした。");
+                  setLoading(false);
+                  return;
+                }
               }
             }
           } catch (redirectError: any) {
