@@ -198,13 +198,14 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
     setLoading(true);
     setError(null);
 
+    // Calculate yen amount (1 point = 1.2 yen) - outside try-catch so it's accessible in catch block
+    const YEN_PER_POINT = 1.2;
+    const yenAmount = Math.max(
+      100,
+      Math.ceil(requiredPoints * YEN_PER_POINT)
+    ); // Minimum 100 yen for Stripe
+
     try {
-      // Calculate yen amount (1 point = 1.2 yen)
-      const YEN_PER_POINT = 1.2;
-      const yenAmount = Math.max(
-        100,
-        Math.ceil(requiredPoints * YEN_PER_POINT)
-      ); // Minimum 100 yen for Stripe
 
       // Use the new pending capture API for insufficient points scenario
       const result = await purchasePointsWithPendingCapture(
