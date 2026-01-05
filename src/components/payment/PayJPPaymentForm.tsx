@@ -76,14 +76,139 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
       );
 
       if (paymentResult.success) {
-        onSuccess?.(paymentResult.payment);
+        // Check if authentication is required (3DS or on-session confirmation)
+        if (
+          paymentResult.requires_authentication &&
+          paymentResult.client_secret &&
+          paymentResult.payment_intent_id
+        ) {
+          // Load Stripe.js if not already loaded
+          if (!(window as any).Stripe) {
+            const script = document.createElement("script");
+            script.src = "https://js.stripe.com/v3/";
+            await new Promise((resolve, reject) => {
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          }
+
+          const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY || "";
+          const stripe = (window as any).Stripe(STRIPE_PUBLIC_KEY);
+
+          // Retrieve the payment intent to check its status
+          const { error: retrieveError, paymentIntent } =
+            await stripe.retrievePaymentIntent(paymentResult.client_secret);
+
+          if (retrieveError) {
+            console.error("Payment intent retrieval error:", retrieveError);
+            onError?.(retrieveError.message || "支払い情報の取得に失敗しました。");
+            setLoading(false);
+            return;
+          }
+
+          // Check if payment requires action (redirect-based authentication)
+          if (paymentIntent.status === "requires_action") {
+            const nextAction = paymentIntent.next_action;
+
+            if (nextAction && nextAction.type === "redirect_to_url") {
+              // Store payment context in sessionStorage for return handling
+              const paymentContext = {
+                payment_intent_id: paymentResult.payment_intent_id,
+                client_secret: paymentResult.client_secret,
+                returnUrl: window.location.pathname + window.location.search,
+              };
+
+              sessionStorage.setItem("payment_intent_id", paymentResult.payment_intent_id);
+              sessionStorage.setItem(
+                "payment_context",
+                JSON.stringify(paymentContext)
+              );
+
+              // Redirect to the bank's authentication page
+              window.location.href = nextAction.redirect_to_url.url;
+              return; // Will return after redirect
+            }
+          }
+
+          // Try to confirm the payment intent (for modal-based authentication)
+          const { error: confirmError, paymentIntent: confirmedIntent } =
+            await stripe.confirmCardPayment(paymentResult.client_secret, {
+              return_url: `${window.location.origin}/payment/return`,
+            });
+
+          if (confirmError) {
+            // Check if error indicates redirect is needed
+            if (
+              confirmError.type === "card_error" &&
+              confirmError.code === "authentication_required"
+            ) {
+              // Retrieve again to get redirect URL
+              const { paymentIntent: retryIntent } =
+                await stripe.retrievePaymentIntent(paymentResult.client_secret);
+              if (
+                retryIntent &&
+                retryIntent.next_action &&
+                retryIntent.next_action.type === "redirect_to_url"
+              ) {
+                // Store payment context
+                const paymentContext = {
+                  payment_intent_id: paymentResult.payment_intent_id,
+                  client_secret: paymentResult.client_secret,
+                  returnUrl: window.location.pathname + window.location.search,
+                };
+
+                sessionStorage.setItem("payment_intent_id", paymentResult.payment_intent_id);
+                sessionStorage.setItem(
+                  "payment_context",
+                  JSON.stringify(paymentContext)
+                );
+
+                // Redirect to authentication page
+                window.location.href = retryIntent.next_action.redirect_to_url.url;
+                return;
+              }
+            }
+
+            console.error("Stripe authentication error:", confirmError);
+            onError?.(confirmError.message || "認証処理中にエラーが発生しました。");
+            setLoading(false);
+            return;
+          }
+
+          // Check payment intent status
+          if (
+            confirmedIntent &&
+            (confirmedIntent.status === "requires_capture" ||
+              confirmedIntent.status === "succeeded" ||
+              confirmedIntent.status === "processing")
+          ) {
+            onSuccess?.(paymentResult.payment);
+            setLoading(false);
+            return;
+          }
+        } else {
+          // No authentication required, proceed normally
+          onSuccess?.(paymentResult.payment);
+        }
       } else {
         onError?.(paymentResult.error || '決済処理中にエラーが発生しました');
       }
     } catch (error: any) {
       console.error('Payment error:', error);
       const backendError = error.response?.data?.error || error.response?.data?.message || error.response?.data?.detail;
-      onError?.(backendError || error.message || '決済処理中にエラーが発生しました');
+      
+      // Check if the error indicates that on-session confirmation is required
+      if (
+        backendError?.includes("on-session action") ||
+        backendError?.includes("requires an on-session")
+      ) {
+        // The error indicates that on-session confirmation is required
+        // This should be handled by the backend, but if it's not, show a helpful message
+        onError?.("認証が必要です。別の方法で決済を完了してください。");
+      } else {
+        onError?.(backendError || error.message || '決済処理中にエラーが発生しました');
+      }
     } finally {
       setLoading(false);
     }

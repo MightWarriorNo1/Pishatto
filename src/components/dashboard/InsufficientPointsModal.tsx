@@ -271,7 +271,102 @@ const InsufficientPointsModal: React.FC<InsufficientPointsModalProps> = ({
         error.response?.data?.error ||
         error.response?.data?.message ||
         error.response?.data?.detail;
-      setError(backendError || "ポイント購入中にエラーが発生しました。");
+      
+      // Check if the error indicates that on-session confirmation is required
+      if (
+        backendError?.includes("on-session action") ||
+        backendError?.includes("requires an on-session") ||
+        error.response?.data?.requires_on_session
+      ) {
+        // Check if the backend returned payment intent details in the error response
+        const paymentIntentData = error.response?.data?.payment_intent;
+        const clientSecret = error.response?.data?.client_secret || paymentIntentData?.client_secret;
+        const paymentIntentId = error.response?.data?.payment_intent_id || paymentIntentData?.id;
+
+        if (clientSecret && paymentIntentId) {
+          // Backend returned payment intent details, handle authentication
+          const authSuccess = await handleStripeAuthentication(
+            clientSecret,
+            paymentIntentId
+          );
+
+          if (authSuccess) {
+            // Authentication successful (modal-based), proceed with success flow
+            setPurchaseSuccess(true);
+            await refreshUser();
+            setTimeout(() => {
+              onPointsPurchased();
+              onClose();
+            }, 2000);
+          } else {
+            // Redirect happened, the PaymentReturnPage will handle the rest
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Backend didn't return payment intent details, try alternative approach
+          try {
+            // Use regular purchasePoints which might create an on-session payment intent
+            const onSessionResult = await purchasePoints(
+              user.id,
+              "guest",
+              yenAmount,
+              undefined, // No payment method - use registered card
+              "card"
+            );
+
+            if (onSessionResult.success) {
+              // Check if authentication is required
+              if (
+                onSessionResult.requires_authentication &&
+                onSessionResult.client_secret &&
+                onSessionResult.payment_intent_id
+              ) {
+                // Handle redirect-based authentication
+                const authSuccess = await handleStripeAuthentication(
+                  onSessionResult.client_secret,
+                  onSessionResult.payment_intent_id
+                );
+
+                if (authSuccess) {
+                  // Authentication successful (modal-based), proceed with success flow
+                  setPurchaseSuccess(true);
+                  await refreshUser();
+                  setTimeout(() => {
+                    onPointsPurchased();
+                    onClose();
+                  }, 2000);
+                } else {
+                  // Redirect happened, the PaymentReturnPage will handle the rest
+                  setLoading(false);
+                  return;
+                }
+              } else {
+                // No authentication required, proceed normally
+                setPurchaseSuccess(true);
+                await refreshUser();
+                setTimeout(() => {
+                  onPointsPurchased();
+                  onClose();
+                }, 2000);
+              }
+            } else {
+              setError(onSessionResult.error || "ポイント購入に失敗しました。");
+            }
+          } catch (onSessionError: any) {
+            console.error("On-session payment failed:", onSessionError);
+            const onSessionBackendError =
+              onSessionError.response?.data?.error ||
+              onSessionError.response?.data?.message ||
+              onSessionError.response?.data?.detail;
+            setError(
+              "認証が必要です。別の方法で決済を完了するか、カスタマーサポートにお問い合わせください。"
+            );
+          }
+        }
+      } else {
+        setError(backendError || "ポイント購入中にエラーが発生しました。");
+      }
     } finally {
       setLoading(false);
     }
