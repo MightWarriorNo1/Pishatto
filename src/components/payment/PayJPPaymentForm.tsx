@@ -75,6 +75,74 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
         'card'
       );
 
+      // Check if this is an on-session error response (even if success is false)
+      if (
+        !paymentResult.success &&
+        (paymentResult.requires_on_session || 
+         paymentResult.error?.includes("on-session action") ||
+         paymentResult.error?.includes("requires an on-session"))
+      ) {
+        // Backend returned on-session error with payment intent details
+        const clientSecret = paymentResult.client_secret || paymentResult.payment_intent?.client_secret;
+        const paymentIntentId = paymentResult.payment_intent_id || paymentResult.payment_intent?.id;
+
+        if (clientSecret && paymentIntentId) {
+          // Automatically redirect to authentication
+          try {
+            // Load Stripe.js if not already loaded
+            if (!(window as any).Stripe) {
+              const script = document.createElement("script");
+              script.src = "https://js.stripe.com/v3/";
+              await new Promise((resolve, reject) => {
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+              });
+            }
+
+            const STRIPE_PUBLIC_KEY = process.env.REACT_APP_STRIPE_PUBLIC_KEY || "";
+            const stripe = (window as any).Stripe(STRIPE_PUBLIC_KEY);
+
+            // Retrieve the payment intent to get redirect URL
+            const { error: retrieveError, paymentIntent } =
+              await stripe.retrievePaymentIntent(clientSecret);
+
+            if (!retrieveError && paymentIntent) {
+              // Check if payment requires redirect
+              if (
+                paymentIntent.status === "requires_action" &&
+                paymentIntent.next_action &&
+                paymentIntent.next_action.type === "redirect_to_url"
+              ) {
+                // Store payment context for return handling
+                const paymentContext = {
+                  payment_intent_id: paymentIntentId,
+                  client_secret: clientSecret,
+                  returnUrl: window.location.pathname + window.location.search,
+                };
+
+                sessionStorage.setItem("payment_intent_id", paymentIntentId);
+                sessionStorage.setItem(
+                  "payment_context",
+                  JSON.stringify(paymentContext)
+                );
+
+                // Automatically redirect to authentication page
+                window.location.href = paymentIntent.next_action.redirect_to_url.url;
+                return; // Exit early - redirect is happening
+              }
+            }
+          } catch (redirectError: any) {
+            console.error("Failed to redirect for authentication:", redirectError);
+            onError?.("認証ページへのリダイレクトに失敗しました。もう一度お試しください。");
+          }
+        } else {
+          onError?.(paymentResult.error || "認証が必要です。別の方法で決済を完了してください。");
+        }
+        setLoading(false);
+        return;
+      }
+
       if (paymentResult.success) {
         // Check if authentication is required (3DS or on-session confirmation)
         if (
