@@ -287,8 +287,8 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
   const handleInstantPayout = async () => {
     if (!castId) return;
     const amountValue = Number(instantAmount);
-    if (Number.isNaN(amountValue) || amountValue < 1000) {
-      setError('即時振込額は1,000円以上の整数で入力してください。');
+    if (Number.isNaN(amountValue) || amountValue < 5000) {
+      setError('即時振込額は5,000円以上の整数で入力してください。');
       return;
     }
     if (payoutSummary && amountValue > payoutSummary.instant_available_amount_yen) {
@@ -757,6 +757,10 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
                 </div>
               </div>
 
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl px-3 py-2 text-xs text-blue-200">
+                ※振込の下限は5,000円となります。5,000円未満の場合は送金を依頼できません。あらかじめご了承ください。
+              </div>
+
               <div className="space-y-3">
                 <label className="text-xs text-gray-300" htmlFor="instant-amount">
                   即時振込額（円）
@@ -764,7 +768,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
                 <input
                   id="instant-amount"
                   type="number"
-                  min={1000}
+                  min={5000}
                   className="w-full rounded-xl bg-black/20 border border-white/20 px-4 py-3 text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-secondary"
                   placeholder="15,000"
                   value={instantAmount}
