@@ -655,8 +655,13 @@ export const registerPaymentInfo = async (user_id: number, user_type: 'guest' | 
   return response.data;
 };
 
-export const registerCard = async (user_id: number, user_type: 'guest' | 'cast', payment_method: string) => {
-  const response = await api.post('/payments/register-card', { user_id, user_type, payment_method });
+export const createSetupIntent = async (user_id: number, user_type: 'guest' | 'cast') => {
+  const response = await api.post('/payments/create-setup-intent', { user_id, user_type });
+  return response.data;
+};
+
+export const registerCard = async (user_id: number, user_type: 'guest' | 'cast', setup_intent_id: string) => {
+  const response = await api.post('/payments/register-card', { user_id, user_type, setup_intent_id });
   return response.data;
 };
 

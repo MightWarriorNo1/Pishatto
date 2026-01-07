@@ -1,8 +1,7 @@
 /*eslint-disable */
 import React, { useEffect, useRef, useState } from 'react';
 import { useUser } from '../../contexts/UserContext';
-import { registerCard } from '../../services/api';
-import StripeService from '../../services/stripe';
+import { createSetupIntent, registerCard } from '../../services/api';
 
 interface CardRegistrationFormProps {
   onSuccess?: (paymentMethod?: string) => void;
@@ -81,43 +80,62 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
     setError(null);
 
     try {
-      console.log('Creating PaymentMethod with Stripe.js...');
-      const { paymentMethod, error } = await stripeInstance.createPaymentMethod({
-        type: 'card',
-        card: cardElement.current,
-      });
+      // Step 1: Create SetupIntent on backend
+      console.log('Creating SetupIntent with backend...');
+      const setupIntentResponse = await createSetupIntent(currentUserId, userType);
       
-      if (error) {
-        console.error('PaymentMethod creation error:', error);
-        setError(error.message);
+      if (!setupIntentResponse.success || !setupIntentResponse.client_secret) {
+        console.error('Failed to create SetupIntent:', setupIntentResponse);
+        setError(setupIntentResponse.error || 'SetupIntentの作成に失敗しました');
         setLoading(false);
         return;
       }
 
-      // Validate that paymentMethod.id exists and is valid
-      if (!paymentMethod || !paymentMethod.id || !paymentMethod.id.startsWith('pm_')) {
-        console.error('Invalid PaymentMethod created:', paymentMethod);
-        setError('カード情報の処理に失敗しました。もう一度お試しください。');
+      console.log('SetupIntent created successfully:', setupIntentResponse.setup_intent_id);
+
+      // Step 2: Confirm SetupIntent with Stripe.js (handles 3DS automatically)
+      console.log('Confirming SetupIntent with Stripe.js...');
+      const { setupIntent, error: confirmError } = await stripeInstance.confirmCardSetup(
+        setupIntentResponse.client_secret,
+        {
+          payment_method: {
+            card: cardElement.current,
+          }
+        }
+      );
+
+      if (confirmError) {
+        console.error('SetupIntent confirmation error:', confirmError);
+        setError(confirmError.message || 'カード認証に失敗しました');
         setLoading(false);
         return;
       }
 
-      console.log('PaymentMethod created successfully:', paymentMethod.id);
+      // Validate SetupIntent
+      if (!setupIntent || setupIntent.status !== 'succeeded') {
+        console.error('SetupIntent not succeeded:', setupIntent);
+        setError('カード認証が完了していません。もう一度お試しください。');
+        setLoading(false);
+        return;
+      }
 
+      console.log('SetupIntent confirmed successfully:', setupIntent.id);
+
+      // Step 3: Complete registration with backend using setup_intent_id
       try {
-        console.log('Registering card with backend:', {
+        console.log('Completing card registration with backend:', {
           userId: currentUserId,
           userType: userType,
-          paymentMethodId: paymentMethod.id
+          setupIntentId: setupIntent.id
         });
         
-        const response = await registerCard(currentUserId, userType, paymentMethod.id);
+        const response = await registerCard(currentUserId, userType, setupIntent.id);
         
         console.log('Backend response:', response);
         
         if (response.success) {
           setSuccess('カード情報を安全に登録しました');
-          setTimeout(() => onSuccess?.(paymentMethod.id), 1500);
+          setTimeout(() => onSuccess?.(response.payment_method_id), 1500);
         } else {
           console.error('Backend returned error:', response.error);
           setError(response.error || 'カード登録中にエラーが発生しました');
@@ -131,10 +149,10 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
         
         const errorMessage = apiError.response?.data?.error || apiError.message || 'カード登録中にエラーが発生しました';
         
-        // Check for specific PaymentMethod errors
-        if (errorMessage.includes('No such PaymentMethod') || 
-            errorMessage.includes('PaymentMethod does not exist')) {
-          setError('カード情報の処理に失敗しました。ページを再読み込みして、もう一度カード情報を入力してください。');
+        // Check for specific SetupIntent errors
+        if (errorMessage.includes('No such SetupIntent') || 
+            errorMessage.includes('SetupIntent does not exist')) {
+          setError('SetupIntentが見つかりませんでした。もう一度お試しください。');
         } else if (apiError.response?.status === 500) {
           setError('サーバーエラーが発生しました。データベースの設定を確認してください。');
         } else {
@@ -142,6 +160,7 @@ const CardRegistrationForm: React.FC<CardRegistrationFormProps> = ({
         }
       }
     } catch (error: any) {
+      console.error('Unexpected error during card registration:', error);
       setError(error.message || 'エラーが発生しました');
     } finally {
       setLoading(false);
