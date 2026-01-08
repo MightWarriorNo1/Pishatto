@@ -435,7 +435,9 @@ const CastRegisterDirectPage: React.FC = () => {
         });
     };
 
-    const isSubmitEnabled = selectedImages.front && selectedImages.profile && selectedImages.fullBody && phoneNumber.trim() && lineId.trim();
+    // Check if at least one image is selected
+    const hasAtLeastOneImage = selectedImages.front || selectedImages.profile || selectedImages.fullBody;
+    const isSubmitEnabled = hasAtLeastOneImage && phoneNumber.trim() && lineId.trim();
 
     const handleSubmit = async () => {
         if (!isSubmitEnabled || isSubmitting) return;
@@ -582,8 +584,8 @@ const CastRegisterDirectPage: React.FC = () => {
                     <span className="text-lg font-bold flex-1 pl-2 text-left text-white">写真を提出してください</span>
                 </div>
                 <div className="flex items-center px-10 justify-left">
-                    <span className="text-md font-bold flex-1 pl-2 text-left text-white/75">参考画像を元に、3枚以上ご自身の魅力が伝わりやすい写真を
-                        提出いただくと通過率がアップします。</span>
+                    <span className="text-md font-bold flex-1 pl-2 text-left text-white/75">参考画像を元に、ご自身の魅力が伝わりやすい写真を
+                        提出してください。複数枚提出いただくと通過率がアップします。</span>
                 </div>
 
                 <div className="px-4 py-4">
