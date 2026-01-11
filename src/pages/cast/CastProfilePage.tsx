@@ -357,7 +357,7 @@ const CastProfilePage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="text-[12px] text-white/90 rounded px-2 py-0.5 whitespace-nowrap">
-                        30分設定pt：{formatNumber(cast?.grade_points || 0)}pt
+                        30分設定pt：{formatNumber(cast?.grade_points || 0)} fpt
                     </div>
                     <button className="text-white  hover:text-secondary" onClick={() => setShowEdit(true)}>
                         <Pencil />

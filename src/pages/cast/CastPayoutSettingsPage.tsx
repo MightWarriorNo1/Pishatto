@@ -37,9 +37,7 @@ interface CastPayoutRecord {
 }
 
 interface CastPayoutSummary {
-  conversion_rate: number;
-  scheduled_fee_rate: number;
-  instant_fee_rate: number;
+  redemption_rate: number;
   unsettled_points: number;
   unsettled_amount_yen: number;
   instant_available_points: number;
@@ -380,7 +378,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
           <div className="bg-black/10 rounded-xl p-3">
             <div className="text-gray-400 text-xs">未払ポイント</div>
             <div className="text-white text-lg font-semibold">
-              {payoutSummary.unsettled_points.toLocaleString()} pt
+              {payoutSummary.unsettled_points.toLocaleString()} fpt
             </div>
             <div className="text-gray-400 text-xs">
               ≒ ¥{payoutSummary.unsettled_amount_yen.toLocaleString()}
@@ -392,7 +390,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
               ¥{payoutSummary.instant_available_amount_yen.toLocaleString()}
             </div>
             <div className="text-gray-400 text-xs">
-              {payoutSummary.instant_available_points.toLocaleString()} pt
+              {payoutSummary.instant_available_points.toLocaleString()} fpt
             </div>
           </div>
         </div>
@@ -406,9 +404,16 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
               <div className="text-gray-300 text-xs">
                 振込予定日: {formatTimestamp(upcoming.scheduled_payout_date || undefined)}
               </div>
-              <div className="text-gray-400 text-xs">
-                手数料 {Math.round(upcoming.fee_rate * 10000) / 100}% ({upcoming.fee_amount_yen.toLocaleString()}円)
-              </div>
+              {upcoming.fee_rate > 0 ? (
+                <div className="text-gray-400 text-xs">
+                  手数料 {Math.round(upcoming.fee_rate * 10000) / 100}% ({upcoming.fee_amount_yen.toLocaleString()}円)
+                </div>
+              ) : (
+                <div className="text-gray-400 text-xs">
+                  還元率 {payoutSummary.redemption_rate ? (payoutSummary.redemption_rate * 100).toFixed(1) : '0'}%
+                  {upcoming.type === 'instant' && ' (即時振込は5%減額)'}
+                </div>
+              )}
               {upcoming.type === 'instant' && upcoming.status === 'pending_approval' && (
                 <div className="text-orange-300 text-xs mt-2 bg-orange-500/10 border border-orange-500/30 rounded px-2 py-1">
                   ⏳ 承認待ち: 管理者の承認後に処理されます。
@@ -754,7 +759,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
                   <div className="text-white font-bold">即時振込（手数料高）</div>
                   <div className="text-xs text-gray-300">
                     {payoutSummary
-                      ? `最大 ¥${payoutSummary.instant_available_amount_yen.toLocaleString()} / 手数料 ${(payoutSummary.instant_fee_rate * 100).toFixed(1)}%`
+                      ? `最大 ¥${payoutSummary.instant_available_amount_yen.toLocaleString()} / 還元率 ${payoutSummary.redemption_rate ? (payoutSummary.redemption_rate * 100).toFixed(1) : '0'}% (即時振込は5%減額)`
                       : 'サマリーを取得中...'}
                   </div>
                 </div>

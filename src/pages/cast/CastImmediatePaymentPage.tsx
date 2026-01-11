@@ -282,7 +282,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
                     </div>
                     <div className="text-center">
                         <div className="text-gray-300 text-sm mb-2">現在のポイント</div>
-                        <div className="text-4xl font-bold text-white mb-2">{castProfile.points?.toLocaleString() || 0} P</div>
+                        <div className="text-4xl font-bold text-white mb-2">{castProfile.points?.toLocaleString() || 0} fpt</div>
                     </div>
                 </div>
 
@@ -290,7 +290,7 @@ const CastImmediatePaymentPage: React.FC<{ onBack: () => void }> = ({ onBack }) 
                 <div className="bg-white/10 rounded-xl shadow-lg p-6 mb-6 border border-secondary/50 backdrop-blur-sm">
                     <div className="text-center">
                         <div className="text-gray-300 text-sm mb-2">今月の獲得ポイント</div>
-                        <div className="text-3xl font-bold text-white mb-3">{Number(castPointsData?.monthly_total_points ?? 0).toLocaleString('ja-JP')} P</div>
+                        <div className="text-3xl font-bold text-white mb-3">{Number(castPointsData?.monthly_total_points ?? 0).toLocaleString('ja-JP')} fpt</div>
                         {castPointsData && (
                             <div className="bg-white/10 rounded-lg p-3">
                                 <div className="text-xs text-gray-300">

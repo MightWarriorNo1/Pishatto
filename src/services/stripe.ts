@@ -111,9 +111,7 @@ export interface CastPayoutRecord {
 export interface CastPayoutSummaryResponse {
   success: boolean;
   summary: {
-    conversion_rate: number;
-    scheduled_fee_rate: number;
-    instant_fee_rate: number;
+    redemption_rate: number;
     unsettled_points: number;
     unsettled_amount_yen: number;
     instant_available_points: number;
