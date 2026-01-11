@@ -34,6 +34,21 @@ const formatDateJa = (dateString?: string): string => {
     return `${year}年${month}月${day}日`;
 };
 
+// FPT redemption rates (yen per fpt) - matches backend GradeService
+const getRedemptionRate = (grade?: string | null): number => {
+    const normalizedGrade = grade?.toLowerCase() || 'beginner';
+    const redemptionRates: Record<string, number> = {
+        'beginner': 0.8,
+        'green': 0.8,
+        'orange': 0.8,
+        'bronze': 0.825,
+        'silver': 0.85,
+        'gold': 0.875,
+        'platinum': 0.9,
+    };
+    return redemptionRates[normalizedGrade] ?? 0.8; // Default to 0.8 if grade not found
+};
+
 const getAllAvatarUrls = (avatarString: string | null | undefined): string[] => {
     if (!avatarString) {
         return ['/assets/avatar/avatar-1.png'];
@@ -411,9 +426,9 @@ const CastProfilePage: React.FC = () => {
                 </div>
                 <div className="flex space-x-2 mb-2">
                     <div className="flex-1 bg-gray-900 rounded-lg p-2 text-center border border-secondary">
-                        <div className="text-xs text-gray-400">今月のコパトバック率</div>
+                        <div className="text-xs text-gray-400">還元率</div>
                         <div className="font-bold text-lg text-white">
-                            {pointsData ? `${pointsData.copat_back_rate}%` : '0%'}
+                            {gradeInfo ? `${(getRedemptionRate(gradeInfo.current_grade) * 100).toFixed(1)}%` : '0%'}
                         </div>
                     </div>
                     <div className="flex-1 bg-gray-900 rounded-lg p-2 text-center border border-secondary">
