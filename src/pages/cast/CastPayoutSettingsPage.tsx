@@ -330,6 +330,20 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
     return `${year}年${month}月${day}日`;
   };
 
+  const formatClosingMonth = (closingMonth?: string) => {
+    if (!closingMonth) return '—';
+    // Expected format: "YYYY-MM" or "YYYY-MM-DD"
+    const parts = closingMonth.split('-');
+    if (parts.length >= 2) {
+      const year = parts[0];
+      const month = parseInt(parts[1], 10);
+      if (!isNaN(month) && month >= 1 && month <= 12) {
+        return `${year}年${month}月`;
+      }
+    }
+    return closingMonth;
+  };
+
   const renderRequirements = () => {
     if (!status) return null;
     if (outstandingRequirements.length === 0) {
@@ -399,7 +413,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
           {upcoming ? (
             <>
               <div className="text-white font-semibold">
-                {upcoming.closing_month} 分 / ¥{upcoming.net_amount_yen.toLocaleString()}
+                {formatClosingMonth(upcoming.closing_month)} 分 / ¥{upcoming.net_amount_yen.toLocaleString()}
               </div>
               <div className="text-gray-300 text-xs">
                 振込予定日: {formatTimestamp(upcoming.scheduled_payout_date || undefined)}
@@ -441,7 +455,7 @@ const CastPayoutSettingsPage: React.FC<CastPayoutSettingsPageProps> = ({ onBack 
               <div key={record.id} className="border-t border-white/10 pt-2 first:border-t-0 first:pt-0">
                 <div className="flex items-center justify-between">
                   <div className="text-white text-xs">
-                    {record.type === 'instant' ? '即時振込' : '定期振込'} - {record.closing_month}
+                    {record.type === 'instant' ? '即時振込' : '定期振込'} - {formatClosingMonth(record.closing_month)}
                   </div>
                   <div className="text-white font-semibold">¥{record.net_amount_yen.toLocaleString()}</div>
                 </div>
