@@ -341,6 +341,26 @@ const CastRegisterDirectPage: React.FC = () => {
         const files = event.target.files;
         if (files && files.length > 0 && activeImageType) {
             const file = files[0];
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('画像ファイルを選択してください。');
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+                return;
+            }
+            
+            // Validate file size (max 50MB)
+            const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+            if (file.size > maxSize) {
+                alert('ファイルサイズは50MB以下にしてください。');
+                if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                }
+                return;
+            }
+            
             const preview = URL.createObjectURL(file);
             
             // Create the image object first
