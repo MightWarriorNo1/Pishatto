@@ -605,7 +605,7 @@ const MessageScreen: React.FC<MessageScreenProps & { userId: number }> = ({ show
             style={{ paddingBottom: 'calc(10rem + env(safe-area-inset-bottom))' }}
         >
             {/* Top bar */}
-            <div className="fixed max-w-md mx-auto top-0 left-0 right-0 grid grid-cols-3 items-center px-4 py-3 border-b border-secondary bg-primary z-20">
+            <div className="fixed max-w-md mx-auto top-0 left-0 right-0 flex justify-between items-center px-4 py-3 border-b border-secondary bg-primary z-20">
                 <button
                     className="justify-self-start relative p-1"
                     aria-label="通知を開く"
