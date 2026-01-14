@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Plus,Trash2 } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
-import { uploadGuestAvatar, deleteGuestAvatar } from '../../services/api';
+import { uploadGuestAvatar, deleteGuestAvatar, guestUpdateProfile } from '../../services/api';
 import ProfileDetailEditPage from './ProfileDetailEditPage';
 
 import { getFirstAvatarUrl } from '../../utils/avatar';
@@ -60,9 +60,12 @@ const PreviewProfile: React.FC<{ onBack: () => void; version?: number }> = ({ on
 };
 
 const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
-    const { user, interests, updateUser } = useUser();
+    const { user, interests, updateUser, phone, setUser } = useUser();
     const [preview, setPreview] = useState(false);
     const [showProfileDetailEdit, setShowProfileDetailEdit] = useState(false);
+    const [showNicknameEdit, setShowNicknameEdit] = useState(false);
+    const [nicknameValue, setNicknameValue] = useState('');
+    const [savingNickname, setSavingNickname] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -216,6 +219,83 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
     const ageStr = user?.age ? `${user.age}` : '未設定';
     const shiatsuStr = user?.shiatsu ? user.shiatsu : '未設定';
 
+    const handleNicknameEdit = () => {
+        setNicknameValue(user?.nickname || '');
+        setShowNicknameEdit(true);
+    };
+
+    const handleNicknameSave = async () => {
+        if (!nicknameValue.trim()) {
+            alert('ニックネームを入力してください。');
+            return;
+        }
+
+        if (!user?.phone && !user?.line_id) {
+            alert('ユーザー情報が見つかりません。');
+            return;
+        }
+
+        setSavingNickname(true);
+        try {
+            const payload: any = {};
+            if (phone || user.phone) {
+                payload.phone = phone || user.phone;
+            } else if (user.line_id) {
+                payload.line_id = user.line_id;
+            }
+            payload.nickname = nicknameValue.trim();
+
+            const response = await guestUpdateProfile(payload);
+            
+            // Refresh user data to ensure we have the latest information
+            if (user?.line_id) {
+                try {
+                    const { getGuestProfileByLineId } = await import('../../services/api');
+                    const refreshResult = await getGuestProfileByLineId(user.line_id);
+                    if (refreshResult.guest && setUser) {
+                        setUser(refreshResult.guest);
+                    }
+                } catch (refreshError) {
+                    console.error('Error refreshing user data:', refreshError);
+                    // Fallback to using response data if refresh fails
+                    if (response.guest && setUser) {
+                        setUser(response.guest);
+                    } else if (updateUser) {
+                        updateUser({ nickname: nicknameValue.trim() });
+                    }
+                }
+            } else if (phone || user?.phone) {
+                try {
+                    const { getGuestProfile } = await import('../../services/api');
+                    const refreshResult = await getGuestProfile(phone || user.phone!);
+                    if (refreshResult.guest && setUser) {
+                        setUser(refreshResult.guest);
+                    }
+                } catch (refreshError) {
+                    console.error('Error refreshing user data:', refreshError);
+                    // Fallback to using response data if refresh fails
+                    if (response.guest && setUser) {
+                        setUser(response.guest);
+                    } else if (updateUser) {
+                        updateUser({ nickname: nicknameValue.trim() });
+                    }
+                }
+            } else if (response.guest && setUser) {
+                setUser(response.guest);
+            } else if (updateUser) {
+                updateUser({ nickname: nicknameValue.trim() });
+            }
+
+            setShowNicknameEdit(false);
+        } catch (error: any) {
+            console.error('Nickname update error:', error);
+            const errorMessage = error.response?.data?.message || error.message || '更新に失敗しました。';
+            alert(`更新エラー: ${errorMessage}`);
+        } finally {
+            setSavingNickname(false);
+        }
+    };
+
     if (preview) return <PreviewProfile onBack={() => setPreview(false)} version={avatarVersion} />; // Keep as is or implement preview as needed
     if (showProfileDetailEdit) return <ProfileDetailEditPage onBack={() => setShowProfileDetailEdit(false)} />;
 
@@ -288,7 +368,10 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
                                  </div>
 
                  {/* Nickname section */}
-                 <div className="bg-primary px-4 py-3 border-b border-secondary mt-2">
+                 <div 
+                     className="bg-primary px-4 py-3 border-b border-secondary mt-2 cursor-pointer hover:bg-primary/80 transition-colors" 
+                     onClick={handleNicknameEdit}
+                 >
                      <div className="text-xs text-white font-bold mb-1">ニックネーム</div>
                      <div className="flex items-center justify-between">
                          <span className="text-base text-white">{user?.nickname || 'まこちゃん'}</span>
@@ -322,6 +405,44 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
                      </button>
                  </div>
              </div>
+
+             {/* Nickname Edit Modal */}
+             {showNicknameEdit && (
+                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                     <div className="bg-primary rounded-xl w-full max-w-sm shadow-lg border border-secondary">
+                         <div className="px-6 py-4 border-b border-secondary">
+                             <h3 className="text-lg font-bold text-white">ニックネームを編集</h3>
+                         </div>
+                         <div className="px-6 py-4">
+                             <input
+                                 type="text"
+                                 value={nicknameValue}
+                                 onChange={(e) => setNicknameValue(e.target.value)}
+                                 placeholder="ニックネームを入力してください"
+                                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-secondary"
+                                 maxLength={50}
+                                 autoFocus
+                             />
+                         </div>
+                         <div className="flex border-t border-secondary">
+                             <button
+                                 onClick={() => setShowNicknameEdit(false)}
+                                 className="flex-1 py-3 text-white bg-white/10 hover:bg-white/20 transition-colors"
+                                 disabled={savingNickname}
+                             >
+                                 キャンセル
+                             </button>
+                             <button
+                                 onClick={handleNicknameSave}
+                                 className="flex-1 py-3 text-white bg-secondary hover:bg-secondary/80 transition-colors font-bold"
+                                 disabled={savingNickname}
+                             >
+                                 {savingNickname ? '保存中...' : '保存'}
+                             </button>
+                         </div>
+                     </div>
+                 </div>
+             )}
          </div>
           );
  };
