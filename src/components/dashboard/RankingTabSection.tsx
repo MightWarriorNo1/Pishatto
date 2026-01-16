@@ -235,9 +235,9 @@ const RankingTabSection: React.FC<{ hideLoading?: boolean }> = ({ hideLoading = 
                 </div>
                 <div className="flex-1">
                   <div className="text-white font-bold text-sm sm:text-base">{item.name || item.nickname || ''}</div>
-                  {item.points !== undefined && (
+                  {/* {item.points !== undefined && (
                     <div className="text-[10px] sm:text-xs text-white mt-1">ポイント: {formatAmount(item.points)}</div>
-                  )}
+                  )} */}
                 </div>
               </div>
             ))}

@@ -84,7 +84,7 @@ const RankingSection: React.FC<RankingSectionProps> = ({ onSeeRanking, hideLoadi
                 className="w-full h-32 object-cover rounded-lg border border-secondary mb-2"
               />
               <div className="font-medium text-white text-sm truncate">{profile.name}</div>
-              <div className="text-xs text-white mt-1">{profile.points}ポイント {profile.gift_count && `(${profile.gift_count}件)`}</div>
+              {/* <div className="text-xs text-white mt-1">{profile.points}ポイント {profile.gift_count && `(${profile.gift_count}件)`}</div> */}
               <div className="absolute top-2 left-2 bg-secondary text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">{index + 1}</div>
             </div>
           ))}

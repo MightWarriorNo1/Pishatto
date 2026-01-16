@@ -591,7 +591,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ onBack, initialMainTab, initi
                                         <div className="text-sm text-white opacity-70">{user.region}</div>
                                     )}
                                 </div>
-                                <div className="text-sm text-white">{formatPoints(user.points)}</div>
+                                {/* <div className="text-sm text-white">{formatPoints(user.points)}</div> */}
                             </div>
                         )
                     ))

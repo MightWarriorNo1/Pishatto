@@ -266,6 +266,60 @@ function Stepper({ step }: { step: number }) {
   );
 }
 
+// Modal for class description
+function ClassDescriptionModal({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-primary border border-secondary rounded-lg p-6 w-80 max-w-[90%]">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-white">クラスの説明</h3>
+          <button onClick={onClose} className="text-white hover:text-gray-300">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="mb-6 space-y-3">
+          <div className="bg-white/10 rounded-lg p-4 border border-white/20">
+            <div className="flex items-center mb-2">
+              <span className="text-lg font-bold text-white">ロイヤルVIP</span>
+            </div>
+            <p className="text-white/80 text-sm">審査通過率1%のキャストとなります。</p>
+          </div>
+          <div className="bg-white/10 rounded-lg p-4 border border-white/20">
+            <div className="flex items-center mb-2">
+              <span className="text-lg font-bold text-white">VIP</span>
+            </div>
+            <p className="text-white/80 text-sm">審査通過率5%のキャストとなります。</p>
+          </div>
+          <div className="bg-white/10 rounded-lg p-4 border border-white/20">
+            <div className="flex items-center mb-2">
+              <span className="text-lg font-bold text-white">プレミアム</span>
+            </div>
+            <p className="text-white/80 text-sm">審査通過率10%のキャストとなります。</p>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 bg-secondary text-white py-2 rounded hover:bg-red-700"
+          >
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OrderHistoryScreen({
   onBack,
   onNext,
@@ -302,6 +356,7 @@ function OrderHistoryScreen({
   const [areasLoading, setAreasLoading] = useState<boolean>(false);
   const [areasError, setAreasError] = useState<string | null>(null);
   const [showAreaModal, setShowAreaModal] = useState<boolean>(false);
+  const [showClassDescriptionModal, setShowClassDescriptionModal] = useState<boolean>(false);
 
   // Fetch active locations and format as `prefecture/name`
   useEffect(() => {
@@ -537,7 +592,10 @@ function OrderHistoryScreen({
             <span className="text-white text-sm mr-2 flex items-center">
               <HelpCircleIcon className="w-4 h-4" />
             </span>
-            <span className="text-white text-sm underline cursor-pointer">
+            <span 
+              className="text-white text-sm underline cursor-pointer hover:text-secondary transition-colors"
+              onClick={() => setShowClassDescriptionModal(true)}
+            >
               クラスの説明
             </span>
             <span className="ml-auto font-bold text-white">
@@ -597,6 +655,10 @@ function OrderHistoryScreen({
         isOpen={showCustomDurationModal}
         onClose={() => setShowCustomDurationModal(false)}
         onConfirm={handleCustomDurationConfirm}
+      />
+      <ClassDescriptionModal
+        isOpen={showClassDescriptionModal}
+        onClose={() => setShowClassDescriptionModal(false)}
       />
     </div>
   );

@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { useConcierge } from '../contexts/ConciergeContext';
 import { useUser } from '../contexts/UserContext';
-import { Bird } from 'lucide-react';
 
 interface ConciergeChatProps {
     onClick: () => void;
@@ -29,9 +28,13 @@ const ConciergeChat: React.FC<ConciergeChatProps> = ({ onClick }) => {
                 onClick={onClick}
             >
                 <div className="flex items-center bg-white/10 rounded-lg shadow-sm p-3 relative border border-secondary">
-                    {/* Concierge Avatar - Yellow bird with tuxedo */}
+                    {/* Concierge Avatar - favicon-cast.png */}
                     {/* <ConciergeAvatar size="md" className="mr-3" /> */}
-                    <Bird className="w-10 h-10 text-yellow-500 cursor-pointer mr-3" />
+                    <img 
+                        src="/favicon-cast.png" 
+                        alt="Concierge" 
+                        className="w-10 h-10 cursor-pointer mr-3 rounded-full object-cover" 
+                    />
                     
                     <div className="flex-1">
                         <div className="flex items-center">
