@@ -528,7 +528,6 @@ const CastProfilePage: React.FC = () => {
                                             {item.name}
                                         </div>
                                     </div>
-                                    <div className="text-white font-semibold">{`${item.points.toLocaleString()} fpt`}</div>
                                 </div>
                             ))}
                              {/* Show current user's ranking even if not in TOP 10 */}
