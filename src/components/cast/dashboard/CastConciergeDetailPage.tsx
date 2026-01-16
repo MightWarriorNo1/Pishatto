@@ -1,6 +1,6 @@
 /* eslint-disable */
 import React, { useState, useEffect } from 'react';
-import { Bird, ChevronLeft, MessageSquare, Clock, AlertCircle, CheckCircle, XCircle, Info, Send, Image} from 'lucide-react';
+import { ChevronLeft, MessageSquare, Clock, AlertCircle, CheckCircle, XCircle, Info, Send, Image} from 'lucide-react';
 import { getConciergeMessages, sendConciergeMessage, markConciergeAsRead } from '../../../services/api';
 import { useCast } from '../../../contexts/CastContext';
 import Spinner from '../../ui/Spinner';
@@ -147,7 +147,11 @@ const CastConciergeDetailPage: React.FC<CastConciergeDetailPageProps> = ({ onBac
                     <ChevronLeft className="w-6 h-6" />
                 </button>
                 <div className="flex items-center flex-1">
-                    <Bird className="w-10 h-10 text-yellow-500 cursor-pointer mr-3" />
+                    <img 
+                        src="/favicon-cast.png" 
+                        alt="Concierge" 
+                        className="w-10 h-10 cursor-pointer mr-3 rounded-full object-cover" 
+                    />
                     <div>
                         <div className="font-bold text-white text-lg">コンシェルジュサポート</div>
                         <div className="text-white text-xs">

@@ -4,7 +4,7 @@ import { FiGift, FiImage } from 'react-icons/fi';
 import { useConcierge } from '../contexts/ConciergeContext';
 import { useUser } from '../contexts/UserContext';
 import { getConciergeInfo, ConciergeInfo } from '../services/api';
-import { Bird, ChevronLeft, Send } from 'lucide-react';
+import { ChevronLeft, Send } from 'lucide-react';
 import Spinner from '../components/ui/Spinner';
 
 interface ConciergeDetailPageProps {
@@ -104,7 +104,11 @@ const ConciergeDetailPage: React.FC<ConciergeDetailPageProps> = ({ onBack }) => 
                     <ChevronLeft className="w-6 h-6 text-white hover:text-secondary cursor-pointer" />
                 </button>
                 <div className="flex items-center flex-1">
-                <Bird className="w-10 h-10 text-yellow-500 cursor-pointer mr-3" />
+                    <img 
+                        src="/favicon-cast.png" 
+                        alt="Concierge" 
+                        className="w-10 h-10 cursor-pointer mr-3 rounded-full object-cover" 
+                    />
                     {/* <ConciergeAvatar size="sm" className="mr-3" /> */}
                     <div>
                         <div className="font-bold text-white text-lg">Pishattoコンシェルジュ</div>
