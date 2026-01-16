@@ -56,6 +56,22 @@ const CastProfileEditPage: React.FC<{ onBack: () => void; onProfileUpdate?: () =
     const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setError('画像ファイルを選択してください。');
+                e.target.value = '';
+                return;
+            }
+            
+            // Validate file size (max 50MB)
+            const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+            if (file.size > maxSize) {
+                setError('ファイルサイズは50MB以下にしてください。');
+                e.target.value = '';
+                return;
+            }
+            
             setAvatarUploading(true);
             setError(null);
             

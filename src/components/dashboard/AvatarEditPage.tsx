@@ -105,9 +105,10 @@ const AvatarEditPage: React.FC<AvatarEditPageProps> = ({ onBack }) => {
             return;
         }
 
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            alert('ファイルサイズは5MB以下にしてください。');
+        // Validate file size (max 50MB)
+        const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+        if (file.size > maxSize) {
+            alert('ファイルサイズは50MB以下にしてください。');
             return;
         }
 
