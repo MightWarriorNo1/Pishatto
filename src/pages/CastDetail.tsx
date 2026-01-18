@@ -420,12 +420,12 @@ const CastDetail: React.FC = () => {
                     {/* Enhanced Info Cards */}
                     <div className="space-y-4">
                         {/* Time Posted */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                        {/* <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                             <div className="flex items-center text-white">
                                 <div className="w-2 h-2 bg-green-400 rounded-full mr-3 animate-pulse"></div>
                                 <span className="text-sm font-medium">{timePosted}</span>
                             </div>
-                        </div>
+                        </div> */}
 
                         {/* Points Info */}
                         <div className="bg-gradient-to-r from-secondary/20 to-secondary/10 backdrop-blur-sm rounded-xl p-4 border border-secondary/30">
