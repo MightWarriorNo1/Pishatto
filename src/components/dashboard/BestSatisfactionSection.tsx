@@ -15,6 +15,7 @@ interface SatisfactionCast {
   feedback_count: number;
   grade_points: number;
   category?: 'プレミアム' | 'VIP' | 'ロイヤルVIP';
+  created_at?: string;
 }
 
 interface BestSatisfactionSectionProps {
@@ -28,23 +29,32 @@ const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideL
 
   // Filter casts based on search query and filter results
   const filteredCasts = React.useMemo(() => {
+    let filtered: SatisfactionCast[] = [];
+    
     // If we have filter results, use them to filter the current section data
     if (isSearchActive && filterResults.length > 0) {
       const filterResultIds = new Set(filterResults.map((r: any) => r.id));
-      return casts.filter((cast: SatisfactionCast) => filterResultIds.has(cast.id));
+      filtered = casts.filter((cast: SatisfactionCast) => filterResultIds.has(cast.id));
     }
-    
     // If no filter results but search query exists, do text-based filtering
-    if (isSearchActive && searchQuery.trim()) {
+    else if (isSearchActive && searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      return casts.filter((cast: SatisfactionCast) => {
+      filtered = casts.filter((cast: SatisfactionCast) => {
         const nickname = cast.nickname.toLowerCase();
         return nickname.includes(query);
       });
     }
-    
     // No search active, return all casts
-    return casts;
+    else {
+      filtered = [...casts];
+    }
+    
+    // Sort by registration order (oldest first) using created_at
+    return filtered.sort((a: SatisfactionCast, b: SatisfactionCast) => {
+      const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+      const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return dateA - dateB;
+    });
   }, [casts, searchQuery, isSearchActive, filterResults]);
 
   const handleCastClick = (castId: number) => {
