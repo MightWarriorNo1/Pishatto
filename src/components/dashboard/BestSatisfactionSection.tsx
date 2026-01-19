@@ -2,18 +2,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiStar } from 'react-icons/fi';
-import { useTopSatisfactionCasts } from '../../hooks/useQueries';
+import { useAllCasts } from '../../hooks/useQueries';
 import getFirstAvatarUrl from '../../utils/avatar';
 import Spinner from '../ui/Spinner';
 import { useSearch } from '../../contexts/SearchContext';
 
-interface SatisfactionCast {
+interface CastProfile {
   id: number;
   nickname: string;
   avatar?: string;
-  average_rating: number;
-  feedback_count: number;
-  grade_points: number;
+  average_rating?: number;
+  feedback_count?: number;
+  grade_points?: number;
   category?: 'プレミアム' | 'VIP' | 'ロイヤルVIP';
   created_at?: string;
 }
@@ -24,23 +24,24 @@ interface BestSatisfactionSectionProps {
 
 const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideLoading = false }) => {
   const navigate = useNavigate();
-  const { data: casts = [], isLoading: loading } = useTopSatisfactionCasts();
+  const { data: castsData, isLoading: loading } = useAllCasts();
   const { searchQuery, isSearchActive, filterResults } = useSearch();
 
   // Filter casts based on search query and filter results
   const filteredCasts = React.useMemo(() => {
-    let filtered: SatisfactionCast[] = [];
+    const casts = castsData?.casts || [];
+    let filtered: CastProfile[] = [];
     
     // If we have filter results, use them to filter the current section data
     if (isSearchActive && filterResults.length > 0) {
       const filterResultIds = new Set(filterResults.map((r: any) => r.id));
-      filtered = casts.filter((cast: SatisfactionCast) => filterResultIds.has(cast.id));
+      filtered = casts.filter((cast: CastProfile) => filterResultIds.has(cast.id));
     }
     // If no filter results but search query exists, do text-based filtering
     else if (isSearchActive && searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = casts.filter((cast: SatisfactionCast) => {
-        const nickname = cast.nickname.toLowerCase();
+      filtered = casts.filter((cast: CastProfile) => {
+        const nickname = (cast.nickname || '').toLowerCase();
         return nickname.includes(query);
       });
     }
@@ -50,12 +51,12 @@ const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideL
     }
     
     // Sort by registration order (oldest first) using created_at
-    return filtered.sort((a: SatisfactionCast, b: SatisfactionCast) => {
+    return filtered.sort((a: CastProfile, b: CastProfile) => {
       const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
       const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
       return dateA - dateB;
     });
-  }, [casts, searchQuery, isSearchActive, filterResults]);
+  }, [castsData, searchQuery, isSearchActive, filterResults]);
 
   const handleCastClick = (castId: number) => {
     navigate(`/cast/${castId}`);
@@ -75,7 +76,7 @@ const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideL
         </div>
       ) : (
         <div className="flex gap-3 overflow-x-auto">
-          {filteredCasts.map((cast: SatisfactionCast) => (
+          {filteredCasts.map((cast: CastProfile) => (
             <div 
               key={cast.id} 
               className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer min-w-[120px] max-w-[120px] flex-shrink-0"
@@ -93,16 +94,22 @@ const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideL
               <div className="mt-2">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-white text-sm">{cast.nickname}</span>
-                  <div className="flex items-center text-white">
-                    <FiStar className="w-3 h-3" />
-                    <span className="ml-1 text-xs">{cast.average_rating.toFixed(1)}</span>
-                  </div>
+                  {cast.average_rating !== undefined && (
+                    <div className="flex items-center text-white">
+                      <FiStar className="w-3 h-3" />
+                      <span className="ml-1 text-xs">{cast.average_rating.toFixed(1)}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="text-white text-xs mt-1">
-                  <div>レビュー {cast.feedback_count}件</div>
-                  <div className="mt-1">
-                    {Number(cast.grade_points).toLocaleString()}P/30分
-                  </div>
+                  {cast.feedback_count !== undefined && (
+                    <div>レビュー {cast.feedback_count}件</div>
+                  )}
+                  {cast.grade_points !== undefined && (
+                    <div className="mt-1">
+                      {Number(cast.grade_points).toLocaleString()}P/30分
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
