@@ -77,41 +77,60 @@ const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideL
           }
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {filteredCasts.map((cast: CastProfile) => (
             <div 
               key={cast.id} 
-              className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer"
+              className="group relative bg-gradient-to-br from-white/10 to-white/5 rounded-2xl shadow-xl cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl border border-white/20 hover:border-secondary/50 overflow-hidden"
               onClick={() => handleCastClick(cast.id)}
             >
-              <div className="flex space-x-3">
-                <div className="w-full">
-                  <img
-                    src={cast.avatar ? getFirstAvatarUrl(cast.avatar) : '/assets/avatar/female.png'}
-                    alt={cast.nickname}
-                    className="w-full h-24 object-cover rounded-lg border border-secondary"
-                  />
-                </div>
+              {/* Avatar with gradient overlay */}
+              <div className="relative h-48 overflow-hidden">
+                <img
+                  src={cast.avatar ? getFirstAvatarUrl(cast.avatar) : '/assets/avatar/female.png'}
+                  alt={cast.nickname}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                  onError={(e) => {
+                    e.currentTarget.src = '/assets/avatar/female.png';
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-primary via-transparent to-transparent opacity-60" />
               </div>
-              <div className="mt-2">
+              
+              {/* Info section */}
+              <div className="p-4 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-white text-sm">{cast.nickname}</span>
+                  <h3 className="text-base font-bold text-white truncate flex-1">
+                    {cast.nickname}
+                  </h3>
                   {cast.average_rating !== undefined && (
-                    <div className="flex items-center text-white">
-                      <FiStar className="w-3 h-3" />
-                      <span className="ml-1 text-xs">{cast.average_rating.toFixed(1)}</span>
+                    <div className="ml-2 bg-secondary/80 text-white text-xs font-bold px-2 py-1 rounded-full flex items-center">
+                      <FiStar className="w-3 h-3 mr-1" />
+                      {cast.average_rating.toFixed(1)}
                     </div>
                   )}
                 </div>
-                <div className="text-white text-xs mt-1">
+                
+                <div className="space-y-1">
                   {cast.feedback_count !== undefined && (
-                    <div>レビュー {cast.feedback_count}件</div>
+                    <div className="flex items-center text-xs text-gray-300">
+                      <span className="mr-1">💬</span>
+                      <span className="truncate">レビュー {cast.feedback_count}件</span>
+                    </div>
                   )}
                   {cast.grade_points !== undefined && (
-                    <div className="mt-1">
-                      {Number(cast.grade_points).toLocaleString()}P/30分
+                    <div className="flex items-center text-xs text-gray-300">
+                      <span className="mr-1">💰</span>
+                      <span className="truncate">{Number(cast.grade_points).toLocaleString()}P/30分</span>
                     </div>
                   )}
+                </div>
+                
+                {/* Hover indicator */}
+                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="bg-secondary text-white text-xs px-3 py-1 rounded-full">
+                    詳細を見る →
+                  </div>
                 </div>
               </div>
             </div>
