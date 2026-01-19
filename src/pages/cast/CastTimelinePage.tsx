@@ -1,7 +1,7 @@
 /*eslint-disable */
 import React, { useState, useEffect } from 'react';
 import {useNavigate} from 'react-router-dom';
-import { Bell, SlidersHorizontal, Plus, Heart, Trash2 } from 'lucide-react';
+import { Bell, SlidersHorizontal, Plus, Heart, Trash2, X } from 'lucide-react';
 import { fetchAllTweets, fetchUserTweets, createTweet, likeTweet, getTweetLikeStatus, deleteTweet } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import PostCreatePage from '../../components/dashboard/PostCreatePage';
@@ -55,6 +55,7 @@ const CastTimelinePage: React.FC = () => {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [hasData, setHasData] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // Use React Query hooks for initial data fetching only
     const {
@@ -74,6 +75,17 @@ const CastTimelinePage: React.FC = () => {
         setIsVisible(true);
         return () => setIsVisible(false);
     }, []);
+
+    // Handle ESC key to close image modal
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && selectedImage) {
+                setSelectedImage(null);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [selectedImage]);
 
     // Initialize local tweets when data is first loaded
     useEffect(() => {
@@ -297,17 +309,19 @@ const CastTimelinePage: React.FC = () => {
                                 )}
                             </div>
                             <div className="text-white text-sm mb-2">{tweet.content}</div>
-                            {tweet.image && (
-                                <img 
-                                    src={
-                                        typeof tweet.image === 'string' && tweet.image.startsWith('http')
-                                            ? tweet.image
-                                            : `${IMAGE_BASE_URL}/storage/${tweet.image}`
-                                    } 
-                                    alt="tweet image" 
-                                    className="w-full h-32 object-cover rounded-lg mb-2"
-                                />
-                            )}
+                            {tweet.image && (() => {
+                                const imageSrc = typeof tweet.image === 'string' && tweet.image.startsWith('http')
+                                    ? tweet.image
+                                    : `${IMAGE_BASE_URL}/storage/${tweet.image}`;
+                                return (
+                                    <img 
+                                        src={imageSrc}
+                                        alt="tweet image" 
+                                        className="w-full h-32 object-cover rounded-lg mb-2 cursor-pointer hover:opacity-90 transition-opacity"
+                                        onClick={() => setSelectedImage(imageSrc)}
+                                    />
+                                );
+                            })()}
                             <TweetLikeButton 
                                 tweetId={tweet.id}
                                 userId={user?.id}
@@ -324,6 +338,27 @@ const CastTimelinePage: React.FC = () => {
                     <Plus /></span>投稿
             </button>
             {showPostCreate && <PostCreatePage onClose={() => setShowPostCreate(false)} onSubmit={handleAddTweet} userType="cast" userId={castId || undefined} />}
+            
+            {/* Image Modal */}
+            {selectedImage && (
+                <div 
+                    className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <button
+                        className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+                        onClick={() => setSelectedImage(null)}
+                    >
+                        <X size={32} />
+                    </button>
+                    <img 
+                        src={selectedImage}
+                        alt="Full size"
+                        className="max-w-full max-h-full object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div>
     );
 };

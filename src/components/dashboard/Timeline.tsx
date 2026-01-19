@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import {useNavigate} from 'react-router-dom';
 import PostCreatePage from './PostCreatePage';
 import NotificationScreen from './NotificationScreen';
-import { Bell, Plus, SlidersHorizontal, Heart, Trash2 } from 'lucide-react';
+import { Bell, Plus, SlidersHorizontal, Heart, Trash2, X } from 'lucide-react';
 import { useUser } from '../../contexts/UserContext';
 import { useNotificationSettings } from '../../contexts/NotificationSettingsContext';
 import { useTweets } from '../../hooks/useRealtime';
@@ -69,6 +69,7 @@ const Timeline: React.FC = () => {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [hasData, setHasData] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     // React Query hooks - only fetch on initial load and when visible
     const { data: allTweets = [], isLoading: allTweetsLoading, error: allTweetsError } = useAllTweets({ 
@@ -85,6 +86,17 @@ const Timeline: React.FC = () => {
         setIsVisible(true);
         return () => setIsVisible(false);
     }, []);
+
+    // Handle ESC key to close image modal
+    useEffect(() => {
+        const handleEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && selectedImage) {
+                setSelectedImage(null);
+            }
+        };
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [selectedImage]);
 
     // Initialize local tweets when data is first loaded
     useEffect(() => {
@@ -291,7 +303,8 @@ const Timeline: React.FC = () => {
                                     <img
                                         src={src}
                                         alt="tweet"
-                                        className="max-h-48 rounded my-2 border border-secondary object-cover"
+                                        className="max-h-48 rounded my-2 border border-secondary object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                        onClick={() => setSelectedImage(src)}
                                     />
                                 );
                             })()}
@@ -311,6 +324,27 @@ const Timeline: React.FC = () => {
                 <span className="mr-2 text-2xl">
                     <Plus /></span>投稿
             </button>
+            
+            {/* Image Modal */}
+            {selectedImage && (
+                <div 
+                    className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <button
+                        className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+                        onClick={() => setSelectedImage(null)}
+                    >
+                        <X size={32} />
+                    </button>
+                    <img 
+                        src={selectedImage}
+                        alt="Full size"
+                        className="max-w-full max-h-full object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
         </div>
     );
 };
