@@ -75,11 +75,11 @@ const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideL
           }
         </div>
       ) : (
-        <div className="flex gap-3 overflow-x-auto">
+        <div className="grid grid-cols-2 gap-3">
           {filteredCasts.map((cast: CastProfile) => (
             <div 
               key={cast.id} 
-              className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer min-w-[120px] max-w-[120px] flex-shrink-0"
+              className="bg-primary rounded-lg shadow p-3 border border-secondary cursor-pointer"
               onClick={() => handleCastClick(cast.id)}
             >
               <div className="flex space-x-3">
