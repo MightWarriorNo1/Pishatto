@@ -3,6 +3,7 @@ import { Calendar, Heart, ChevronLeft, Clock, Users, Send, X } from 'lucide-reac
 import { getChatById, getReservationById, sendMessage, getCastProfileById } from '../../services/api';
 import { useUser } from '../../contexts/UserContext';
 import Spinner from '../ui/Spinner';
+import { formatDuration } from '../../utils/formatters';
 
 import { getFirstAvatarUrl } from '../../utils/avatar';
 
@@ -102,7 +103,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                             const hours = typeof reservation.duration === 'number' 
                                 ? reservation.duration 
                                 : parseFloat(reservation.duration);
-                            const label = Number.isInteger(hours) ? `${hours}時間` : `${hours.toFixed(1)}時間`;
+                            const label = formatDuration(hours);
                             setSelectedDuration(label);
                         }
                     }
@@ -396,7 +397,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                             onChange={(e) => setSelectedDuration(e.target.value)}
                         >
                             {Array.from({ length: 47 }, (_, i) => 1 + i * 0.5).map((h) => {
-                                const label = Number.isInteger(h) ? `${h}時間` : `${h.toFixed(1)}時間`;
+                                const label = formatDuration(h);
                                 return (
                                     <option key={label} value={label}>{label}</option>
                                 );
@@ -434,7 +435,7 @@ const GuestCalendarPage: React.FC<GuestCalendarPageProps> = ({ onBack, chatId })
                         <h3 className="text-white font-semibold mb-2">現在の予約詳細</h3>
                         {reservationData.duration && (
                             <div className="text-sm text-gray-300 mb-1">
-                                予約時間: {Math.floor(reservationData.duration)}時間
+                                予約時間: {formatDuration(reservationData.duration)}
                             </div>
                         )}
                         {reservationData.details && (

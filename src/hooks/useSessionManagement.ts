@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createReservation, updateReservation, startReservation, stopReservation, getCastSessionStatus } from '../services/api';
+import { formatDuration } from '../utils/formatters';
 
 interface SessionState {
     isActive: boolean;
@@ -171,7 +172,7 @@ export const useSessionManagement = ({
                 location: '提案による予約', // Default location for proposals
                 meeting_location: '提案による予約',
                 reservation_name: '提案による予約',
-                details: `提案による予約 - 日時: ${proposalData.date}, 時間: ${proposalData.duration}分`
+                details: `提案による予約 - 日時: ${proposalData.date}, 時間: ${typeof proposalData.duration === 'string' && (proposalData.duration.includes('時間') || proposalData.duration.includes('分')) ? proposalData.duration : formatDuration(proposalData.duration)}`
             });
 
             console.log('Proposal reservation created:', newReservation);
@@ -200,7 +201,7 @@ export const useSessionManagement = ({
             const updatedReservation = await updateReservation(reservationId, {
                 scheduled_at: proposalData.date,
                 duration: proposalData.duration,
-                details: `提案による予約更新 - 日時: ${proposalData.date}, 時間: ${proposalData.duration}分`
+                details: `提案による予約更新 - 日時: ${proposalData.date}, 時間: ${typeof proposalData.duration === 'string' && (proposalData.duration.includes('時間') || proposalData.duration.includes('分')) ? proposalData.duration : formatDuration(proposalData.duration)}`
             });
 
             console.log('Proposal reservation updated:', updatedReservation);

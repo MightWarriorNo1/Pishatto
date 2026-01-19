@@ -3,6 +3,7 @@ import { ChevronLeft } from 'lucide-react';
 import { getPointTransactions } from '../../services/api';
 import { useCast } from '../../contexts/CastContext';
 import Spinner from '../../components/ui/Spinner';
+import { formatDuration } from '../../utils/formatters';
 
 interface PointTransaction {
   id: number;
@@ -170,7 +171,7 @@ const CastPointHistoryPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 {transaction.reservation && (
                   <div className="text-xs text-gray-400">
                     予約: {new Date(transaction.reservation.scheduled_at).toLocaleDateString('ja-JP').replace(/\//g, '-')}
-                    {transaction.reservation.duration && ` (${transaction.reservation.duration}時間)`}
+                    {transaction.reservation.duration && ` (${formatDuration(transaction.reservation.duration)})`}
                   </div>
                 )}
               </div>

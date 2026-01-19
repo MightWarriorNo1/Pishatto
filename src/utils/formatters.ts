@@ -57,3 +57,30 @@ export const formatCurrency = (value: number | string | null | undefined, locale
 export const formatCurrencyWithSymbol = (value: number | string | null | undefined, locale: string = 'ja-JP'): string => {
   return `¥${formatNumber(value, locale)}`;
 };
+
+/**
+ * Format duration without trailing zeros
+ * Removes unnecessary decimal places for whole numbers while preserving decimals for fractional hours
+ * @param duration - The duration value (in hours) as number or string (with or without "時間")
+ * @returns Formatted duration string (e.g., "2時間", "2.5時間")
+ * @example
+ * formatDuration(2) => "2時間"
+ * formatDuration(2.0) => "2時間"
+ * formatDuration(2.5) => "2.5時間"
+ * formatDuration("2.0") => "2時間"
+ * formatDuration("2.0時間") => "2時間"
+ * formatDuration("2時間") => "2時間"
+ */
+export const formatDuration = (duration: number | string): string => {
+  // If it's a string that already contains "時間", extract the number part
+  let numValue: number;
+  if (typeof duration === 'string' && duration.includes('時間')) {
+    numValue = parseFloat(duration.replace('時間', ''));
+  } else {
+    numValue = typeof duration === 'string' ? parseFloat(duration) : duration;
+  }
+  
+  if (isNaN(numValue)) return '0時間';
+  // Remove trailing zeros: 2.0 becomes 2, but 2.5 stays 2.5
+  return `${numValue % 1 === 0 ? Math.floor(numValue) : numValue}時間`;
+};

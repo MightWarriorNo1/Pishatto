@@ -28,6 +28,7 @@ import { useChatMessages } from "../../hooks/useRealtime";
 import dayjs from "dayjs";
 import Spinner from "../ui/Spinner";
 import GuestCalendarPage from "./GuestCalendarPage";
+import { formatDuration } from "../../utils/formatters";
 import SessionTimer from "../ui/SessionTimer";
 import { useSessionManagement } from "../../hooks/useSessionManagement";
 import ProposalService from "../../services/ProposalService";
@@ -892,7 +893,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                           ～
                         </div>
                         <div>人数：{proposal.people?.replace(/名$/, "")}人</div>
-                        <div>時間：{proposal.duration}</div>
+                        <div>時間：{formatDuration(proposal.duration)}</div>
                         <div>
                           消費ポイント：{proposal.totalPoints?.toLocaleString()}
                           P
@@ -1519,7 +1520,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({ chatId, onBack }) => {
                 人数：{selectedProposal.people?.replace(/名$/, "") || "未設定"}
                 人
               </div>
-              <div>時間：{selectedProposal.duration || "未設定"}</div>
+              <div>時間：{selectedProposal.duration ? formatDuration(selectedProposal.duration) : "未設定"}</div>
               <div>
                 消費ポイント：
                 {selectedProposal.totalPoints?.toLocaleString() || "0"}P

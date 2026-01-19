@@ -5,6 +5,7 @@ import { getChatById, getReservationById, getGuestProfileById, getCastProfileByI
 import { useCast } from '../../../contexts/CastContext';
 import { useNavigate } from 'react-router-dom';
 import Spinner from '../../ui/Spinner';
+import { formatDuration } from '../../../utils/formatters';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -435,7 +436,7 @@ const MessageProposalPage: React.FC<{
                             onChange={e => setDuration(e.target.value)}
                         >
                             {Array.from({ length: 47 }, (_, i) => 1 + i * 0.5).map((h) => {
-                                const label = Number.isInteger(h) ? `${h}時間` : `${h.toFixed(1)}時間`;
+                                const label = formatDuration(h);
                                 return (
                                     <option key={label} value={label}>{label}</option>
                                 );

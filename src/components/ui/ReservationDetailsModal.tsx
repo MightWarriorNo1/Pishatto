@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, User, MapPin, CreditCard, MessageSquare } from 'lucide-react';
 import { getReservationDetails } from '../../services/api';
+import { formatDuration } from '../../utils/formatters';
 
 interface ReservationDetailsModalProps {
     isOpen: boolean;
@@ -196,7 +197,7 @@ const ReservationDetailsModal: React.FC<ReservationDetailsModalProps> = ({
                                 <div className="flex items-center gap-2">
                                     <Clock className="w-5 h-5 text-white" />
                                     <span className="font-medium text-white">予定時間:</span>
-                                    <span className="text-white">{reservation.duration}時間</span>
+                                    <span className="text-white">{formatDuration(reservation.duration)}</span>
                                 </div>
 
                                 {reservation.started_at && (

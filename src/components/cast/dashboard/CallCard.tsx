@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock3, UserRound } from "lucide-react";
 import { Reservation } from '../../../services/api';
+import { formatDuration } from '../../../utils/formatters';
 
 interface CallCardProps {
     location: string;
@@ -95,7 +96,7 @@ const CallCard: React.FC<CallCardProps> = ({ location, duration, time, type, peo
             </div>
             <div className="flex items-center text-xs text-white mb-1">
                 <span className="flex items-center mr-2">
-                    <Clock3 />{duration}時間</span>
+                    <Clock3 />{formatDuration(duration)}</span>
                 <span className="flex items-center mr-2"><UserRound /> {people}名</span>
             </div>
             <div className="text-xs text-white mb-1">獲得予定ポイント</div>

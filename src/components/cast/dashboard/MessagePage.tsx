@@ -26,6 +26,7 @@ import ProposalService from '../../../services/ProposalService';
 import { startReservation, stopReservation, updateReservation, getChatById, completeSession, completeReservation, getCastGrade, getCastProfileById, getReservationById, getGuestProfileById } from '../../../services/api';
 import ReservationDetailsModal from '../../ui/ReservationDetailsModal';
 import { useStartReservation } from '../../../hooks/useQueries';
+import { formatDuration } from '../../../utils/formatters';
 
 const APP_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -2161,7 +2162,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                                         {/* Do not show clicked indicator on proposal tap */}
                                         <div>日程：{currentProposal.date ? new Date(currentProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-') : ''}～</div>
                                         <div>人数：{currentProposal.people?.replace(/名$/, '')}人</div>
-                                        <div>時間：{currentProposal.duration}</div>
+                                        <div>時間：{formatDuration(currentProposal.duration)}</div>
                                         <div>消費ポイント：{currentProposal.totalPoints?.toLocaleString()}P</div>
                                         <div>（延長：{currentProposal.extensionPoints?.toLocaleString()}P / 15分）</div>
                                         {isAccepted && (
@@ -2647,7 +2648,7 @@ const getAcceptedProposalsStorageKey = (chatId: number) => `accepted_proposals_$
                         <div className="mb-4 text-black">
                             <div>日程：{selectedProposal.date ? new Date(selectedProposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-') : '未設定'}～</div>
                             <div>人数：{selectedProposal.people?.replace(/名$/, '') || '未設定'}人</div>
-                            <div>時間：{selectedProposal.duration || '未設定'}</div>
+                            <div>時間：{selectedProposal.duration ? formatDuration(selectedProposal.duration) : '未設定'}</div>
                             <div>消費ポイント：{selectedProposal.totalPoints?.toLocaleString() || '0'}P</div>
                             <div>（延長：{selectedProposal.extensionPoints?.toLocaleString() || '0'}P / 15分）</div>
                         </div>

@@ -23,6 +23,7 @@ import { useCast } from '../../contexts/CastContext';
 import Spinner from '../../components/ui/Spinner';
 import { useCastData } from '../../hooks/useCastData';
 import { useCastReservations, useCastApplications, useApplyReservation, useStartReservation, useStopReservation } from '../../hooks/useQueries';
+import { formatDuration } from '../../utils/formatters';
 
 // Modal component for call details (unchanged)
 const CallDetailModal = ({ call, onClose, onApply }: { call: any, onClose: () => void, onApply: () => void }) => {
@@ -44,7 +45,7 @@ const CallDetailModal = ({ call, onClose, onApply }: { call: any, onClose: () =>
                 <div className="text-lg font-bold text-white mb-2">{call.time} {call.title}</div>
                 <div className="flex items-center text-sm text-white mb-2">
                     <span className="flex items-center mr-4">
-                        <Clock3 />{call.duration || 1}時間</span>
+                        <Clock3 />{formatDuration(call.duration || 1)}</span>
                     <span className="flex items-center mr-4"><UserRound /> {people}名</span>
                     <span className="flex items-center mr-4">{call.type}</span>
                 </div>

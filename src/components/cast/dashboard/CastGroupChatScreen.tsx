@@ -12,6 +12,7 @@ import { useSessionManagement } from '../../../hooks/useSessionManagement';
 import dayjs from 'dayjs';
 import Spinner from '../../ui/Spinner';
 import SessionTimer from '../../ui/SessionTimer';
+import { formatDuration } from '../../../utils/formatters';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
@@ -852,7 +853,7 @@ const CastGroupChatScreen: React.FC<CastGroupChatScreenProps> = ({ groupId, onBa
                                         <div className={`bg-orange-500 text-white rounded-lg px-4 py-3 max-w-[80%] text-sm shadow-md relative`}>
                                             <div>日程：{proposal.date ? new Date(proposal.date).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/\//g, '-') : ''}～</div>
                                             <div>人数：{proposal.people?.replace(/名$/, '')}人</div>
-                                            <div>時間：{proposal.duration}</div>
+                                            <div>時間：{formatDuration(proposal.duration)}</div>
                                             <div>消費ポイント：{proposal.totalPoints?.toLocaleString()}P</div>
                                             <div>（延長：{proposal.extensionPoints?.toLocaleString()}P / 15分）</div>
                                         </div>

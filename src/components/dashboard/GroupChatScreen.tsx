@@ -28,6 +28,7 @@ import { useNotificationSettings } from "../../contexts/NotificationSettingsCont
 import { useGroupMessages } from "../../hooks/useRealtime";
 import dayjs from "dayjs";
 import Spinner from "../ui/Spinner";
+import { formatDuration } from "../../utils/formatters";
 
 import { getFirstAvatarUrl } from "../../utils/avatar";
 
@@ -499,7 +500,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({
                         ～
                       </div>
                       <div>人数：{proposal.people?.replace(/名$/, "")}人</div>
-                      <div>時間：{proposal.duration}</div>
+                      <div>時間：{formatDuration(proposal.duration)}</div>
                       <div>
                         消費ポイント：{proposal.totalPoints?.toLocaleString()}P
                       </div>
@@ -1049,7 +1050,7 @@ const GroupChatScreen: React.FC<GroupChatScreenProps> = ({
                 <div className="flex items-center">
                   <Clock className="w-4 h-4 mr-2" />
                   <span className="font-medium">時間：</span>
-                  <span className="ml-2">{selectedProposal.duration}</span>
+                  <span className="ml-2">{formatDuration(selectedProposal.duration)}</span>
                 </div>
                 <div className="flex items-center">
                   <Gift className="w-4 h-4 mr-2" />

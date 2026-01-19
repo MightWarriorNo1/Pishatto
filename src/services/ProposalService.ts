@@ -1,4 +1,5 @@
 import { createReservation, updateReservation, updateChat, sendMessage } from './api';
+import { formatDuration } from '../utils/formatters';
 
 /**
  * ProposalService - Handles proposal approval flow using existing Pishatto-call system
@@ -46,7 +47,7 @@ export class ProposalService {
                 reservation = await updateReservation(proposalData.reservationId, {
                     scheduled_at: proposalData.date,
                     duration: durationInHours,
-                    details: `提案による予約更新 - 日時: ${proposalData.date}, 時間: ${durationInHours}時間`
+                    details: `提案による予約更新 - 日時: ${proposalData.date}, 時間: ${formatDuration(durationInHours)}`
                 });
             } else {
                 // Create new reservation using existing Pishatto-call API
@@ -60,7 +61,7 @@ export class ProposalService {
                     location: '提案による予約',
                     meeting_location: '提案による予約',
                     reservation_name: '提案による予約',
-                    details: `提案による予約 - 日時: ${proposalData.date}, 時間: ${durationInHours}時間`,
+                    details: `提案による予約 - 日時: ${proposalData.date}, 時間: ${formatDuration(durationInHours)}`,
                     points: proposalData.totalPoints || 0 // Add points for point transaction creation
                 });
             }
@@ -147,12 +148,11 @@ export class ProposalService {
                 } else {
                     // If it's a string number, treat as hours
                     const hours = parseFloat(proposalData.duration);
-                    displayDuration = Number.isInteger(hours) ? `${hours}時間` : `${hours.toFixed(1)}時間`;
+                    displayDuration = formatDuration(hours);
                 }
             } else if (typeof proposalData.duration === 'number') {
                 // If it's a number, treat it as hours (not minutes)
-                const hours = proposalData.duration;
-                displayDuration = Number.isInteger(hours) ? `${hours}時間` : `${hours.toFixed(1)}時間`;
+                displayDuration = formatDuration(proposalData.duration);
             }
 
             // Send acceptance marker
