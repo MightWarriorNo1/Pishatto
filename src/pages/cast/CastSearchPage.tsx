@@ -12,7 +12,7 @@ import {
   useLikeStatus, 
   useRecordGuestVisit
 } from '../../hooks/useQueries';
-import { fetchRanking, updateRanking, checkNotificationEnabled } from '../../services/api';
+import { fetchRanking, updateRanking, checkNotificationEnabled, getAllGuests } from '../../services/api';
 import CastNotificationPage from './CastNotificationPage';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../../contexts/UserContext';
@@ -192,11 +192,14 @@ const FilterModal: React.FC<{
 
     const handleReset = () => {
         const defaultFilters: FilterOptions = {
-            region: '全国',
+            residence: '全国',
             ageRange: { min: 18, max: 80 },
-            category: 'gift',
-            timePeriod: 'current',
-            userType: 'guest'
+            heightRange: { min: 150, max: 200 },
+            education: '',
+            annualIncome: '',
+            occupation: '',
+            alcohol: '',
+            tobacco: ''
         };
         setLocalFilters(defaultFilters);
     };
@@ -213,12 +216,12 @@ const FilterModal: React.FC<{
                     </button>
                 </div>
 
-                {/* Region Filter */}
+                {/* Residence Filter */}
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-white mb-2">地域</label>
+                    <label className="block text-sm font-medium text-white mb-2">居住地</label>
                     <select
-                        value={localFilters.region}
-                        onChange={(e) => setLocalFilters({...localFilters, region: e.target.value})}
+                        value={localFilters.residence}
+                        onChange={(e) => setLocalFilters({...localFilters, residence: e.target.value})}
                         className="w-full bg-primary border border-secondary rounded px-3 py-2 text-white"
                     >
                         <option value="全国">全国</option>
@@ -261,52 +264,107 @@ const FilterModal: React.FC<{
                     </div>
                 </div>
 
-                {/* Category Filter */}
+                {/* Height Range Filter */}
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-white mb-2">カテゴリー</label>
-                    <div className="flex space-x-2">
-                        <button
-                            onClick={() => setLocalFilters({...localFilters, category: 'gift'})}
-                            className={`px-3 py-1 rounded text-sm font-medium ${
-                                localFilters.category === 'gift' 
-                                    ? 'bg-secondary text-white' 
-                                    : 'bg-primary text-white border border-secondary'
-                            }`}
-                        >
-                            ギフト
-                        </button>
-                        <button
-                            onClick={() => setLocalFilters({...localFilters, category: 'reservation'})}
-                            className={`px-3 py-1 rounded text-sm font-medium ${
-                                localFilters.category === 'reservation' 
-                                    ? 'bg-secondary text-white' 
-                                    : 'bg-primary text-white border border-secondary'
-                            }`}
-                        >
-                            予約
-                        </button>
+                    <label className="block text-sm font-medium text-white mb-2">身長範囲</label>
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="number"
+                            value={localFilters.heightRange?.min || 150}
+                            onChange={(e) => setLocalFilters({
+                                ...localFilters, 
+                                heightRange: {...(localFilters.heightRange || { min: 150, max: 200 }), min: parseInt(e.target.value) || 150}
+                            })}
+                            className="w-20 bg-primary border border-secondary rounded px-2 py-1 text-white text-center"
+                            min="140"
+                            max="200"
+                        />
+                        <span className="text-white">〜</span>
+                        <input
+                            type="number"
+                            value={localFilters.heightRange?.max || 200}
+                            onChange={(e) => setLocalFilters({
+                                ...localFilters, 
+                                heightRange: {...(localFilters.heightRange || { min: 150, max: 200 }), max: parseInt(e.target.value) || 200}
+                            })}
+                            className="w-20 bg-primary border border-secondary rounded px-2 py-1 text-white text-center"
+                            min="140"
+                            max="200"
+                        />
+                        <span className="text-white text-sm">cm</span>
                     </div>
                 </div>
 
-                {/* Time Period Filter */}
+                {/* Education Filter */}
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-white mb-2">期間</label>
+                    <label className="block text-sm font-medium text-white mb-2">学歴</label>
+                    <input
+                        type="text"
+                        value={localFilters.education || ''}
+                        onChange={(e) => setLocalFilters({...localFilters, education: e.target.value})}
+                        placeholder="例: 大卒"
+                        className="w-full bg-primary border border-secondary rounded px-3 py-2 text-white placeholder-gray-400"
+                    />
+                </div>
+
+                {/* Annual Income Filter */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-white mb-2">年収</label>
                     <select
-                        value={localFilters.timePeriod}
-                        onChange={(e) => setLocalFilters({...localFilters, timePeriod: e.target.value})}
+                        value={localFilters.annualIncome || ''}
+                        onChange={(e) => setLocalFilters({...localFilters, annualIncome: e.target.value})}
                         className="w-full bg-primary border border-secondary rounded px-3 py-2 text-white"
                     >
-                        <option value="current">今月</option>
-                        <option value="yesterday">昨日</option>
-                        <option value="lastWeek">先週</option>
-                        <option value="lastMonth">先月</option>
-                        <option value="allTime">全期間</option>
+                        <option value="">すべて</option>
+                        <option value="300万円未満">300万円未満</option>
+                        <option value="300～500万円">300～500万円</option>
+                        <option value="500～700万円">500～700万円</option>
+                        <option value="700～1000万円">700～1000万円</option>
+                        <option value="1000万円以上">1000万円以上</option>
                     </select>
                 </div>
 
-                {/* User Type selection removed as not required */}
+                {/* Occupation Filter */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-white mb-2">お仕事</label>
+                    <input
+                        type="text"
+                        value={localFilters.occupation || ''}
+                        onChange={(e) => setLocalFilters({...localFilters, occupation: e.target.value})}
+                        placeholder="例: 会社員"
+                        className="w-full bg-primary border border-secondary rounded px-3 py-2 text-white placeholder-gray-400"
+                    />
+                </div>
 
+                {/* Alcohol Filter */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-white mb-2">お酒</label>
+                    <select
+                        value={localFilters.alcohol || ''}
+                        onChange={(e) => setLocalFilters({...localFilters, alcohol: e.target.value as any})}
+                        className="w-full bg-primary border border-secondary rounded px-3 py-2 text-white"
+                    >
+                        <option value="">すべて</option>
+                        <option value="never">飲まない</option>
+                        <option value="sometimes">時々飲む</option>
+                        <option value="often">よく飲む</option>
+                    </select>
+                </div>
 
+                {/* Tobacco Filter */}
+                <div className="mb-4">
+                    <label className="block text-sm font-medium text-white mb-2">タバコ</label>
+                    <select
+                        value={localFilters.tobacco || ''}
+                        onChange={(e) => setLocalFilters({...localFilters, tobacco: e.target.value as any})}
+                        className="w-full bg-primary border border-secondary rounded px-3 py-2 text-white"
+                    >
+                        <option value="">すべて</option>
+                        <option value="never">吸わない</option>
+                        <option value="sometimes">時々吸う</option>
+                        <option value="often">よく吸う</option>
+                    </select>
+                </div>
 
                 {/* Action Buttons */}
                 <div className="flex space-x-2">
@@ -330,11 +388,14 @@ const FilterModal: React.FC<{
 
 // Filter Options Type
 interface FilterOptions {
-    region: string;
+    residence: string;
     ageRange: { min: number; max: number };
-    category: string;
-    timePeriod: string;
-    userType: string;
+    heightRange?: { min: number; max: number };
+    education?: string;
+    annualIncome?: string;
+    occupation?: string;
+    alcohol?: 'never' | 'sometimes' | 'often' | '';
+    tobacco?: 'never' | 'sometimes' | 'often' | '';
 }
 
 // Ranking Data Type
@@ -373,15 +434,7 @@ const RankingPage: React.FC<RankingPageProps> = ({ onBack, initialMainTab, initi
         initialTimePeriod === 'lastWeek' ? '先週' :
         initialTimePeriod === 'lastMonth' ? '先月' : '全期間'
     );
-    const [showFilterModal, setShowFilterModal] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [filters, setFilters] = useState<FilterOptions>({
-        region: '全国',
-        ageRange: { min: 18, max: 80 },
-        category: 'gift',
-        timePeriod: 'current',
-        userType: 'guest'
-    });
 
     const categories = ['ギフト', '予約'];
     const dateTabs = ['今月', '昨日', '先週', '先月', '全期間'];
@@ -473,19 +526,6 @@ const RankingPage: React.FC<RankingPageProps> = ({ onBack, initialMainTab, initi
         }
     }, [rankingData, mainTab]);
 
-    // Apply filters
-    const handleApplyFilters = (newFilters: FilterOptions) => {
-        setFilters(newFilters);
-        // Update local state to reflect filter changes
-        setRegion(newFilters.region);
-        setCategory(newFilters.category === 'gift' ? 'ギフト' : '予約');
-        setDateTab(newFilters.timePeriod === 'current' ? '今月' : 
-                   newFilters.timePeriod === 'yesterday' ? '昨日' :
-                   newFilters.timePeriod === 'lastWeek' ? '先週' :
-                   newFilters.timePeriod === 'lastMonth' ? '先月' : '全期間');
-        setMainTab(newFilters.userType as 'cast' | 'guest');
-    };
-
     // React Query handles data fetching automatically
 
     return (
@@ -534,17 +574,6 @@ const RankingPage: React.FC<RankingPageProps> = ({ onBack, initialMainTab, initi
                     ))}
                 </div>
             </div>
-
-            {/* Active Filters Display */}
-            {(filters.region !== '全国' || filters.ageRange.min !== 18 || filters.ageRange.max !== 80) && (
-                <div className="px-4 py-2 bg-secondary bg-opacity-20 border-b border-secondary">
-                    <div className="text-xs text-white">
-                        フィルター適用中: 
-                        {filters.region !== '全国' && ` 地域: ${filters.region}`}
-                        {(filters.ageRange.min !== 18 || filters.ageRange.max !== 80) && ` 年齢: ${filters.ageRange.min}-${filters.ageRange.max}歳`}
-                    </div>
-                </div>
-            )}
 
             {/* Ranking List */}
             <div className="pt-4">
@@ -597,14 +626,6 @@ const RankingPage: React.FC<RankingPageProps> = ({ onBack, initialMainTab, initi
                     ))
                 )}
             </div>
-
-            {/* Filter Modal */}
-            <FilterModal
-                isOpen={showFilterModal}
-                onClose={() => setShowFilterModal(false)}
-                filters={filters}
-                onApplyFilters={handleApplyFilters}
-            />
         </div>
     );
 };
@@ -809,11 +830,14 @@ const CastSearchPage: React.FC = () => {
     const [showAllRepeatGuests, setShowAllRepeatGuests] = useState(false);
     const [showFilterModal, setShowFilterModal] = useState(false);
     const [filters, setFilters] = useState<FilterOptions>({
-        region: '全国',
+        residence: '全国',
         ageRange: { min: 18, max: 80 },
-        category: 'gift',
-        timePeriod: 'current',
-        userType: 'guest'
+        heightRange: { min: 150, max: 200 },
+        education: '',
+        annualIncome: '',
+        occupation: '',
+        alcohol: '',
+        tobacco: ''
     });
     const [filterLoading, setFilterLoading] = useState(false);
     const [rankingInit, setRankingInit] = useState<{
@@ -827,14 +851,14 @@ const CastSearchPage: React.FC = () => {
     // React Query hooks
     const { data: repeatGuests = [], isLoading: loading } = useRepeatGuests();
 
-    // Derived list based on current filters
+    // Derived list based on current filters (not used for main filtering anymore, but kept for repeat guests section)
     const filteredRepeatGuests = useMemo(() => {
         return repeatGuests.filter((guest) => {
-            // Region filter
-            const regionOk =
-                !filters.region || filters.region === '全国'
+            // Residence filter
+            const residenceOk =
+                !filters.residence || filters.residence === '全国'
                     ? true
-                    : (guest.residence || '').includes(filters.region);
+                    : (guest.residence || '').includes(filters.residence);
 
             // Age filter
             const currentYear = new Date().getFullYear();
@@ -843,10 +867,7 @@ const CastSearchPage: React.FC = () => {
                 ? true
                 : guestAge >= filters.ageRange.min && guestAge <= filters.ageRange.max;
 
-            // Points filter (if guest has reservations_count we can roughly map; otherwise ignore)
-            const pointsOk = true; // No points on guest model here – treated as pass
-
-            return regionOk && ageOk && pointsOk;
+            return residenceOk && ageOk;
         });
     }, [repeatGuests, filters]);
 
@@ -854,61 +875,61 @@ const CastSearchPage: React.FC = () => {
         setFilters(newFilters);
         setFilterLoading(true);
         try {
-            const backendCategory = newFilters.category === 'reservation' ? 'reservation' : 'gift';
-            const backendTimePeriod = newFilters.timePeriod === 'yesterday'
-                ? 'yesterday'
-                : newFilters.timePeriod === 'lastWeek'
-                ? 'lastWeek'
-                : newFilters.timePeriod === 'lastMonth'
-                ? 'lastMonth'
-                : newFilters.timePeriod === 'allTime'
-                ? 'allTime'
-                : 'current';
-
-            // Ensure backend ranking is up-to-date for the selected filters
-            try {
-                await updateRanking({
-                    userType: newFilters.userType as 'cast' | 'guest',
-                    timePeriod: backendTimePeriod,
-                    category: backendCategory,
-                    area: newFilters.region,
-                });
-            } catch (e) {
-                // Non-fatal if recalculation is not required
+            // Prepare filter parameters for API call
+            const filterParams: any = {};
+            
+            if (newFilters.residence && newFilters.residence !== '全国') {
+                filterParams.residence = newFilters.residence;
+            }
+            
+            if (newFilters.ageRange) {
+                filterParams.min_age = newFilters.ageRange.min;
+                filterParams.max_age = newFilters.ageRange.max;
+            }
+            
+            if (newFilters.heightRange) {
+                filterParams.height_min = newFilters.heightRange.min;
+                filterParams.height_max = newFilters.heightRange.max;
+            }
+            
+            if (newFilters.education) {
+                filterParams.education = newFilters.education;
+            }
+            
+            if (newFilters.annualIncome) {
+                filterParams.annual_income = newFilters.annualIncome;
+            }
+            
+            if (newFilters.occupation) {
+                filterParams.occupation = newFilters.occupation;
+            }
+            
+            if (newFilters.alcohol) {
+                filterParams.alcohol = newFilters.alcohol;
+            }
+            
+            if (newFilters.tobacco) {
+                filterParams.tobacco = newFilters.tobacco;
             }
 
-            const response = await fetchRanking({
-                userType: newFilters.userType as 'cast' | 'guest',
-                timePeriod: backendTimePeriod,
-                category: backendCategory,
-                area: newFilters.region,
-            });
-
-            // Support multiple possible response shapes
-            const possible = (response as any) || {};
-            const dataArray = Array.isArray(possible.data)
-                ? possible.data
-                : Array.isArray(possible)
-                ? possible
-                : Array.isArray(possible.ranking)
-                ? possible.ranking
-                : Array.isArray(possible.list)
-                ? possible.list
-                : [];
-            const simplified = dataArray.map((item: any, index: number) => ({
-                id: item.id || item.user_id || index + 1,
-                name: item.name || item.nickname || 'Unknown',
-                nickname: item.nickname,
-                age: item.age ?? null,
-                avatar: item.avatar ?? null, // Preserve null instead of converting to empty string
-                region: item.region || newFilters.region,
-                userType: newFilters.userType,
+            // Fetch guests with filters
+            const guests = await getAllGuests(filterParams);
+            
+            // Store in localStorage for persistence
+            const simplified = guests.map((guest: any) => ({
+                id: guest.id,
+                name: guest.nickname,
+                nickname: guest.nickname,
+                age: guest.birth_year ? new Date().getFullYear() - guest.birth_year : null,
+                avatar: guest.avatar ?? null,
+                region: guest.residence,
+                userType: 'guest',
             }));
 
             localStorage.setItem('lastFilterResults', JSON.stringify(simplified));
 
+            // Map to display format
             const displayMapped: DisplayUser[] = simplified.map((item: any) => {
-                // Normalize avatar: convert empty string to null, keep null as null, keep valid strings
                 const avatarValue = (!item.avatar || (typeof item.avatar === 'string' && !item.avatar.trim())) 
                     ? null 
                     : item.avatar;
@@ -918,7 +939,7 @@ const CastSearchPage: React.FC = () => {
                     displayName: item.nickname || item.name || 'Unknown',
                     age: item.age ?? null,
                     region: item.region,
-                    userType: item.userType === 'cast' ? 'cast' : 'guest',
+                    userType: 'guest',
                 };
             });
             setLastSearchDisplayResults(displayMapped);
@@ -930,37 +951,27 @@ const CastSearchPage: React.FC = () => {
         }
     };
 
-    // Load persisted last filter results from localStorage
+    // Load all guests on initial page load
     useEffect(() => {
-        try {
-            // First try to load filter results (絞り込む results)
-            const filterRaw = localStorage.getItem('lastFilterResults');
-            if (filterRaw) {
-                const parsed = JSON.parse(filterRaw) as Array<any>;
-                const displayMapped: DisplayUser[] = parsed.map((item) => {
-                    // Normalize avatar: convert empty string to null, keep null as null, keep valid strings
-                    const avatarValue = (!item.avatar || (typeof item.avatar === 'string' && !item.avatar.trim())) 
-                        ? null 
-                        : item.avatar;
-                    return {
-                        id: item.id,
-                        avatar: getFirstAvatarUrl(avatarValue, '/assets/avatar/1.jpg'),
-                        displayName: item.nickname || item.name || 'Unknown',
-                        age: item.age ?? null,
-                        region: item.region,
-                        userType: item.userType === 'cast' ? 'cast' : 'guest',
-                    };
-                });
-                setLastSearchDisplayResults(displayMapped);
-                return;
-            }
+        const loadAllGuests = async () => {
+            setFilterLoading(true);
+            try {
+                // Fetch all guests without any filters
+                const guests = await getAllGuests();
+                
+                // Map to simplified format
+                const simplified = guests.map((guest: any) => ({
+                    id: guest.id,
+                    name: guest.nickname,
+                    nickname: guest.nickname,
+                    age: guest.birth_year ? new Date().getFullYear() - guest.birth_year : null,
+                    avatar: guest.avatar ?? null,
+                    region: guest.residence,
+                    userType: 'guest',
+                }));
 
-            // Fallback to ranking results if no filter results exist
-            const rankingRaw = localStorage.getItem('lastSearchResults');
-            if (rankingRaw) {
-                const parsed = JSON.parse(rankingRaw) as Array<any>;
-                const displayMapped: DisplayUser[] = parsed.map((item) => {
-                    // Normalize avatar: convert empty string to null, keep null as null, keep valid strings
+                // Map to display format
+                const displayMapped: DisplayUser[] = simplified.map((item: any) => {
                     const avatarValue = (!item.avatar || (typeof item.avatar === 'string' && !item.avatar.trim())) 
                         ? null 
                         : item.avatar;
@@ -970,14 +981,19 @@ const CastSearchPage: React.FC = () => {
                         displayName: item.nickname || item.name || 'Unknown',
                         age: item.age ?? null,
                         region: item.region,
-                        userType: item.userType === 'cast' ? 'cast' : 'guest',
+                        userType: 'guest',
                     };
                 });
                 setLastSearchDisplayResults(displayMapped);
+            } catch (e) {
+                console.error('Failed to load all guests:', e);
+                setLastSearchDisplayResults([]);
+            } finally {
+                setFilterLoading(false);
             }
-        } catch (e) {
-            console.error('Failed to load persisted results:', e);
-        }
+        };
+
+        loadAllGuests();
     }, []);
 
     // Normalize items for rendering in Previous Results section
@@ -1018,12 +1034,16 @@ const CastSearchPage: React.FC = () => {
             </div>
 
             {/* Active Filters Display */}
-            {(filters.region !== '全国' || filters.ageRange.min !== 18 || filters.ageRange.max !== 80) && (
+            {(filters.residence !== '全国' || filters.ageRange.min !== 18 || filters.ageRange.max !== 80 || 
+              filters.education || filters.annualIncome || filters.occupation || filters.alcohol || filters.tobacco) && (
                 <div className="px-4 py-2 bg-secondary bg-opacity-20 border-b border-secondary">
                     <div className="text-xs text-white">
                         フィルター適用中:
-                        {filters.region !== '全国' && ` 地域: ${filters.region}`}
+                        {filters.residence !== '全国' && ` 居住地: ${filters.residence}`}
                         {(filters.ageRange.min !== 18 || filters.ageRange.max !== 80) && ` 年齢: ${filters.ageRange.min}-${filters.ageRange.max}歳`}
+                        {filters.education && ` 学歴: ${filters.education}`}
+                        {filters.annualIncome && ` 年収: ${filters.annualIncome}`}
+                        {filters.occupation && ` 職業: ${filters.occupation}`}
                     </div>
                 </div>
             )}
@@ -1064,8 +1084,11 @@ const CastSearchPage: React.FC = () => {
                 ))}
             </div>
             {/* Previous filter results */}
-            <div className="px-4 pt-2 pb-1 text-base font-bold text-white">絞り込み結果</div>
-            <div className="grid grid-cols-2 gap-4 px-4 ">
+            <div className="px-4 pt-2 pb-1 flex items-center justify-between">
+                <span className="text-base font-bold text-white">絞り込み結果</span>
+                <span className="text-sm text-gray-300">{lastSearchDisplayResults.length}件</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 px-4 pb-4">
                 {filterLoading ? (
                     <div className="col-span-2 flex items-center justify-center py-8">
                         <Spinner />
@@ -1074,26 +1097,49 @@ const CastSearchPage: React.FC = () => {
                     lastSearchDisplayResults.map((guest) => (
                         <div
                             key={guest.id}
-                            className="bg-primary rounded-lg shadow relative cursor-pointer transition-transform hover:scale-105 border border-secondary flex flex-col items-center p-3"
+                            className="group relative bg-gradient-to-br from-white/10 to-white/5 rounded-2xl shadow-xl cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl border border-white/20 hover:border-secondary/50 overflow-hidden"
                             onClick={() => navigate(guest.userType === 'cast' ? `/cast/${guest.id}` : `/guest/${guest.id}`)}
                         >
-                            <div className="w-32 h-32 mb-2 relative">
+                            {/* Avatar with gradient overlay */}
+                            <div className="relative h-48 overflow-hidden">
                                 <img
                                     src={guest.avatar || '/assets/avatar/1.jpg'}
                                     alt={guest.displayName}
-                                    className="w-full h-full object-cover rounded-lg border-2 border-secondary"
+                                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                                     onError={(e) => {
                                         e.currentTarget.src = '/assets/avatar/1.jpg';
                                     }}
                                 />
+                                <div className="absolute inset-0 bg-gradient-to-t from-primary via-transparent to-transparent opacity-60" />
                             </div>
-                            <div className="text-xs text-white font-bold truncate w-full text-center">
-                                {guest.displayName}
-                                {guest.age ? `（${guest.age}歳）` : ''}
+                            
+                            {/* Info section */}
+                            <div className="p-4 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-base font-bold text-white truncate flex-1">
+                                        {guest.displayName}
+                                    </h3>
+                                    {guest.age && (
+                                        <span className="ml-2 bg-secondary/80 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                            {guest.age}歳
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                {guest.region && (
+                                    <div className="flex items-center text-xs text-gray-300">
+                                        <span className="mr-1">📍</span>
+                                        <span className="truncate">{guest.region}</span>
+                                    </div>
+                                )}
+                                
+                                {/* Hover indicator */}
+                                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                    <div className="bg-secondary text-white text-xs px-3 py-1 rounded-full">
+                                        詳細を見る →
+                                    </div>
+                                </div>
                             </div>
-                            {guest.region && (
-                                <div className="text-[10px] text-white opacity-80 truncate w-full text-center">{guest.region}</div>
-                            )}
                         </div>
                     ))
                 ) : (

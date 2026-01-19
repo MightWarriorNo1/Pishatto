@@ -441,6 +441,22 @@ export const getRepeatGuests = async (): Promise<RepeatGuest[]> => {
   return response.data.guests;
 };
 
+export const getAllGuests = async (filters?: {
+  residence?: string;
+  min_age?: number;
+  max_age?: number;
+  height_min?: number;
+  height_max?: number;
+  education?: string;
+  annual_income?: string;
+  occupation?: string;
+  alcohol?: string;
+  tobacco?: string;
+}): Promise<GuestProfile[]> => {
+  const response = await api.get('/guests/all', { params: filters });
+  return response.data.guests;
+};
+
 export const castLogin = async (phone: string, verificationCode?: string) => {
   const payload: { phone: string; verification_code?: string } = { phone };
   if (verificationCode) {

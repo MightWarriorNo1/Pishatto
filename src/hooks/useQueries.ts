@@ -38,6 +38,7 @@ import {
   getChatById,
   getGuestReservations,
   getRepeatGuests,
+  getAllGuests,
   getGuestProfileById,
   likeGuest,
   createChat,
@@ -560,6 +561,26 @@ export const useRepeatGuests = () => {
     queryKey: queryKeys.cast.repeatGuests(),
     queryFn: () => getRepeatGuests(),
     staleTime: 5 * 60 * 1000, // 5 minutes - repeat guests list changes slowly
+  });
+};
+
+// All Guests Query with optional filters
+export const useAllGuests = (filters?: {
+  residence?: string;
+  min_age?: number;
+  max_age?: number;
+  height_min?: number;
+  height_max?: number;
+  education?: string;
+  annual_income?: string;
+  occupation?: string;
+  alcohol?: string;
+  tobacco?: string;
+}) => {
+  return useQuery({
+    queryKey: queryKeys.cast.allGuests(filters),
+    queryFn: () => getAllGuests(filters),
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };
 

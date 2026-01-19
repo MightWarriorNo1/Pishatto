@@ -43,6 +43,7 @@ export const queryKeys = {
     chatById: (chatId: number) => ['cast', 'chatById', chatId] as const,
     guestReservations: (guestId: number) => ['cast', 'guestReservations', guestId] as const,
     repeatGuests: () => ['cast', 'repeatGuests'] as const,
+    allGuests: (filters?: any) => ['cast', 'allGuests', filters] as const,
     guestProfile: (guestId: number) => ['cast', 'guestProfile', guestId] as const,
     likeStatus: (castId: number, guestId: number) => ['cast', 'likeStatus', castId, guestId] as const,
   },

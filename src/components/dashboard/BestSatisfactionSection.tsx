@@ -6,6 +6,7 @@ import { useAllCasts } from '../../hooks/useQueries';
 import getFirstAvatarUrl from '../../utils/avatar';
 import Spinner from '../ui/Spinner';
 import { useSearch } from '../../contexts/SearchContext';
+import { useUser } from '../../contexts/UserContext';
 
 interface CastProfile {
   id: number;
@@ -26,6 +27,7 @@ const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideL
   const navigate = useNavigate();
   const { data: castsData, isLoading: loading } = useAllCasts();
   const { searchQuery, isSearchActive, filterResults } = useSearch();
+  const { user } = useUser();
 
   // Filter casts based on search query and filter results
   const filteredCasts = React.useMemo(() => {
@@ -64,7 +66,7 @@ const BestSatisfactionSection: React.FC<BestSatisfactionSectionProps> = ({ hideL
 
   return (
     <div className="bg-white/10 rounded-lg shadow p-4 mb-8 border border-secondary">
-      <h2 className="font-bold text-lg mb-2 text-white">キャスト一覧</h2>
+      <h2 className="font-bold text-lg mb-2 text-white">{user?.nickname}におすすめの一覧</h2>
       {loading && !hideLoading ? (
         <Spinner />
       ) : filteredCasts.length === 0 ? (
