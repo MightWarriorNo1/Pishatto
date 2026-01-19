@@ -70,8 +70,13 @@ export const formatCurrencyWithSymbol = (value: number | string | null | undefin
  * formatDuration("2.0") => "2時間"
  * formatDuration("2.0時間") => "2時間"
  * formatDuration("2時間") => "2時間"
+ * formatDuration(undefined) => "0時間"
+ * formatDuration(null) => "0時間"
  */
-export const formatDuration = (duration: number | string): string => {
+export const formatDuration = (duration: number | string | undefined | null): string => {
+  // Handle null/undefined
+  if (duration === null || duration === undefined) return '0時間';
+  
   // If it's a string that already contains "時間", extract the number part
   let numValue: number;
   if (typeof duration === 'string' && duration.includes('時間')) {
