@@ -1020,7 +1020,7 @@ const CastSearchPage: React.FC = () => {
         return <CastNotificationPage   onBack={() => setShowNotification(false)} />;
     }
     return (
-        <div className="flex-1 max-w-md pb-20 bg-gradient-to-b from-primary via-primary to-secondary">
+        <div className="flex-1 max-w-md min-h-screen pb-32 bg-gradient-to-b from-primary via-primary to-secondary overflow-y-auto">
             {/* Top bar with filter and crown */}
             <div className="flex items-center justify-between px-4 pt-4 pb-2">
                 <span className="text-white hover:text-secondary transition-colors cursor-pointer" onClick={() => setShowNotification(true)}>
@@ -1088,7 +1088,7 @@ const CastSearchPage: React.FC = () => {
                 <span className="text-base font-bold text-white">絞り込み結果</span>
                 <span className="text-sm text-gray-300">{lastSearchDisplayResults.length}件</span>
             </div>
-            <div className="grid grid-cols-2 gap-4 px-4 pb-4">
+            <div className="grid grid-cols-2 gap-4 px-4 pb-24">
                 {filterLoading ? (
                     <div className="col-span-2 flex items-center justify-center py-8">
                         <Spinner />
