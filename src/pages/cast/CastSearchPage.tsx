@@ -1134,11 +1134,11 @@ const CastSearchPage: React.FC = () => {
                                 )}
                                 
                                 {/* Hover indicator */}
-                                <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                {/* <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                     <div className="bg-secondary text-white text-xs px-3 py-1 rounded-full">
                                         詳細を見る →
                                     </div>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     ))
