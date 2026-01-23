@@ -17,6 +17,8 @@ interface ReservationDetails {
     scheduled_at: string;
     started_at?: string;
     ended_at?: string;
+    cancelled_at?: string;
+    cancellation_reason?: string;
     duration: number;
     points_earned?: number;
     guest?: {
@@ -215,6 +217,14 @@ const ReservationDetailsModal: React.FC<ReservationDetailsModalProps> = ({
                                         <span className="text-white">{formatDateTime(reservation.ended_at)}</span>
                                     </div>
                                 )}
+
+                                {reservation.cancelled_at && (
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="w-5 h-5 text-red-400" />
+                                        <span className="font-medium text-white">キャンセル日時:</span>
+                                        <span className="text-red-300">{formatDateTime(reservation.cancelled_at)}</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Participants */}
@@ -253,6 +263,22 @@ const ReservationDetailsModal: React.FC<ReservationDetailsModalProps> = ({
                                     </div>
                                 )}
                             </div>
+
+                            {/* Cancellation Info */}
+                            {reservation.cancelled_at && (
+                                <div className="space-y-3">
+                                    <h3 className="font-semibold text-white border-b border-red-500 pb-1">キャンセル情報</h3>
+                                    
+                                    {reservation.cancellation_reason && (
+                                        <div className="space-y-1">
+                                            <span className="font-medium text-white">キャンセル理由:</span>
+                                            <p className="text-red-200 text-sm bg-red-500/20 p-2 rounded border border-red-500/30">
+                                                {reservation.cancellation_reason}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Additional Info */}
                             {(reservation.location || reservation.notes) && (
