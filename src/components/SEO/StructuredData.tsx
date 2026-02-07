@@ -149,7 +149,7 @@ export const PishattoOrganizationData: React.FC = () => (
     name="Pishatto"
     url="https://pishatto.jp"
     logo="https://pishatto.jp/favicon-guest.png"
-    description="業界最高水準のメンズエステシャンが登録。審査通過率10%以下の超難関を突破したメンズエステシャンが24/365でお待ちしています。タイ古式マッサージ、バリ風オイルマッサージ、ロミロミマッサージなど、シーンに合わせてご利用ください。"
+    description="おすすめのメンズエステシャンを探すならピシャット。審査通過率10%以下の超難関を突破したメンズエステシャンが24/365でお待ちしています。タイ古式マッサージ、バリ風オイルマッサージ、ロミロミマッサージなど、シーンに合わせてご利用ください。"
     contactPoint={{
       contactType: "customer service"
     }}

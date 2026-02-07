@@ -146,7 +146,7 @@ const LandingPage: React.FC = () => {
             
             <div className="space-y-4 sm:space-y-6">
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-4 sm:mb-6 md:mb-8 bg-gradient-to-r from-white via-white to-secondary bg-clip-text text-transparent leading-tight">
-                業界最高水準のメンズエステシャンが登録
+                おすすめのメンズエステシャンを探すならピシャット
               </h2>
               <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed px-4">
                 唯一無二のサービスとしてスタート。<br className="hidden sm:block" />

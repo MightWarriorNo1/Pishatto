@@ -18,7 +18,7 @@ interface PageSEOProps {
 export const LandingPageSEO: React.FC<PageSEOProps> = (props) => (
   <>
     <SEOHead
-      title="Pishatto - 業界最高水準のメンズエステシャンが登録"
+      title="Pishatto - おすすめのメンズエステシャンを探すならピシャット"
       description="ピシャッと素敵な空間をご提供。審査通過率10%以下の超難関を突破したメンズエステシャンが24/365でお待ちしています。タイ古式マッサージ、バリ風オイルマッサージ、ロミロミマッサージなど、シーンに合わせてご利用ください。"
       keywords="メンズエステ, マッサージ, タイ古式, バリ風オイル, ロミロミ, 出張エステ, 24時間, 審査通過率10%, ピシャット, pishatto"
       image="/hero.webp"
