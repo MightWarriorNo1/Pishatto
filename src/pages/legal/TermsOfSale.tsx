@@ -9,8 +9,8 @@ const TermsOfSale: React.FC = () => {
           <table className="w-full text-sm">
             <tbody>
               <tr className="odd:bg-white/5">
-                <th className="w-40 p-3 text-left font-semibold align-top">事業者</th>
-                <td className="p-3 text-white/90">株式会社Pishatto事務局</td>
+                <th className="w-40 p-3 text-left font-semibold align-top">運営会社</th>
+                <td className="p-3 text-white/90">株式会社ジーンクエスト</td>
               </tr>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">業種</th>
@@ -18,7 +18,7 @@ const TermsOfSale: React.FC = () => {
               </tr>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">責任者</th>
-                <td className="p-3 text-white/90">内布久子</td>
+                <td className="p-3 text-white/90">冨樫裕也</td>
               </tr>
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-top">メールアドレス</th>
@@ -27,7 +27,7 @@ const TermsOfSale: React.FC = () => {
               <tr className="odd:bg-white/5">
                 <th className="w-40 p-3 text-left font-semibold align-center">所在地</th>
                 <td className="p-3 text-white/90">
-                東京都世田谷区中町一丁目24番2号
+                東京都港区一丁目4番5号
                 </td>
               </tr>
               <tr className="odd:bg-white/5">

@@ -168,8 +168,9 @@ const PublicReceiptView: React.FC = () => {
               line-height: 1.1; 
             }
             .seal-main { 
-              font-size: 14px; 
+              font-size: 10px; 
               line-height: 1.1; 
+              letter-spacing: 0; 
             }
             .stamp { 
               border: 1px dashed #666; 
@@ -245,14 +246,12 @@ const PublicReceiptView: React.FC = () => {
                 <div class="seal-box">
                   <div>
                     <div class="seal-small">株式会社</div>
-                    <div class="seal-main">Pishatto</div>
+                    <div class="seal-main">ジーンクエスト</div>
                     <div class="seal-small">印</div>
                   </div>
                 </div>
-                <div class="company-name">株式会社Pishatto</div>
-                <div class="company-detail">〒107-0052</div>
-                <div class="company-detail">東京都港区六本木4丁目8-7</div>
-                <div class="company-detail">六本木三河台ビル</div>
+                <div class="company-name">株式会社ジーンクエスト</div>
+                <div class="company-detail">東京都港区一丁目4番5号</div>
                 
               </div>
             </div>
@@ -358,16 +357,14 @@ const PublicReceiptView: React.FC = () => {
               <div className="inline-flex items-center justify-center border-2 border-red-600 rounded-full text-red-600 w-24 h-24 text-center font-bold leading-tight">
                 <div>
                   <div className="text-[10px] leading-3">株式会社</div>
-                  <div className="text-sm leading-3">Pishatto</div>
+                  <div className="text-[10px] leading-3">ジーンクエスト</div>
                   <div className="text-[10px] leading-3">印</div>
                 </div>
               </div>
             </div>
              <div className="text-sm text-gray-700">
-               <div className="font-bold">株式会社Pishatto</div>
-               <div>〒107-0052</div>
-               <div>東京都港区六本木4丁目8-7</div>
-               <div>六本木三河台ビル</div>
+               <div className="font-bold">株式会社ジーンクエスト</div>
+               <div>東京都港区一丁目4番5号</div>
              </div>
              
            </div>
